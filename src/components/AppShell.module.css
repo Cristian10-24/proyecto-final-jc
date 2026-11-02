@@ -1,0 +1,42 @@
+/* Marco común de monitor y admin: barra lateral (escritorio), encabezado con cerrar sesión y navegación. */
+.shell { min-height: 100dvh; background: #fff; display: flex; }
+.side { display: none; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0 18px 32px; }
+
+.topbar { height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.logo { height: 46px; width: auto; display: block; }
+.me { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--sun); display: flex; align-items: center; justify-content: center; font: 800 13px var(--font); flex: none; }
+.meName { display: none; font: 700 14px var(--font); }
+.logout {
+  border: 1.5px solid var(--line); background: #fff; border-radius: 12px; height: 38px; padding: 0 12px;
+  font: 700 14px var(--font); color: var(--ink); display: flex; align-items: center; gap: 7px;
+}
+.logout:hover { border-color: var(--ink); }
+
+/* Pestañas en celular (solo si hay más de una sección) */
+.tabs { display: flex; gap: 6px; overflow-x: auto; margin: 0 -18px 14px; padding: 0 18px; scrollbar-width: none; }
+.tab { flex: none; height: 36px; padding: 0 14px; border-radius: 999px; background: #f5f2ef; color: var(--ink); font: 600 14px var(--font); display: flex; align-items: center; text-decoration: none; }
+.tabOn { background: var(--ink); color: #fff; }
+
+@media (min-width: 960px) {
+  .side {
+    width: 228px; flex: none; border-right: 1px solid var(--line-2); padding: 18px 16px 20px;
+    display: flex; flex-direction: column; gap: 22px; background: #fcfaf8; position: sticky; top: 0; height: 100dvh;
+  }
+  .side .logo { height: 62px; align-self: flex-start; }
+  .nav { display: grid; gap: 4px; }
+  .navItem { height: 42px; border-radius: 12px; font: 600 15px var(--font); display: flex; align-items: center; padding: 0 12px; color: var(--muted); text-decoration: none; }
+  .navItem:hover { background: #f5f2ef; color: var(--ink); }
+  .navOn, .navOn:hover { background: var(--orange-chip); color: var(--orange-darker); font-weight: 700; }
+  .sideUser { display: flex; gap: 10px; align-items: center; }
+  .sideUser .avatar { width: 38px; height: 38px; font-size: 14px; }
+  .sideName { font: 700 14px var(--font); }
+  .sideRole { font: 500 12.5px var(--font); color: var(--muted); }
+
+  .topbar { height: auto; justify-content: flex-end; margin-bottom: 14px; }
+  .topLogo { display: none; }
+  .meName { display: inline; }
+  .main { padding: 18px 30px 32px; }
+  .tabs { display: none; }
+}

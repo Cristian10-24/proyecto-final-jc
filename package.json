@@ -1,0 +1,36 @@
+{
+  "name": "proyecto-final-jc",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0 <23"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:db": "vitest run --config vitest.db.config.mts",
+    "typecheck": "tsc --noEmit",
+    "db:local": "node scripts/mongo-local.mjs",
+    "usuario:add": "tsx --env-file=.env.local scripts/usuario.ts add",
+    "usuario:list": "tsx --env-file=.env.local scripts/usuario.ts list"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "exceljs": "^4.4.0",
+    "mongodb": "^7.7.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9",
+    "vitest": "^5.0.5"
+  }
+}

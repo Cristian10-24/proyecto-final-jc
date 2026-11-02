@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+exports/
+.vercel
+
+# Base local de desarrollo (replica set en el puerto 27018)
+.mongo-data/
+
+# Datos personales: NUNCA al repositorio (las plantillas vacías se generan con un script)
+*.xlsx
+*.csv
+*.zip

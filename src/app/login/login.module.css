@@ -1,0 +1,37 @@
+.shell { min-height: 100dvh; display: grid; background: #fff; }
+.brand { display: none; }
+.formSide { display: flex; flex-direction: column; padding: 22px; }
+.logoMobile { height: 46px; width: auto; align-self: flex-start; margin-bottom: 36px; }
+.form { width: 100%; max-width: 400px; display: flex; flex-direction: column; flex: 1; }
+.title { margin: 0 0 8px; font: 800 30px/1.1 var(--font); letter-spacing: -.03em; }
+.sub { margin: 0 0 26px; font: 500 16px/1.45 var(--font); color: var(--muted); }
+.error {
+  padding: 13px 16px; border-radius: 14px; background: var(--red-soft); color: var(--red-dark);
+  font: 600 15px/1.4 var(--font); margin-bottom: 18px; display: flex; gap: 10px; align-items: center;
+}
+.field + .field { margin-top: 18px; }
+.pass { position: relative; }
+.pass .input { padding-right: 64px; }
+.show { position: absolute; right: 8px; top: 8px; height: 40px; padding: 0 10px; border: 0; background: none; font: 600 14px var(--font); color: var(--orange-dark); }
+.grow { flex: 1; min-height: 24px; }
+.help { text-align: center; margin-top: 16px; font: 500 14px var(--font); color: var(--muted); }
+
+@media (min-width: 960px) {
+  .shell { grid-template-columns: 1fr 1fr; }
+  .brand {
+    display: flex; flex-direction: column; background: var(--ink); color: #fff; padding: 56px;
+    position: relative; overflow: hidden;
+  }
+  .ring { position: absolute; right: -120px; bottom: -140px; width: 420px; height: 420px; border-radius: 50%; border: 70px solid var(--orange); }
+  .sun { position: absolute; right: 220px; bottom: 200px; width: 40px; height: 40px; border-radius: 50%; background: var(--sun); }
+  .square { position: absolute; left: 90px; bottom: 90px; width: 22px; height: 22px; background: var(--blue); border-radius: 5px; transform: rotate(20deg); }
+  .logoChip { align-self: flex-start; background: #fff; border-radius: 18px; padding: 10px 16px; }
+  .logoChip img { height: 52px; width: auto; display: block; }
+  .brandKicker { position: relative; font: 600 13px var(--mono); letter-spacing: .06em; color: #ffb59a; margin-bottom: 14px; }
+  .brandTitle { position: relative; font: 800 48px/1.05 var(--font); letter-spacing: -.035em; max-width: 440px; }
+  .formSide { align-items: center; justify-content: center; padding: 56px; }
+  .logoMobile { display: none; }
+  .form { flex: none; }
+  .title { font-size: 34px; }
+  .grow { flex: none; min-height: 26px; }
+}
