@@ -106,6 +106,29 @@ describe("importar proyectos", () => {
   });
 });
 
+describe("clave generada y conflictos", () => {
+  it("sin columna Código, reimportar con la pareja en otro orden actualiza el mismo proyecto", async () => {
+    const enc = ["Ciudad", "Proyecto", "Nombre 1", "Documento 1", "Nombre 2", "Documento 2"];
+    const a = leerLibroProyectos(libro({ Proyectos: [enc, ["Cali", "Orden", "Ana Orden", "6100000001", "Luis Orden", "6100000002"]] }));
+    const pa = await previaProyectos(a);
+    expect(pa.errores).toEqual([]);
+    await aplicarProyectos(a.proyectos, pa.asignaciones, actor);
+    const b = leerLibroProyectos(libro({ Proyectos: [enc, ["Cali", "Orden 2", "Luis Orden", "6100000002", "Ana Orden", "6100000001"]] }));
+    const pb = await previaProyectos(b);
+    expect(pb).toMatchObject({ errores: [], nuevos: 0, actualizados: 1 });
+    await aplicarProyectos(b.proyectos, pb.asignaciones, actor);
+    const { proyectos } = await db.collections();
+    expect(await proyectos.find({ "integrantes.documento": "6100000001" }).toArray()).toMatchObject([{ codigo: "P-6100000001", nombre: "Orden 2" }]);
+  });
+
+  it("con errores en el libro de mentores no reporta conflictos falsos", async () => {
+    const malo = leerLibroMentores(libro({ Horarios: horarios([{ dia: "Jueves 12 nov", horas: [8], mentores: 1 }]), Cupos: [ENC_CUPOS, ["Jueves 12 nov", "Montería", 1, null, null]] }));
+    const previa = await previaMentores(malo);
+    expect(previa.errores.some((e) => /Conflicto/.test(e.mensaje))).toBe(false);
+    expect(previa.errores.some((e) => /Ciudad desconocida/.test(e.mensaje))).toBe(true);
+  });
+});
+
 describe("monitor por ciudad y ciudad sin días", () => {
   it("un monitor en la ciudad se asigna; varios quedan por asignar; ciudad sin días es error", async () => {
     const { users, proyectos } = await db.collections();

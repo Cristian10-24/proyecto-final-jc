@@ -1,8 +1,8 @@
-import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { asignarMonitor, cambiarHora, historial, liberar } from "@/lib/admin";
 import { exigir, sameOrigin } from "@/lib/auth";
+import { IdParams } from "@/lib/validation/id";
 
 const motivo = z.string().trim().max(300).default("");
 const Accion = z.discriminatedUnion("accion", [
@@ -11,7 +11,7 @@ const Accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("monitor"), monitor: z.string().trim().max(40).nullable() }).strict(),
 ]);
 
-const id = async (params: Promise<{ id: string }>) => { const { id } = await params; return ObjectId.isValid(id) ? new ObjectId(id) : null; };
+const id = async (params: Promise<{ id: string }>) => { const r = IdParams.safeParse(await params); return r.success ? r.data.id : null; };
 
 /** Historial de cambios del proyecto (solo administración). */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {

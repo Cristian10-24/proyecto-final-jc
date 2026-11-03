@@ -109,6 +109,7 @@ describe("liberar y monitor", () => {
 
   it("asignar monitor: solo monitores activos; queda en changeLog", async () => {
     expect(await admin.asignarMonitor(ids.CALI!, "nadie", actor)).toMatchObject({ ok: false, error: "sin_monitor" });
+    expect(await admin.asignarMonitor(ids.CTG!, "mon.cali", actor)).toMatchObject({ ok: false, error: "otra_ciudad" }); // no vería el proyecto
     expect(await admin.asignarMonitor(ids.CALI!, "mon.cali", actor)).toEqual({ ok: true });
     expect((await (await db.collections()).proyectos.findOne({ _id: ids.CALI }))!.monitor).toBe("mon.cali");
     expect((await admin.historial(ids.CALI!))[0]).toMatchObject({ accion: "asignar_monitor", anterior: "(por asignar)", nuevo: "mon.cali" });
@@ -124,6 +125,8 @@ describe("reetiquetar", () => {
     const r2 = await admin.resumenAsientos("2026-11-12");
     expect(r2.grupos.find((g) => g.grupo === "Cartagena")!.libres).toBe(3);
     expect(await admin.reetiquetar("2026-11-12", "Cartagena", ["Cali"], 10, actor)).toMatchObject({ ok: false });
+    // Barranquilla no presenta el 12: esos asientos serían inalcanzables.
+    expect(await admin.reetiquetar("2026-11-12", "Cartagena", ["Barranquilla"], 1, actor)).toMatchObject({ ok: false, mensaje: expect.stringMatching(/Barranquilla no presenta/) });
     const c = await db.collections();
     expect(await c.changeLog.countDocuments({ accion: "reetiquetar" })).toBe(1);
   });

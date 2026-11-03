@@ -35,7 +35,7 @@ Alternativa descartada (diseño a: colección `cuotas` + contadores) y otras dec
 - [x] 4. Portal del estudiante, móvil primero: documento → datos y pareja (solo lectura) → día → hora → confirmar → "tu horario", con todos los estados de error.
 - [x] 5. Admin: liberar o cambiar la hora de un proyecto, reetiquetar asientos libres de un día y asignar el monitor de los proyectos "por asignar"; todo con registro en changeLog.
 - [x] 6. Panel del monitor: quién eligió y quién falta, copiar pendientes para WhatsApp y exportar el cronograma a Excel.
-- [ ] 7. Preparar el despliegue: checklist en `docs/DESPLIEGUE.md` con lo que el usuario debe crear (GitHub, Atlas, Vercel, variables). Sin publicar nada.
+- [x] 7. Preparar el despliegue: checklist en `docs/DESPLIEGUE.md` con lo que el usuario debe crear (GitHub, Atlas, Vercel, variables). Sin publicar nada.
 
 ## Fase 2 · Evaluación, salas y monitores
 Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; después usar `docs/EVALUACION.md`).

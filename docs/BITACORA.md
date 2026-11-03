@@ -60,3 +60,9 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `docs: plan de la Fase 2 (evaluación, salas y monitores)`. PLAN con los pasos 8 a 15; prototipo en `docs/diseno/evaluacion/index.html`.
 - Verificar: `docs/PLAN.md` (sección Fase 2) y `docs/DECISIONES.md`.
 - Sigue pendiente el Paso 7 de la Fase 1 (checklist de despliegue) antes del Paso 8.
+
+## Cierre de la Fase 1 + Paso 7 · Despliegue
+- Commit: `chore: cierre de la Fase 1 y guía de despliegue`. code-review: 9 hallazgos (7 corregidos, 2 a PENDIENTES); revisión de seguridad: 1 medio (usuario:add sin freno a Atlas) y 3 bajos corregidos. 74 unitarias y 51 con base; typecheck y build pasan.
+- Verificar: `docs/DESPLIEGUE.md` (GitHub, Atlas, Vercel, variables, datos, prueba y apertura), `docs/PENDIENTES.md`; semilla con `monitor.prueba` (Cali y Cartagena).
+- No se publicó nada. La skill security-review necesita remoto: se usó revisor-seguridad; revisor-pruebas no se pudo lanzar (permiso denegado) y las pruebas se corrieron directo.
+- Pendiente: `npm run semilla:local -- --reset` para tener el monitor de prueba (borra las reservas locales); Paso 8.

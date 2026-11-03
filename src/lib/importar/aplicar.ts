@@ -57,6 +57,11 @@ export async function previaProyectos(lectura: LecturaProyectos): Promise<Previa
   const pendientes = new Map<string, { ciudad: string; proyectos: number; motivo: string }>();
   const asignaciones = new Map<string, string | null>();
   for (const p of leidos) {
+    // Código generado: si alguno de sus documentos ya es de un proyecto, es ese proyecto (aunque cambie el orden de la pareja).
+    if (p.codigoGenerado) {
+      const existente = p.integrantes.map((i) => duenoDoc.get(i.documento)).find(Boolean);
+      if (existente) p.codigo = existente;
+    }
     const actual = porCodigo.get(p.codigo);
     const hoja = lectura.hoja;
     const err = (mensaje: string) => errs.push({ hoja, fila: p.fila, mensaje });
@@ -153,7 +158,8 @@ async function conflictos(libro: LibroMentores, session?: ClientSession): Promis
 
 export async function previaMentores(libro: LibroMentores): Promise<PreviaMentores> {
   const { asientos } = await collections();
-  const errores = [...(await conflictos(libro)), ...libro.errores];
+  // Con errores en el libro no hay asientos nuevos que comparar: los conflictos se revisan cuando el libro esté bien.
+  const errores = libro.errores.length ? [...libro.errores] : await conflictos(libro);
   const horas = new Map<string, number>();
   for (const h of libro.horas) for (const m of h.mentores) horas.set(m, (horas.get(m) ?? 0) + 1);
   const nombre = new Map(libro.mentores.map((m) => [m._id, m.nombre]));

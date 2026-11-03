@@ -44,7 +44,7 @@ export function detectarCampo(encabezado: string): Campo | null {
   if (/ciudad|sede|municipio/.test(k)) return "ciudad";
   if (/modalidad|tipo de proyecto|individual o/.test(k)) return "modalidad";
   if (/descripcion|resumen|de que trata/.test(k)) return "descripcion";
-  if (/monitor/.test(k)) return "monitor";
+  if (/monitor/.test(k)) return /celular|telefono|whatsapp|correo|email|mail|documento|cedula/.test(k) ? null : "monitor";
   if (/\sgrupo\s/.test(k)) return "grupo";
   if (/documento|identificacion|cedula|\scc\s|\sti\s|\sdoc\s|\snumero de id/.test(k)) return `documento${n}`;
   if (/celular|telefono|whatsapp|movil|\scel\s/.test(k)) return `celular${n}`;
@@ -55,7 +55,8 @@ export function detectarCampo(encabezado: string): Campo | null {
 }
 
 export type ProyectoLeido = {
-  fila: number; codigo: string; ciudad: string; nombre: string; descripcion?: string;
+  /** codigoGenerado: no venía columna Código (P-<documento 1>); la vista previa lo cambia por el del proyecto existente. */
+  fila: number; codigo: string; codigoGenerado?: true; ciudad: string; nombre: string; descripcion?: string;
   grupo?: string; monitorTexto?: string; integrantes: Integrante[];
 };
 
@@ -202,14 +203,15 @@ export function leerLibroProyectos(wb: ExcelJS.Workbook, mapaManual: Partial<Rec
     if (modalidad === 1 && integrantes.length === 2) errs.push("La modalidad dice individual, pero hay un integrante 2.");
 
     // Sin columna de código, el proyecto se identifica por el documento del integrante 1.
-    const codigo = cleanSpaces(texto(celda(row, "codigo"))).toUpperCase() || (integrantes[0] ? `P-${integrantes[0].documento}` : "");
+    const codigoArchivo = cleanSpaces(texto(celda(row, "codigo"))).toUpperCase();
+    const codigo = codigoArchivo || (integrantes[0] ? `P-${integrantes[0].documento}` : "");
     if (codigo && codigos.has(codigo)) errs.push(`El código ${codigo} ya está en la fila ${codigos.get(codigo)}.`);
 
     if (codigo && !codigos.has(codigo)) codigos.set(codigo, r);
     for (const i of integrantes) if (!documentos.has(i.documento)) documentos.set(i.documento, r);
     if (errs.length) errs.forEach((mensaje) => errores.push({ hoja: H, fila: r, mensaje }));
     else proyectos.push({
-      fila: r, codigo, ciudad, nombre, integrantes,
+      fila: r, codigo, ciudad, nombre, integrantes, ...(codigoArchivo ? {} : { codigoGenerado: true as const }),
       ...(descripcion ? { descripcion } : {}), ...(grupo ? { grupo } : {}), ...(monitorTexto ? { monitorTexto } : {}),
     });
   });

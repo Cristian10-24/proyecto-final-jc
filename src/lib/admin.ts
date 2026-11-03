@@ -1,5 +1,5 @@
 import { MongoServerError, ObjectId, type Filter } from "mongodb";
-import { ciudadesExplicitas, diasPorCiudad } from "./agenda";
+import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
 import { collections, getClient } from "./db";
 import { diaCOL } from "./edicion";
@@ -59,12 +59,17 @@ export async function historial(proyectoId: ObjectId) {
 
 export type ResultadoAdmin = { ok: true; inicio?: string } | { ok: false; error: string; mensaje: string };
 
+/** Libera la hora y registra el cambio en la misma transacción: nunca queda un asiento liberado sin registro. */
 export async function liberar(proyectoId: ObjectId, motivo: string, actor: Actor): Promise<ResultadoAdmin> {
   const { asientos, changeLog } = await collections();
-  const a = await asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } });
-  if (!a) return { ok: false, error: "sin_hora", mensaje: "Ese proyecto no tiene hora." };
-  await changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(a.inicio), motivo, actor, fecha: new Date() });
-  return { ok: true };
+  const client = await getClient();
+  let liberado = false;
+  await client.withSession((s) => s.withTransaction(async () => {
+    const a = await asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
+    liberado = !!a;
+    if (a) await changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(a.inicio), motivo, actor, fecha: new Date() }, { session: s });
+  }));
+  return liberado ? { ok: true } : { ok: false, error: "sin_hora", mensaje: "Ese proyecto no tiene hora." };
 }
 
 /**
@@ -128,8 +133,14 @@ export async function bloquesLibres(proyectoId: ObjectId, dia: string) {
 
 export async function asignarMonitor(proyectoId: ObjectId, monitor: string | null, actor: Actor): Promise<ResultadoAdmin> {
   const { proyectos, users, changeLog } = await collections();
-  if (monitor && !(await users.findOne({ usuario: monitor, rol: "monitor", activo: true })))
-    return { ok: false, error: "sin_monitor", mensaje: "Ese monitor no existe o está inactivo." };
+  const p = await proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
+  if (!p) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
+  if (monitor) {
+    const u = await users.findOne({ usuario: monitor, rol: "monitor", activo: true });
+    if (!u) return { ok: false, error: "sin_monitor", mensaje: "Ese monitor no existe o está inactivo." };
+    // El seguimiento del monitor filtra por sus ciudades: fuera de ellas no vería el proyecto.
+    if (!u.ciudades.includes(p.ciudad)) return { ok: false, error: "otra_ciudad", mensaje: `Ese monitor no tiene ${p.ciudad} entre sus ciudades. Agrégasela en Usuarios o elige otro.` };
+  }
   const antes = await proyectos.findOneAndUpdate({ _id: proyectoId }, { $set: { monitor } });
   if (!antes) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
   await changeLog.insertOne({ proyectoId, accion: "asignar_monitor", anterior: antes.monitor ?? "(por asignar)", nuevo: monitor ?? "(por asignar)", actor, fecha: new Date() });
@@ -156,7 +167,13 @@ export async function resumenAsientos(dia: string) {
  * a lo largo del día (no los primeros). Un asiento que alguien reserve mientras tanto no se toca.
  */
 export async function reetiquetar(dia: string, desde: string, hacia: string[], cantidad: number, actor: Actor): Promise<{ ok: true; cambiados: number } | { ok: false; mensaje: string }> {
-  const { asientos, changeLog } = await collections();
+  const { asientos, changeLog, dias } = await collections();
+  // Solo ciudades que presentan ese día (filas propias o "Todas", antes de su clausura): si no, el asiento sería inalcanzable.
+  const todos = await dias.find({}).toArray();
+  const cfg = todos.find((d) => d._id === dia);
+  const presentan = cfg ? ciudadesDelDia(cfg.ciudades, dia, ciudadesExplicitas(todos)) : new Map();
+  const fuera = hacia.filter((c) => !presentan.has(c));
+  if (fuera.length) return { ok: false, mensaje: `${fuera.join(", ")} no presenta${fuera.length > 1 ? "n" : ""} el ${dia}. Agrégala en la hoja Cupos o elige otra ciudad.` };
   const libres = (await asientos.find({ dia, proyectoId: null }).sort({ inicio: 1, mentorId: 1 }).toArray()).filter((a) => claveGrupo(a.ciudades) === desde);
   if (cantidad > libres.length) return { ok: false, mensaje: `El grupo ${desde} solo tiene ${libres.length} asientos libres ese día.` };
   const elegidos: Asiento[] = [];

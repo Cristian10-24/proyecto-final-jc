@@ -110,6 +110,8 @@ describe("importador flexible", () => {
     expect(enc.map(detectarCampo)).toEqual(["ciudad", "modalidad", "proyecto", "descripcion", "nombre1", null, "documento1", "celular1", "correo1",
       "nombre2", "documento2", "celular2", "correo2", "monitor"]);
     expect(["CC", "Nombre del proyecto", "Proyecto", "Teléfono 2", "Documento integrante 1"].map(detectarCampo)).toEqual(["documento1", "proyecto", "proyecto", "celular2", "documento1"]);
+    // Contacto del monitor: no es la columna Monitor (ni la de los estudiantes).
+    expect(["Celular del monitor", "Correo del monitor", "Nombre del monitor"].map(detectarCampo)).toEqual([null, null, "monitor"]);
   });
 
   it("mapa manual: el admin elige la columna que no se reconoció", () => {

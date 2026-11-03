@@ -12,6 +12,19 @@ import { ROLES, type RolUsuario } from "@/lib/permisos";
 import { generarClave, hashClave } from "@/lib/usuarios";
 import { ciudadExistente, cleanSpaces, normalizeCity } from "@/lib/validation/name";
 
+/**
+ * Solo escribe en la base local (127.0.0.1/localhost). Para crear el primer admin en Atlas hay que
+ * pedirlo a propósito con --atlas (ver docs/DESPLIEGUE.md): así un .env.local apuntando a Atlas no se usa por error.
+ */
+function baseLocalOAtlasExplicito(args: string[]) {
+  process.env.MONGODB_URI ||= "mongodb://127.0.0.1:27018/?replicaSet=rs0";
+  const host = dbHost();
+  const local = /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !/\+srv|mongodb\.net/i.test(process.env.MONGODB_URI);
+  if (!local && !args.includes("--atlas"))
+    throw new Error(`MONGODB_URI apunta a "${host}", que no es local. Si de verdad quieres escribir ahí (primer admin en Atlas), agrega --atlas.`);
+  if (!local) console.log(`ATENCIÓN: escribiendo en una base que no es local (${host}).`);
+}
+
 const USO = 'Uso: npm run usuario:add -- usuario "Nombre" ["Ciudad1,Ciudad2"] [--rol=monitor|coordinador|admin] [--clave=CLAVE] [--nueva-clave]';
 
 async function add(args: string[]) {
@@ -34,6 +47,8 @@ async function add(args: string[]) {
   if (desconocidas.length) throw new Error(`Ciudad desconocida: ${desconocidas.join(", ")}. Válidas: ${NOMBRES_CIUDADES.join(", ")}`);
 
   const usuario = usuarioRaw.trim().toLowerCase();
+  if (!/^[a-z0-9._-]{3,40}$/.test(usuario)) throw new Error("Usuario: 3 a 40 caracteres, solo letras, números, punto, guion o guion bajo.");
+  baseLocalOAtlasExplicito(args);
   const { users } = await collections();
   console.log(`Base: ${dbName()} en ${dbHost()}`);
 
@@ -56,6 +71,7 @@ async function add(args: string[]) {
 }
 
 async function list() {
+  baseLocalOAtlasExplicito(process.argv);
   const { users } = await collections();
   const all = await users.find({}, { projection: { passwordHash: 0 } }).sort({ rol: 1, usuario: 1 }).toArray();
   console.table(all.map((u) => ({ usuario: u.usuario, nombre: u.nombre, rol: u.rol, ciudades: u.rol === "monitor" ? u.ciudades.join(", ") : "todas", activo: u.activo })));

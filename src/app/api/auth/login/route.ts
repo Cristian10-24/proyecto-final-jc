@@ -6,7 +6,7 @@ import { collections } from "@/lib/db";
 import { inicioPorRol } from "@/lib/permisos";
 import { bloqueado, clientIp, contar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
 
-const Body = z.object({ usuario: z.string().trim().min(1).max(60), clave: z.string().min(1).max(200) });
+const Body = z.object({ usuario: z.string().trim().min(1).max(60), clave: z.string().min(1).max(200) }).strict();
 
 // Hash de relleno: compara aunque el usuario no exista, para que tarde lo mismo.
 const DUMMY = "$2b$12$tOZ4cd2R1Af92e2ela.09OF6H3OvahSBjTGFOmjePaj2sEb4lxTf2";
