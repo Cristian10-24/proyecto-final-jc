@@ -1,0 +1,164 @@
+import { MongoServerError, ObjectId, type Filter } from "mongodb";
+import { ciudadesExplicitas, diasPorCiudad } from "./agenda";
+import { horaCO } from "./ciudades";
+import { collections, getClient } from "./db";
+import { diaCOL } from "./edicion";
+import type { Actor, Asiento, Proyecto } from "./types";
+
+// Acciones del admin sobre horas, asientos y monitores. Toda acción deja registro en changeLog.
+// Cambiar la hora es la única que usa transacción: libera el asiento viejo y toma el nuevo, o nada.
+
+const etiqueta = (inicio: Date) => `${diaCOL(inicio)} ${horaCO(inicio)}`;
+export const claveGrupo = (ciudades: string[]) => (ciudades.length ? [...ciudades].sort((a, b) => a.localeCompare(b, "es")).join(" + ") : "(sin ciudad)");
+
+export type FilaProyecto = {
+  id: string; codigo: string; nombre: string; ciudad: string; grupo?: string;
+  integrantes: { nombre: string; documento: string }[];
+  monitor: string | null;
+  hora: { inicio: string; mentor: string } | null;
+};
+
+export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" };
+
+/** Lista para el tablero del admin (máx. 200). El admin sí ve mentor y documento completo. */
+export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[]> {
+  const { proyectos, asientos, mentores } = await collections();
+  const filtro: Filter<Proyecto> = {};
+  if (f.ciudad) filtro.ciudad = f.ciudad;
+  if (f.estado === "sin_monitor") filtro.monitor = null;
+  if (f.q) {
+    const re = new RegExp(f.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    filtro.$or = [{ nombre: re }, { codigo: re }, { "integrantes.nombre": re }, { "integrantes.documento": re }];
+  }
+  if (f.estado === "con_hora" || f.estado === "sin_hora") {
+    // Se filtra en Mongo (no después del límite), con los proyectos que tienen asiento.
+    const conHora = (await asientos.distinct("proyectoId", { proyectoId: { $type: "objectId" } })).filter((x): x is ObjectId => x !== null);
+    filtro._id = f.estado === "con_hora" ? { $in: conHora } : { $nin: conHora };
+  }
+  const lista = await proyectos.find(filtro).sort({ ciudad: 1, nombre: 1 }).limit(200).toArray();
+  const ocupados = await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }).toArray();
+  const porProyecto = new Map(ocupados.map((a) => [String(a.proyectoId), a]));
+  const nombres = new Map((await mentores.find({}).toArray()).map((m) => [m._id, m.nombre]));
+  return lista
+    .map((p): FilaProyecto => {
+      const a = porProyecto.get(String(p._id));
+      return {
+        id: String(p._id), codigo: p.codigo, nombre: p.nombre, ciudad: p.ciudad, ...(p.grupo ? { grupo: p.grupo } : {}),
+        integrantes: p.integrantes.map((i) => ({ nombre: i.nombre, documento: i.documento })),
+        monitor: p.monitor ?? null,
+        hora: a ? { inicio: a.inicio.toISOString(), mentor: nombres.get(a.mentorId) ?? a.mentorId } : null,
+      };
+    });
+}
+
+export async function historial(proyectoId: ObjectId) {
+  const { changeLog } = await collections();
+  return (await changeLog.find({ proyectoId }).sort({ fecha: -1 }).limit(50).toArray())
+    .map((c) => ({ accion: c.accion, anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, actor: c.actor, fecha: c.fecha.toISOString() }));
+}
+
+export type ResultadoAdmin = { ok: true; inicio?: string } | { ok: false; error: string; mensaje: string };
+
+export async function liberar(proyectoId: ObjectId, motivo: string, actor: Actor): Promise<ResultadoAdmin> {
+  const { asientos, changeLog } = await collections();
+  const a = await asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } });
+  if (!a) return { ok: false, error: "sin_hora", mensaje: "Ese proyecto no tiene hora." };
+  await changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(a.inicio), motivo, actor, fecha: new Date() });
+  return { ok: true };
+}
+
+/**
+ * Pone el proyecto en el bloque `inicio`: libera su asiento actual (si tiene) y toma uno libre de ese
+ * bloque, en una transacción. Por defecto solo asientos de su ciudad; con `otraCiudad`, cualquiera libre.
+ */
+export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string }, actor: Actor): Promise<ResultadoAdmin> {
+  const c = await collections();
+  const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
+  if (!proyecto) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
+  const client = await getClient();
+  let resultado: ResultadoAdmin = { ok: false, error: "sin_cupo", mensaje: "Ese bloque ya no tiene asientos libres para esta ciudad." };
+  try {
+    await client.withSession((s) => s.withTransaction(async () => {
+      const viejo = await c.asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
+      if (viejo && viejo.inicio.getTime() === inicio.getTime()) throw new Error("misma_hora");
+      const nuevo = await c.asientos.findOneAndUpdate(
+        { inicio, proyectoId: null, ...(opciones.otraCiudad ? {} : { ciudades: proyecto.ciudad }) },
+        { $set: { proyectoId, reservadoEn: new Date() } },
+        { session: s, returnDocument: "after" },
+      );
+      if (!nuevo) throw new Error("sin_cupo");
+      await c.changeLog.insertOne({
+        proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: etiqueta(viejo.inicio) } : {}), nuevo: etiqueta(nuevo.inicio),
+        motivo: opciones.otraCiudad && !nuevo.ciudades.includes(proyecto.ciudad) ? `${opciones.motivo} (asiento de otra ciudad)`.trim() : opciones.motivo,
+        actor, fecha: new Date(),
+      }, { session: s });
+      resultado = { ok: true, inicio: nuevo.inicio.toISOString() };
+    }));
+  } catch (e) {
+    if (e instanceof Error && e.message === "misma_hora") return { ok: false, error: "misma_hora", mensaje: "El proyecto ya tiene esa hora." };
+    if (e instanceof Error && e.message === "sin_cupo") return resultado;
+    // Un integrante reservó en el mismo instante: el índice único sobre proyectoId lo frenó.
+    if (e instanceof MongoServerError && e.code === 11000) return { ok: false, error: "ya_tiene_hora", mensaje: "El proyecto acaba de reservar una hora. Recarga y vuelve a intentarlo." };
+    throw e;
+  }
+  return resultado;
+}
+
+/** Bloques con asiento libre en un día: de la ciudad del proyecto, o de cualquiera con `otraCiudad`. */
+export async function bloquesLibres(proyectoId: ObjectId, dia: string, otraCiudad: boolean) {
+  const c = await collections();
+  const p = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
+  if (!p) return null;
+  const libres = await c.asientos.find({ dia, proyectoId: null, ...(otraCiudad ? {} : { ciudades: p.ciudad }) }).sort({ inicio: 1 }).toArray();
+  const porBloque = new Map<string, { inicio: string; libres: number; deSuCiudad: boolean }>();
+  for (const a of libres) {
+    const k = a.inicio.toISOString();
+    const b = porBloque.get(k) ?? { inicio: k, libres: 0, deSuCiudad: false };
+    b.libres++;
+    b.deSuCiudad ||= a.ciudades.includes(p.ciudad);
+    porBloque.set(k, b);
+  }
+  const todos = await c.dias.find({}).toArray();
+  return { ciudadTieneElDia: diasPorCiudad(todos, p.ciudad).includes(dia), bloques: [...porBloque.values()] };
+}
+
+export async function asignarMonitor(proyectoId: ObjectId, monitor: string | null, actor: Actor): Promise<ResultadoAdmin> {
+  const { proyectos, users, changeLog } = await collections();
+  if (monitor && !(await users.findOne({ usuario: monitor, rol: "monitor", activo: true })))
+    return { ok: false, error: "sin_monitor", mensaje: "Ese monitor no existe o está inactivo." };
+  const antes = await proyectos.findOneAndUpdate({ _id: proyectoId }, { $set: { monitor } });
+  if (!antes) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
+  await changeLog.insertOne({ proyectoId, accion: "asignar_monitor", anterior: antes.monitor ?? "(por asignar)", nuevo: monitor ?? "(por asignar)", actor, fecha: new Date() });
+  return { ok: true };
+}
+
+/** Asientos de un día por grupo de ciudades: libres y ocupados (el admin sí ve conteos). */
+export async function resumenAsientos(dia: string) {
+  const { asientos, dias } = await collections();
+  const lista = await asientos.find({ dia }, { projection: { ciudades: 1, proyectoId: 1 } }).toArray();
+  const grupos = new Map<string, { grupo: string; ciudades: string[]; libres: number; ocupados: number }>();
+  for (const a of lista) {
+    const k = claveGrupo(a.ciudades);
+    const g = grupos.get(k) ?? { grupo: k, ciudades: a.ciudades, libres: 0, ocupados: 0 };
+    if (a.proyectoId) g.ocupados++; else g.libres++;
+    grupos.set(k, g);
+  }
+  const todos = await dias.find({}).sort({ _id: 1 }).toArray();
+  return { dias: todos.map((d) => d._id), explicitas: [...ciudadesExplicitas(todos)], grupos: [...grupos.values()].sort((a, b) => a.grupo.localeCompare(b.grupo, "es")) };
+}
+
+/**
+ * Reetiqueta `cantidad` asientos LIBRES de un día del grupo `desde` a las ciudades `hacia`, repartidos
+ * a lo largo del día (no los primeros). Un asiento que alguien reserve mientras tanto no se toca.
+ */
+export async function reetiquetar(dia: string, desde: string, hacia: string[], cantidad: number, actor: Actor): Promise<{ ok: true; cambiados: number } | { ok: false; mensaje: string }> {
+  const { asientos, changeLog } = await collections();
+  const libres = (await asientos.find({ dia, proyectoId: null }).sort({ inicio: 1, mentorId: 1 }).toArray()).filter((a) => claveGrupo(a.ciudades) === desde);
+  if (cantidad > libres.length) return { ok: false, mensaje: `El grupo ${desde} solo tiene ${libres.length} asientos libres ese día.` };
+  const elegidos: Asiento[] = [];
+  for (let i = 0; i < cantidad; i++) elegidos.push(libres[Math.floor(((i + 0.5) * libres.length) / cantidad)]!);
+  const r = await asientos.updateMany({ _id: { $in: elegidos.map((a) => a._id) }, proyectoId: null }, { $set: { ciudades: hacia } });
+  await changeLog.insertOne({ accion: "reetiquetar", anterior: `${dia} ${desde}`, nuevo: `${claveGrupo(hacia)}: ${r.modifiedCount} asientos`, actor, fecha: new Date() });
+  return { ok: true, cambiados: r.modifiedCount };
+}
+

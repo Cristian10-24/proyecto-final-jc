@@ -1,5 +1,6 @@
 import { MongoServerError, type ObjectId } from "mongodb";
 import { ciudadesExplicitas, puedeElegir } from "./agenda";
+import { horaCO } from "./ciudades";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
 
@@ -60,6 +61,6 @@ export async function reservar(documento: string, inicio: Date, ahora = new Date
   }
   if (!tomado) return { ok: false, error: "sin_cupo" };
 
-  await changeLog.insertOne({ proyectoId: proyecto._id, accion: "reservar", nuevo: inicio.toISOString(), actor: { rol: "estudiante", usuario: documento }, fecha: ahora });
+  await changeLog.insertOne({ proyectoId: proyecto._id, accion: "reservar", nuevo: `${dia} ${horaCO(inicio)}`, actor: { rol: "estudiante", usuario: documento }, fecha: ahora });
   return { ok: true, inicio: tomado.inicio, dia };
 }

@@ -19,3 +19,7 @@
 - Sin correos en Fase 1. Éxito del portal: "Tu monitor te enviará el enlace de la sala por WhatsApp".
 - Portal: `consultar` y `reservar` cuentan para el límite por documento; `agenda` (días y bloques, sin datos personales) solo cuenta fallos por IP, y por eso sus respuestas nunca incluyen la hora de un proyecto (ni `reservar` al responder "ya tiene hora"): la hora se ve solo con `consultar`. Estado del portal por variables opcionales STUDENT_PORTAL_OPENS_AT / STUDENT_PORTAL_CLOSES_AT / STUDENT_PORTAL_ENABLED.
 - Desarrollo: `npm run dev:red` abre el servidor en el wifi y se niega a arrancar si la base no es local (venga o no de `.env.local`); sin SESSION_SECRET usa una temporal; `next.config.ts` permite las IP privadas del equipo (solo en desarrollo).
+- Admin "Horarios": lista con filtros y detalle con botones en lugar del tablero de arrastrar y soltar del prototipo. El admin sí ve mentor, documento completo y conteos de asientos libres.
+- Cambiar hora: por defecto solo asientos de la ciudad del proyecto; con "Usar asientos de otra ciudad" puede usar cualquiera libre, y el changeLog lo anota en el motivo. Si el proyecto no tenía hora, la misma acción la asigna.
+- Reetiquetar: pasa N asientos LIBRES de un grupo de ciudades a otras, el mismo día, repartidos a lo largo del día (no los primeros). Los reservados no se tocan.
+- changeLog guarda las horas como "AAAA-MM-DD h:mm a. m." (hora COL), tanto en reservas del estudiante como en acciones del admin.

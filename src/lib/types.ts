@@ -23,7 +23,7 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar";
   anterior?: string;
   nuevo?: string;
   motivo?: string;

@@ -20,9 +20,10 @@ if (/mongodb\.net|\+srv/i.test(env.MONGODB_URI) || !/^(127\.0\.0\.1|localhost)(:
   process.exit(1);
 }
 console.log(`Base: ${host} (local).`);
+const puerto = process.env.PORT || "3000";
 const ips = Object.values(networkInterfaces()).flat().filter((i) => i && i.family === "IPv4" && !i.internal).map((i) => i.address);
-console.log(["En este computador: http://localhost:3000", ...ips.map((ip) => `En el celular (mismo wifi): http://${ip}:3000`)].join("\n"));
+console.log([`En este computador: http://localhost:${puerto}`, ...ips.map((ip) => `En el celular (mismo wifi): http://${ip}:${puerto}`)].join("\n"));
 
-const next = spawn(process.execPath, ["node_modules/next/dist/bin/next", "dev", "-H", "0.0.0.0", "-p", "3000"], { stdio: "inherit", env });
+const next = spawn(process.execPath, ["node_modules/next/dist/bin/next", "dev", "-H", "0.0.0.0", "-p", puerto], { stdio: "inherit", env });
 next.on("exit", (code) => process.exit(code ?? 0));
 process.on("SIGINT", () => next.kill("SIGINT"));
