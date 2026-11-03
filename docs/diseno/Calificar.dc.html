@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>a{color:#B25700}a:hover{color:#121212}button{font-family:Inter,system-ui,sans-serif;cursor:pointer}input,select,textarea{font-family:Inter,system-ui,sans-serif;color:#121212}input:focus,select:focus,textarea:focus{outline:3px solid #EA7307;outline-offset:1px}</style></helmet>
+<div style="width:{{ ly.w }};height:{{ ly.h }};border-radius:{{ ly.radius }};border:{{ ly.frame }};background:#F4F4F4;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font:15px/1.5 Inter,system-ui,sans-serif;color:#121212;box-shadow:{{ ly.shadow }}">
+  <sc-if value="{{ showBrowser }}"><div style="height:40px;flex:none;background:#F5F2EF;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #EAE4DE"><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><div style="margin-left:16px;height:24px;flex:1;max-width:420px;border-radius:7px;background:#fff;font:500 12px ui-monospace,Menlo,monospace;color:#615C6E;display:flex;align-items:center;padding:0 10px">horarios.jovenescreativos.co/mentor/calificar</div></div></sc-if>
+  <sc-if value="{{ showStatus }}"><div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:700 14px Inter,sans-serif;background:#121212;color:#fff"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><i style="width:16px;height:10px;border-radius:2px;background:#fff;display:block"></i><i style="width:22px;height:11px;border-radius:3px;border:1.5px solid #fff;display:block;box-sizing:border-box"></i></span></div></sc-if>
+
+  <div style="flex:1;min-height:0;position:relative;display:flex;flex-direction:column">
+    <div style="flex:none;background:#121212;color:#fff;position:relative;z-index:3">
+      <div style="max-width:1100px;margin:0 auto;padding:{{ ly.topPad }};display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 24px">
+        <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px">
+          <img src="assets/logo.webp" alt="Jóvenes creaTIvos" style="width:{{ ly.logo }};height:{{ ly.logo }};flex:none;display:block">
+          <div style="display:flex;flex-direction:column"><b style="font:600 {{ ly.brandF }} Lexend,sans-serif;letter-spacing:-.01em">Jóvenes creaTIvos 2026</b><span style="font-size:13px;opacity:.75">Evaluación del proyecto final</span></div>
+          <span style="width:1px;align-self:stretch;margin:8px 4px;background:rgba(255,255,255,.28)"></span>
+          <img src="assets/logo-sofka.webp" alt="Sofka" style="height:{{ ly.sofka }};width:auto;flex:none;display:block">
+        </div>
+        <sc-if value="{{ logged }}">
+          <nav style="display:flex;gap:4px;margin-left:{{ ly.navMl }};align-items:flex-end;flex-wrap:wrap;width:{{ ly.navW }}">
+            <sc-if value="{{ canExit }}"><button onClick="{{ exit }}" style="border:0;background:transparent;color:#fff;opacity:.72;padding:{{ ly.tabPad }};border-bottom:3px solid transparent;font:500 15px Inter,sans-serif" style-hover="opacity:1">← Mi agenda</button></sc-if>
+            <button style="border:0;background:transparent;color:#fff;padding:{{ ly.tabPad }};border-bottom:3px solid #EA7307;font:500 15px Inter,sans-serif">Mis evaluaciones</button>
+            <span style="align-self:center;color:#fff;opacity:.85;font-size:12.5px;padding:0 8px 2px;border-left:1px solid rgba(255,255,255,.3);margin-left:6px;white-space:nowrap">{{ ly.badgeTxt }}</span>
+            <button onClick="{{ logout }}" style="border:0;background:transparent;color:#fff;opacity:.72;padding:{{ ly.tabPad }};border-bottom:3px solid transparent;font:500 15px Inter,sans-serif" style-hover="opacity:1">Salir</button>
+          </nav>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow:auto">
+      <div style="max-width:1100px;margin:0 auto;padding:{{ ly.mainPad }}">
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px">
+          <div><h1 style="margin:0;font:600 {{ ly.h1 }}/1.2 Lexend,sans-serif;letter-spacing:-.02em">{{ helloTitle }}</h1><p style="margin:4px 0 0;color:#5E5E5E">{{ helloSub }}</p></div>
+        </div>
+        <sc-if value="{{ logged }}">
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#5E5E5E"><span>{{ prog.count }}</span><span>{{ prog.pct }}</span></div>
+          <div style="height:8px;background:#ECECEC;border-radius:999px;overflow:hidden;margin:6px 0 18px"><i style="display:block;height:100%;width:{{ prog.w }};background:#EA7307;border-radius:999px;transition:width .4s"></i></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <select value="{{ fdate }}" onChange="{{ onDate }}" aria-label="Filtrar por fecha" style="flex:0 1 220px;background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;font-size:15px"><sc-for list="{{ dateOpts }}" as="o"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select>
+            <input type="search" value="{{ q }}" onChange="{{ onQ }}" placeholder="Buscar por nombre, documento o emprendimiento" aria-label="Buscar" style="flex:1 1 220px;min-width:0;background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;font-size:15px">
+            <select value="{{ fstate }}" onChange="{{ onState }}" aria-label="Filtrar por estado" style="flex:0 1 200px;background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;font-size:15px"><option value="">Todos los estados</option><option value="Pendiente">Pendientes</option><option value="hechos">Ya evaluados</option><option value="noShow">No se presentaron</option><option value="gestionar">Inasistencias sin motivo registrado</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;border:1px solid #DCDCDC;border-radius:14px;background:#fff;overflow:hidden">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+              <sc-if value="{{ r.isDay }}"><div style="padding:9px 16px;background:{{ r.dayBg }};color:{{ r.dayFg }};font:600 14px Lexend,sans-serif;border-top:{{ r.bt }}">{{ r.label }}</div></sc-if>
+              <sc-if value="{{ r.isItem }}">
+                <button onClick="{{ r.open }}" style="display:grid;grid-template-columns:{{ ly.itemCols }};gap:6px 14px;align-items:center;padding:14px 16px;border:0;border-top:1px solid #DCDCDC;background:transparent;text-align:left;width:100%;color:#121212" style-hover="background:#ECECEC">
+                  <span style="font:600 16px Lexend,sans-serif;color:#121212">{{ r.hora }}</span>
+                  <span style="min-width:0"><span style="display:block;font-weight:600">{{ r.names }}</span><span style="display:block;font-size:13px;color:#5E5E5E">{{ r.sub }}</span></span>
+                  <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:{{ ly.tagsJustify }};grid-column:{{ ly.tagsCol }}"><sc-for list="{{ r.tags }}" as="t"><span style="display:inline-flex;align-items:center;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;background:{{ t.bg }};color:{{ t.fg }}">{{ t.text }}</span></sc-for></span>
+                </button>
+              </sc-if>
+            </sc-for>
+            <sc-if value="{{ noRows }}"><div style="padding:40px 20px;text-align:center;color:#5E5E5E">No hay estudiantes con ese filtro.</div></sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{ sheetOpen }}">
+      <div style="position:absolute;inset:0;z-index:20;background:#F4F4F4;overflow-y:auto">
+        <div style="position:sticky;top:0;z-index:2;background:#121212;color:#fff">
+          <div style="max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap">
+            <button onClick="{{ closeSheet }}" style="border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;padding:10px 16px;border-radius:999px;font-weight:600">Volver</button>
+            <div style="min-width:0;flex:{{ ly.headNameFlex }}"><h2 style="margin:0;font:600 20px/1.2 Lexend,sans-serif">{{ sh.name }}</h2><div style="font-size:13px;opacity:.8">{{ sh.meta }}</div><div style="font-size:13px;opacity:.8">{{ sh.docs }}</div></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+              <div style="width:58px;height:58px;border-radius:50%;background:conic-gradient(#EA7307 {{ tm.deg }},rgba(255,255,255,.18) 0);display:grid;place-items:center;flex:none"><span style="width:46px;height:46px;border-radius:50%;background:#121212;display:grid;place-items:center;font:600 14px Lexend,sans-serif">{{ tm.clock }}</span></div>
+              <div style="display:flex;flex-direction:column;font-size:13px;line-height:1.3"><b style="font:600 15px Lexend,sans-serif">{{ tm.phase }}</b><span>{{ tm.hint }}</span></div>
+              <button onClick="{{ timerBtn }}" style="border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;padding:10px 16px;border-radius:999px;font-weight:600">{{ tm.btn }}</button>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:{{ ly.sheetCols }};gap:20px;align-items:start">
+          <div>
+            <sc-if value="{{ sh.nsList }}"><div style="font-size:13.5px;padding:10px 12px;border-radius:9px;background:#ECECEC;margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><sc-for list="{{ sh.nsItems }}" as="n"><span>{{ n.text }}</span><button onClick="{{ n.undo }}" style="border:1px solid #DCDCDC;background:#fff;padding:8px 14px;border-radius:999px;font-weight:600">Deshacer</button></sc-for></div></sc-if>
+            <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:18px;margin-bottom:16px"><div style="font-size:13px;color:#5E5E5E">Sobre el proyecto</div><p style="margin:4px 0 0">{{ sh.desc }}</p></div>
+            <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:18px;margin-bottom:18px">
+              <h3 style="margin:0 0 2px;font:600 18px/1.2 Lexend,sans-serif">Parte A · ¿Funciona?</h3>
+              <p style="font-size:13.5px;color:#5E5E5E;margin:0 0 12px">{{ sh.hintA }}</p>
+              <sc-for list="{{ partA }}" as="q" hint-placeholder-count="7">
+                <div style="display:grid;grid-template-columns:{{ ly.qCols }};gap:10px 16px;align-items:center;padding:12px 0;border-top:{{ q.bt }}">
+                  <div><div style="font-weight:600">{{ q.t }}</div><div style="font-size:13.5px;color:#5E5E5E">{{ q.d }}</div></div>
+                  <div style="display:inline-flex;border:1px solid #DCDCDC;border-radius:999px;padding:3px;background:#ECECEC;gap:2px;justify-self:start"><sc-for list="{{ q.opts }}" as="o"><button onClick="{{ o.on }}" aria-pressed="{{ o.pressed }}" style="border:0;background:{{ o.bg }};padding:7px 13px;border-radius:999px;font-weight:600;font-size:14px;color:{{ o.fg }};min-width:40px">{{ o.l }}</button></sc-for></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:18px;margin-bottom:18px">
+              <h3 style="margin:0 0 2px;font:600 18px/1.2 Lexend,sans-serif">Parte B · ¿Lo entiende?</h3>
+              <p style="font-size:13.5px;color:#5E5E5E;margin:0 0 12px">{{ sh.hintB }}</p>
+              <sc-for list="{{ partB }}" as="q" hint-placeholder-count="5">
+                <div style="padding:12px 0;border-top:{{ q.bt }}">
+                  <div style="font-weight:600">{{ q.t }}</div><div style="font-size:13.5px;color:#5E5E5E;font-style:italic">{{ q.d }}</div>
+                  <sc-for list="{{ q.people }}" as="p">
+                    <div style="display:flex;align-items:center;justify-content:{{ p.justify }};gap:12px;margin-top:8px;flex-wrap:wrap">
+                      <sc-if value="{{ p.showName }}"><span style="font-weight:600">{{ p.name }}</span></sc-if>
+                      <sc-if value="{{ p.ns }}"><span style="font-size:13px;color:#5E5E5E">No se presentó</span></sc-if>
+                      <sc-if value="{{ p.canRate }}"><div style="display:inline-flex;border:1px solid #DCDCDC;border-radius:999px;padding:3px;background:#ECECEC;gap:2px"><sc-for list="{{ p.opts }}" as="o"><button onClick="{{ o.on }}" aria-pressed="{{ o.pressed }}" style="border:0;background:{{ o.bg }};padding:7px 13px;border-radius:999px;font-weight:600;font-size:14px;color:{{ o.fg }};min-width:40px">{{ o.l }}</button></sc-for></div></sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <p style="font-size:12.5px;color:#5E5E5E;margin:10px 0 0">0 No conoce · 1 Conoce · 2 Comprende (explica la idea con ayuda) · 3 Practica (lo muestra y explica solo) · 4 Domina (podría modificarlo en vivo)</p>
+            </div>
+            <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:18px;margin-bottom:18px">
+              <h3 style="margin:0 0 2px;font:600 18px/1.2 Lexend,sans-serif">Cierre</h3>
+              <p style="font-size:13.5px;color:#5E5E5E;margin:0 0 12px">Minutos 12 a 15. Retroalimentación para el estudiante (en pareja, aplica para ambos). Coordinación la usará para el mensaje final.</p>
+              <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-weight:600;font-size:14px">Lo que hizo muy bien<textarea value="{{ dr.fortaleza }}" onChange="{{ onFort }}" placeholder="Ej.: su catálogo es claro y explicó con seguridad cómo llegan los datos." style="background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;min-height:76px;resize:vertical;font:400 15px/1.5 Inter,sans-serif"></textarea></label>
+              <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-weight:600;font-size:14px">Qué puede mejorar<textarea value="{{ dr.mejora }}" onChange="{{ onMej }}" placeholder="Ej.: terminar de conectar el formulario con la base de datos." style="background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;min-height:76px;resize:vertical;font:400 15px/1.5 Inter,sans-serif"></textarea></label>
+              <label style="display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:14px">Percepción del mentor<textarea value="{{ dr.percepcion }}" onChange="{{ onPerc }}" placeholder="Un mensaje personal para el estudiante." style="background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;min-height:76px;resize:vertical;font:400 15px/1.5 Inter,sans-serif"></textarea></label>
+            </div>
+          </div>
+          <aside style="position:{{ ly.sidePos }};top:96px;display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ scores }}" as="c" hint-placeholder-count="1">
+              <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px">
+                <span style="font-size:13px;color:#5E5E5E">{{ c.label }}</span>
+                <span style="font:600 28px/1.2 Lexend,sans-serif;letter-spacing:-.02em;color:{{ c.color }}">{{ c.res }}</span>
+                <div style="display:flex;justify-content:space-between;font-size:14px"><span>Funciona (A)</span><b>{{ c.a }}</b></div>
+                <div style="display:flex;justify-content:space-between;font-size:14px"><span>Nivel promedio (B)</span><b>{{ c.b }}</b></div>
+                <sc-if value="{{ c.inc }}"><span style="font-size:13px;color:#8A5A00">Faltan datos: marca los 7 puntos de la Parte A y mínimo 2 temas de la Parte B.</span></sc-if>
+              </div>
+            </sc-for>
+            <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:18px"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600"><input type="checkbox" checked="{{ dr.destacado }}" onChange="{{ onDest }}" style="width:20px;height:20px;accent-color:#EA7307"> Nominar como proyecto destacado</label></div>
+            <button onClick="{{ save }}" disabled="{{ saving }}" style="border:1px solid #EA7307;background:#EA7307;color:#1B1200;padding:12px 16px;border-radius:999px;font-weight:600;font-size:15px" style-hover="filter:brightness(1.05)">{{ saveLabel }}</button>
+            <sc-for list="{{ nsBtns }}" as="n"><button onClick="{{ n.on }}" style="border:1px solid #DCDCDC;background:#fff;padding:10px 16px;border-radius:999px;font-weight:600;color:#121212" style-hover="border-color:#5E5E5E">{{ n.label }}</button></sc-for>
+          </aside>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showLogin }}">
+      <div style="position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:20px">
+        <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:20px;max-width:420px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,.3)">
+          <h2 style="margin:0 0 6px;font:600 20px/1.2 Lexend,sans-serif">Evaluación del proyecto final</h2>
+          <sc-if value="{{ loginStep1 }}">
+            <p style="margin:0 0 16px;font-size:13px;color:#5E5E5E">Escribe tu correo. Te enviaremos un código de 6 números para entrar.</p>
+            <input type="email" value="{{ email }}" onChange="{{ onEmail }}" onKeyDown="{{ emailKey }}" placeholder="tucorreo@ejemplo.com" aria-label="Correo" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;font-size:15px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px"><span style="font-size:13px;color:#B42318;flex:1">{{ err1 }}</span><button onClick="{{ sendCode }}" disabled="{{ busy }}" style="border:1px solid #EA7307;background:#EA7307;color:#1B1200;padding:10px 16px;border-radius:999px;font-weight:600">Enviar código</button></div>
+          </sc-if>
+          <sc-if value="{{ loginStep2 }}">
+            <p style="margin:0 0 16px;font-size:13px;color:#5E5E5E">Te enviamos un código a <b>{{ email }}</b>. Revisa también la carpeta de spam. Vence en 10 minutos.</p>
+            <input type="text" value="{{ code }}" onChange="{{ onCode }}" onKeyDown="{{ codeKey }}" inputMode="numeric" maxLength="7" placeholder="000000" aria-label="Código de 6 números" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #DCDCDC;border-radius:9px;padding:10px 12px;font-size:24px;letter-spacing:8px;text-align:center">
+            <p style="font-size:13px;color:#B42318;margin:8px 0 0">{{ err2 }}</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap"><span style="display:flex;gap:4px"><button onClick="{{ backEmail }}" style="border:1px solid #DCDCDC;background:transparent;padding:10px 14px;border-radius:999px;font-weight:600">Otro correo</button><button onClick="{{ resend }}" style="border:1px solid #DCDCDC;background:transparent;padding:10px 14px;border-radius:999px;font-weight:600">Reenviar</button></span><button onClick="{{ enter }}" disabled="{{ busy }}" style="border:1px solid #EA7307;background:#EA7307;color:#1B1200;padding:10px 16px;border-radius:999px;font-weight:600">Entrar</button></div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ confirm }}">
+      <div style="position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:20px">
+        <div style="background:#fff;border:1px solid #DCDCDC;border-radius:14px;padding:20px;max-width:420px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,.3)">
+          <p style="margin:0 0 16px;font-weight:500;white-space:pre-line">{{ confirm.msg }}</p>
+          <div style="display:flex;justify-content:flex-end;gap:10px"><sc-if value="{{ confirm.cancel }}"><button onClick="{{ cNo }}" style="border:1px solid #DCDCDC;background:#fff;padding:10px 16px;border-radius:999px;font-weight:600">Cancelar</button></sc-if><button onClick="{{ cYes }}" style="border:1px solid #EA7307;background:#EA7307;color:#1B1200;padding:10px 16px;border-radius:999px;font-weight:600">{{ confirm.yes }}</button></div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ toast }}"><div style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);background:#121212;color:#F4F4F4;padding:10px 18px;border-radius:999px;font-weight:600;z-index:70;white-space:nowrap">{{ toast }}</div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;movil&quot;],&quot;default&quot;:&quot;web&quot;,&quot;tsType&quot;:&quot;'web'|'movil'|'embed'&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;codigo&quot;,&quot;lista&quot;,&quot;evaluar&quot;,&quot;individual&quot;,&quot;incompleto&quot;,&quot;noShow&quot;,&quot;guardado&quot;],&quot;default&quot;:&quot;login&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;openKey&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+const A_ITEMS=[["a1","App publicada","Abre desde una URL de internet, no desde su computador."],["a2","Marca, inicio y catálogo","Identidad visual, navegación clara y productos o servicios completos."],["a3","Contacto real","Envía una solicitud en vivo y queda guardada o enviada."],["a4","Login y panel","Inicia sesión y entra al panel privado."],["a5","Asistente de clientes","Preguntas frecuentes interactivas con respuestas útiles."],["a6","Responsive","Al achicar la ventana o en el celular se sigue viendo bien."],["a7","GitHub","Muestra el repositorio con mínimo 10 commits."]];
+const B_ITEMS=[["b1","Componentes y props","“Muéstrame un componente que reutilices y cómo le llegan los datos.”"],["b2","Estado y datos (hooks)","“¿Cómo llega el catálogo a la pantalla? Muéstrame dónde usas useState o useEffect.”"],["b3","Backend con Express","“Cuando envías el formulario, ¿qué ruta lo recibe? Muéstramela.”"],["b4","Base de datos con Mongoose","“¿Dónde quedó guardada la solicitud? Muéstrame el esquema o el registro.”"],["b5","Visión general","“Explícame el recorrido de un dato: del formulario a la base de datos y de vuelta a la pantalla.”"]];
+const MIN_B=2,CRIT={exA:.9,exB:3};
+const RES_COLOR={Excelente:'#1E7B34',Aprobado:'#1F4E99',Incompleto:'#C98A0B','No se presentó':'#5E5E5E',Pendiente:'#5E5E5E'};
+const CHIP={Excelente:['#DDF3E2','#1E7B34'],Aprobado:['#DFE9FB','#1F4E99'],Incompleto:['#FFF1C9','#8A5A00'],Pendiente:['#E6E6E6','#5E5E5E'],'No se presentó':['#121212','#F4F4F4']};
+const P=[
+  {pk:'jue12-480',fecha:'2026-11-12',hora:'8:00 a. m.',min:480,ciudad:'Cartagena',ruta:'Básica',emp:'Tienda virtual para artesanos',desc:'Catálogo en línea y pedidos por WhatsApp para artesanos de Getsemaní.',m:[['s1','Andrés Pérez','1047398562']]},
+  {pk:'jue12-495',fecha:'2026-11-12',hora:'8:15 a. m.',min:495,ciudad:'Cali',ruta:'Avanzada',emp:'Recetario del Pacífico',desc:'Recetas tradicionales con video y lista de compras automática.',m:[['s2','Sara Lucumí Carabalí','1005887412'],['s3','Duván Grueso','1005887419']]},
+  {pk:'jue12-510',fecha:'2026-11-12',hora:'8:30 a. m.',min:510,ciudad:'Barranquilla',ruta:'Básica',emp:'Turnos para la barbería',desc:'Reserva de turnos y recordatorio por SMS para barberías del barrio.',m:[['s4','Kevin Charris Pertuz','1043221870']]},
+  {pk:'jue12-960',fecha:'2026-11-12',hora:'4:00 p. m.',min:960,ciudad:'Cali',ruta:'Básica',emp:'Juego para aprender tablas',desc:'Minijuegos por niveles para practicar las tablas de multiplicar.',m:[['s5','Isabella Mosquera Riascos','1144552013'],['s6','Kevin Andrés Possu','1144552870']]},
+  {pk:'jue12-975',fecha:'2026-11-12',hora:'4:15 p. m.',min:975,ciudad:'Cartagena',ruta:'Avanzada',emp:'Mapa de playas limpias',desc:'Reportes ciudadanos de basura en playas con foto y ubicación.',m:[['s7','Daniela Julio Barrios','1047881254'],['s8','Óscar Barrios Díaz','1047881390']]},
+  {pk:'jue12-990',fecha:'2026-11-12',hora:'4:30 p. m.',min:990,ciudad:'Santa Marta',ruta:'Básica',emp:'Guía turística por voz',desc:'Recorridos narrados por audio para visitantes de El Rodadero.',m:[['s9','Sofía Herrera Lozano','1082991450']]},
+  {pk:'jue12-1005',fecha:'2026-11-12',hora:'4:45 p. m.',min:1005,ciudad:'Cali',ruta:'Básica',emp:'Reportes de huecos',desc:'Foto y ubicación de huecos en la vía para enviar a la alcaldía.',m:[['s10','Tomás Arboleda Cuero','1143776021'],['s11','Harold Cuero','1143776540']]},
+  {pk:'vie13-495',fecha:'2026-11-13',hora:'8:15 a. m.',min:495,ciudad:'Cartagena',ruta:'Básica',emp:'Agenda cultural juvenil',desc:'Eventos gratuitos de la ciudad filtrados por edad e interés.',m:[['s12','Yuranis Julio Cassiani','1047002341'],['s13','Luis Barrios','1047112093']]},
+  {pk:'vie13-975',fecha:'2026-11-13',hora:'4:15 p. m.',min:975,ciudad:'Cartagena',ruta:'Avanzada',emp:'Control de gastos familiar',desc:'Registro de gastos con categorías y alertas de presupuesto.',m:[['s14','Camilo Herrera Pájaro','1047563320']]},
+  {pk:'vie13-1020',fecha:'2026-11-13',hora:'5:00 p. m.',min:1020,ciudad:'Cartagena',ruta:'Básica',emp:'Venta de ropa usada',desc:'Catálogo de ropa de segunda mano con entrega en el barrio.',m:[['s15','Keila Marrugo','1047640912'],['s16','Jesús Torres Ortega','1047641033']]}
+];
+const PK={};P.forEach(p=>PK[p.pk]=p);
+const SP={};P.forEach(p=>p.m.forEach(([id,nombre,doc])=>SP[id]={id,nombre,doc,p}));
+const allA=v=>Object.fromEntries(A_ITEMS.map(([k])=>[k,v]));
+const EV0={
+  s1:{a:{...allA('si'),a5:'parcial'},b:{b1:3,b2:2,b3:2},fortaleza:'Catálogo muy claro y fácil de recorrer.',mejora:'Agregar el login al panel.',percepcion:'',destacado:false},
+  s2:{a:allA('si'),b:{b1:4,b2:3,b5:3},fortaleza:'Explicó con seguridad el recorrido de los datos.',mejora:'Mejorar el responsive del menú.',percepcion:'',destacado:true},
+  s3:{a:allA('si'),b:{b1:2,b3:2},fortaleza:'Explicó con seguridad el recorrido de los datos.',mejora:'Mejorar el responsive del menú.',percepcion:'',destacado:true},
+  s4:{noPresento:true,b:{}},
+  s5:{a:{...allA('si'),a4:'parcial',a7:'no'},b:{b1:3,b2:2},fortaleza:'El juego es divertido y bien pensado.',mejora:'Subir el código a GitHub con commits frecuentes.',percepcion:'',destacado:false},
+  s6:{a:{...allA('si'),a4:'parcial',a7:'no'},b:{b1:2,b2:2},fortaleza:'El juego es divertido y bien pensado.',mejora:'Subir el código a GitHub con commits frecuentes.',percepcion:'',destacado:false}
+};
+const DAYS=['2026-11-12','2026-11-13','2026-11-14','2026-11-15','2026-11-16','2026-11-17','2026-11-18','2026-11-19','2026-11-20','2026-11-21'];
+const TODAY='2026-11-12';
+const WD=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const fmtFecha=iso=>{const d=new Date(iso+'T12:00:00');return WD[d.getDay()]+', '+d.getDate()+' de noviembre';};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const first=n=>n.split(' ')[0];
+const pct=x=>x==null?'—':Math.round(x*100)+'%';
+const fmt1=x=>x==null?'—':x.toFixed(1).replace('.',',');
+function calc(ev){
+  if(!ev)return {res:'Pendiente',a:null,b:null,nb:0};
+  if(ev.noPresento)return {res:'No se presentó',a:null,b:null,nb:0};
+  const a=ev.a||{},b=ev.b||{};
+  const aVals=A_ITEMS.map(([k])=>a[k]).filter(Boolean),bVals=B_ITEMS.map(([k])=>b[k]).filter(v=>typeof v==='number');
+  if(!aVals.length&&!bVals.length)return {res:'Pendiente',a:null,b:null,nb:0};
+  const aS=A_ITEMS.reduce((s,[k])=>s+(a[k]==='si'?1:a[k]==='parcial'?.5:0),0)/A_ITEMS.length;
+  const bS=bVals.length?bVals.reduce((s,v)=>s+v,0)/bVals.length:null;
+  let res;if(aVals.length<A_ITEMS.length||bVals.length<MIN_B)res='Incompleto';else if(aS>=CRIT.exA&&bS>=CRIT.exB)res='Excelente';else res='Aprobado';
+  return {res,a:aS,b:bS,nb:bVals.length};
+}
+function draftFor(pk,evals){const p=PK[pk],ids=p.m.map(x=>x[0]),e0=evals[ids[0]]||{},eP=evals[ids[1]]||{};const base=(e0.a&&Object.keys(e0.a).length)?e0.a:(eP.a||{});const ci=(e0.fortaleza||e0.mejora||e0.percepcion)?e0:eP;
+  return {a:{...base},b:Object.fromEntries(ids.map(x=>[x,(evals[x]&&evals[x].noPresento)?{}:{...((evals[x]||{}).b||{})}])),destacado:!!(e0.destacado||eP.destacado),fortaleza:ci.fortaleza||'',mejora:ci.mejora||'',percepcion:ci.percepcion||''};}
+const LY={
+  web:{w:'1280px',h:'800px',radius:'16px',frame:'1px solid #E4DDD6',shadow:'0 24px 60px -24px rgba(0,0,0,.3)',topPad:'14px 20px 0',logo:'52px',brandF:'18px',sofka:'28px',mainPad:'22px 20px 60px',h1:'32px',itemCols:'64px 1fr auto',tagsCol:'auto',tagsJustify:'flex-end',sheetCols:'minmax(0,1fr) 300px',qCols:'1fr auto',sidePos:'sticky',headNameFlex:'0 1 auto',navMl:'auto',navW:'auto',tabPad:'10px 14px 12px',badgeTxt:'Yehiron Bermudez · Mentor'},
+  movil:{w:'390px',h:'844px',radius:'50px',frame:'9px solid #121212',shadow:'0 24px 60px -24px rgba(0,0,0,.35)',topPad:'10px 16px 0',logo:'40px',brandF:'15px',sofka:'20px',mainPad:'18px 16px 40px',h1:'24px',itemCols:'52px 1fr',tagsCol:'2',tagsJustify:'flex-start',sheetCols:'1fr',qCols:'1fr',sidePos:'static',headNameFlex:'1 1 200px',navMl:'0',navW:'100%',tabPad:'8px 10px 10px',badgeTxt:'Mentor'},
+  embed:{w:'100%',h:'100%',radius:'0',frame:'0',shadow:'none',topPad:'14px 20px 0',logo:'52px',brandF:'18px',sofka:'28px',mainPad:'22px 20px 60px',h1:'32px',itemCols:'64px 1fr auto',tagsCol:'auto',tagsJustify:'flex-end',sheetCols:'minmax(0,1fr) 300px',qCols:'1fr auto',sidePos:'sticky',headNameFlex:'0 1 auto'}
+};
+function initFor(start,openKey){
+  const evals=JSON.parse(JSON.stringify(EV0));
+  const b={logged:true,login:1,email:'yehiron12@gmail.com',code:'',err1:'',err2:'',busy:false,evals,mon:{},fdate:TODAY,q:'',fstate:'',open:null,draft:null,dirty:false,confirm:null,toast:'',tStart:null,tPaused:null,running:false,now:Date.now(),saving:false};
+  if(openKey&&PK[openKey])return {...b,open:openKey,draft:draftFor(openKey,evals)};
+  const m={
+    login:{logged:false,email:''},
+    codigo:{logged:false,login:2},
+    lista:{},
+    evaluar:{open:'jue12-975',draft:{...draftFor('jue12-975',evals),a:{a1:'si',a2:'si',a3:'parcial',a4:'si',a5:'si',a6:'si'},b:{s7:{b1:3},s8:{b1:2}}},dirty:true,tStart:Date.now()-440000,running:true},
+    individual:{open:'jue12-990',draft:draftFor('jue12-990',evals)},
+    incompleto:{open:'jue12-975',draft:{...draftFor('jue12-975',evals),a:{a1:'si',a2:'si',a3:'parcial'},b:{s7:{b1:3},s8:{}}},dirty:true,confirm:{msg:'Para guardar, completa:\n• Parte A: 4 puntos sin marcar.\n• Parte B de Daniela: solo 1 tema calificado (mínimo 2).\n• Parte B de Óscar: ningún tema calificado (mínimo 2).',yes:'Entendido',cancel:false,act:null}},
+    noShow:{open:'jue12-1005',draft:draftFor('jue12-1005',evals),confirm:{msg:'¿Marcar a Harold Cuero como «No se presentó»?',yes:'Sí, no se presentó',cancel:true,act:{type:'ns',id:'s11'}}},
+    guardado:{open:'jue12-495',draft:draftFor('jue12-495',evals),toast:'Evaluación de la pareja guardada'}
+  };
+  return {...b,...(m[start]||{})};
+}
+
+class Component extends DCLogic {
+  state=initFor((this.props||{}).start,(this.props||{}).openKey);
+  componentDidMount(){this.iv=setInterval(()=>{if(this.state.running&&this.state.open)this.setState({now:Date.now()});},1000);}
+  componentWillUnmount(){clearInterval(this.iv);clearTimeout(this.tt);clearTimeout(this.tl);}
+  componentDidUpdate(pp){if(pp.start!==this.props.start||pp.openKey!==this.props.openKey)this.setState(initFor(this.props.start,this.props.openKey));}
+  showToast(t){clearTimeout(this.tt);this.setState({toast:t});this.tt=setTimeout(()=>this.setState({toast:''}),2200);}
+  ask(msg,yes,act,cancel=true){this.setState({confirm:{msg,yes,act,cancel}});}
+  ppl(){return this.state.open?PK[this.state.open].m.map(x=>x[0]):[];}
+  isNS(x){return !!(this.state.evals[x]&&this.state.evals[x].noPresento);}
+  hasB(x){return Object.keys((this.state.draft&&this.state.draft.b[x])||{}).length>0;}
+  calcFor(x){const d=this.state.draft;return this.isNS(x)&&!this.hasB(x)?calc({noPresento:true}):calc({a:d.a,b:d.b[x]});}
+  missing(){const d=this.state.draft,out=[],ppl=this.ppl(),aMiss=A_ITEMS.filter(([k])=>!d.a[k]).length;
+    if(aMiss)out.push('• Parte A: '+aMiss+(aMiss===1?' punto sin marcar.':' puntos sin marcar.'));
+    for(const x of ppl){if(this.isNS(x)&&!this.hasB(x))continue;const n=Object.keys(d.b[x]||{}).length;if(n<MIN_B)out.push('• Parte B'+(ppl.length>1?' de '+first(SP[x].nombre):'')+': '+(n?'solo '+n+' tema calificado':'ningún tema calificado')+' (mínimo '+MIN_B+').');}
+    return out;}
+  save=()=>{
+    const miss=this.missing();if(miss.length)return this.ask('Para guardar, completa:\n'+miss.join('\n'),'Entendido',null,false);
+    const d=this.state.draft,ppl=this.ppl(),ev={...this.state.evals};
+    for(const x of ppl){if(this.isNS(x)&&!this.hasB(x))continue;ev[x]={a:{...d.a},b:{...d.b[x]},destacado:d.destacado,fortaleza:d.fortaleza.trim(),mejora:d.mejora.trim(),percepcion:d.percepcion.trim(),noPresento:false,updatedAt:new Date().toISOString()};}
+    this.setState({evals:ev,dirty:false,saving:true});setTimeout(()=>this.setState({saving:false}),400);
+    this.showToast(ppl.length>1?'Evaluación de la pareja guardada':'Evaluación guardada');
+  };
+  doClose(){const direct=this.state.open&&this.state.open===this.props.openKey;this.setState({open:null,draft:null,dirty:false,confirm:null,running:false,tStart:null,tPaused:null});if(direct&&this.props.onClose)this.props.onClose();}
+  closeSheet=()=>{if(this.state.dirty)return this.ask('Tienes cambios sin guardar. ¿Salir de todas formas?','Salir sin guardar',{type:'close'});this.doClose();};
+  noShow(x){const st=SP[x],prev=this.state.evals[x],graded=calc(prev).res!=='Pendiente'||this.hasB(x);this.ask(graded?st.nombre+' ya tiene calificaciones. ¿Marcarlo como «No se presentó» de todas formas?':'¿Marcar a '+st.nombre+' como «No se presentó»?','Sí, no se presentó',{type:'ns',id:x});}
+  applyNS(x){const ev={...this.state.evals,[x]:{...(this.state.evals[x]||{}),b:{},noPresento:true,noPresentoAt:new Date().toISOString()}};const d={...this.state.draft,b:{...this.state.draft.b,[x]:{}}};
+    this.setState({evals:ev,draft:d,confirm:null},()=>{this.showToast(first(SP[x].nombre)+': no se presentó');if(this.ppl().every(y=>this.isNS(y))){this.setState({dirty:false});this.doClose();}});}
+  undoNS(x){this.setState(s=>({evals:{...s.evals,[x]:{...(s.evals[x]||{}),noPresento:false}}}));this.showToast('Listo, ya puedes calificarlo');}
+  cYes=()=>{const c=this.state.confirm;if(!c||!c.act)return this.setState({confirm:null});if(c.act.type==='close')return this.doClose();if(c.act.type==='ns')return this.applyNS(c.act.id);this.setState({confirm:null});};
+  setD(patch){this.setState(s=>({draft:{...s.draft,...patch},dirty:true}));}
+  openEval(pk){this.setState(s=>({open:pk,draft:draftFor(pk,s.evals),dirty:false,tStart:null,tPaused:null,running:false}));}
+  timerBtn=()=>{const s=this.state;if(s.running)return this.setState({running:false,tPaused:Date.now()});if(!s.tStart)return this.setState({tStart:Date.now(),running:true,now:Date.now()});this.setState({tStart:s.tStart+(Date.now()-s.tPaused),tPaused:null,running:true,now:Date.now()});};
+  sendCode=()=>{const e=this.state.email.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return this.setState({err1:'Escribe un correo válido.'});this.setState({busy:true,err1:'Enviando código…'});clearTimeout(this.tl);this.tl=setTimeout(()=>this.setState({busy:false,err1:'',login:2,code:'',err2:''}),900);};
+  enter=()=>{const c=this.state.code.replace(/\D/g,'');if(c.length!==6)return this.setState({err2:'El código tiene 6 números.'});this.setState({busy:true,err2:'Verificando…'});clearTimeout(this.tl);this.tl=setTimeout(()=>{if(c==='000000')return this.setState({busy:false,err2:'El código no es correcto o ya venció.'});this.setState({busy:false,err2:'',logged:true});},900);};
+  renderVals(){
+    const s=this.state,embed=!!this.props.embed,base=this.props.modo==='movil'?'movil':'web',modo=embed?'embed':base,ly=embed?{...LY[base],w:'100%',h:'100%',radius:'0',frame:'0',shadow:'none'}:LY[base];
+    const evals=s.evals,all=Object.values(SP);
+    const done=all.filter(x=>calc(evals[x.id]).res!=='Pendiente').length,ns=all.filter(x=>evals[x.id]&&evals[x.id].noPresento).length;
+    const q=s.q.trim().toLowerCase();
+    const projs=P.filter(p=>{if(s.fdate&&p.fecha!==s.fdate)return false;const txt=(p.m.map(x=>x[1]+' '+x[2]).join(' ')+' '+p.emp).toLowerCase();if(q&&!txt.includes(q))return false;
+      const rs=p.m.map(x=>calc(evals[x[0]]).res);
+      if(s.fstate==='Pendiente'&&!rs.includes('Pendiente'))return false;
+      if(s.fstate==='hechos'&&!rs.some(r=>r!=='Pendiente'&&r!=='No se presentó'))return false;
+      if(s.fstate==='noShow'&&!rs.includes('No se presentó'))return false;
+      if(s.fstate==='gestionar'&&!p.m.some(x=>calc(evals[x[0]]).res==='No se presentó'&&!(s.mon[x[0]]&&s.mon[x[0]].motivo)))return false;
+      return true;}).sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.min-b.min);
+    const rows=[];let last=null;
+    projs.forEach(p=>{if(p.fecha!==last){last=p.fecha;const t=p.fecha===TODAY;rows.push({isDay:true,isItem:false,label:(t?'Hoy, ':'')+(t?fmtFecha(p.fecha):cap(fmtFecha(p.fecha))),dayBg:t?'#EA7307':'#ECECEC',dayFg:t?'#1B1200':'#121212',bt:rows.length?'1px solid #DCDCDC':'0'});}
+      const pair=p.m.length>1,tags=[];
+      p.m.forEach(x=>{const r=calc(evals[x[0]]).res;tags.push({text:(pair?first(x[1])+': ':'')+r,bg:CHIP[r][0],fg:CHIP[r][1]});});
+      if(p.m.some(x=>evals[x[0]]&&evals[x[0]].destacado))tags.push({text:'Destacado',bg:'#EA7307',fg:'#1B1200'});
+      p.m.forEach(x=>{if(calc(evals[x[0]]).res!=='No se presentó')return;const mo=s.mon[x[0]]&&s.mon[x[0]].motivo;tags.push({text:(pair?first(x[1])+': ':'')+(mo?'Motivo: '+mo:'Sin motivo'),bg:mo?'#ECECEC':'#FFF1C9',fg:mo?'#5E5E5E':'#8A5A00'});});
+      rows.push({isDay:false,isItem:true,hora:p.hora.replace(' a. m.','').replace(' p. m.',''),names:p.m.map(x=>x[1]).join(' y '),sub:[p.emp,'Ruta '+p.ruta.toLowerCase(),p.ciudad,pair?'En pareja':null].filter(Boolean).join(' · ')+' · '+p.hora,tags,open:()=>this.openEval(p.pk)});});
+    const vals={
+      ly,showBrowser:modo==='web',canExit:!!this.props.onClose,exit:()=>this.props.onClose&&this.props.onClose(),showStatus:modo==='movil',logged:s.logged,badge:'Yehiron Bermudez · Mentor',
+      logout:()=>this.setState({logged:false,login:1,email:'',code:'',err1:'',err2:''}),
+      helloTitle:s.logged?'Hola, Yehiron':'¿Quién evalúa hoy?',helloSub:s.logged?'Estos son tus estudiantes de la jornada.':'Entra con tu correo para ver tus estudiantes.',
+      prog:{count:(done-ns)+' evaluados · '+(ns?ns+' no se presentaron · ':'')+(all.length-done)+' pendientes de '+all.length,pct:Math.round(done/all.length*100)+'%',w:(done/all.length*100).toFixed(1)+'%'},
+      fdate:s.fdate,onDate:e=>this.setState({fdate:e.target.value}),dateOpts:[{v:'',l:'Todas las fechas'},...DAYS.map(d=>({v:d,l:(d===TODAY?'Hoy, ':'')+fmtFecha(d)}))],
+      q:s.q,onQ:e=>this.setState({q:e.target.value}),fstate:s.fstate,onState:e=>this.setState({fstate:e.target.value}),
+      rows,noRows:projs.length===0,
+      showLogin:!s.logged,loginStep1:s.login===1,loginStep2:s.login===2,email:s.email,code:s.code,err1:s.err1,err2:s.err2,busy:s.busy,
+      onEmail:e=>this.setState({email:e.target.value}),emailKey:e=>{if(e.key==='Enter')this.sendCode();},sendCode:this.sendCode,
+      onCode:e=>this.setState({code:e.target.value}),codeKey:e=>{if(e.key==='Enter')this.enter();},enter:this.enter,backEmail:()=>this.setState({login:1,err1:''}),resend:()=>{this.sendCode();},
+      confirm:s.confirm,cYes:this.cYes,cNo:()=>this.setState({confirm:null}),toast:s.toast,
+      sheetOpen:!!s.open
+    };
+    if(s.open&&s.draft){
+      const p=PK[s.open],ppl=this.ppl(),pair=ppl.length>1,d=s.draft;
+      const sec=s.tStart?Math.floor(((s.running?s.now:(s.tPaused||s.now))-s.tStart)/1000):0,left=Math.max(0,900-sec);
+      let ph='Listo para empezar',hint='Inicia cuando el estudiante empiece';
+      if(s.tStart){if(sec<360){ph='Demo';hint='Parte A · hasta el minuto 6';}else if(sec<720){ph='Preguntas';hint='Parte B · hasta el minuto 12';}else if(sec<900){ph='Cierre';hint='Escribe fortaleza y mejora';}else{ph='Tiempo cumplido';hint='Guarda y envía el correo';}}
+      Object.assign(vals,{
+        tm:{clock:String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0'),deg:(Math.min(1,sec/900)*360).toFixed(1)+'deg',phase:ph,hint,btn:s.running?'Pausar':(s.tStart?'Reanudar':'Iniciar')},
+        timerBtn:this.timerBtn,closeSheet:this.closeSheet,
+        sh:{name:p.m.map(x=>x[1]).join(' y '),meta:[fmtFecha(p.fecha)+', '+p.hora,p.emp,p.ciudad,'Ruta '+p.ruta.toLowerCase(),pair?'Proyecto en pareja':null].filter(Boolean).join(' · '),docs:p.m.map(x=>(pair?x[1]+': ':'')+'Doc. '+x[2]).join('   ·   '),desc:p.desc,
+          hintA:pair?'Minutos 0 a 6. Recorren juntos la app publicada. Esta parte cuenta igual para los dos.':'Minutos 0 a 6. El estudiante recorre su app publicada; tú marcas mientras observas.',
+          hintB:pair?'Minutos 6 a 12. Reparte las preguntas entre los dos y califica a cada uno: el conocimiento es individual. Si los dos saben lo mismo, márcales el mismo nivel. Califica mínimo 2 temas por persona.':'Minutos 6 a 12. Pide que te muestre el código. Con 2 o 3 temas basta; los que no preguntes déjalos sin marcar.',
+          nsList:ppl.some(x=>this.isNS(x)),nsItems:ppl.filter(x=>this.isNS(x)).map(x=>({text:SP[x].nombre+' está marcado como «No se presentó».',undo:()=>this.undoNS(x)}))},
+        partA:A_ITEMS.map(([k,t,dd],i)=>({t,d:dd,bt:i?'1px solid #DCDCDC':'0',opts:[['si','Sí','#1E7B34'],['parcial','Parcial','#C98A0B'],['no','No','#B42318']].map(([v,l,c])=>{const on=d.a[k]===v;return {l,pressed:String(on),bg:on?c:'transparent',fg:on?'#fff':'#5E5E5E',on:()=>{const a={...d.a};if(on)delete a[k];else a[k]=v;this.setD({a});}};})})),
+        partB:B_ITEMS.map(([k,t,dd],i)=>({t,d:dd,bt:i?'1px solid #DCDCDC':'0',people:ppl.map(x=>{const nsx=this.isNS(x)&&!this.hasB(x);return {name:first(SP[x].nombre),showName:pair,justify:pair?'space-between':'flex-end',ns:nsx,canRate:!nsx,opts:[0,1,2,3,4].map(v=>{const on=(d.b[x]||{})[k]===v;return {l:String(v),pressed:String(on),bg:on?'#121212':'transparent',fg:on?'#fff':'#5E5E5E',on:()=>{const bx={...(d.b[x]||{})};if(on)delete bx[k];else bx[k]=v;this.setD({b:{...d.b,[x]:bx}});}};})};})})),
+        dr:d,onFort:e=>this.setD({fortaleza:e.target.value}),onMej:e=>this.setD({mejora:e.target.value}),onPerc:e=>this.setD({percepcion:e.target.value}),onDest:e=>this.setD({destacado:e.target.checked}),
+        scores:ppl.map(x=>{const c=this.calcFor(x);return {label:pair?'Resultado de '+first(SP[x].nombre):'Resultado',res:c.res,color:c.res==='Pendiente'?'#5E5E5E':RES_COLOR[c.res],a:pct(c.a),b:c.nb?fmt1(c.b)+' ('+c.nb+' temas)':'—',inc:c.res==='Incompleto'};}),
+        save:this.save,saving:s.saving,saveLabel:pair?'Guardar evaluación de la pareja':'Guardar evaluación',
+        nsBtns:ppl.filter(x=>!this.isNS(x)).map(x=>({label:pair?first(SP[x].nombre)+' no se presentó':'No se presentó',on:()=>this.noShow(x)}))
+      });
+    }
+    return vals;
+  }
+}
+</script>
+</body>
+</html>

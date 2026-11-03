@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"><style>@keyframes spin{to{transform:rotate(360deg)}}a{color:#C9461B}a:hover{color:#9C3210}button{font-family:'Outfit',sans-serif}</style></helmet>
+<div style="width:{{ ly.w }};height:{{ ly.h }};border-radius:{{ ly.radius }};border:{{ ly.frameBorder }};background:#FBF8F5;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'Outfit',sans-serif;color:#1C1A24;box-shadow:0 24px 60px -24px rgba(120,40,10,.35)">
+  <sc-if value="{{ isWeb }}">
+    <div style="height:40px;flex:none;background:#F5F2EF;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #EAE4DE;position:relative;z-index:2"><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><div style="margin-left:16px;height:24px;flex:1;max-width:420px;border-radius:7px;background:#fff;font:500 12px 'JetBrains Mono',monospace;color:#615C6E;display:flex;align-items:center;padding:0 10px">horarios.jovenescreativos.co</div></div>
+    <div style="position:absolute;left:-110px;bottom:-150px;width:360px;height:360px;border-radius:50%;border:60px solid #FFE1D3;box-sizing:border-box"></div>
+    <div style="position:absolute;left:300px;bottom:70px;width:22px;height:22px;border-radius:50%;background:#FFC93C"></div>
+    <div style="position:absolute;left:120px;top:250px;width:16px;height:16px;background:#3E8FD0;border-radius:4px;transform:rotate(20deg)"></div>
+    <div style="position:absolute;right:-60px;top:70px;width:180px;height:180px;border-radius:50%;background:#FFF1EA"></div>
+  </sc-if>
+  <sc-if value="{{ isMovil }}" hint-placeholder-val="{{ true }}">
+    <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:700 14px 'Outfit';position:relative;z-index:2"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><i style="width:16px;height:10px;border-radius:2px;background:#1C1A24;display:block"></i><i style="width:22px;height:11px;border-radius:3px;border:1.5px solid #1C1A24;display:block"></i></span></div>
+    <div style="position:absolute;right:-56px;top:30px;width:150px;height:150px;border-radius:50%;background:#FFF1EA"></div>
+    <div style="position:absolute;right:30px;top:150px;width:12px;height:12px;border-radius:50%;background:#FFC93C"></div>
+    <div style="position:absolute;right:110px;top:150px;width:11px;height:11px;background:#3E8FD0;border-radius:3px;transform:rotate(20deg)"></div>
+  </sc-if>
+
+  <div style="height:{{ ly.headerH }};flex:none;display:flex;align-items:center;justify-content:space-between;padding:{{ ly.headerPad }};position:relative">
+    <img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:{{ ly.logoH }};width:auto;display:block">
+    <sc-if value="{{ isWeb }}"><div style="display:flex;align-items:center;gap:20px;font:600 14px 'Outfit';color:#615C6E"><span>Fundación ROFÉ</span><span style="width:1px;height:18px;background:#E0D9D2"></span><span>¿Problemas? Escríbele a tu monitor</span></div></sc-if>
+    <sc-if value="{{ mobBack }}"><button onClick="{{ goBack }}" style="border:0;background:#F0EBE6;border-radius:12px;height:40px;padding:0 14px;font:600 14px 'Outfit';color:#1C1A24;display:flex;align-items:center;gap:6px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Atrás</button></sc-if>
+    <sc-if value="{{ mobRofe }}"><span style="font:600 13px 'Outfit';color:#615C6E">Fundación ROFÉ</span></sc-if>
+  </div>
+  <sc-if value="{{ mobProgress }}">
+    <div style="display:flex;gap:6px;padding:8px 22px 0;flex:none;position:relative"><sc-for list="{{ progress }}" as="p" hint-placeholder-count="4"><div style="flex:1;height:5px;border-radius:3px;background:{{ p.bg }}"></div></sc-for></div>
+  </sc-if>
+
+  <div style="flex:1;min-height:0;display:{{ ly.bodyDisp }};flex-direction:column;grid-template-columns:{{ ly.cols }};gap:{{ ly.gap }};align-items:{{ ly.align }};padding:{{ ly.bodyPad }};position:relative">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;flex:none;padding:{{ ly.headPad }}">
+      <sc-if value="{{ webBack }}"><button onClick="{{ goBack }}" style="border:0;background:#F0EBE6;border-radius:12px;height:40px;padding:0 16px;font:600 15px 'Outfit';color:#1C1A24;margin-bottom:28px;cursor:pointer;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Atrás</button></sc-if>
+      <sc-if value="{{ webProgress }}">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px"><div style="display:flex;gap:6px;width:160px"><sc-for list="{{ progress }}" as="p"><div style="flex:1;height:6px;border-radius:3px;background:{{ p.bg }}"></div></sc-for></div><span style="font:600 13px 'JetBrains Mono',monospace;color:#615C6E">{{ stepLabel }}</span></div>
+      </sc-if>
+      <div style="font:600 {{ ly.kickerF }} 'JetBrains Mono',monospace;color:{{ kickerColor }};letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">{{ kicker }}</div>
+      <h1 style="margin:0;font:800 {{ ly.h1 }} 'Outfit';letter-spacing:-.03em;text-wrap:balance;max-width:560px">{{ title }}</h1>
+      <sc-if value="{{ sub }}"><p style="margin:12px 0 0;font:500 {{ ly.subF }} 'Outfit';color:#615C6E;max-width:{{ ly.subMax }};text-wrap:pretty">{{ sub }}</p></sc-if>
+    </div>
+
+    <div style="background:{{ ly.cardBg }};border-radius:28px;padding:{{ ly.cardPad }};border:{{ ly.cardBorder }};box-shadow:{{ ly.cardShadow }};display:flex;flex-direction:column;min-height:0;flex:{{ ly.cardFlex }};max-height:{{ ly.cardMax }};box-sizing:border-box">
+      <sc-if value="{{ justTakenOn }}">
+        <div style="flex:none;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:#FCE6E8;color:#9E2230;font:600 15px/1.4 'Outfit'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.5"></path></svg><span><b>Esa hora se acaba de ocupar, elige otra.</b> Alguien la confirmó segundos antes que tú.</span></div>
+      </sc-if>
+
+      <div ref="{{ scrollRef }}" style="flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;position:relative">
+
+        <sc-if value="{{ isIngreso }}" hint-placeholder-val="{{ true }}">
+          <label style="font:700 16px 'Outfit';display:block">Número de documento</label>
+          <input value="{{ doc }}" onChange="{{ onDoc }}" onKeyDown="{{ docKey }}" inputMode="numeric" placeholder="Sin puntos ni espacios" style="height:62px;border:2px solid {{ docBorder }};border-radius:18px;padding:0 20px;font:700 22px 'Outfit';letter-spacing:.04em;color:#1C1A24;width:100%;box-sizing:border-box;background:#fff;outline:none;flex:none">
+          <sc-if value="{{ docErr }}"><div style="display:flex;gap:8px;align-items:center;font:600 15px 'Outfit';color:#C2303D"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.5"></path></svg>{{ docErr }}</div></sc-if>
+        </sc-if>
+
+        <sc-if value="{{ isAntes }}">
+          <div style="border-radius:22px;background:{{ ly.panel }};border:1px solid #F0EBE6;padding:20px;display:flex;gap:16px;align-items:center">
+            <div style="flex:none;width:64px;height:68px;border-radius:18px;background:#F25C2A;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em">LUN</span><span style="font:800 28px/1 'Outfit'">9</span></div>
+            <div><div style="font:800 19px 'Outfit'">Abrimos el 9 de noviembre</div><div style="font:500 15px/1.45 'Outfit';color:#615C6E;margin-top:2px">8:00 a. m. · Hora COL</div></div>
+          </div>
+          <div style="border-radius:18px;background:#FFF7DC;padding:14px 16px;font:500 14.5px/1.45 'Outfit';color:#5A4300">Cuando abra, entra con tu documento. Las horas se asignan por orden de llegada.</div>
+        </sc-if>
+
+        <sc-if value="{{ isCerrado }}">
+          <div style="border-radius:22px;background:{{ ly.panel }};border:1px solid #F0EBE6;padding:20px;display:flex;gap:16px;align-items:center">
+            <div style="flex:none;width:64px;height:64px;border-radius:20px;background:#F5F2EF;color:#615C6E;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg></div>
+            <div><div style="font:800 19px 'Outfit'">Cerró el 11 de noviembre</div><div style="font:500 15px/1.45 'Outfit';color:#615C6E;margin-top:2px">11:59 p. m. · Hora COL</div></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLoading }}">
+          <div style="flex:1;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+            <div style="width:52px;height:52px;border-radius:50%;border:5px solid #FFE6DC;border-top-color:#F25C2A;animation:spin .8s linear infinite;box-sizing:border-box"></div>
+            <div style="font:700 18px 'Outfit'">{{ loadingText }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isNoEncontrado }}">
+          <div style="width:64px;height:64px;border-radius:22px;background:#FCE6E8;color:#C2303D;display:flex;align-items:center;justify-content:center;flex:none"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg></div>
+          <div style="font:600 14px 'Outfit';color:#615C6E;margin-top:6px">Número que escribiste</div>
+          <div style="border-radius:16px;background:{{ ly.panel }};border:1px solid #F0EBE6;padding:16px 18px;font:700 22px 'Outfit';letter-spacing:.04em">{{ doc }}</div>
+        </sc-if>
+
+        <sc-if value="{{ isDatos }}">
+          <div style="border-radius:22px;background:{{ ly.panel }};border:1px solid #F0EBE6;padding:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#8A8496">TÚ</span><span style="display:flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:#FFF1EA;color:#C9461B;font:700 13px 'Outfit'"><i style="width:7px;height:7px;border-radius:50%;background:#F25C2A;display:block"></i>{{ city }}</span></div>
+            <div style="font:800 22px/1.15 'Outfit';letter-spacing:-.015em;margin:8px 0 14px">{{ me.name }}</div>
+            <div style="display:grid;gap:10px">
+              <sc-for list="{{ meRows }}" as="r" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;gap:12px;font:500 14px 'Outfit';color:#615C6E"><span>{{ r.k }}</span><span style="font:600 15px 'Outfit';color:#1C1A24;text-align:right;word-break:break-all">{{ r.v }}</span></div></sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ hasPartner }}">
+            <div style="border-radius:22px;background:{{ ly.panel }};border:1px solid #F0EBE6;padding:16px 18px">
+              <span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:#F0EBE6;color:#615C6E;font:700 12.5px 'Outfit'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg>Tu pareja (no se puede cambiar)</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:10px"><span style="font:800 18px 'Outfit'">{{ partner.name }}</span><span style="font:600 14px 'Outfit';color:#615C6E;flex:none">{{ partnerDoc }}</span></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isSolo }}"><div style="font:600 14px 'Outfit';color:#615C6E;padding:0 4px">Proyecto individual</div></sc-if>
+          <div style="border-radius:22px;background:#FFF1EA;padding:18px 18px 18px;position:relative;overflow:hidden;flex:none">
+            <div style="position:absolute;right:-34px;top:-34px;width:104px;height:104px;border-radius:50%;border:18px solid #F25C2A;box-sizing:border-box;opacity:.9"></div>
+            <div style="position:relative;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#C9461B">TU PROYECTO</div>
+            <div style="position:relative;font:800 20px/1.2 'Outfit';margin:6px 0 6px;padding-right:60px;text-wrap:balance">{{ proj.name }}</div>
+            <div style="position:relative;font:500 14.5px/1.45 'Outfit';color:#7A3A20;text-wrap:pretty">{{ proj.desc }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isDia }}">
+          <sc-for list="{{ days }}" as="d" hint-placeholder-count="2">
+            <button onClick="{{ d.pick }}" disabled="{{ d.disabled }}" style="flex:none;height:86px;border-radius:22px;border:2px solid #F0EBE6;background:{{ d.bg }};display:flex;align-items:center;gap:14px;padding:0 16px;text-align:left;opacity:{{ d.op }};cursor:{{ d.cursor }};color:#1C1A24" style-hover="border-color:#F7B59C">
+              <span style="flex:none;width:54px;height:56px;border-radius:16px;background:{{ d.tileBg }};color:{{ d.tileC }};display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em">{{ d.short }}</span><span style="font:800 23px/1 'Outfit'">{{ d.num }}</span></span>
+              <span style="flex:1;min-width:0"><span style="display:block;font:800 19px 'Outfit'">{{ d.wd }}</span><span style="display:block;font:500 14.5px 'Outfit';color:#615C6E">{{ d.date }}</span></span>
+              <span style="flex:none;display:flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:{{ d.pillBg }};color:{{ d.pillC }};font:700 13px 'Outfit'"><i style="width:7px;height:7px;border-radius:50%;background:{{ d.dot }};display:block"></i>{{ d.status }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ sinHoras }}">
+            <div style="display:flex;gap:12px;padding:16px;border-radius:18px;background:#FCE6E8;color:#9E2230;font:500 15px/1.45 'Outfit'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.5"></path></svg><span><b>Ya no quedan horas en tu día.</b> Escríbele a tu monitor para que te ayude a encontrar un espacio.</span></div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ isHora }}">
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+            <div style="flex:none">
+              <div style="display:flex;align-items:baseline;gap:8px;margin:4px 0 10px"><span style="font:800 17px 'Outfit'">{{ g.name }}</span><span style="font:600 12px 'JetBrains Mono',monospace;color:#8A8496;text-transform:uppercase;letter-spacing:.04em">{{ g.suf }}</span></div>
+              <div style="display:grid;grid-template-columns:{{ ly.timeCols }};gap:8px">
+                <sc-for list="{{ g.slots }}" as="s" hint-placeholder-count="4">
+                  <button data-k="{{ s.k }}" onClick="{{ s.pick }}" disabled="{{ s.disabled }}" style="height:58px;border-radius:16px;border:2px solid {{ s.border }};background:{{ s.bg }};color:{{ s.color }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:{{ s.cursor }};padding:0">
+                    <span style="font:800 19px/1 'Outfit';text-decoration:{{ s.deco }}">{{ s.label }}</span>
+                    <sc-if value="{{ s.note }}"><span style="font:600 9.5px 'JetBrains Mono',monospace;letter-spacing:.03em;text-transform:uppercase;color:{{ s.noteC }}">{{ s.note }}</span></sc-if>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <sc-if value="{{ isConfirmar }}">
+          <div style="border-radius:24px;background:#FFF1EA;padding:22px 20px;position:relative;overflow:hidden;flex:none">
+            <div style="position:absolute;right:-36px;top:-36px;width:116px;height:116px;border-radius:50%;border:20px solid #F25C2A;box-sizing:border-box;opacity:.9"></div>
+            <div style="position:relative;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#C9461B">TU PRESENTACIÓN</div>
+            <div style="position:relative;font:800 20px 'Outfit';margin-top:10px">{{ dayLong }}</div>
+            <div style="position:relative;font:800 46px/1 'Outfit';letter-spacing:-.03em;margin:6px 0 12px">{{ timeFull }}</div>
+            <span style="position:relative;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:#fff;font:700 13.5px 'Outfit';color:#7A3A20">15 minutos · Hora COL</span>
+          </div>
+          <div style="border-radius:22px;background:{{ ly.panel }};border:1px solid #F0EBE6;padding:16px 18px;display:grid;gap:8px">
+            <div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#8A8496">INTEGRANTES</div>
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="2"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font:700 16.5px 'Outfit'">{{ m.name }}</span><sc-if value="{{ m.isMe }}"><span style="font:700 12px 'Outfit';color:#C9461B;background:#FFF1EA;border-radius:999px;padding:4px 10px">Tú</span></sc-if></div></sc-for>
+            <div style="font:500 14px 'Outfit';color:#615C6E;padding-top:8px;border-top:1.5px dashed #EDE4DC">{{ proj.name }}</div>
+          </div>
+          <div style="display:flex;gap:12px;padding:14px 16px;border-radius:16px;background:#FFF7DC;font:500 14.5px/1.45 'Outfit';color:#5A4300"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><rect x="5" y="11" width="14" height="9" rx="2.5"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg><span>Una vez confirmes, solo tu monitor puede cambiarla.</span></div>
+        </sc-if>
+
+        <sc-if value="{{ showTicket }}">
+          <div style="position:relative;padding:6px 4px 4px;flex:none">
+            <sc-if value="{{ isExito }}"><div style="position:absolute;left:-2px;top:-4px;width:18px;height:18px;border-radius:50%;background:#FFC93C;z-index:2"></div><div style="position:absolute;right:6px;top:-6px;width:14px;height:14px;background:#3E8FD0;transform:rotate(20deg);border-radius:4px;z-index:2"></div></sc-if>
+            <div style="border-radius:26px;overflow:hidden;box-shadow:0 18px 40px -24px rgba(120,40,10,.45)">
+              <div style="background:#F25C2A;color:#fff;padding:22px 22px 24px;position:relative;overflow:hidden">
+                <div style="position:absolute;right:-40px;bottom:-60px;width:150px;height:150px;border-radius:50%;border:22px solid rgba(255,255,255,.16);box-sizing:border-box"></div>
+                <div style="position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font:600 11.5px 'JetBrains Mono',monospace;letter-spacing:.08em">{{ ticketDay }}</span><span style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;opacity:.85">HORA COL</span></div>
+                <div style="position:relative;font:800 50px/1 'Outfit';letter-spacing:-.035em;margin:10px 0 6px">{{ timeFull }}</div>
+                <div style="position:relative;font:600 15px 'Outfit';opacity:.92">15 minutos con tu mentor</div>
+              </div>
+              <div style="height:0;position:relative;z-index:2"><i style="position:absolute;left:-13px;top:-13px;width:26px;height:26px;border-radius:50%;background:{{ ly.notch }};display:block"></i><i style="position:absolute;right:-13px;top:-13px;width:26px;height:26px;border-radius:50%;background:{{ ly.notch }};display:block"></i></div>
+              <div style="background:{{ ly.ticketBottom }};border:1px solid #F0EBE6;border-top:2px dashed #F5B79E;border-radius:0 0 26px 26px;padding:18px 22px 20px;display:grid;gap:12px">
+                <div><div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#8A8496">PROYECTO</div><div style="font:800 17.5px/1.25 'Outfit';margin-top:3px">{{ proj.name }}</div></div>
+                <div><div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#8A8496">INTEGRANTES</div><div style="font:600 15.5px/1.4 'Outfit';margin-top:3px">{{ memberNames }}</div></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:10px;padding-top:{{ ctaPad }}">
+        <sc-if value="{{ isIngreso }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ buscar }}" style="height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0;width:100%;cursor:pointer" style-hover="background:#E04E1D">Buscar mi proyecto</button>
+          <div style="font:500 14px/1.45 'Outfit';color:#615C6E;text-align:center">Sirve el documento de cualquiera de los integrantes.</div>
+        </sc-if>
+        <sc-if value="{{ isCerrado }}"><button style="height:58px;border-radius:20px;background:#1C1A24;color:#fff;font:700 17px 'Outfit';border:0;cursor:pointer">Escribirle a mi monitor</button></sc-if>
+        <sc-if value="{{ isNoEncontrado }}">
+          <button onClick="{{ reiniciar }}" style="height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0;cursor:pointer">Intentar con otro número</button>
+          <div style="font:500 14px 'Outfit';color:#615C6E;text-align:center">¿Sigue sin aparecer? <a href="#monitor" style="font-weight:700">Escríbele a tu monitor</a></div>
+        </sc-if>
+        <sc-if value="{{ isDatos }}">
+          <button onClick="{{ irDia }}" style="height:58px;border-radius:20px;background:#1F9D6B;color:#fff;font:700 17px 'Outfit';border:0;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer" style-hover="background:#1A8A5D"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><path d="M7.8 12.4l2.8 2.8 5.6-6"></path></svg>Mis datos están bien, elegir hora</button>
+          <div style="font:500 14px 'Outfit';color:#615C6E;text-align:center"><a href="#monitor" style="font-weight:700">¿Algo está mal? Escríbele a tu monitor</a></div>
+        </sc-if>
+        <sc-if value="{{ sinHoras }}"><button style="height:58px;border-radius:20px;background:#1C1A24;color:#fff;font:700 17px 'Outfit';border:0;cursor:pointer">Escribirle a mi monitor</button></sc-if>
+        <sc-if value="{{ isConfirmar }}">
+          <button onClick="{{ confirmar }}" style="height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0;cursor:pointer" style-hover="background:#E04E1D">Confirmar mi hora</button>
+          <button onClick="{{ goBack }}" style="height:44px;border-radius:16px;background:transparent;color:#615C6E;font:600 15px 'Outfit';border:0;cursor:pointer">Elegir otra hora</button>
+        </sc-if>
+        <sc-if value="{{ showTicket }}">
+          <button onClick="{{ addCal }}" style="height:58px;border-radius:20px;background:{{ calBg }};color:#fff;font:700 17px 'Outfit';border:0;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="3"></rect><path d="M4 10h16"></path><path d="M9 3.5v4"></path><path d="M15 3.5v4"></path></svg>{{ calLabel }}</button>
+          <div style="font:500 14px/1.45 'Outfit';color:#615C6E;text-align:center;text-wrap:pretty">{{ ticketNote }}</div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;movil&quot;,&quot;web&quot;],&quot;default&quot;:&quot;movil&quot;,&quot;tsType&quot;:&quot;'movil'|'web'&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ingreso&quot;,&quot;docErr&quot;,&quot;cargando&quot;,&quot;noEncontrado&quot;,&quot;datos&quot;,&quot;datosSolo&quot;,&quot;dia&quot;,&quot;hora&quot;,&quot;confirmar&quot;,&quot;exito&quot;,&quot;yaTiene&quot;,&quot;choque&quot;,&quot;sinHoras&quot;,&quot;antes&quot;,&quot;cerrado&quot;],&quot;default&quot;:&quot;ingreso&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;periodo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;abierto&quot;,&quot;antes&quot;,&quot;cerrado&quot;],&quot;default&quot;:&quot;abierto&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const DAYS={
+  jue12:{wd:'Jueves',num:'12',short:'JUE',date:'12 de noviembre',seed:3,fill:.45,caps:[1,2,1,2,4,4,7,5,6]},
+  vie13:{wd:'Viernes',num:'13',short:'VIE',date:'13 de noviembre',seed:11,fill:.88,caps:[1,3,2,1,5,4,3,4,5]},
+  mar17:{wd:'Martes',num:'17',short:'MAR',date:'17 de noviembre',seed:5,fill:.5,caps:[1,3,2,3,4,5,4,5,4]},
+  mie18:{wd:'Miércoles',num:'18',short:'MIÉ',date:'18 de noviembre',seed:7,fill:1,caps:[2,3,1,2,3,4,3,5,4]}
+};
+const HOURS=[8,9,10,11,16,17,18,19,20];
+const CITY_DAYS={Cali:['jue12'],Cartagena:['jue12','vie13'],Barranquilla:['mar17','mie18'],'Santa Marta':['mie18']};
+const HOT='jue12-1140';
+const FORCE={'jue12-1095':0,'jue12-1140':-1};
+const GROUPS=[{name:'Mañana',suf:'a. m.',hours:[8,9,10,11]},{name:'Tarde',suf:'p. m.',hours:[16,17]},{name:'Noche',suf:'p. m.',hours:[18,19,20]}];
+const rnd=s=>{const x=Math.sin(s*12.9898)*43758.5453;return x-Math.floor(x);};
+const capOf=(d,min)=>DAYS[d].caps[HOURS.indexOf(Math.floor(min/60))];
+function baseTaken(d,min){const k=d+'-'+min,c=capOf(d,min),D=DAYS[d];if(k in FORCE)return FORCE[k]<0?c-1:FORCE[k];if(D.fill>=1)return c;return Math.max(0,Math.min(c,Math.round(c*D.fill+(rnd(min+D.seed*97)-.5)*c*1.2)));}
+const hm=min=>{const h=Math.floor(min/60),m=String(min%60).padStart(2,'0');return (h>12?h-12:h)+':'+m;};
+const fullT=min=>hm(min)+(min<720?' a. m.':min<780?' m.':' p. m.');
+const PROJ={
+  p1:{city:'Cali',name:'App de reciclaje para el barrio',desc:'Mapa de puntos de reciclaje y recordatorios de recolección para los vecinos de Siloé.',m:[{name:'Valentina Gómez Ríos',first:'Valentina',g:'f',doc:'1144087321',cel:'315 482 7790',email:'valentina.gomezrios@gmail.com'},{name:'Juan Pablo Ortiz',first:'Juan Pablo',g:'m',doc:'1107512908',cel:'301 556 2048',email:'juanpa.ortiz@gmail.com'}]},
+  p2:{city:'Cartagena',name:'Tienda virtual para artesanos',desc:'Catálogo en línea y pedidos por WhatsApp para artesanos de Getsemaní.',m:[{name:'Andrés Pérez',first:'Andrés',g:'m',doc:'1047398562',cel:'300 918 4417',email:'andresperez.ctg@gmail.com'}]},
+  p3:{city:'Barranquilla',name:'Huerta escolar con sensores',desc:'Riego automático con sensores de humedad para la huerta del colegio.',m:[{name:'Mariana Castro Peña',first:'Mariana',g:'f',doc:'1043556120',cel:'304 221 8890',email:'marianacastro.p@gmail.com'},{name:'Juan David Rojas',first:'Juan David',g:'m',doc:'1043556988',cel:'318 774 0213',email:'juandrojas@gmail.com'}]},
+  p4:{city:'Santa Marta',name:'Guía turística por voz',desc:'Recorridos narrados por audio para visitantes de El Rodadero.',m:[{name:'Sofía Herrera Lozano',first:'Sofía',g:'f',doc:'1082991450',cel:'312 650 3381',email:'sofiaherrera.sm@gmail.com'}]}
+};
+const DOCS={};Object.entries(PROJ).forEach(([pid,p])=>p.m.forEach((x,i)=>{DOCS[x.doc]={pid,who:i};}));
+const BOOKED0={p3:{day:'mar17',min:1170,by:1}};
+const mask=d=>'•••• '+String(d).slice(-4);
+const PSTEP={datos:1,dia:2,hora:3,confirmar:4};
+const BACK={datos:'ingreso',dia:'datos',hora:'dia',confirmar:'hora',noEncontrado:'ingreso'};
+const LY={
+  movil:{w:'390px',h:'844px',radius:'50px',frameBorder:'9px solid #1C1A24',headerH:'54px',headerPad:'4px 22px 0',logoH:'44px',bodyDisp:'flex',cols:'none',gap:'0',align:'stretch',bodyPad:'0 22px 22px',headPad:'18px 0 18px',kickerF:'12px',h1:'30px/1.08',subF:'16px/1.45',subMax:'none',cardBg:'transparent',cardPad:'0',cardBorder:'0',cardShadow:'none',cardFlex:'1',cardMax:'none',panel:'#fff',notch:'#FBF8F5',ticketBottom:'#fff',timeCols:'repeat(3,minmax(0,1fr))'},
+  web:{w:'1280px',h:'800px',radius:'16px',frameBorder:'1px solid #E4DDD6',headerH:'84px',headerPad:'0 56px',logoH:'58px',bodyDisp:'grid',cols:'minmax(0,1fr) 500px',gap:'80px',align:'center',bodyPad:'0 96px 56px',headPad:'0',kickerF:'13px',h1:'52px/1.04',subF:'19px/1.5',subMax:'470px',cardBg:'#fff',cardPad:'32px',cardBorder:'1px solid #F0EBE6',cardShadow:'0 30px 60px -30px rgba(120,40,10,.28)',cardFlex:'0 1 auto',cardMax:'612px',panel:'#FBF8F5',notch:'#fff',ticketBottom:'#FBF8F5',timeCols:'repeat(4,minmax(0,1fr))'}
+};
+function initFor(start){
+  const b={step:'ingreso',doc:'',docErr:'',pid:null,who:0,day:null,min:null,extra:{},justTaken:null,raced:false,booked:{...BOOKED0},loadingText:'',calAdded:false,periodo:null};
+  const V={pid:'p1',who:0,doc:'1144087321'};
+  const m={
+    docErr:{doc:'11.440.873',docErr:'Escribe solo números, sin puntos ni espacios'},
+    cargando:{step:'loading',doc:V.doc,loadingText:'Buscando tu proyecto…'},
+    noEncontrado:{step:'noEncontrado',doc:'1144089999'},
+    datos:{...V,step:'datos'},
+    datosSolo:{pid:'p2',who:0,doc:'1047398562',step:'datos'},
+    dia:{pid:'p2',who:0,doc:'1047398562',step:'dia'},
+    hora:{...V,step:'hora',day:'jue12'},
+    confirmar:{...V,step:'confirmar',day:'jue12',min:1095},
+    exito:{...V,step:'exito',day:'jue12',min:1095,booked:{...BOOKED0,p1:{day:'jue12',min:1095,by:0}}},
+    yaTiene:{pid:'p3',who:0,doc:'1043556120',step:'yaTiene',day:'mar17',min:1170},
+    choque:{...V,step:'hora',day:'jue12',extra:{[HOT]:1},justTaken:HOT,raced:true},
+    sinHoras:{pid:'p4',who:0,doc:'1082991450',step:'dia'},
+    antes:{periodo:'antes'},
+    cerrado:{periodo:'cerrado'}
+  };
+  return {...b,...(m[start]||{})};
+}
+
+class Component extends DCLogic {
+  state=initFor((this.props||{}).start);
+  scrollRef=React.createRef();
+  componentDidMount(){this.mt=setTimeout(()=>this.toJust(),350);}
+  componentWillUnmount(){clearTimeout(this.t);clearTimeout(this.mt);}
+  componentDidUpdate(pp,ps){
+    if(pp.start!==this.props.start){this.setState(initFor(this.props.start));return;}
+    const c=this.scrollRef.current;
+    if(c&&(ps.step!==this.state.step||ps.day!==this.state.day)){c.scrollTop=0;}
+    if(this.state.justTaken&&ps.justTaken!==this.state.justTaken)setTimeout(()=>this.toJust(),60);
+  }
+  toJust(){const c=this.scrollRef.current;if(!c||!this.state.justTaken)return;const el=c.querySelector('[data-k="'+this.state.justTaken+'"]');if(el)c.scrollTop=Math.max(0,el.offsetTop-120);}
+  rem(d,min){const k=d+'-'+min;return capOf(d,min)-baseTaken(d,min)-(this.state.extra[k]||0);}
+  buscar=()=>{
+    const d=this.state.doc.trim();
+    if(!d)return this.setState({docErr:'Escribe tu número de documento'});
+    if(!/^\d+$/.test(d))return this.setState({docErr:'Escribe solo números, sin puntos ni espacios'});
+    if(d.length<6)return this.setState({docErr:'El número parece incompleto. Revísalo.'});
+    this.setState({step:'loading',loadingText:'Buscando tu proyecto…',docErr:''});
+    clearTimeout(this.t);
+    this.t=setTimeout(()=>{
+      const f=DOCS[d];
+      if(!f)return this.setState({step:'noEncontrado'});
+      const bk=this.state.booked[f.pid];
+      this.setState({pid:f.pid,who:f.who,step:bk?'yaTiene':'datos',day:bk?bk.day:null,min:bk?bk.min:null,justTaken:null,calAdded:false});
+    },1100);
+  };
+  confirmar=()=>{
+    const {day,min,pid,who}=this.state,k=day+'-'+min;
+    this.setState({step:'loading',loadingText:'Reservando tu hora…'});
+    clearTimeout(this.t);
+    this.t=setTimeout(()=>{
+      if(k===HOT&&!this.state.raced){
+        this.setState(st=>({extra:{...st.extra,[k]:(st.extra[k]||0)+1},raced:true,justTaken:k,step:'hora',min:null}));
+      }else{
+        this.setState(st=>({extra:{...st.extra,[k]:(st.extra[k]||0)+1},booked:{...st.booked,[pid]:{day,min,by:who}},step:'exito',calAdded:false}));
+      }
+    },1300);
+  };
+  addCal=()=>{
+    const {day,min}=this.state,D=DAYS[day],P=PROJ[this.state.pid];
+    const st=new Date(Date.UTC(2026,10,+D.num,0,0)+(min+300)*60000),en=new Date(st.getTime()+15*60000);
+    const f=x=>x.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Fundacion ROFE//JC 2026//ES','BEGIN:VEVENT','UID:'+this.state.pid+'-'+day+'-'+min+'@jovenescreativos.co','DTSTAMP:'+f(new Date()),'DTSTART:'+f(st),'DTEND:'+f(en),'SUMMARY:Presentación proyecto final · Jóvenes creaTIvos','DESCRIPTION:'+P.name+' — el enlace de la sala llegará a tu correo.','END:VEVENT','END:VCALENDAR'].join('\r\n');
+    try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='presentacion-proyecto-final.ics';document.body.appendChild(a);a.click();a.remove();}catch(e){}
+    this.setState({calAdded:true});
+  };
+  renderVals(){
+    const s=this.state,modo=this.props.modo==='web'?'web':'movil',ly=LY[modo],isWeb=modo==='web';
+    const periodo=s.periodo||this.props.periodo||'abierto';
+    let step=s.step;
+    if(step==='ingreso'&&periodo!=='abierto')step=periodo;
+    const P=s.pid?PROJ[s.pid]:null,me=P?P.m[s.who]:null,partner=P&&P.m.length>1?P.m[1-s.who]:null;
+    const days=(P?CITY_DAYS[P.city]:[]).map(id=>{
+      const D=DAYS[id];let cap=0,rem=0;
+      HOURS.forEach((h,i)=>{for(let q=0;q<60;q+=15){cap+=D.caps[i];rem+=Math.max(0,this.rem(id,h*60+q));}});
+      const r=rem/cap,st=rem<=0?'Lleno':r<.3?'Pocos cupos':'Disponible';
+      const C={Disponible:['#E3F5EC','#17734F','#1F9D6B'],'Pocos cupos':['#FFF7DC','#8A5A00','#F2B630'],Lleno:['#F0EBE6','#8A8496','#C9C3CC']}[st];
+      const full=st==='Lleno';
+      return {...D,status:st,pillBg:C[0],pillC:C[1],dot:C[2],disabled:full,op:full?.62:1,cursor:full?'not-allowed':'pointer',bg:full?'#F5F2EF':ly.panel,tileBg:full?'#E7E1DB':'#FFF1EA',tileC:full?'#8A8496':'#C9461B',pick:()=>this.setState({day:id,step:'hora',justTaken:null})};
+    });
+    const sinHoras=step==='dia'&&days.length>0&&days.every(d=>d.disabled);
+    const groups=s.day?GROUPS.map(g=>({name:g.name,suf:g.suf,slots:[].concat(...g.hours.map(h=>[0,15,30,45].map(q=>{
+      const min=h*60+q,k=s.day+'-'+min,rem=this.rem(s.day,min),gone=rem<=0,just=k===s.justTaken,sel=min===s.min&&!gone,cp=capOf(s.day,min),few=!gone&&cp>=3&&rem/cp<=.25;
+      let bg=ly.panel,border='#F0EBE6',color='#1C1A24',deco='none',note='',noteC='#8A5A00';
+      if(sel){bg='#FFF1EA';border='#F25C2A';}
+      if(few)note='Quedan pocos';
+      if(gone){bg='#F3EFEB';border='#F3EFEB';color='#B5AFBA';deco='line-through';}
+      if(just){bg='#FCE6E8';border='#F3B8BF';color='#C2303D';note='Se ocupó';noteC='#C2303D';}
+      return {k,label:hm(min),note,noteC,bg,border,color,deco,disabled:gone,cursor:gone?'not-allowed':'pointer',pick:()=>this.setState({min,step:'confirmar'})};
+    })))})):[];
+    const D=s.day?DAYS[s.day]:null,dayLong=D?D.wd+' '+D.date:'';
+    const bk=P?s.booked[P===null?'':s.pid]:null;
+    const ticketDay=D?(D.wd+' '+D.num+' nov').toUpperCase():'';
+    const H={
+      ingreso:['Proyecto final · 2026','#C9461B','Elige la hora de tu presentación','Presentas tu proyecto ante un mentor durante 15 minutos. Te toma menos de un minuto.'],
+      antes:['Inscripciones aún cerradas','#8A5A00','Todavía no puedes elegir tu hora','Las inscripciones abren pronto. Guarda la fecha.'],
+      cerrado:['Inscripciones cerradas','#C2303D','Las inscripciones ya cerraron','Si aún no tienes hora, escríbele a tu monitor.'],
+      loading:['Un momento','#C9461B',s.loadingText.replace('…',''),''],
+      noEncontrado:['No encontrado','#C2303D','Tu documento no aparece','Revisa que el número esté bien escrito. Si sigue sin aparecer, escríbele a tu monitor.'],
+      datos:['Tus datos','#C9461B','Hola, '+(me?me.first:''),'Revisa que todo esté bien. Aquí no se puede editar.'],
+      dia:sinHoras?['Sin horas','#C2303D','Ya no quedan horas en tu día','Escríbele a tu monitor para que te ayude.']:['Elige el día','#C9461B','¿Qué día presentas?','Estos son los días habilitados para '+(P?P.city:'')+'.'],
+      hora:['Elige la hora','#C9461B','¿A qué hora?',dayLong+' · Hora COL · 15 minutos'],
+      confirmar:['Último paso','#C9461B','Confirma tu hora','Revisa antes de confirmar.'],
+      exito:['Hora confirmada','#17734F','¡Listo! Ya tienes tu hora',isWeb?'Presentas ante un mentor por 15 minutos. Conéctate 5 minutos antes.':''],
+      yaTiene:['Todo en orden','#17734F','Ya tienes una hora',bk&&bk.by!==s.who&&partner?('Tu '+(partner.g==='f'?'compañera ':'compañero ')+partner.first+' ya eligió la hora.'):'Ya elegiste tu hora antes.']
+    }[step]||['','#C9461B','',''];
+    const pStep=PSTEP[step]||0;
+    const showTicket=step==='exito'||step==='yaTiene';
+    const canBack=!!BACK[step];
+    return {
+      ly,isWeb,isMovil:!isWeb,
+      mobBack:!isWeb&&canBack,mobRofe:!isWeb&&!canBack,webBack:isWeb&&canBack,
+      mobProgress:!isWeb&&pStep>0,webProgress:isWeb&&pStep>0,
+      progress:[1,2,3,4].map(i=>({bg:i<=pStep?'#F25C2A':'#EDE7E1'})),stepLabel:'PASO '+pStep+' DE 4',
+      kicker:H[0],kickerColor:H[1],title:H[2],sub:H[3],
+      isIngreso:step==='ingreso',isAntes:step==='antes',isCerrado:step==='cerrado',isLoading:step==='loading',isNoEncontrado:step==='noEncontrado',
+      isDatos:step==='datos',isDia:step==='dia',isHora:step==='hora',isConfirmar:step==='confirmar',isExito:step==='exito',showTicket,
+      sinHoras,justTakenOn:step==='hora'&&!!s.justTaken,
+      ctaPad:(step==='hora'||step==='loading'||(step==='dia'&&!sinHoras)||step==='antes')?'0':'16px',
+      doc:s.doc,docErr:s.docErr,docBorder:s.docErr?'#D64553':'#E7E2DD',
+      onDoc:e=>this.setState({doc:e.target.value,docErr:''}),docKey:e=>{if(e.key==='Enter')this.buscar();},
+      buscar:this.buscar,reiniciar:()=>this.setState({step:'ingreso',doc:'',docErr:'',pid:null,day:null,min:null,justTaken:null}),
+      goBack:()=>this.setState({step:BACK[s.step]||'ingreso',justTaken:null}),
+      irDia:()=>this.setState({step:'dia'}),confirmar:this.confirmar,
+      city:P?P.city:'',me:me||{},partner:partner||{},hasPartner:!!partner,isSolo:!!P&&!partner,proj:P||{},
+      partnerDoc:partner?mask(partner.doc):'',
+      meRows:me?[{k:'Documento',v:mask(me.doc)},{k:'Celular',v:me.cel},{k:'Correo',v:me.email}]:[],
+      days,groups,scrollRef:this.scrollRef,
+      dayLong,timeFull:s.min!=null?fullT(s.min):'',ticketDay,
+      members:P?P.m.map((x,i)=>({name:x.name,isMe:i===s.who})):[],
+      memberNames:P?P.m.map(x=>x.name).join(' y '):'',
+      addCal:this.addCal,calLabel:s.calAdded?'Agregado a tu calendario':'Agregar a mi calendario',calBg:s.calAdded?'#1F9D6B':'#F25C2A',
+      ticketNote:step==='exito'?'Te enviaremos el enlace de la sala a tu correo.':'Si necesitas cambiarla, escríbele a tu monitor.',
+      loadingText:s.loadingText
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#F4F1EE;font-family:'Outfit',system-ui,sans-serif;color:#1C1A24;-webkit-font-smoothing:antialiased}a{color:#C9461B}a:hover{color:#9C3210}*{box-sizing:border-box}.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}.dv-tid{font:600 10px 'JetBrains Mono',monospace;padding:3px 7px;background:#1C1A24;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:800 24px/1.2 'Outfit',sans-serif;color:#1C1A24;letter-spacing:-.02em}.dv-sub{font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#8A8496;margin:28px 0 14px}.dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'JetBrains Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1A24;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:500 13px/1.3 'Outfit',sans-serif;color:#615C6E}.dv-opt:target .dv-oid{background:#F25C2A;color:#fff}.dv-proto{color:#C9461B;font-weight:700}.dv-next{margin:26px 0 0;font:13px/1.5 'Outfit',sans-serif;color:#615C6E}</style></helmet>
+
+<section class="dv-turn" id="nav" style="padding:18px 48px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#8A8496;margin-right:6px">VISTAS</span><a href="Presentacion%20Proyectos%20Finales.dc.html" style="height:36px;padding:0 14px;border-radius:12px;display:flex;align-items:center;font:700 14px 'Outfit';text-decoration:none;background:#fff;color:#1C1A24;border:1px solid #E7E2DD">1 · Estudiante</a><a href="Vista%202%20Monitor.dc.html" style="height:36px;padding:0 14px;border-radius:12px;display:flex;align-items:center;font:700 14px 'Outfit';text-decoration:none;background:#fff;color:#1C1A24;border:1px solid #E7E2DD">2 · Monitor</a><a href="Vista%203%20Mentor.dc.html" style="height:36px;padding:0 14px;border-radius:12px;display:flex;align-items:center;font:700 14px 'Outfit';text-decoration:none;background:#fff;color:#1C1A24;border:1px solid #E7E2DD">3 · Mentor</a><a href="Vista%204%20Coordinacion.dc.html" style="height:36px;padding:0 14px;border-radius:12px;display:flex;align-items:center;font:700 14px 'Outfit';text-decoration:none;background:#fff;color:#1C1A24;border:1px solid #E7E2DD">4 · Coordinación</a><a href="Vista%205%20Administrador.dc.html" style="height:36px;padding:0 14px;border-radius:12px;display:flex;align-items:center;font:700 14px 'Outfit';text-decoration:none;background:#1C1A24;color:#fff">5 · Administrador</a></section>
+<section class="dv-turn" id="t5">
+  <div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Vista 5 · Administrador</span></div>
+  <p style="margin:0;font:500 14px/1.5 'Outfit';color:#615C6E">Arrastra tarjetas entre franjas o a “Sin hora”. Prueba soltar en 6:15 p. m. (llena) o soltar una tarjeta de Santa Marta en jueves 12. Clic en una tarjeta abre su detalle.</p>
+  <div class="dv-sub">Web · 1280 × 800 · secciones del menú</div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="5a"><div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a><span class="dv-proto">Prototipo interactivo</span> · Tablero con arrastrar y soltar</div><dc-import name="Admin" modo="web" start="tablero" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5b"><div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>Franjas y mentores</div><dc-import name="Admin" modo="web" start="franjas" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5c"><div class="dv-olabel"><a class="dv-oid" href="#5c">5c</a>Reglas de cupos por ciudad</div><dc-import name="Admin" modo="web" start="reglas" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5d"><div class="dv-olabel"><a class="dv-oid" href="#5d">5d</a>Importar inscritos · vista previa</div><dc-import name="Admin" modo="web" start="importPreview" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5e"><div class="dv-olabel"><a class="dv-oid" href="#5e">5e</a>Usuarios y roles</div><dc-import name="Admin" modo="web" start="usuarios" hint-size="1280px,800px"></dc-import></div>
+  </div>
+  <div class="dv-sub">Estados</div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="5f"><div class="dv-olabel"><a class="dv-oid" href="#5f">5f</a>Tablero · franja llena (aviso rojo)</div><dc-import name="Admin" modo="web" start="tableroLleno" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5g"><div class="dv-olabel"><a class="dv-oid" href="#5g">5g</a>Tablero · ciudad sin ese día (aviso amarillo)</div><dc-import name="Admin" modo="web" start="tableroCiudad" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5h"><div class="dv-olabel"><a class="dv-oid" href="#5h">5h</a>Tablero · detalle de tarjeta</div><dc-import name="Admin" modo="web" start="tableroDetalle" hint-size="1280px,800px"></dc-import></div>
+    <div class="dv-opt" id="5j"><div class="dv-olabel"><a class="dv-oid" href="#5j">5j</a>Reglas · la suma supera la capacidad</div><dc-import name="Admin" modo="web" start="reglasExceso" hint-size="1280px,800px"></dc-import></div>
+  </div>
+  <div class="dv-sub">Móvil · solo consulta</div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="5m"><div class="dv-olabel"><a class="dv-oid" href="#5m">5m</a><span class="dv-proto">Prototipo interactivo</span> · tablero en celular</div><dc-import name="Admin" modo="movil" hint-size="390px,844px"></dc-import></div>
+  </div>
+  <p class="dv-next">Siguiente: “diseña el módulo Calificar para <a class="dv-oid" href="#3c">3c</a>” · “agrega vista por mentor al tablero <a class="dv-oid" href="#5a">5a</a>” · “notificaciones por WhatsApp al mover”</p>
+</section>
+
+</x-dc>
+</body>
+</html>

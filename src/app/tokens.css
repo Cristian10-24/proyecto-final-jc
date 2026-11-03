@@ -1,0 +1,85 @@
+/*
+ * Tokens del sistema visual (prototipos Claude Design en docs/diseno/*.dc.html).
+ * Única fuente de colores, tipografía, radios, sombras y espaciados. Ver docs/DISENO.md.
+ */
+:root {
+  /* Marca */
+  --orange: #f25c2a;          /* botón principal, acentos */
+  --orange-dark: #c9461b;     /* enlaces, kicker de marca */
+  --orange-darker: #9c3210;   /* hover de enlaces, texto sobre chip naranja */
+  --orange-soft: #fff1ea;     /* fondos suaves, decoración */
+  --orange-tint: #fff5f0;     /* opción seleccionada */
+  --orange-ring: #ffe1d3;     /* foco, anillos decorativos */
+  --orange-chip: #ffe9df;     /* chip naranja */
+  --orange-busy: #f79a78;     /* botón principal ocupado */
+  --sun: #ffc93c;             /* decoración */
+  --blue: #3e8fd0;            /* decoración, información */
+
+  /* Tinta y superficies */
+  --ink: #1c1a24;             /* texto principal, botón oscuro, toast */
+  --ink-2: #3f3a4a;
+  --muted: #615c6e;           /* texto secundario */
+  --muted-2: #8a8496;         /* etiquetas mono, texto terciario */
+  --line: #e7e2dd;            /* bordes de campos */
+  --line-2: #f0ebe6;          /* bordes de tarjetas, separadores */
+  --surface: #fbf9f7;
+  --surface-2: #f7f4f1;
+  --soft: #f5f2ef;            /* botón suave, chip neutro */
+  --bg: #fbf8f5;              /* fondo de página */
+  --card: #ffffff;
+
+  /* Estados */
+  --green: #1f9d6b;  --green-dark: #17734f;  --green-soft: #e3f5ec;   /* eligió / listo */
+  --yellow: #f2b630; --yellow-soft: #fff7dc; --yellow-ink: #5a4300; --yellow-text: #8a5a00; /* aviso / pendiente */
+  --red: #d64553;    --red-ink: #c2303d;     --red-dark: #9e2430;    --red-soft: #fce6e8;    /* error */
+
+  /* Tipografía */
+  --font: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --t-display: 800 32px/1.1 var(--font);   /* título de portada */
+  --t-h1: 800 27px/1.1 var(--font);        /* título de pantalla */
+  --t-h2: 800 19px/1.2 var(--font);        /* título de tarjeta */
+  --t-body: 500 15px/1.45 var(--font);     /* párrafo */
+  --t-small: 500 14px/1.4 var(--font);
+  --t-label: 700 15px var(--font);         /* etiqueta de campo, botón secundario */
+  --t-button: 700 17px var(--font);        /* botón grande */
+  --t-chip: 700 13px var(--font);
+  --t-kicker: 600 11px var(--mono);        /* mayúsculas con letter-spacing .08em */
+  --kicker-spacing: .08em;
+
+  /* Radios */
+  --r-xs: 7px;
+  --r-sm: 12px;      /* botones pequeños, filas */
+  --r-md: 14px;      /* campos, toast, avisos */
+  --r-lg: 16px;
+  --r-xl: 20px;      /* botón grande */
+  --r-2xl: 22px;     /* tarjeta, hoja inferior */
+  --r-pill: 999px;   /* chips */
+
+  /* Sombras */
+  --sh-card: 0 2px 6px -4px rgba(120, 40, 10, .25);
+  --sh-raised: 0 24px 60px -24px rgba(120, 40, 10, .3);   /* tarjeta destacada (boleto) */
+  --sh-toast: 0 10px 30px -10px rgba(0, 0, 0, .4);
+  --sh-modal: 0 30px 60px -20px rgba(0, 0, 0, .4);
+
+  /* Espaciados (múltiplos de 2: los prototipos usan 4–24) */
+  --s-1: 4px;
+  --s-2: 6px;
+  --s-3: 8px;
+  --s-4: 10px;
+  --s-5: 12px;
+  --s-6: 14px;
+  --s-7: 16px;
+  --s-8: 20px;
+  --s-9: 24px;
+  --gutter: 16px;       /* margen lateral en móvil */
+
+  /* Medidas de componentes */
+  --h-button: 58px;     /* botón principal del portal */
+  --h-button-sm: 46px;
+  --h-input: 58px;
+  --h-chip: 28px;
+  --h-progress: 6px;    /* barra de avance */
+  --w-student: 390px;   /* ancho de diseño del portal (móvil primero) */
+  --w-admin: 1280px;    /* ancho de diseño del admin */
+}

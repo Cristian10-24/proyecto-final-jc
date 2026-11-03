@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"><style>@keyframes spin{to{transform:rotate(360deg)}}a{color:#C9461B}a:hover{color:#9C3210}button{font-family:'Outfit',sans-serif;cursor:pointer}input,select{font-family:'Outfit',sans-serif}input:focus,select:focus{outline:none}</style></helmet>
+
+<sc-if value="{{ isWeb }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;height:800px;border-radius:16px;background:#fff;overflow:hidden;display:flex;flex-direction:column;border:1px solid #E4DDD6;box-shadow:0 24px 60px -24px rgba(120,40,10,.3);position:relative;font-family:'Outfit',sans-serif;color:#1C1A24;box-sizing:border-box">
+  <div style="height:40px;flex:none;background:#F5F2EF;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #EAE4DE"><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><div style="margin-left:16px;height:24px;flex:1;max-width:420px;border-radius:7px;background:#fff;font:500 12px 'JetBrains Mono',monospace;color:#615C6E;display:flex;align-items:center;padding:0 10px">horarios.jovenescreativos.co/admin/{{ secSlug }}</div></div>
+  <div style="flex:1;display:flex;min-height:0">
+    <div style="width:228px;flex:none;border-right:1px solid #F0EBE6;padding:18px 16px 20px;display:flex;flex-direction:column;gap:20px;background:#FCFAF8">
+      <img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:62px;width:auto;display:block;align-self:flex-start">
+      <div style="display:grid;gap:4px">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+          <button onClick="{{ n.on }}" style="height:42px;border-radius:12px;border:0;background:{{ n.bg }};color:{{ n.fg }};font:{{ n.font }};display:flex;align-items:center;gap:10px;padding:0 12px;text-align:left" style-hover="background:#F5EFEA"><span style="font:600 10.5px 'JetBrains Mono',monospace;opacity:.7">{{ n.k }}</span>{{ n.label }}</button>
+        </sc-for>
+      </div>
+      <div style="flex:1"></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div style="width:38px;height:38px;border-radius:50%;background:#1C1A24;color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px 'Outfit'">MR</div>
+        <div><div style="font:700 14px 'Outfit'">Mónica Rojas</div><div style="font:500 12.5px 'Outfit';color:#615C6E">Administradora</div></div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:20px 24px 0;position:relative">
+
+      <sc-if value="{{ secTablero }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex:none">
+          <div><div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">TABLERO · HORA COL</div><div style="font:800 26px/1.15 'Outfit';letter-spacing:-.025em;margin-top:2px">{{ dayFull }} · {{ dayOcc }}</div></div>
+          <div style="display:flex;gap:6px">
+            <sc-for list="{{ dayTabs }}" as="d" hint-placeholder-count="7"><button onClick="{{ d.on }}" style="width:58px;height:54px;border-radius:14px;border:2px solid {{ d.border }};background:{{ d.bg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#1C1A24"><span style="font:600 9.5px 'JetBrains Mono',monospace;color:{{ d.kc }}">{{ d.short }}</span><span style="font:800 18px/1 'Outfit'">{{ d.num }}</span></button></sc-for>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0 12px;flex:none">
+          <div style="display:flex;gap:4px;background:#F5F2EF;border-radius:14px;padding:4px"><sc-for list="{{ blocks }}" as="b" hint-placeholder-count="3"><button onClick="{{ b.on }}" style="height:34px;padding:0 14px;border-radius:10px;border:0;background:{{ b.bg }};color:#1C1A24;font:{{ b.font }};box-shadow:{{ b.sh }}">{{ b.label }}</button></sc-for></div>
+          <div style="display:flex;gap:6px;align-items:center;font:600 13px 'Outfit';color:#615C6E">Ciudades habilitadas hoy:<sc-for list="{{ dayCities }}" as="c" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:#FBF8F5;border:1px solid #F0EBE6;color:#1C1A24;font:700 12.5px 'Outfit'"><i style="width:8px;height:8px;border-radius:50%;background:{{ c.color }};display:block"></i>{{ c.name }}</span></sc-for></div>
+        </div>
+        <div style="flex:1;min-height:0;display:flex;gap:12px;padding-bottom:16px">
+          <div onDragOver="{{ pend.over }}" onDrop="{{ pend.drop }}" onDragLeave="{{ pend.leave }}" style="width:248px;flex:none;border-radius:20px;background:#FBF8F5;border:2px {{ pend.bstyle }} {{ pend.border }};display:flex;flex-direction:column;min-height:0">
+            <div style="padding:12px 12px 8px;flex:none">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:800 16px 'Outfit'">Sin hora</span><span style="font:800 13px 'Outfit';background:#1C1A24;color:#fff;border-radius:999px;padding:3px 9px">{{ pendCount }}</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px"><sc-for list="{{ cityFilters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.on }}" style="height:26px;padding:0 9px;border-radius:999px;border:1.5px solid {{ f.border }};background:{{ f.bg }};font:700 11.5px 'Outfit';color:#1C1A24;display:flex;align-items:center;gap:5px"><i style="width:7px;height:7px;border-radius:50%;background:{{ f.color }};display:block"></i>{{ f.label }}</button></sc-for></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ pendCards }}" as="c" hint-placeholder-count="5">
+                <div draggable="true" onDragStart="{{ c.drag }}" onDragEnd="{{ c.end }}" onClick="{{ c.open }}" style="flex:none;border-radius:14px;background:#fff;border:1px solid #F0EBE6;padding:9px 10px 9px 12px;cursor:grab;position:relative;overflow:hidden;box-shadow:0 2px 6px -4px rgba(120,40,10,.25);opacity:{{ c.op }}">
+                  <i style="position:absolute;left:0;top:0;bottom:0;width:4px;background:{{ c.color }};display:block"></i>
+                  <div style="display:flex;align-items:center;gap:6px;font:700 11.5px 'Outfit';color:#615C6E"><i style="width:7px;height:7px;border-radius:50%;background:{{ c.color }};display:block"></i>{{ c.city }}<span style="margin-left:auto;font:600 10px 'JetBrains Mono',monospace;color:#9A94A6">{{ c.kind }}</span></div>
+                  <div style="font:800 13.5px/1.25 'Outfit';margin-top:4px">{{ c.proj }}</div>
+                  <div style="font:500 12px/1.35 'Outfit';color:#615C6E;margin-top:2px">{{ c.members }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;display:flex;gap:12px;padding-bottom:4px">
+            <sc-for list="{{ hourCols }}" as="h" hint-placeholder-count="3">
+              <div style="flex:none;display:flex;flex-direction:column;min-height:0;border-radius:20px;background:#FBF8F5;border:1px solid #F0EBE6;padding:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 10px;gap:10px"><span style="font:800 15px 'Outfit'">{{ h.label }}</span><span style="font:600 12px 'Outfit';color:#615C6E">{{ h.mentTxt }}</span></div>
+                <sc-if value="{{ h.off }}"><div style="width:190px;flex:1;border-radius:14px;border:2px dashed #E7E2DD;display:flex;align-items:center;justify-content:center;text-align:center;font:600 13px 'Outfit';color:#9A94A6;padding:10px">Sin mentores · no se ofrece</div></sc-if>
+                <div style="flex:1;min-height:0;display:flex;gap:8px">
+                  <sc-for list="{{ h.slots }}" as="sl" hint-placeholder-count="4">
+                    <div onDragOver="{{ sl.over }}" onDrop="{{ sl.drop }}" onDragLeave="{{ sl.leave }}" style="width:176px;flex:none;border-radius:16px;background:{{ sl.bg }};border:2px {{ sl.bstyle }} {{ sl.border }};display:flex;flex-direction:column;min-height:0;transition:border-color .15s,background .15s">
+                      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px 6px;flex:none"><span style="font:700 13px 'JetBrains Mono',monospace">{{ sl.label }}</span><span style="font:800 12px 'Outfit';border-radius:999px;padding:3px 8px;background:{{ sl.capBg }};color:{{ sl.capFg }}">{{ sl.cap }}</span></div>
+                      <div style="flex:1;min-height:0;overflow:auto;padding:0 6px 8px;display:flex;flex-direction:column;gap:6px">
+                        <sc-for list="{{ sl.cards }}" as="c" hint-placeholder-count="3">
+                          <div draggable="true" onDragStart="{{ c.drag }}" onDragEnd="{{ c.end }}" onClick="{{ c.open }}" style="flex:none;border-radius:12px;background:#fff;border:1px solid {{ c.bd }};padding:8px 9px 8px 11px;cursor:grab;position:relative;overflow:hidden;box-shadow:0 2px 6px -4px rgba(120,40,10,.25);opacity:{{ c.op }}" style-hover="border-color:#F7B59C">
+                            <i style="position:absolute;left:0;top:0;bottom:0;width:4px;background:{{ c.color }};display:block"></i>
+                            <div style="display:flex;align-items:center;gap:5px;font:700 11px 'Outfit';color:#615C6E"><i style="width:6px;height:6px;border-radius:50%;background:{{ c.color }};display:block"></i>{{ c.city }}</div>
+                            <div style="font:800 12.5px/1.25 'Outfit';margin-top:3px">{{ c.proj }}</div>
+                            <div style="font:500 11.5px/1.3 'Outfit';color:#615C6E;margin-top:2px">{{ c.members }}</div>
+                            <div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">↳ {{ c.mentor }}</div>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <sc-if value="{{ alertFull }}">
+          <div style="position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:4;display:flex;gap:12px;align-items:center;padding:12px 14px 12px 16px;border-radius:16px;background:#FCE6E8;border:1.5px solid #F3B8BF;color:#9E2230;font:600 14.5px 'Outfit';box-shadow:0 14px 30px -16px rgba(158,34,48,.5);white-space:nowrap"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.5"></path></svg><span><b>No cabe.</b> {{ alertFull }}</span><button onClick="{{ closeAlert }}" style="border:0;background:#fff;border-radius:9px;height:30px;padding:0 10px;font:700 13px 'Outfit';color:#9E2230">Entendido</button></div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ secFranjas }}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex:none">
+          <div><div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">FRANJAS Y MENTORES · HORA COL</div><div style="font:800 26px/1.15 'Outfit';letter-spacing:-.025em;margin-top:2px">{{ dayFull }} · {{ fr.total }} cupos</div></div>
+          <div style="display:flex;gap:6px"><sc-for list="{{ dayTabs }}" as="d" hint-placeholder-count="7"><button onClick="{{ d.on }}" style="width:58px;height:54px;border-radius:14px;border:2px solid {{ d.border }};background:{{ d.bg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#1C1A24"><span style="font:600 9.5px 'JetBrains Mono',monospace;color:{{ d.kc }}">{{ d.short }}</span><span style="font:800 18px/1 'Outfit'">{{ d.num }}</span></button></sc-for></div>
+        </div>
+        <div style="margin:14px 0 10px;display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:16px;background:#FFF1EA;font:600 14px 'Outfit';color:#7A3A20;flex:none"><span style="font:800 15px 'Outfit';color:#C9461B">1 mentor = 4 proyectos por hora</span><span>Cada presentación dura 15 minutos. La capacidad se calcula sola; las franjas con 0 mentores no se ofrecen a los estudiantes.</span></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr) 90px 110px;gap:16px;padding:10px 4px 8px;border-bottom:1px solid #F0EBE6;font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;color:#8A8496;flex:none"><span>Franja</span><span>Mentores disponibles</span><span>Mentores</span><span>Capacidad</span></div>
+        <div style="flex:1;min-height:0;overflow:auto;padding-bottom:16px">
+          <sc-for list="{{ fr.rows }}" as="r" hint-placeholder-count="9">
+            <div style="display:grid;grid-template-columns:150px minmax(0,1fr) 90px 110px;gap:16px;align-items:center;padding:10px 4px;border-bottom:1px solid #F4F0EC;opacity:{{ r.op }}">
+              <div style="font:700 14.5px 'Outfit'">{{ r.label }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+                <sc-for list="{{ r.ments }}" as="m" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 6px 0 11px;border-radius:999px;background:#F5F2EF;font:600 13px 'Outfit'">{{ m.name }}<button onClick="{{ m.rm }}" aria-label="Quitar" style="width:20px;height:20px;border-radius:50%;border:0;background:#E7E1DB;color:#615C6E;font:700 12px/1 'Outfit';padding:0">×</button></span></sc-for>
+                <select value="" onChange="{{ r.add }}" style="height:30px;border-radius:999px;border:1.5px dashed #E0D9D2;background:#fff;font:600 12.5px 'Outfit';color:#C9461B;padding:0 10px"><option value="">+ Agregar mentor</option><sc-for list="{{ r.avail }}" as="a"><option value="{{ a }}">{{ a }}</option></sc-for></select>
+              </div>
+              <div style="font:800 17px 'Outfit'">{{ r.n }}</div>
+              <div><span style="display:inline-flex;height:28px;align-items:center;padding:0 11px;border-radius:999px;background:{{ r.capBg }};color:{{ r.capFg }};font:700 13px 'Outfit'">{{ r.capTxt }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ secReglas }}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex:none">
+          <div><div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">REGLAS DE CUPOS POR CIUDAD</div><div style="font:800 26px/1.15 'Outfit';letter-spacing:-.025em;margin-top:2px">Quién puede usar cada día</div></div>
+          <button onClick="{{ saveRules }}" disabled="{{ rl.over }}" style="height:46px;padding:0 20px;border-radius:14px;border:0;background:{{ rl.saveBg }};color:#fff;font:700 15px 'Outfit'">Guardar reglas</button>
+        </div>
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr);gap:20px;margin-top:16px;padding-bottom:16px">
+          <div style="overflow:auto;display:grid;gap:8px;align-content:start;min-height:0">
+            <sc-for list="{{ rl.days }}" as="d" hint-placeholder-count="7">
+              <button onClick="{{ d.on }}" style="text-align:left;border-radius:18px;border:2px solid {{ d.border }};background:{{ d.bg }};padding:12px 14px;display:grid;gap:8px;color:#1C1A24">
+                <span style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:800 15px 'Outfit'">{{ d.full }}</span><span style="font:600 12.5px 'Outfit';color:{{ d.sumC }}">{{ d.sumTxt }}</span></span>
+                <span style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:#F2EEEA"><sc-for list="{{ d.segs }}" as="s"><i style="display:block;height:100%;width:{{ s.w }};background:{{ s.color }}"></i></sc-for></span>
+                <span style="font:500 12px/1.4 'Outfit';color:#615C6E">{{ d.line }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="border-radius:24px;border:2px solid #F0EBE6;padding:22px;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:800 20px 'Outfit'">{{ rl.cur.full }} · {{ rl.cur.cap }} cupos</span><span style="font:700 14px 'Outfit';color:{{ rl.cur.sumC }}">{{ rl.cur.sumBig }}</span></div>
+            <div style="display:flex;height:34px;border-radius:12px;overflow:hidden;background:repeating-linear-gradient(135deg,#F5F2EF 0 8px,#EFEAE5 8px 16px)"><sc-for list="{{ rl.cur.segs }}" as="s"><div style="height:100%;width:{{ s.w }};background:{{ s.color }};color:#fff;font:700 12px 'Outfit';display:flex;align-items:center;padding:0 10px;white-space:nowrap;overflow:hidden">{{ s.label }}</div></sc-for></div>
+            <div style="font:500 14px 'Outfit';color:#3F3A4A">{{ rl.cur.line }}</div>
+            <sc-if value="{{ rl.over }}"><div style="padding:12px 14px;border-radius:14px;background:#FCE6E8;color:#9E2230;font:600 14px 'Outfit'">La suma de reservados ({{ rl.cur.sum }}) supera la capacidad del día ({{ rl.cur.cap }}). Baja {{ rl.cur.excess }} cupos para poder guardar.</div></sc-if>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 170px 170px;gap:12px;font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.05em;color:#8A8496;padding-bottom:6px;border-bottom:1px solid #F0EBE6"><span>CIUDAD</span><span>CUPOS RESERVADOS</span><span>MÁXIMO DEL DÍA</span></div>
+            <sc-for list="{{ rl.cur.rows }}" as="r" hint-placeholder-count="2">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 170px 170px;gap:12px;align-items:center">
+                <span style="display:flex;align-items:center;gap:8px;font:700 15px 'Outfit'"><i style="width:10px;height:10px;border-radius:50%;background:{{ r.color }};display:block"></i>{{ r.name }}</span>
+                <span style="display:flex;align-items:center;gap:6px"><button onClick="{{ r.resDn }}" style="width:36px;height:36px;border-radius:11px;border:1.5px solid #E7E2DD;background:#fff;font:800 16px 'Outfit';color:#1C1A24">−</button><span style="width:58px;height:36px;border-radius:11px;background:#FBF8F5;border:1.5px solid #F0EBE6;display:flex;align-items:center;justify-content:center;font:800 15px 'Outfit'">{{ r.res }}</span><button onClick="{{ r.resUp }}" style="width:36px;height:36px;border-radius:11px;border:1.5px solid #E7E2DD;background:#fff;font:800 16px 'Outfit';color:#1C1A24">+</button></span>
+                <span style="display:flex;align-items:center;gap:6px"><button onClick="{{ r.maxDn }}" style="width:36px;height:36px;border-radius:11px;border:1.5px solid #E7E2DD;background:#fff;font:800 16px 'Outfit';color:#1C1A24">−</button><span style="width:58px;height:36px;border-radius:11px;background:#FBF8F5;border:1.5px solid #F0EBE6;display:flex;align-items:center;justify-content:center;font:800 15px 'Outfit'">{{ r.max }}</span><button onClick="{{ r.maxUp }}" style="width:36px;height:36px;border-radius:11px;border:1.5px solid #E7E2DD;background:#fff;font:800 16px 'Outfit';color:#1C1A24">+</button></span>
+              </div>
+            </sc-for>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:12px;border-top:1px solid #F0EBE6">
+              <label style="display:grid;gap:6px;font:700 13.5px 'Outfit'">El sobrante va para<select value="{{ rl.cur.sob }}" onChange="{{ rl.onSob }}" style="height:46px;border-radius:14px;border:2px solid #E7E2DD;background:#fff;padding:0 12px;font:600 15px 'Outfit';color:#1C1A24"><sc-for list="{{ rl.cur.sobOpts }}" as="o"><option value="{{ o }}">{{ o }}</option></sc-for></select></label>
+              <div style="display:grid;gap:6px;font:700 13.5px 'Outfit'">Inscripciones<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="datetime-local" value="{{ rl.open }}" onChange="{{ rl.onOpen }}" style="height:46px;border-radius:14px;border:2px solid #E7E2DD;padding:0 10px;font:600 13px 'Outfit';color:#1C1A24;min-width:0"><input type="datetime-local" value="{{ rl.close }}" onChange="{{ rl.onClose }}" style="height:46px;border-radius:14px;border:2px solid #E7E2DD;padding:0 10px;font:600 13px 'Outfit';color:#1C1A24;min-width:0"></div><span style="font:500 12px 'Outfit';color:#8A8496">Apertura · Cierre (hora COL, aplica a todas las ciudades)</span></div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ secImportar }}">
+        <div style="flex:none"><div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">IMPORTAR INSCRITOS</div><div style="font:800 26px/1.15 'Outfit';letter-spacing:-.025em;margin-top:2px">Sube el Excel de proyectos inscritos</div></div>
+        <sc-if value="{{ imp.empty }}">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding-bottom:40px">
+            <button onClick="{{ pickFile }}" style="width:560px;border-radius:28px;border:2.5px dashed #F5B79E;background:#FFF8F4;padding:44px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;color:#1C1A24" style-hover="background:#FFF1EA">
+              <span style="width:68px;height:68px;border-radius:22px;background:#F25C2A;color:#fff;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 16v3a1.5 1.5 0 001.5 1.5h13A1.5 1.5 0 0020 19v-3"></path></svg></span>
+              <span style="font:800 21px 'Outfit'">Arrastra el archivo o haz clic para elegirlo</span>
+              <span style="font:500 14.5px/1.5 'Outfit';color:#615C6E;max-width:420px">.xlsx con columnas: ciudad, grupo, documento, nombre, celular, correo, documento pareja, nombre pareja, proyecto, descripción.</span>
+            </button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ imp.loading }}"><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding-bottom:40px"><div style="width:52px;height:52px;border-radius:50%;border:5px solid #FFE6DC;border-top-color:#F25C2A;animation:spin .8s linear infinite;box-sizing:border-box"></div><div style="font:700 18px 'Outfit'">Leyendo inscritos_jc_2026.xlsx…</div><div style="font:500 14px 'Outfit';color:#615C6E">Revisando documentos, parejas y ciudades</div></div></sc-if>
+        <sc-if value="{{ imp.preview }}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0 12px;flex:none">
+            <div style="display:flex;gap:8px"><sc-for list="{{ imp.tabs }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.on }}" style="height:40px;padding:0 14px;border-radius:12px;border:2px solid {{ t.border }};background:{{ t.bg }};font:700 14px 'Outfit';color:#1C1A24;display:flex;align-items:center;gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:{{ t.dot }};display:block"></i>{{ t.label }} <b style="font-weight:800">{{ t.n }}</b></button></sc-for></div>
+            <div style="display:flex;gap:8px"><button onClick="{{ resetImp }}" style="height:46px;padding:0 16px;border-radius:14px;border:1.5px solid #E7E2DD;background:#fff;font:700 15px 'Outfit';color:#1C1A24">Cambiar archivo</button><button onClick="{{ doImport }}" style="height:46px;padding:0 18px;border-radius:14px;border:0;background:#F25C2A;color:#fff;font:700 15px 'Outfit'">Importar 524 proyectos</button></div>
+          </div>
+          <div style="padding:11px 14px;border-radius:14px;background:#FFF7DC;color:#5A4300;font:500 14px 'Outfit';flex:none">Las <b>4 advertencias</b> se importan igual. Las <b>8 filas con error</b> quedan por fuera hasta que las corrijas.</div>
+          <div style="display:grid;grid-template-columns:56px minmax(0,1.6fr) 110px minmax(0,1.4fr) minmax(0,1.6fr);gap:14px;padding:12px 4px 8px;border-bottom:1px solid #F0EBE6;font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;color:#8A8496;flex:none"><span>Fila</span><span>Integrantes</span><span>Ciudad</span><span>Proyecto</span><span>Validación</span></div>
+          <div style="flex:1;min-height:0;overflow:auto;padding-bottom:16px">
+            <sc-for list="{{ imp.rows }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:56px minmax(0,1.6fr) 110px minmax(0,1.4fr) minmax(0,1.6fr);gap:14px;align-items:center;padding:10px 4px;border-bottom:1px solid #F4F0EC;background:{{ r.rowBg }}">
+                <span style="font:600 12.5px 'JetBrains Mono',monospace;color:#8A8496">{{ r.fila }}</span>
+                <div style="min-width:0"><div style="font:700 14px 'Outfit'">{{ r.names }}</div><div style="font:500 12px 'JetBrains Mono',monospace;color:#8A8496">{{ r.doc }}</div></div>
+                <span style="font:600 14px 'Outfit'">{{ r.city }}</span>
+                <span style="font:500 13.5px 'Outfit';color:#3F3A4A">{{ r.proj }}</span>
+                <span style="display:inline-flex;align-items:center;gap:7px;font:700 13px/1.35 'Outfit';color:{{ r.fg }}"><i style="flex:none;width:8px;height:8px;border-radius:50%;background:{{ r.dot }};display:block"></i>{{ r.msg }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ imp.done }}">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:40px">
+            <div style="position:relative;width:140px;height:140px;margin-bottom:22px"><div style="position:absolute;inset:0;border-radius:50%;border:18px solid #FFE1D3"></div><div style="position:absolute;inset:32px;border-radius:50%;background:#1F9D6B;display:flex;align-items:center;justify-content:center;color:#fff"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2 8.8-9.2"></path></svg></div><div style="position:absolute;right:-6px;top:6px;width:18px;height:18px;border-radius:50%;background:#FFC93C"></div><div style="position:absolute;left:-4px;bottom:14px;width:12px;height:12px;background:#3E8FD0;transform:rotate(45deg)"></div></div>
+            <div style="font:800 26px 'Outfit';letter-spacing:-.02em;margin-bottom:8px">524 proyectos importados</div>
+            <div style="font:500 16px/1.5 'Outfit';color:#615C6E;max-width:460px">Ya pueden elegir hora cuando abran las inscripciones. 8 filas con error quedaron por fuera.</div>
+            <div style="display:flex;gap:10px;margin-top:22px"><button onClick="{{ resetImp }}" style="height:50px;padding:0 20px;border-radius:16px;border:1.5px solid #E7E2DD;background:#fff;font:700 15px 'Outfit';color:#1C1A24">Importar otro archivo</button><button style="height:50px;padding:0 20px;border-radius:16px;border:0;background:#FCE6E8;color:#9E2230;font:700 15px 'Outfit'">Descargar 8 filas con error</button></div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ secUsuarios }}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex:none">
+          <div><div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">USUARIOS Y ROLES</div><div style="font:800 26px/1.15 'Outfit';letter-spacing:-.025em;margin-top:2px">39 personas con acceso</div></div>
+          <button onClick="{{ newUser }}" style="height:46px;padding:0 18px;border-radius:14px;border:0;background:#F25C2A;color:#fff;font:700 15px 'Outfit'">+ Nuevo usuario</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:16px;flex:none">
+          <sc-for list="{{ roleTabs }}" as="t" hint-placeholder-count="5"><button onClick="{{ t.on }}" style="text-align:left;border-radius:16px;padding:12px 14px;border:2px solid {{ t.border }};background:{{ t.bg }};display:flex;flex-direction:column;gap:4px;color:#1C1A24"><span style="font:600 13.5px 'Outfit';color:#4A4556">{{ t.label }}</span><span style="font:800 24px/1 'Outfit'">{{ t.n }}</span></button></sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 140px minmax(0,1.3fr) 170px 160px;gap:14px;padding:14px 4px 8px;border-bottom:1px solid #F0EBE6;font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;color:#8A8496;flex:none"><span>Nombre</span><span>Rol</span><span>Alcance</span><span>Usuario</span><span></span></div>
+        <div style="flex:1;min-height:0;overflow:auto;padding-bottom:16px">
+          <sc-for list="{{ users }}" as="u" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 140px minmax(0,1.3fr) 170px 160px;gap:14px;align-items:center;padding:10px 4px;border-bottom:1px solid #F4F0EC">
+              <span style="display:flex;align-items:center;gap:10px;min-width:0"><span style="flex:none;width:34px;height:34px;border-radius:50%;background:{{ u.avBg }};color:{{ u.avFg }};display:flex;align-items:center;justify-content:center;font:800 12.5px 'Outfit'">{{ u.ini }}</span><span style="font:700 14.5px 'Outfit';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span></span>
+              <span><span style="display:inline-flex;height:26px;align-items:center;padding:0 10px;border-radius:999px;background:{{ u.rBg }};color:{{ u.rFg }};font:700 12.5px 'Outfit'">{{ u.role }}</span></span>
+              <span style="font:500 13.5px 'Outfit';color:#3F3A4A">{{ u.scope }}</span>
+              <span style="font:500 12.5px 'JetBrains Mono',monospace;color:#615C6E">{{ u.user }}</span>
+              <span style="display:flex;justify-content:flex-end"><button onClick="{{ u.reset }}" style="height:34px;padding:0 12px;border-radius:11px;border:1.5px solid #E7E2DD;background:#fff;font:700 13px 'Outfit';color:#1C1A24">Restablecer clave</button></span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ confirmCity }}">
+    <div style="position:absolute;inset:40px 0 0 0;background:rgba(28,26,36,.45);display:flex;align-items:center;justify-content:center;z-index:5">
+      <div style="width:460px;border-radius:24px;background:#fff;padding:28px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)">
+        <div style="width:56px;height:56px;border-radius:18px;background:#FFF7DC;color:#8A5A00;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"></path><path d="M12 10v4"></path><path d="M12 17v.5"></path></svg></div>
+        <div style="font:800 22px/1.2 'Outfit';letter-spacing:-.02em;margin-bottom:8px">{{ confirmCity.title }}</div>
+        <div style="font:500 15.5px/1.5 'Outfit';color:#615C6E;margin-bottom:22px">{{ confirmCity.text }}</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end"><button onClick="{{ cancelMove }}" style="height:48px;padding:0 18px;border-radius:15px;border:1.5px solid #E7E2DD;background:#fff;font:700 15px 'Outfit';color:#1C1A24">Cancelar</button><button onClick="{{ forceMove }}" style="height:48px;padding:0 18px;border-radius:15px;border:0;background:#1C1A24;color:#fff;font:700 15px 'Outfit'">Mover de todas formas</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ detail }}">
+    <div onClick="{{ closeDetail }}" style="position:absolute;inset:40px 0 0 0;background:rgba(28,26,36,.45);display:flex;align-items:center;justify-content:center;z-index:5">
+      <div onClick="{{ stop }}" style="width:640px;max-height:660px;overflow:auto;border-radius:26px;background:#fff;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)">
+        <div style="background:#FFF1EA;padding:22px 24px;position:relative;overflow:hidden">
+          <div style="position:absolute;right:-40px;top:-40px;width:130px;height:130px;border-radius:50%;border:22px solid #F25C2A;box-sizing:border-box;opacity:.9"></div>
+          <div style="position:relative;display:flex;align-items:center;gap:8px;font:700 13px 'Outfit';color:#7A3A20"><i style="width:9px;height:9px;border-radius:50%;background:{{ detail.color }};display:block"></i>{{ detail.city }} · {{ detail.kind }}</div>
+          <div style="position:relative;font:800 24px/1.15 'Outfit';letter-spacing:-.02em;margin-top:6px;padding-right:80px">{{ detail.proj }}</div>
+          <div style="position:relative;font:500 14.5px/1.45 'Outfit';color:#7A3A20;margin-top:4px;padding-right:80px">{{ detail.desc }}</div>
+        </div>
+        <div style="padding:20px 24px 24px;display:grid;gap:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div style="border-radius:16px;background:#FBF8F5;border:1px solid #F0EBE6;padding:12px 14px"><div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;letter-spacing:.05em">HORA</div><div style="font:800 15.5px 'Outfit';margin-top:4px">{{ detail.when }}</div></div>
+            <div style="border-radius:16px;background:#FBF8F5;border:1px solid #F0EBE6;padding:12px 14px"><div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;letter-spacing:.05em">MENTOR</div><div style="font:800 15.5px 'Outfit';margin-top:4px">{{ detail.mentor }}</div></div>
+            <div style="border-radius:16px;background:#FBF8F5;border:1px solid #F0EBE6;padding:12px 14px"><div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;letter-spacing:.05em">MONITOR</div><div style="font:800 15.5px 'Outfit';margin-top:4px">{{ detail.monitor }}</div></div>
+          </div>
+          <div style="display:grid;gap:8px"><div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;letter-spacing:.05em">INTEGRANTES</div><sc-for list="{{ detail.people }}" as="p" hint-placeholder-count="2"><div style="display:flex;justify-content:space-between;gap:12px;font:600 14.5px 'Outfit'"><span>{{ p.name }}</span><span style="font:500 13px 'JetBrains Mono',monospace;color:#615C6E">{{ p.doc }} · {{ p.cel }}</span></div></sc-for></div>
+          <sc-if value="{{ mentorPick }}">
+            <div style="border-radius:18px;border:2px solid #F0EBE6;padding:12px;display:grid;gap:6px">
+              <div style="font:700 14px 'Outfit';padding:0 4px 4px">Mentores de esa hora</div>
+              <sc-for list="{{ mentorOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.pick }}" disabled="{{ o.busy }}" style="height:42px;border-radius:12px;border:2px solid {{ o.border }};background:{{ o.bg }};display:flex;justify-content:space-between;align-items:center;padding:0 12px;font:700 14px 'Outfit';color:{{ o.fg }};cursor:{{ o.cursor }}"><span>{{ o.name }}</span><span style="font:600 12px 'Outfit'">{{ o.note }}</span></button></sc-for>
+            </div>
+          </sc-if>
+          <div style="display:grid;gap:8px"><div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;letter-spacing:.05em">HISTORIAL DE CAMBIOS</div><sc-for list="{{ detail.hist }}" as="h" hint-placeholder-count="3"><div style="display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;font:500 13.5px/1.4 'Outfit'"><span style="font:500 12px 'JetBrains Mono',monospace;color:#8A8496">{{ h.t }}</span><span>{{ h.d }}</span></div></sc-for></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:4px"><button onClick="{{ closeDetail }}" style="height:46px;padding:0 18px;border-radius:14px;border:1.5px solid #E7E2DD;background:#fff;font:700 15px 'Outfit';color:#1C1A24">Cerrar</button><sc-if value="{{ detail.placed }}"><button onClick="{{ toggleMentorPick }}" style="height:46px;padding:0 18px;border-radius:14px;border:0;background:#F25C2A;color:#fff;font:700 15px 'Outfit'">Cambiar mentor</button></sc-if></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toast }}">
+    <div style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:#1C1A24;color:#fff;border-radius:14px;padding:13px 18px;font:600 15px 'Outfit';box-shadow:0 10px 30px -10px rgba(0,0,0,.4);white-space:nowrap;display:flex;align-items:center;gap:10px;z-index:6"><span style="width:20px;height:20px;border-radius:50%;background:#1F9D6B;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2 8.8-9.2"></path></svg></span>{{ toast }}</div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMovil }}">
+<div style="width:390px;height:844px;border-radius:50px;border:9px solid #1C1A24;background:#FBF8F5;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'Outfit',sans-serif;color:#1C1A24;box-shadow:0 24px 60px -24px rgba(120,40,10,.35)">
+  <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:700 14px 'Outfit'"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><i style="width:16px;height:10px;border-radius:2px;background:#1C1A24;display:block"></i><i style="width:22px;height:11px;border-radius:3px;border:1.5px solid #1C1A24;display:block;box-sizing:border-box"></i></span></div>
+  <div style="height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:2px 20px 0"><img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:42px;width:auto;display:block"><span style="font:600 11px 'JetBrains Mono',monospace;background:#F0EBE6;color:#615C6E;border-radius:8px;padding:5px 8px">SOLO CONSULTA</span></div>
+  <div style="flex:1;min-height:0;overflow:auto;padding:10px 20px 24px;display:flex;flex-direction:column;gap:12px">
+    <div><div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">TABLERO · HORA COL</div><div style="font:800 24px/1.12 'Outfit';letter-spacing:-.025em;margin-top:4px">{{ dayFull }}</div><div style="font:500 14px 'Outfit';color:#615C6E;margin-top:2px">{{ dayOcc }} · para mover proyectos usa el computador</div></div>
+    <div style="display:flex;gap:6px;overflow-x:auto;flex:none;padding-bottom:2px"><sc-for list="{{ dayTabs }}" as="d" hint-placeholder-count="7"><button onClick="{{ d.on }}" style="flex:none;width:52px;height:56px;border-radius:14px;border:2px solid {{ d.border }};background:{{ d.bg }};display:flex;flex-direction:column;align-items:center;justify-content:center;color:#1C1A24"><span style="font:600 9.5px 'JetBrains Mono',monospace;color:{{ d.kc }}">{{ d.short }}</span><span style="font:800 18px/1 'Outfit'">{{ d.num }}</span></button></sc-for></div>
+    <div style="display:flex;gap:4px;background:#F0EBE6;border-radius:14px;padding:4px;flex:none"><sc-for list="{{ blocks }}" as="b" hint-placeholder-count="3"><button onClick="{{ b.on }}" style="flex:1;height:40px;border-radius:10px;border:0;background:{{ b.bg }};color:#1C1A24;font:{{ b.font }}">{{ b.label }}</button></sc-for></div>
+    <sc-for list="{{ hourCols }}" as="h" hint-placeholder-count="3">
+      <div style="border-radius:20px;background:#fff;border:1px solid #F0EBE6;padding:14px;display:grid;gap:10px;flex:none">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:800 16px 'Outfit'">{{ h.label }}</span><span style="font:600 12.5px 'Outfit';color:#615C6E">{{ h.mentTxt }}</span></div>
+        <sc-for list="{{ h.slots }}" as="sl" hint-placeholder-count="4">
+          <div style="display:grid;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13px 'JetBrains Mono',monospace">{{ sl.label }}</span><span style="font:800 12px 'Outfit';border-radius:999px;padding:3px 8px;background:{{ sl.capBg }};color:{{ sl.capFg }}">{{ sl.cap }}</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px"><sc-for list="{{ sl.cards }}" as="c" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;background:#FBF8F5;border:1px solid #F0EBE6;font:600 12px 'Outfit';max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"><i style="flex:none;width:6px;height:6px;border-radius:50%;background:{{ c.color }};display:block"></i>{{ c.short }}</span></sc-for></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;movil&quot;],&quot;default&quot;:&quot;web&quot;,&quot;tsType&quot;:&quot;'web'|'movil'&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tablero&quot;,&quot;tableroLleno&quot;,&quot;tableroCiudad&quot;,&quot;tableroDetalle&quot;,&quot;tableroMovido&quot;,&quot;franjas&quot;,&quot;reglas&quot;,&quot;reglasExceso&quot;,&quot;importVacio&quot;,&quot;importPreview&quot;,&quot;importOk&quot;,&quot;usuarios&quot;],&quot;default&quot;:&quot;tablero&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const DAYS=[
+  {id:'jue12',short:'JUE',num:'12',full:'Jueves 12 nov',caps:[1,2,1,2,4,4,7,5,6],f:.8,cities:[['Cali',.7],['Cartagena',.3]]},
+  {id:'vie13',short:'VIE',num:'13',full:'Viernes 13 nov',caps:[1,3,2,1,5,4,3,4,5],f:.55,cities:[['Cartagena',.67],['Barranquilla',.33]]},
+  {id:'mar17',short:'MAR',num:'17',full:'Martes 17 nov',caps:[1,3,2,3,4,5,4,5,4],f:.4,cities:[['Barranquilla',1]]},
+  {id:'mie18',short:'MIÉ',num:'18',full:'Miércoles 18 nov',caps:[2,3,1,2,3,4,3,5,4],f:.45,cities:[['Santa Marta',.62],['Barranquilla',.38]]},
+  {id:'jue19',short:'JUE',num:'19',full:'Jueves 19 nov',caps:[2,2,1,1,3,4,5,5,4],f:.32,cities:[['Bogotá',1]]},
+  {id:'vie20',short:'VIE',num:'20',full:'Viernes 20 nov',caps:[2,3,2,3,4,2,2,4,2],f:.13,cities:[['Medellín',1]]},
+  {id:'sab21',short:'SÁB',num:'21',full:'Sábado 21 nov',caps:[2,3,3,2,0,0,0,0,0],f:.1,cities:[['Medellín',1]]}
+];
+const DMAP={};DAYS.forEach(d=>DMAP[d.id]=d);
+const HOURS=[8,9,10,11,16,17,18,19,20];
+const BLOCKS=[['Mañana',[8,9,10,11]],['Tarde',[16,17]],['Noche',[18,19,20]]];
+const CC={Cali:'#F25C2A',Cartagena:'#3E8FD0',Barranquilla:'#1F9D6B','Santa Marta':'#F2B630','Bogotá':'#8E5BD0','Medellín':'#E2407A',Quibdó:'#615C6E'};
+const CITY_DAYS={Cali:['jue12'],Cartagena:['jue12','vie13'],Barranquilla:['vie13','mar17','mie18'],'Santa Marta':['mie18'],'Bogotá':['jue19'],'Medellín':['vie20','sab21']};
+const MON={Cali:'Laura Méndez',Cartagena:'Yuranis Julio',Barranquilla:'Karen Pertuz','Santa Marta':'Andrea Vives','Bogotá':'Andrés Pardo','Medellín':'Carlos Restrepo'};
+const POOL=['Manuel Carpio','Kevin Galarza','Cristian Cabarcas','Sebastián Santis','Johan Ramírez','Olmedo Jácome','Jorge Bejarano','Jhan Carlos Martínez','Santiago Castrillón','Yehiron Bermudez','Luis Rodríguez','Paula Medina','Sebastián Rendón','Stiven Posada','Farly Artunduaga','Luisa Polanco','Leopoldo Caraballo'];
+const JUE12M={8:['Yehiron Bermudez'],9:['Yehiron Bermudez','Leopoldo Caraballo'],10:['Yehiron Bermudez'],11:['Manuel Carpio','Yehiron Bermudez'],16:['Jorge Bejarano','Jhan Carlos Martínez','Yehiron Bermudez','Leopoldo Caraballo'],17:['Cristian Cabarcas','Jhan Carlos Martínez','Santiago Castrillón','Luisa Polanco'],18:['Cristian Cabarcas','Manuel Carpio','Johan Ramírez','Jhan Carlos Martínez','Santiago Castrillón','Stiven Posada','Farly Artunduaga'],19:['Kevin Galarza','Cristian Cabarcas','Johan Ramírez','Sebastián Rendón','Stiven Posada'],20:['Kevin Galarza','Cristian Cabarcas','Johan Ramírez','Paula Medina','Sebastián Rendón','Stiven Posada']};
+function buildMent(){const M={};DAYS.forEach((d,di)=>{M[d.id]={};HOURS.forEach((h,hi)=>{if(d.id==='jue12'){M[d.id][h]=JUE12M[h].slice();return;}const n=d.caps[hi],arr=[];for(let k=0;k<n;k++)arr.push(POOL[(di*5+hi*3+k*2)%POOL.length]);M[d.id][h]=[...new Set(arr)];while(M[d.id][h].length<n)M[d.id][h].push(POOL[(M[d.id][h].length*7+di)%POOL.length]);M[d.id][h]=[...new Set(M[d.id][h])];});});return M;}
+const FN=['Santiago','Isabella','Samuel','Mariana','Luciana','Mateo','Sara','Nicolás','Daniela','Sebastián','Gabriela','Tomás','Salomé','Alejandro','Camila','Emmanuel','Valeria','Jerónimo','Antonella','Martín','Manuela','Julián','Laura','Andrés','María José','David','Ana Lucía','Esteban','Paula','Kevin','Natalia','Brayan','Juliana','Cristian','Sofía','Miguel','Ximena','Diego','Yuranis','Keila','Duván','Harold'];
+const LN=['Muñoz','Mosquera','Valencia','Caicedo','Rivas','Angulo','Hurtado','Lucumí','Rengifo','Banguera','Ocoró','Viveros','Arboleda','Quiñones','Zúñiga','Palacios','Cortés','Escobar','Murillo','Castillo','Julio','Barrios','Marrugo','Pertuz','Charris','Vives','Pardo','Restrepo','Gil','Ospina','Pájaro','Cassiani'];
+const PN=['Agenda digital para la tienda','Juego para aprender tablas','Mapa de rutas del MIO','Inventario para la panadería','Chatbot de tareas','Web del grupo de danza','Recetario del Pacífico','Calculadora de ahorro','Mascotas perdidas','Tienda de artesanías','Alarma para tomar agua','Quiz de historia local','Turnos para la barbería','Guía de huertas caseras','Bitácora de lectura','Portafolio de fotografía','Control de gastos familiar','Directorio de oficios','Clases de salsa en línea','Reporte de huecos','App del equipo de fútbol','Recordatorio de citas médicas','Feria virtual del colegio','Banco de tiempo vecinal','Carta digital del restaurante','Podcast del barrio','Mercado campesino en línea','Galería de grafiti','Rutas en bicicleta','Agenda cultural juvenil','Tutor de inglés básico','Venta de ropa usada','Registro de voluntarios','Mapa de wifi gratis','Encuestas para la JAC','Menú saludable semanal','Mapa de playas limpias','Guía turística por voz'];
+function rng(seed){let s=seed;return ()=>{s=(s*16807)%2147483647;return (s-1)/2147483646;};}
+function mkPerson(R){return FN[Math.floor(R()*FN.length)]+' '+LN[Math.floor(R()*LN.length)];}
+function buildCards(){
+  const R=rng(42),cards={},pos={};let n=0;
+  const add=(o,place)=>{const id='c'+(n++);const pair=R()<.62;cards[id]={id,city:o.city,proj:o.proj||PN[Math.floor(R()*PN.length)],m:o.m||(pair?[mkPerson(R),mkPerson(R)]:[mkPerson(R)]),desc:o.desc||'Proyecto final del curso de desarrollo web y apps.'};pos[id]=place;return id;};
+  add({city:'Cali',proj:'App de reciclaje para el barrio',m:['Valentina Gómez Ríos','Juan Pablo Ortiz'],desc:'Mapa de puntos de reciclaje y recordatorios de recolección para los vecinos de Siloé.'},{day:'jue12',min:1095,mi:0});
+  const FORCE={'jue12-1080':5,'jue12-1095':7,'jue12-1110':6,'jue12-1125':7};
+  DAYS.forEach(d=>{HOURS.forEach((h,hi)=>{const cap=d.caps[hi];[0,15,30,45].forEach(q=>{const min=h*60+q,k=d.id+'-'+min;let occ=k in FORCE?FORCE[k]:Math.max(0,Math.min(cap,Math.round(cap*d.f+(R()-.5)*cap*.9)));if(!cap)occ=0;const have=Object.values(pos).filter(p=>p&&p.day===d.id&&p.min===min).length;for(let i=have;i<occ;i++){let r=R(),acc=0,city=d.cities[0][0];for(const [c,w] of d.cities){acc+=w;if(r<=acc){city=c;break;}}add({city},{day:d.id,min,mi:i});}});});});
+  [['Cali'],['Cali'],['Cali'],['Santa Marta'],['Cartagena'],['Cartagena'],['Bogotá'],['Santa Marta'],['Cali'],['Medellín'],['Barranquilla'],['Bogotá'],['Medellín'],['Santa Marta']].forEach(([c])=>add({city:c},null));
+  return {cards,pos};
+}
+const BASE=buildCards();
+const hm=min=>{const h=Math.floor(min/60),m=String(min%60).padStart(2,'0');return (h>12?h-12:h)+':'+m;};
+const suf=min=>min<720?' a. m.':' p. m.';
+const RULES0={jue12:{res:{Cali:80,Cartagena:0},max:{Cali:128,Cartagena:40},sob:'Cali'},vie13:{res:{Cartagena:80,Barranquilla:0},max:{Cartagena:112,Barranquilla:112},sob:'Barranquilla'},mar17:{res:{Barranquilla:124},max:{Barranquilla:124},sob:'Barranquilla'},mie18:{res:{'Santa Marta':60,Barranquilla:0},max:{'Santa Marta':108,Barranquilla:48},sob:'Barranquilla'},jue19:{res:{'Bogotá':108},max:{'Bogotá':108},sob:'Bogotá'},vie20:{res:{'Medellín':96},max:{'Medellín':96},sob:'Medellín'},sab21:{res:{'Medellín':40},max:{'Medellín':40},sob:'Medellín'}};
+const IMP=[
+  {fila:2,names:'Valentina Gómez Ríos · Juan Pablo Ortiz',doc:'1144087321 · 1107512908',city:'Cali',proj:'App de reciclaje para el barrio',t:'ok',msg:'Lista'},
+  {fila:3,names:'Andrés Pérez',doc:'1047398562',city:'Cartagena',proj:'Tienda virtual para artesanos',t:'ok',msg:'Lista'},
+  {fila:14,names:'Camila Palacios Mena',doc:'1006453321',city:'Cali',proj:'Web del grupo de danza',t:'err',msg:'Documento repetido (también en la fila 87)'},
+  {fila:22,names:'Sebastián Ocoró Mina · —',doc:'1143998012 · —',city:'Cali',proj:'Diccionario caleño',t:'warn',msg:'Pareja incompleta: falta documento de la pareja'},
+  {fila:31,names:'Yarlin Mosquera Palacios',doc:'1077456120',city:'Quibdó',proj:'Mapa de lluvias del Atrato',t:'err',msg:'Quibdó no tiene días asignados'},
+  {fila:40,names:'Mariana Castro Peña · Juan David Rojas',doc:'1043556120 · 1043556988',city:'Barranquilla',proj:'Huerta escolar con sensores',t:'ok',msg:'Lista'},
+  {fila:57,names:'Luis Barrios Díaz',doc:'1047112093',city:'Cartagena',proj:'Agenda cultural juvenil',t:'warn',msg:'Celular con 9 dígitos'},
+  {fila:63,names:'Sofía Herrera Lozano',doc:'1082991450',city:'Santa Marta',proj:'Guía turística por voz',t:'ok',msg:'Lista'},
+  {fila:87,names:'Camila Palacios Mena · Kevin Popó',doc:'1006453321 · 1144220981',city:'Cali',proj:'Agenda digital para la tienda',t:'err',msg:'Documento repetido (también en la fila 14)'},
+  {fila:102,names:'Duván Grueso · Sara Lucumí',doc:'1005887412 · 1005887412',city:'Cali',proj:'Recetario del Pacífico',t:'err',msg:'Mismo documento para los dos integrantes'}
+];
+const IT={ok:['#17734F','#1F9D6B','transparent'],warn:['#8A5A00','#F2B630','#FFFCF2'],err:['#9E2230','#D64553','#FFF7F8']};
+const USERS=[['Mónica Rojas','Administrador','Todo el programa','monica.rojas'],['Marcela Ruiz','Coordinación','Todas las ciudades','marcela.ruiz'],['Felipe Arango','Coordinación','Todas las ciudades','felipe.arango'],['Laura Méndez','Monitor','Cali · Grupo 2','laura.mendez'],['Jhon Mosquera','Monitor','Cali · Grupo 1','jhon.mosquera'],['Yuranis Julio','Monitor','Cartagena · Grupo 1','yuranis.julio'],['Karen Pertuz','Monitor','Barranquilla · Grupo 3','karen.pertuz'],['Andrea Vives','Monitor','Santa Marta · Grupo 1','andrea.vives'],['Yehiron Bermudez','Mentor','23 franjas · 6 días','yehiron.bermudez'],['Cristian Cabarcas','Mentor','26 franjas · 6 días','cristian.cabarcas'],['Luisa Polanco','Mentor','6 franjas · 3 días','luisa.polanco'],['Leopoldo Caraballo','Mentor','8 franjas · 6 días','leopoldo.caraballo']];
+const RS={Administrador:['#1C1A24','#fff'],'Coordinación':['#FFE9DF','#9C3210'],Monitor:['#E3F5EC','#17734F'],Mentor:['#E4EFF9','#1F5F94']};
+const SECS=[['tablero','5a','Tablero'],['franjas','5b','Franjas y mentores'],['reglas','5c','Reglas de cupos'],['importar','5d','Importar inscritos'],['usuarios','5e','Usuarios y roles']];
+function initFor(start){
+  const b={sec:'tablero',day:'jue12',block:'Noche',cityF:'Todas',pos:{...BASE.pos},ment:buildMent(),drag:null,over:null,alert:'',confirm:null,detail:null,mentorPick:false,hist:{},rules:JSON.parse(JSON.stringify(RULES0)),rDay:'jue12',open:'2026-11-09T08:00',close:'2026-11-11T23:59',imp:'empty',impTab:'all',roleF:'all',toast:''};
+  const pendCali=Object.keys(BASE.pos).find(k=>!BASE.pos[k]&&BASE.cards[k].city==='Santa Marta');
+  const m={
+    tableroLleno:{alert:'6:15 p. m. ya está llena (7 de 7 mentores ocupados). Elige otra franja.',over:'jue12-1095'},
+    tableroCiudad:{confirm:{id:pendCali,day:'jue12',min:1140}},
+    tableroDetalle:{detail:'c0'},
+    tableroMovido:{toast:'Movido y notificado · estudiantes, mentor y monitor'},
+    franjas:{sec:'franjas'},reglas:{sec:'reglas'},reglasExceso:{sec:'reglas',rules:{...JSON.parse(JSON.stringify(RULES0)),jue12:{res:{Cali:80,Cartagena:60},max:{Cali:128,Cartagena:60},sob:'Cali'}}},
+    importVacio:{sec:'importar'},importPreview:{sec:'importar',imp:'preview'},importOk:{sec:'importar',imp:'done'},usuarios:{sec:'usuarios'}
+  };
+  return {...b,...(m[start]||{})};
+}
+
+class Component extends DCLogic {
+  state=initFor((this.props||{}).start);
+  componentDidUpdate(pp){if(pp.start!==this.props.start)this.setState(initFor(this.props.start));}
+  componentWillUnmount(){clearTimeout(this.tt);clearTimeout(this.ta);clearTimeout(this.ti);}
+  showToast(t){clearTimeout(this.tt);this.setState({toast:t});this.tt=setTimeout(()=>this.setState({toast:''}),2600);}
+  inSlot(day,min){const pos=this.state.pos;if(this._ip!==pos){this._ip=pos;const m={};for(const k in pos){const p=pos[k];if(!p)continue;const key=p.day+'-'+p.min;(m[key]||(m[key]=[])).push(k);}this._im=m;}return (this._im[day+'-'+min]||[]).slice();}
+  capOf(day,min){return (this.state.ment[day][Math.floor(min/60)]||[]).length;}
+  addHist(id,d){const t=new Date();let h=t.getHours(),mm=String(t.getMinutes()).padStart(2,'0');const ap=h>=12?'p. m.':'a. m.';h=h%12||12;this.setState(s=>({hist:{...s.hist,[id]:[...(s.hist[id]||[]),{t:'Hoy · '+h+':'+mm+' '+ap,d}]}}));}
+  place(id,day,min){
+    const used=this.inSlot(day,min).filter(k=>k!==id).map(k=>this.state.pos[k].mi);
+    const ments=this.state.ment[day][Math.floor(min/60)];let mi=0;while(used.includes(mi)&&mi<ments.length)mi++;
+    this.setState(s=>({pos:{...s.pos,[id]:{day,min,mi}},confirm:null,over:null,drag:null}));
+    this.addHist(id,'Movido a '+DMAP[day].full+' · '+hm(min)+suf(min)+' con '+ments[mi]+' (Mónica Rojas)');
+    this.showToast('Movido y notificado · estudiantes, mentor y monitor');
+  }
+  dropOn(day,min){
+    const id=this.state.drag;if(!id)return;const card=BASE.cards[id],cur=this.state.pos[id];
+    if(cur&&cur.day===day&&cur.min===min)return this.setState({over:null,drag:null});
+    const cap=this.capOf(day,min),occ=this.inSlot(day,min).length;
+    if(occ>=cap){clearTimeout(this.ta);this.setState({alert:hm(min)+suf(min)+' ya está llena ('+occ+' de '+cap+' mentores ocupados). Elige otra franja.',over:null,drag:null});this.ta=setTimeout(()=>this.setState({alert:''}),4200);return;}
+    if(!CITY_DAYS[card.city].includes(day))return this.setState({confirm:{id,day,min},over:null,drag:null});
+    this.place(id,day,min);
+  }
+  dropPend(){const id=this.state.drag;if(!id||!this.state.pos[id])return this.setState({over:null,drag:null});this.setState(s=>({pos:{...s.pos,[id]:null},over:null,drag:null}));this.addHist(id,'Quitado de su franja (Mónica Rojas)');this.showToast('Quitado de la franja y notificado');}
+  cardVals(id){const c=BASE.cards[id],p=this.state.pos[id];const ments=p?this.state.ment[p.day][Math.floor(p.min/60)]:[];return {id,city:c.city,color:CC[c.city],proj:c.proj,members:c.m.join(' · '),short:c.m[0].split(' ')[0]+(c.m[1]?' + '+c.m[1].split(' ')[0]:'')+' · '+c.city,kind:c.m.length>1?'PAREJA':'INDIV.',mentor:p?(ments[p.mi]||'Sin mentor'):'',op:this.state.drag===id?.4:1,bd:'#F0EBE6',
+    drag:e=>{try{e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move';}catch(x){}this.setState({drag:id,alert:''});},end:()=>this.setState({drag:null,over:null}),open:()=>this.setState({detail:id,mentorPick:false})};}
+  renderVals(){
+    const s=this.state,web=this.props.modo!=='movil',D=DMAP[s.day];
+    const hourList=(BLOCKS.find(b=>b[0]===s.block)||BLOCKS[2])[1];
+    let dayOccN=0,dayCap=0;HOURS.forEach(h=>{const c=(s.ment[s.day][h]||[]).length*4;dayCap+=c;[0,15,30,45].forEach(q=>{dayOccN+=this.inSlot(s.day,h*60+q).length;});});
+    const hourCols=hourList.map(h=>{const ments=s.ment[s.day][h]||[],n=ments.length;return {label:hm(h*60)+suf(h*60),mentTxt:n+(n===1?' mentor':' mentores'),off:n===0,slots:n===0?[]:[0,15,30,45].map(q=>{const min=h*60+q,k=s.day+'-'+min,ids=this.inSlot(s.day,min).sort((a,b)=>s.pos[a].mi-s.pos[b].mi),occ=ids.length,full=occ>=n,ov=s.over===k;
+      const red=ov&&(full||(s.alert&&s.over===k));
+      return {label:hm(min),cap:occ+'/'+n,capBg:full?'#FCE6E8':occ/n>=.7?'#FFF7DC':'#E3F5EC',capFg:full?'#9E2230':occ/n>=.7?'#8A5A00':'#17734F',
+        bg:red?'#FFF4F5':ov?'#FFF1EA':'#fff',border:red?'#D64553':ov?'#F25C2A':'#F0EBE6',bstyle:ov?'dashed':'solid',cards:ids.map(i=>this.cardVals(i)),
+        over:e=>{e.preventDefault();if(s.over!==k)this.setState({over:k});},leave:()=>{},drop:e=>{e.preventDefault();this.dropOn(s.day,min);}};})};});
+    const pendIds=Object.keys(s.pos).filter(k=>!s.pos[k]&&(s.cityF==='Todas'||BASE.cards[k].city===s.cityF));
+    const pendCities=['Todas',...new Set(Object.keys(s.pos).filter(k=>!s.pos[k]).map(k=>BASE.cards[k].city))];
+    const dayCities=Object.keys(CITY_DAYS).filter(c=>CITY_DAYS[c].includes(s.day)).map(c=>({name:c,color:CC[c]}));
+    const dayTabs=DAYS.map(d=>{const a=d.id===s.day;return {short:d.short,num:d.num,border:a?'#1C1A24':'#F0EBE6',bg:a?'#fff':'#FBF9F7',kc:a?'#C9461B':'#8A8496',on:()=>this.setState({day:d.id,block:d.id==='sab21'?'Mañana':s.block})};});
+    // franjas
+    const fr={total:0,rows:HOURS.map(h=>{const ms=s.ment[s.day][h]||[],n=ms.length;return {label:hm(h*60)+' – '+hm(h*60+60)+suf(h*60),n,op:n?1:.6,capTxt:n?(n*4)+' proyectos':'No se ofrece',capBg:n?'#E3F5EC':'#F0EBE6',capFg:n?'#17734F':'#8A8496',
+      ments:ms.map(name=>({name,rm:()=>this.setState(st=>({ment:{...st.ment,[st.day]:{...st.ment[st.day],[h]:st.ment[st.day][h].filter(x=>x!==name)}}}))})),
+      avail:POOL.filter(p=>!ms.includes(p)),add:e=>{const v=e.target.value;if(!v)return;this.setState(st=>({ment:{...st.ment,[st.day]:{...st.ment[st.day],[h]:[...st.ment[st.day][h],v]}}}));}};})};
+    fr.total=fr.rows.reduce((a,r)=>a+r.n*4,0);
+    // reglas
+    const capDay=id=>HOURS.reduce((a,h)=>a+(s.ment[id][h]||[]).length*4,0);
+    const ruleInfo=(id)=>{const r=s.rules[id],cap=capDay(id),sum=Object.values(r.res).reduce((a,b)=>a+b,0),over=sum>cap,free=Math.max(0,cap-sum);
+      const segs=Object.entries(r.res).filter(([c,v])=>v>0).map(([c,v])=>({w:(Math.min(v,cap)/cap*100)+'%',color:CC[c],label:c+' '+v}));
+      if(free>0)segs.push({w:(free/cap*100)+'%',color:'transparent',label:'Libre → '+r.sob+' · '+free});
+      const parts=Object.entries(r.res).map(([c,v])=>{const mx=r.max[c];return v>0?c+' '+v+' reservados':mx<cap?c+' '+mx+' máximo':c;});
+      const line=DMAP[id].full+' · '+cap+' cupos → '+parts.join(' · ')+' · resto libre para '+r.sob;
+      return {full:DMAP[id].full,cap,sum,over,excess:sum-cap,segs,line,sumTxt:over?'Se pasa '+(sum-cap):sum+'/'+cap+' reservados',sumC:over?'#C2303D':'#615C6E',sumBig:over?'Reservado '+sum+' de '+cap+' · se pasa por '+(sum-cap):'Reservado '+sum+' de '+cap+' · '+free+' libres',sob:r.sob};};
+    const step=(id,kind,c,dv)=>this.setState(st=>{const r=JSON.parse(JSON.stringify(st.rules));r[id][kind][c]=Math.max(0,Math.min(200,r[id][kind][c]+dv));if(kind==='res'&&r[id].max[c]<r[id].res[c])r[id].max[c]=r[id].res[c];return {rules:r};});
+    const cur=ruleInfo(s.rDay);
+    cur.rows=Object.keys(s.rules[s.rDay].res).map(c=>({name:c,color:CC[c],res:s.rules[s.rDay].res[c],max:s.rules[s.rDay].max[c],resDn:()=>step(s.rDay,'res',c,-4),resUp:()=>step(s.rDay,'res',c,4),maxDn:()=>step(s.rDay,'max',c,-4),maxUp:()=>step(s.rDay,'max',c,4)}));
+    cur.sobOpts=Object.keys(s.rules[s.rDay].res);
+    const anyOver=DAYS.some(d=>ruleInfo(d.id).over);
+    const rl={cur,over:anyOver,saveBg:anyOver?'#C9C3CC':'#F25C2A',open:s.open,close:s.close,onOpen:e=>this.setState({open:e.target.value}),onClose:e=>this.setState({close:e.target.value}),
+      onSob:e=>{const v=e.target.value;this.setState(st=>{const r=JSON.parse(JSON.stringify(st.rules));r[st.rDay].sob=v;return {rules:r};});},
+      days:DAYS.map(d=>{const i=ruleInfo(d.id),a=d.id===s.rDay;return {...i,border:a?'#1C1A24':i.over?'#F3B8BF':'#F0EBE6',bg:a?'#fff':'#FBF9F7',on:()=>this.setState({rDay:d.id})};})};
+    // importar
+    const counts={all:IMP.length,ok:4,warn:2,err:4};
+    const imp={empty:s.imp==='empty',loading:s.imp==='loading',preview:s.imp==='preview',done:s.imp==='done',
+      tabs:[['all','Todas las filas','532','#1C1A24'],['ok','Listas','520','#1F9D6B'],['warn','Advertencias','4','#F2B630'],['err','Errores','8','#D64553']].map(([id,label,n,dot])=>{const a=s.impTab===id;return {label,n,dot,border:a?'#1C1A24':'#F0EBE6',bg:a?'#fff':'#FBF9F7',on:()=>this.setState({impTab:id})};}),
+      rows:IMP.filter(r=>s.impTab==='all'||r.t===s.impTab).map(r=>({...r,fg:IT[r.t][0],dot:IT[r.t][1],rowBg:IT[r.t][2]}))};
+    // usuarios
+    const RC={all:39,Administrador:1,'Coordinación':2,Monitor:19,Mentor:17};
+    const roleTabs=[['all','Todos'],['Administrador','Administradores'],['Coordinación','Coordinación'],['Monitor','Monitores'],['Mentor','Mentores']].map(([id,label])=>{const a=s.roleF===id;return {label,n:RC[id],border:a?'#1C1A24':'#F0EBE6',bg:a?'#fff':'#FBF9F7',on:()=>this.setState({roleF:id})};});
+    const users=USERS.filter(u=>s.roleF==='all'||u[1]===s.roleF).map(([name,role,scope,user])=>({name,role,scope,user,ini:name.split(' ').map(x=>x[0]).slice(0,2).join(''),rBg:RS[role][0],rFg:RS[role][1],avBg:RS[role][0],avFg:RS[role][1],reset:()=>this.showToast('Enviamos una clave nueva a '+name.split(' ')[0])}));
+    // detail
+    let detail=null,mentorOpts=[];
+    if(s.detail){const c=BASE.cards[s.detail],p=s.pos[s.detail];const ments=p?s.ment[p.day][Math.floor(p.min/60)]:[];
+      const base=s.detail==='c0'?[{t:'9 nov · 8:12 a. m.',d:'Valentina eligió jueves 12 · 6:15 p. m.'},{t:'9 nov · 8:12 a. m.',d:'Mentor asignado automáticamente: Cristian Cabarcas'},{t:'10 nov · 4:40 p. m.',d:'Laura Méndez pidió cambio: “Juan Pablo entra a trabajar a las 6:00 p. m.”'}]:(p?[{t:'10 nov · 7:05 p. m.',d:c.m[0].split(' ')[0]+' eligió la hora desde su celular'},{t:'10 nov · 7:05 p. m.',d:'Mentor asignado automáticamente'}]:[{t:'8 nov · 3:00 p. m.',d:'Importado desde inscritos_jc_2026.xlsx'}]);
+      detail={city:c.city,color:CC[c.city],kind:c.m.length>1?'En pareja':'Individual',proj:c.proj,desc:c.desc,when:p?DMAP[p.day].full.replace(' nov','')+' · '+hm(p.min)+suf(p.min):'Sin hora',mentor:p?(ments[p.mi]||'—'):'—',monitor:MON[c.city]||'—',placed:!!p,
+        people:c.m.map((n,i)=>({name:n,doc:String(1000000000+((n.length*7919+i*131)%99999999)),cel:'3'+String(10+(n.length*37)%89)+' '+String(100+(n.length*53)%899)+' '+String(1000+(n.length*97)%8999)})),
+        hist:[...base,...(s.hist[s.detail]||[])]};
+      if(p){const usedMi=this.inSlot(p.day,p.min).filter(k=>k!==s.detail).map(k=>s.pos[k].mi);mentorOpts=ments.map((name,mi)=>{const me=mi===p.mi,busy=usedMi.includes(mi);return {name,note:me?'Actual':busy?'Ocupado a esa hora':'Libre',busy:busy||me,border:me?'#F25C2A':'#F0EBE6',bg:me?'#FFF1EA':busy?'#F7F4F1':'#fff',fg:busy?'#9A94A6':'#1C1A24',cursor:busy||me?'default':'pointer',
+        pick:()=>{this.setState(st=>({pos:{...st.pos,[st.detail]:{...st.pos[st.detail],mi}},mentorPick:false}));this.addHist(s.detail,'Mentor cambiado a '+name+' (Mónica Rojas)');this.showToast('Mentor cambiado y notificado');}};});}
+    }
+    const cf=s.confirm?BASE.cards[s.confirm.id]:null;
+    return {
+      isWeb:web,isMovil:!web,secSlug:s.sec,
+      nav:SECS.map(([id,k,label])=>{const a=s.sec===id;return {k,label,bg:a?'#FFE9DF':'transparent',fg:a?'#9C3210':'#615C6E',font:a?"700 15px 'Outfit'":"600 15px 'Outfit'",on:()=>this.setState({sec:id,detail:null,confirm:null})};}),
+      secTablero:s.sec==='tablero',secFranjas:s.sec==='franjas',secReglas:s.sec==='reglas',secImportar:s.sec==='importar',secUsuarios:s.sec==='usuarios',
+      dayFull:D.full,dayOcc:dayOccN+'/'+dayCap+' cupos ocupados',dayTabs,dayCities,
+      blocks:BLOCKS.map(([b])=>{const a=b===s.block;return {label:b,bg:a?'#fff':'transparent',font:a?"700 14px 'Outfit'":"600 14px 'Outfit'",sh:a?'0 1px 3px rgba(0,0,0,.08)':'none',on:()=>this.setState({block:b})};}),
+      hourCols,pendCount:Object.keys(s.pos).filter(k=>!s.pos[k]).length,pendCards:pendIds.map(i=>this.cardVals(i)),
+      cityFilters:pendCities.map(c=>{const a=s.cityF===c;return {label:c,color:c==='Todas'?'#1C1A24':CC[c],border:a?'#1C1A24':'#E7E2DD',bg:a?'#fff':'transparent',on:()=>this.setState({cityF:c})};}),
+      pend:{over:e=>{e.preventDefault();if(s.over!=='pend')this.setState({over:'pend'});},leave:()=>{},drop:e=>{e.preventDefault();this.dropPend();},border:s.over==='pend'?'#F25C2A':'#F0EBE6',bstyle:s.over==='pend'?'dashed':'solid'},
+      alertFull:s.alert,closeAlert:()=>this.setState({alert:'',over:null}),
+      confirmCity:cf?{title:cf.city+' no tiene cupos este día, ¿mover de todas formas?',text:'Las reglas de '+DMAP[s.confirm.day].full+' no incluyen a '+cf.city+'. Si lo mueves a las '+hm(s.confirm.min)+suf(s.confirm.min)+', usará un cupo libre del día y avisaremos a coordinación.'}:null,
+      cancelMove:()=>this.setState({confirm:null}),forceMove:()=>this.place(s.confirm.id,s.confirm.day,s.confirm.min),
+      detail,closeDetail:()=>this.setState({detail:null,mentorPick:false}),stop:e=>e.stopPropagation(),mentorPick:s.mentorPick,mentorOpts,toggleMentorPick:()=>this.setState({mentorPick:!s.mentorPick}),
+      fr,rl,saveRules:()=>this.showToast('Reglas guardadas · se aplican desde ya'),
+      imp,pickFile:()=>{this.setState({imp:'loading'});clearTimeout(this.ti);this.ti=setTimeout(()=>this.setState({imp:'preview'}),1300);},resetImp:()=>this.setState({imp:'empty',impTab:'all'}),doImport:()=>{this.setState({imp:'loading'});clearTimeout(this.ti);this.ti=setTimeout(()=>this.setState({imp:'done'}),1200);},
+      roleTabs,users,newUser:()=>this.showToast('Formulario de nuevo usuario (próximo paso)'),
+      toast:s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

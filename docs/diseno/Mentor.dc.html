@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"><style>@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,92,42,.55)}70%{box-shadow:0 0 0 8px rgba(242,92,42,0)}100%{box-shadow:0 0 0 0 rgba(242,92,42,0)}}a{color:#C9461B}a:hover{color:#9C3210}button{font-family:'Outfit',sans-serif;cursor:pointer}input{font-family:'Outfit',sans-serif}input:focus{outline:none}</style></helmet>
+
+<sc-if value="{{ isWeb }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;height:800px;border-radius:16px;background:#fff;overflow:hidden;display:flex;flex-direction:column;border:1px solid #E4DDD6;box-shadow:0 24px 60px -24px rgba(120,40,10,.3);position:relative;font-family:'Outfit',sans-serif;color:#1C1A24;box-sizing:border-box">
+  <div style="height:40px;flex:none;background:#F5F2EF;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #EAE4DE"><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><div style="margin-left:16px;height:24px;flex:1;max-width:420px;border-radius:7px;background:#fff;font:500 12px 'JetBrains Mono',monospace;color:#615C6E;display:flex;align-items:center;padding:0 10px">horarios.jovenescreativos.co/mentor</div></div>
+
+  <sc-if value="{{ isLogin }}">
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0">
+      <div style="background:#1C1A24;color:#fff;padding:56px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-120px;bottom:-140px;width:420px;height:420px;border-radius:50%;border:70px solid #F25C2A;box-sizing:border-box"></div>
+        <div style="position:absolute;right:220px;bottom:200px;width:40px;height:40px;border-radius:50%;background:#FFC93C"></div>
+        <div style="position:absolute;left:90px;bottom:90px;width:22px;height:22px;background:#3E8FD0;border-radius:5px;transform:rotate(20deg)"></div>
+        <div style="align-self:flex-start;background:#fff;border-radius:18px;padding:10px 16px"><img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:52px;width:auto;display:block"></div>
+        <div style="flex:1"></div>
+        <div style="position:relative;font:600 13px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#FFB59A;margin-bottom:14px">MENTORES · PROYECTO FINAL 2026</div>
+        <div style="position:relative;font:800 48px/1.05 'Outfit';letter-spacing:-.035em;max-width:440px">Tu agenda de presentaciones, cada 15 minutos</div>
+        <div style="flex:1.2"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:56px">
+        <div style="width:400px;display:flex;flex-direction:column">
+          <h2 style="margin:0 0 8px;font:800 34px/1.1 'Outfit';letter-spacing:-.03em">Ingresa a tu agenda</h2>
+          <p style="margin:0 0 24px;font:500 16px 'Outfit';color:#615C6E">Usa el usuario y la clave que te dio coordinación.</p>
+          <sc-if value="{{ loginErr }}"><div style="padding:13px 16px;border-radius:14px;background:#FCE6E8;color:#9E2430;font:600 15px/1.4 'Outfit';margin-bottom:18px;display:flex;gap:10px;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="flex:none"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.5"></path></svg>{{ loginErr }}</div></sc-if>
+          <label style="font:700 15px 'Outfit';margin-bottom:8px">Usuario</label>
+          <input value="{{ user }}" onChange="{{ onUser }}" style="height:56px;border:2px solid #E7E2DD;border-radius:16px;padding:0 16px;font:600 17px 'Outfit';color:#1C1A24">
+          <label style="font:700 15px 'Outfit';margin:18px 0 8px">Clave</label>
+          <input type="password" value="{{ pass }}" onChange="{{ onPass }}" onKeyDown="{{ passKey }}" placeholder="••••••••" style="height:56px;border:2px solid {{ passBorder }};border-radius:16px;padding:0 16px;font:700 18px 'Outfit';letter-spacing:.12em;color:#1C1A24">
+          <button onClick="{{ login }}" style="margin-top:26px;height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0" style-hover="background:#E04E1D">Entrar</button>
+          <div style="text-align:center;margin-top:16px;font:500 14px 'Outfit';color:#615C6E">¿Olvidaste la clave? Pídela a coordinación</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}">
+    <div style="flex:1;display:flex;min-height:0">
+      <div style="width:228px;flex:none;border-right:1px solid #F0EBE6;padding:18px 16px 20px;display:flex;flex-direction:column;gap:20px;background:#FCFAF8">
+        <img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:62px;width:auto;display:block;align-self:flex-start">
+        <div style="display:grid;gap:4px">
+          <div style="height:42px;border-radius:12px;background:#FFE9DF;color:#9C3210;font:700 15px 'Outfit';display:flex;align-items:center;padding:0 12px">Mi agenda</div>
+          <button onClick="{{ openList }}" style="height:42px;border-radius:12px;border:0;background:transparent;color:#615C6E;font:600 15px 'Outfit';display:flex;align-items:center;justify-content:space-between;padding:0 12px;text-align:left" style-hover="background:#F5EFEA">Calificaciones<span style="font:600 11px 'Outfit';background:#121212;color:#fff;border-radius:6px;padding:2px 7px">Sofka</span></button>
+          <div style="height:42px;border-radius:12px;color:#615C6E;font:600 15px 'Outfit';display:flex;align-items:center;padding:0 12px">Ayuda</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div style="width:38px;height:38px;border-radius:50%;background:#3E8FD0;color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px 'Outfit'">YB</div>
+          <div><div style="font:700 14px 'Outfit'">Yehiron Bermudez</div><div style="font:500 12.5px 'Outfit';color:#615C6E">Mentor</div></div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:24px 30px 0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px">
+          <div>
+            <div style="font:600 12px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em;text-transform:uppercase">Mi agenda · {{ dayFull }} · Hora COL</div>
+            <div style="font:800 30px/1.12 'Outfit';letter-spacing:-.03em;margin-top:6px">{{ summary }}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex:none">
+            <sc-for list="{{ days }}" as="d" hint-placeholder-count="3">
+              <button onClick="{{ d.on }}" style="width:76px;height:64px;border-radius:16px;border:2px solid {{ d.border }};background:{{ d.bg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#1C1A24">
+                <span style="font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;color:{{ d.kc }}">{{ d.short }}</span><span style="font:800 21px/1 'Outfit'">{{ d.num }}</span><span style="font:600 11px 'Outfit';color:#615C6E">{{ d.count }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ isEmpty }}">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:40px">
+            <div style="position:relative;width:140px;height:140px;margin-bottom:22px"><div style="position:absolute;inset:0;border-radius:50%;border:18px solid #FFE1D3"></div><div style="position:absolute;inset:34px;border-radius:24px;background:#FFF1EA;color:#C9461B;display:flex;align-items:center;justify-content:center"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="3"></rect><path d="M4 10h16"></path><path d="M9 3.5v4"></path><path d="M15 3.5v4"></path></svg></div><div style="position:absolute;right:-6px;top:8px;width:18px;height:18px;border-radius:50%;background:#FFC93C"></div><div style="position:absolute;left:-2px;bottom:14px;width:12px;height:12px;background:#3E8FD0;border-radius:3px;transform:rotate(20deg)"></div></div>
+            <div style="font:800 26px 'Outfit';letter-spacing:-.02em;margin-bottom:8px">Sin proyectos asignados aún</div>
+            <div style="font:500 16px/1.5 'Outfit';color:#615C6E;max-width:440px">Tus franjas este día: <b style="color:#1C1A24">{{ franjasTxt }}</b>. Cuando los estudiantes elijan hora, aparecerán aquí.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasBlocks }}">
+          <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px;margin-top:20px">
+            <div style="overflow:auto;min-height:0;padding-bottom:24px;display:grid;gap:18px;align-content:start">
+              <sc-for list="{{ hours }}" as="h" hint-placeholder-count="2">
+                <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px">
+                  <div style="padding-top:6px"><div style="font:800 18px 'Outfit'">{{ h.label }}</div><div style="font:500 12.5px/1.35 'Outfit';color:#615C6E;margin-top:2px">{{ h.sala }}</div></div>
+                  <div style="display:grid;gap:10px;border-left:2px solid #F0EBE6;padding-left:16px">
+                    <sc-for list="{{ h.blocks }}" as="b" hint-placeholder-count="4">
+                      <sc-if value="{{ b.libre }}">
+                        <div style="height:52px;border-radius:18px;border:2px dashed #E7E2DD;display:flex;align-items:center;gap:12px;padding:0 16px;color:#9A94A6"><span style="font:600 13px 'JetBrains Mono',monospace">{{ b.range }}</span><span style="font:700 15px 'Outfit'">Libre</span></div>
+                      </sc-if>
+                      <sc-if value="{{ b.proj }}">
+                        <div style="border-radius:20px;border:2px solid {{ b.border }};background:{{ b.bg }};padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;box-shadow:{{ b.shadow }}">
+                          <div style="min-width:0;display:grid;gap:5px">
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                              <span style="font:600 13px 'JetBrains Mono',monospace;color:#1C1A24">{{ b.range }}</span>
+                              <span style="display:inline-flex;align-items:center;gap:6px;font:700 12.5px 'Outfit';color:#4A4556"><i style="width:8px;height:8px;border-radius:50%;background:{{ b.cityC }};display:block"></i>{{ b.city }}</span>
+                              <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;background:{{ b.stBg }};color:{{ b.stFg }};font:700 12px 'Outfit'"><i style="width:7px;height:7px;border-radius:50%;background:{{ b.stDot }};display:block;animation:{{ b.anim }}"></i>{{ b.st }}</span>
+                            </div>
+                            <div style="font:800 16.5px/1.25 'Outfit'">{{ b.name }}</div>
+                            <div style="font:500 13.5px/1.4 'Outfit';color:#615C6E;text-wrap:pretty">{{ b.desc }}</div>
+                            <div style="font:600 13.5px 'Outfit';color:#3F3A4A">{{ b.members }}</div>
+                          </div>
+                          <div style="display:grid;gap:8px;justify-items:stretch;width:150px">
+                            <sc-if value="{{ b.canOpen }}"><button onClick="{{ b.open }}" style="height:40px;border-radius:12px;border:0;background:{{ b.openBg }};color:{{ b.openFg }};font:700 14px 'Outfit'">Abrir sala</button></sc-if>
+                            <button onClick="{{ b.grade }}" style="height:40px;border-radius:12px;border:{{ b.gradeBorder }};background:{{ b.gradeBg }};color:{{ b.gradeFg }};font:700 13.5px 'Outfit'">{{ b.gradeLabel }}</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px;min-height:0">
+              <sc-if value="{{ cur }}">
+                <div style="border-radius:24px;background:#1C1A24;color:#fff;padding:22px;position:relative;overflow:hidden">
+                  <div style="position:absolute;right:-60px;top:-60px;width:170px;height:170px;border-radius:50%;border:28px solid #F25C2A;box-sizing:border-box"></div>
+                  <div style="position:relative;display:flex;align-items:center;gap:8px;font:600 11.5px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#FFB59A"><i style="width:8px;height:8px;border-radius:50%;background:#F25C2A;display:block;animation:pulse 1.6s infinite"></i>EN CURSO · {{ cur.range }}</div>
+                  <div style="position:relative;font:800 22px/1.2 'Outfit';margin:12px 0 6px;padding-right:50px">{{ cur.name }}</div>
+                  <div style="position:relative;font:600 14.5px 'Outfit';color:#E8E4EC">{{ cur.members }}</div>
+                  <div style="position:relative;font:500 13px 'Outfit';color:#B9B3C3;margin-top:2px">{{ cur.city }}</div>
+                  <div style="position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.14);margin-top:16px;overflow:hidden"><div style="height:100%;width:{{ curPct }};background:#FFC93C;border-radius:4px"></div></div>
+                  <div style="position:relative;font:600 13px 'Outfit';color:#E8E4EC;margin-top:8px">{{ curLeft }}</div>
+                  <div style="position:relative;display:grid;gap:8px;margin-top:16px">
+                    <button onClick="{{ cur.open }}" style="height:50px;border-radius:16px;border:0;background:#F25C2A;color:#fff;font:700 16px 'Outfit'">Abrir sala</button>
+                    <button onClick="{{ cur.grade }}" style="height:44px;border-radius:14px;border:0;background:#fff;color:#1C1A24;font:700 14.5px 'Outfit'">Calificar ahora</button><button onClick="{{ terminar }}" style="height:44px;border-radius:14px;border:0;background:rgba(255,255,255,.1);color:#fff;font:700 14.5px 'Outfit'">Terminó, pasar al siguiente</button>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ next }}">
+                <div style="border-radius:20px;border:1px solid #F0EBE6;background:#FBF8F5;padding:16px 18px">
+                  <div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#8A8496">SIGUIENTE · {{ next.range }}</div>
+                  <div style="font:800 16px 'Outfit';margin-top:6px">{{ next.name }}</div>
+                  <div style="font:500 13.5px 'Outfit';color:#615C6E">{{ next.members }}</div>
+                </div>
+              </sc-if>
+              <div style="border-radius:20px;border:1px solid #F0EBE6;padding:16px 18px;display:grid;gap:10px">
+                <div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#8A8496">RESUMEN DEL DÍA</div>
+                <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;align-items:center;font:600 14px 'Outfit';color:#3F3A4A"><span style="display:flex;align-items:center;gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:{{ s.dot }};display:block"></i>{{ s.label }}</span><span style="font:800 16px 'Outfit';color:#1C1A24">{{ s.n }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ grading }}"><div style="position:absolute;inset:40px 0 0 0;z-index:8;background:#F4F4F4"><dc-import name="Calificar" modo="web" embed="{{ true }}" open-key="{{ gradeKey }}" on-close="{{ closeGrade }}" hint-size="100%,100%"></dc-import></div></sc-if>
+  <sc-if value="{{ toast }}">
+    <div style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:#1C1A24;color:#fff;border-radius:14px;padding:13px 18px;font:600 15px 'Outfit';box-shadow:0 10px 30px -10px rgba(0,0,0,.4);white-space:nowrap;z-index:6">{{ toast }}</div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMovil }}">
+<div style="width:390px;height:844px;border-radius:50px;border:9px solid #1C1A24;background:#FBF8F5;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'Outfit',sans-serif;color:#1C1A24;box-shadow:0 24px 60px -24px rgba(120,40,10,.35)">
+  <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:700 14px 'Outfit';position:relative;z-index:2;background:{{ statusBg }};color:{{ statusFg }}"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><i style="width:16px;height:10px;border-radius:2px;background:currentColor;display:block"></i><i style="width:22px;height:11px;border-radius:3px;border:1.5px solid currentColor;display:block;box-sizing:border-box"></i></span></div>
+
+  <sc-if value="{{ isLogin }}">
+    <div style="height:280px;flex:none;background:#1C1A24;color:#fff;padding:12px 24px 28px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-90px;bottom:-110px;width:260px;height:260px;border-radius:50%;border:44px solid #F25C2A;box-sizing:border-box"></div>
+      <div style="position:absolute;right:150px;bottom:120px;width:24px;height:24px;border-radius:50%;background:#FFC93C"></div>
+      <div style="align-self:flex-start;background:#fff;border-radius:16px;padding:7px 12px"><img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:40px;width:auto;display:block"></div>
+      <div style="flex:1"></div>
+      <div style="position:relative;font:600 11.5px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#FFB59A;margin-bottom:10px">MENTORES · PROYECTO FINAL</div>
+      <div style="position:relative;font:800 30px/1.06 'Outfit';letter-spacing:-.03em;max-width:280px">Tu agenda de presentaciones</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;padding:24px 22px 22px">
+      <sc-if value="{{ loginErr }}"><div style="padding:12px 14px;border-radius:14px;background:#FCE6E8;color:#9E2430;font:600 14.5px/1.4 'Outfit';margin-bottom:14px">{{ loginErr }}</div></sc-if>
+      <label style="font:700 15px 'Outfit';margin-bottom:8px">Usuario</label>
+      <input value="{{ user }}" onChange="{{ onUser }}" style="height:56px;border:2px solid #E7E2DD;border-radius:16px;padding:0 16px;font:600 17px 'Outfit';color:#1C1A24;background:#fff">
+      <label style="font:700 15px 'Outfit';margin:16px 0 8px">Clave</label>
+      <input type="password" value="{{ pass }}" onChange="{{ onPass }}" onKeyDown="{{ passKey }}" placeholder="••••••••" style="height:56px;border:2px solid {{ passBorder }};border-radius:16px;padding:0 16px;font:700 18px 'Outfit';letter-spacing:.12em;color:#1C1A24;background:#fff">
+      <div style="flex:1"></div>
+      <button onClick="{{ login }}" style="height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0">Entrar</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}">
+    <div style="height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:2px 20px 0">
+      <img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:42px;width:auto;display:block">
+      <div style="width:36px;height:36px;border-radius:50%;background:#3E8FD0;color:#fff;display:flex;align-items:center;justify-content:center;font:800 13px 'Outfit'">YB</div>
+    </div>
+    <div style="flex:1;min-height:0;overflow:auto;padding:10px 20px 24px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em;text-transform:uppercase">Mi agenda · Hora COL</div>
+        <div style="font:800 25px/1.12 'Outfit';letter-spacing:-.025em;margin-top:4px">{{ summaryShort }}</div>
+        <div style="font:500 14.5px 'Outfit';color:#615C6E;margin-top:4px">{{ franjasTxt }}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <sc-for list="{{ days }}" as="d" hint-placeholder-count="3">
+          <button onClick="{{ d.on }}" style="flex:1;height:66px;border-radius:16px;border:2px solid {{ d.border }};background:{{ d.mbg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#1C1A24">
+            <span style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.06em;color:{{ d.kc }}">{{ d.short }}</span><span style="font:800 20px/1 'Outfit'">{{ d.num }}</span><span style="font:600 11px 'Outfit';color:#615C6E">{{ d.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ isEmpty }}">
+        <div style="border-radius:24px;background:#fff;border:1px solid #F0EBE6;padding:26px 20px;text-align:center;display:grid;gap:8px;justify-items:center">
+          <div style="width:60px;height:60px;border-radius:20px;background:#FFF1EA;color:#C9461B;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="3"></rect><path d="M4 10h16"></path><path d="M9 3.5v4"></path><path d="M15 3.5v4"></path></svg></div>
+          <div style="font:800 20px 'Outfit'">Sin proyectos asignados aún</div>
+          <div style="font:500 14.5px/1.45 'Outfit';color:#615C6E">Cuando los estudiantes elijan hora, aparecerán aquí.</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ cur }}">
+        <div style="border-radius:24px;background:#1C1A24;color:#fff;padding:18px;position:relative;overflow:hidden;flex:none">
+          <div style="position:absolute;right:-50px;top:-50px;width:140px;height:140px;border-radius:50%;border:24px solid #F25C2A;box-sizing:border-box"></div>
+          <div style="position:relative;display:flex;align-items:center;gap:8px;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#FFB59A"><i style="width:8px;height:8px;border-radius:50%;background:#F25C2A;display:block;animation:pulse 1.6s infinite"></i>EN CURSO · {{ cur.range }}</div>
+          <div style="position:relative;font:800 20px/1.2 'Outfit';margin:10px 0 4px;padding-right:50px">{{ cur.name }}</div>
+          <div style="position:relative;font:600 14px 'Outfit';color:#E8E4EC">{{ cur.members }} · {{ cur.city }}</div>
+          <div style="position:relative;height:7px;border-radius:4px;background:rgba(255,255,255,.14);margin-top:14px;overflow:hidden"><div style="height:100%;width:{{ curPct }};background:#FFC93C"></div></div>
+          <div style="position:relative;font:600 12.5px 'Outfit';color:#E8E4EC;margin-top:6px">{{ curLeft }}</div>
+          <div style="position:relative;display:flex;gap:8px;margin-top:14px">
+            <button onClick="{{ cur.open }}" style="flex:1;height:50px;border-radius:16px;border:0;background:#F25C2A;color:#fff;font:700 16px 'Outfit'">Abrir sala</button>
+            <button onClick="{{ terminar }}" style="flex:none;height:50px;padding:0 14px;border-radius:16px;border:0;background:rgba(255,255,255,.12);color:#fff;font:700 14px 'Outfit'">Siguiente</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-for list="{{ hours }}" as="h" hint-placeholder-count="2">
+        <div style="display:grid;gap:8px;flex:none">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:800 17px 'Outfit'">{{ h.label }}</span><span style="font:500 12.5px 'Outfit';color:#615C6E">{{ h.salaShort }}</span></div>
+          <sc-for list="{{ h.blocks }}" as="b" hint-placeholder-count="4">
+            <sc-if value="{{ b.libre }}"><div style="height:48px;border-radius:16px;border:2px dashed #E7E2DD;display:flex;align-items:center;gap:12px;padding:0 14px;color:#9A94A6"><span style="font:600 12.5px 'JetBrains Mono',monospace">{{ b.start }}</span><span style="font:700 14.5px 'Outfit'">Libre</span></div></sc-if>
+            <sc-if value="{{ b.proj }}">
+              <div style="border-radius:18px;border:2px solid {{ b.border }};background:{{ b.mbg }};padding:12px 14px;display:grid;gap:5px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="display:flex;align-items:center;gap:8px"><span style="font:600 12.5px 'JetBrains Mono',monospace">{{ b.start }}</span><span style="display:inline-flex;align-items:center;gap:5px;font:700 12px 'Outfit';color:#4A4556"><i style="width:7px;height:7px;border-radius:50%;background:{{ b.cityC }};display:block"></i>{{ b.city }}</span></span><span style="display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:999px;background:{{ b.stBg }};color:{{ b.stFg }};font:700 11.5px 'Outfit'">{{ b.st }}</span></div>
+                <div style="font:800 15.5px/1.25 'Outfit'">{{ b.name }}</div>
+                <div style="font:500 13px/1.4 'Outfit';color:#615C6E">{{ b.desc }}</div>
+                <div style="font:600 13px 'Outfit';color:#3F3A4A">{{ b.members }}</div>
+                <div style="display:flex;gap:8px;margin-top:4px">
+                  <sc-if value="{{ b.canOpen }}"><button onClick="{{ b.open }}" style="flex:1;height:44px;border-radius:13px;border:0;background:{{ b.openBg }};color:{{ b.openFg }};font:700 14px 'Outfit'">Abrir sala</button></sc-if>
+                  <button onClick="{{ b.grade }}" style="flex:1;height:44px;border-radius:13px;border:{{ b.gradeBorder }};background:{{ b.gradeBg }};color:{{ b.gradeFg }};font:700 13.5px 'Outfit'">{{ b.gradeLabel }}</button>
+                </div>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ grading }}"><div style="position:absolute;inset:40px 0 0 0;z-index:8;background:#F4F4F4"><dc-import name="Calificar" modo="movil" embed="{{ true }}" open-key="{{ gradeKey }}" on-close="{{ closeGrade }}" hint-size="100%,100%"></dc-import></div></sc-if>
+  <sc-if value="{{ toast }}">
+    <div style="position:absolute;left:16px;right:16px;bottom:24px;background:#1C1A24;color:#fff;border-radius:14px;padding:13px 16px;font:600 14.5px 'Outfit';box-shadow:0 10px 30px -10px rgba(0,0,0,.4);z-index:6">{{ toast }}</div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;movil&quot;],&quot;default&quot;:&quot;web&quot;,&quot;tsType&quot;:&quot;'web'|'movil'&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;loginErr&quot;,&quot;agenda&quot;,&quot;calificando&quot;,&quot;otroDia&quot;,&quot;sinProyectos&quot;],&quot;default&quot;:&quot;login&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const CITYC={Cali:'#F25C2A',Cartagena:'#3E8FD0',Barranquilla:'#1F9D6B','Santa Marta':'#F2B630'};
+const DAYS={
+  jue12:{short:'JUE',num:'12',full:'Jueves 12 nov',hours:[8,16],blocks:{
+    480:{city:'Cartagena',name:'Tienda virtual para artesanos',desc:'Catálogo en línea y pedidos por WhatsApp para artesanos de Getsemaní.',m:['Andrés Pérez'],st:'done'},
+    495:{city:'Cali',name:'Recetario del Pacífico',desc:'Recetas tradicionales con video y lista de compras automática.',m:['Sara Lucumí Carabalí','Duván Grueso'],st:'done'},
+    510:{city:'Barranquilla',name:'Turnos para la barbería',desc:'Reserva de turnos y recordatorio por SMS para barberías del barrio.',m:['Kevin Charris Pertuz'],st:'noshow'},
+    960:{city:'Cali',name:'Juego para aprender tablas',desc:'Minijuegos por niveles para practicar las tablas de multiplicar.',m:['Isabella Mosquera Riascos','Kevin Andrés Possu'],st:'done'},
+    975:{city:'Cartagena',name:'Mapa de playas limpias',desc:'Reportes ciudadanos de basura en playas con foto y ubicación.',m:['Daniela Julio Barrios','Óscar Barrios Díaz'],st:'live'},
+    990:{city:'Santa Marta',name:'Guía turística por voz',desc:'Recorridos narrados por audio para visitantes de El Rodadero.',m:['Sofía Herrera Lozano'],st:'todo'},
+    1005:{city:'Cali',name:'Reportes de huecos',desc:'Foto y ubicación de huecos en la vía para enviar a la alcaldía.',m:['Tomás Arboleda Cuero','Harold Cuero'],st:'todo'}},
+    salas:{8:['Sala 2','Leopoldo Caraballo'],16:['Sala 5','Laura Méndez']}},
+  vie13:{short:'VIE',num:'13',full:'Viernes 13 nov',hours:[8,16],blocks:{
+    495:{city:'Cartagena',name:'Agenda cultural juvenil',desc:'Eventos gratuitos de la ciudad filtrados por edad e interés.',m:['Yuranis Julio Cassiani','Luis Barrios'],st:'todo'},
+    975:{city:'Cartagena',name:'Control de gastos familiar',desc:'Registro de gastos con categorías y alertas de presupuesto.',m:['Camilo Herrera Pájaro'],st:'todo'},
+    1020:{city:'Cartagena',name:'Venta de ropa usada',desc:'Catálogo de ropa de segunda mano con entrega en el barrio.',m:['Keila Marrugo','Jesús Torres Ortega'],st:'todo'}},
+    salas:{8:['Sala 1','Jhan Carlos Martínez'],16:['Sala 3','Karen Pertuz']}},
+  mar17:{short:'MAR',num:'17',full:'Martes 17 nov',hours:[9,10],blocks:{},salas:{9:['Sala 2',''],10:['Sala 2','']}}
+};
+const ST={todo:['Por presentar','#F0EBE6','#615C6E','#9A94A6'],live:['En curso','#FFE9DF','#C9461B','#F25C2A'],done:['Presentado','#E3F5EC','#17734F','#1F9D6B'],noshow:['No se presentó','#FCE6E8','#9E2430','#D64553']};
+const hm=min=>{const h=Math.floor(min/60),m=String(min%60).padStart(2,'0');return (h>12?h-12:h)+':'+m;};
+const suf=min=>min<720?' a. m.':' p. m.';
+const rng=min=>hm(min)+' – '+hm(min+15)+suf(min);
+const hrsTxt=d=>d.hours.map(h=>hm(h*60)+' – '+hm(h*60+60)+suf(h*60)).join(' y ');
+function initFor(start){
+  const st={};Object.entries(DAYS).forEach(([d,D])=>Object.entries(D.blocks).forEach(([min,b])=>{st[d+'-'+min]=b.st;}));
+  const b={step:'login',user:'yehiron.bermudez',pass:'',loginErr:'',day:'jue12',st,toast:'',grade:null};
+  const m={loginErr:{pass:'1234',loginErr:'Usuario o clave incorrectos. Intenta otra vez.'},agenda:{step:'app'},calificando:{step:'app',grade:'jue12-975'},sinProyectos:{step:'app',day:'mar17'},otroDia:{step:'app',day:'vie13'}};
+  return {...b,...(m[start]||{})};
+}
+
+class Component extends DCLogic {
+  state=initFor((this.props||{}).start);
+  componentDidUpdate(pp){if(pp.start!==this.props.start)this.setState(initFor(this.props.start));}
+  componentWillUnmount(){clearTimeout(this.tt);}
+  showToast(t){clearTimeout(this.tt);this.setState({toast:t});this.tt=setTimeout(()=>this.setState({toast:''}),2400);}
+  login=()=>{const {user,pass}=this.state;if(!user.trim()||!pass)return this.setState({loginErr:'Escribe tu usuario y tu clave.'});if(user.trim()!=='yehiron.bermudez'||pass!=='rofe2026')return this.setState({loginErr:'Usuario o clave incorrectos. Intenta otra vez.'});this.setState({step:'app',loginErr:''});};
+  terminar=()=>{
+    const d=this.state.day,D=DAYS[d],keys=Object.keys(D.blocks).map(Number).sort((a,b)=>a-b);
+    const st={...this.state.st};const i=keys.findIndex(k=>st[d+'-'+k]==='live');if(i<0)return;
+    st[d+'-'+keys[i]]='done';const nx=keys.slice(i+1).find(k=>st[d+'-'+k]==='todo');if(nx!=null)st[d+'-'+nx]='live';
+    this.setState({st});this.showToast(nx!=null?'Listo. Ahora sigue '+D.blocks[nx].name:'Terminaste las presentaciones de hoy');
+  };
+  renderVals(){
+    const s=this.state,web=this.props.modo==='web',D=DAYS[s.day];
+    const keys=Object.keys(D.blocks).map(Number);
+    const mk=(min)=>{const b=D.blocks[min],k=s.day+'-'+min;if(!b)return {libre:true,proj:false,range:rng(min),start:hm(min)+suf(min)};const stt=s.st[k],S=ST[stt],live=stt==='live';
+      return {libre:false,proj:true,range:rng(min),start:hm(min)+suf(min),city:b.city,cityC:CITYC[b.city],name:b.name,desc:b.desc,members:b.m.join(' y '),st:S[0],stBg:S[1],stFg:S[2],stDot:S[3],anim:live?'pulse 1.6s infinite':'none',
+        border:live?'#F25C2A':'#F0EBE6',bg:live?'#FFF8F4':'#fff',mbg:live?'#FFF8F4':'#fff',shadow:live?'0 12px 30px -18px rgba(242,92,42,.6)':'none',
+        canOpen:stt==='todo'||live,gradeLabel:stt==='done'?'Ver calificación':stt==='noshow'?'Ver registro':'Calificar',gradeBg:live?'#121212':'#fff',gradeFg:live?'#fff':'#1C1A24',gradeBorder:live?'0':'1.5px solid #E7E2DD',grade:()=>this.setState({grade:k}),openBg:live?'#F25C2A':'#fff',openFg:live?'#fff':'#1C1A24',open:()=>this.showToast('Abriendo la sala de '+b.m[0].split(' ')[0]+'…'),stt};};
+    const hours=D.hours.map(h=>({label:hm(h*60)+suf(h*60),sala:D.salas[h][0]+(D.salas[h][1]?' · monitor '+D.salas[h][1]:''),salaShort:D.salas[h][0],blocks:[0,15,30,45].map(q=>mk(h*60+q))}));
+    const all=[].concat(...hours.map(h=>h.blocks)).filter(b=>b.proj);
+    const cur=all.find(b=>b.stt==='live')||null,ci=cur?all.indexOf(cur):-1,next=cur?all.slice(ci+1).find(b=>b.stt==='todo')||null:null;
+    const n=keys.length;
+    const cnt=k=>all.filter(b=>b.stt===k).length;
+    const days=Object.entries(DAYS).map(([id,d])=>{const a=id===s.day,c=Object.keys(d.blocks).length;return {short:d.short,num:d.num,count:c?c+' proy.':'Sin asignar',border:a?'#1C1A24':'#F0EBE6',bg:a?'#fff':'#FBF9F7',mbg:a?'#fff':'#F7F3EF',kc:a?'#C9461B':'#8A8496',on:()=>this.setState({day:id})};});
+    const today=s.day==='jue12';
+    return {
+      isWeb:web,isMovil:!web,isLogin:s.step==='login',isApp:s.step!=='login',
+      statusBg:s.step==='login'?'#1C1A24':'transparent',statusFg:s.step==='login'?'#fff':'#1C1A24',
+      user:s.user,pass:s.pass,loginErr:s.loginErr,passBorder:s.loginErr?'#D64553':'#E7E2DD',
+      onUser:e=>this.setState({user:e.target.value,loginErr:''}),onPass:e=>this.setState({pass:e.target.value,loginErr:''}),passKey:e=>{if(e.key==='Enter')this.login();},login:this.login,
+      dayFull:D.full,days,
+      summary:(today?'Hoy: ':D.full+': ')+(n?n+' proyectos · ':'')+hrsTxt(D),
+      summaryShort:(today?'Hoy: ':D.full.split(' ').slice(0,2).join(' ')+': ')+(n?n+' proyectos':'sin proyectos'),
+      franjasTxt:hrsTxt(D),
+      isEmpty:n===0,hasBlocks:n>0,hours:n?hours:[],
+      cur,next,curPct:'47%',curLeft:'Quedan 8 min · terminan a las '+(cur?cur.range.split('–')[1].trim():''),
+      terminar:this.terminar,
+      stats:[{label:'Presentados',n:cnt('done'),dot:'#1F9D6B'},{label:'En curso',n:cnt('live'),dot:'#F25C2A'},{label:'Por presentar',n:cnt('todo'),dot:'#9A94A6'},{label:'No se presentó',n:cnt('noshow'),dot:'#D64553'}],
+      grading:!!s.grade,gradeKey:s.grade,closeGrade:()=>this.setState({grade:null}),openList:()=>this.setState({grade:'__list'}),
+      toast:s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

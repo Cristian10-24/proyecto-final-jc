@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"><style>@keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}a{color:#C9461B}a:hover{color:#9C3210}button{font-family:'Outfit',sans-serif;cursor:pointer}input,textarea{font-family:'Outfit',sans-serif}input:focus,textarea:focus{outline:none}</style></helmet>
+
+<sc-if value="{{ isWeb }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;height:800px;border-radius:16px;background:#fff;overflow:hidden;display:flex;flex-direction:column;border:1px solid #E4DDD6;box-shadow:0 24px 60px -24px rgba(120,40,10,.3);position:relative;font-family:'Outfit',sans-serif;color:#1C1A24;box-sizing:border-box">
+  <div style="height:40px;flex:none;background:#F5F2EF;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #EAE4DE"><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E0D9D2;display:block"></i><div style="margin-left:16px;height:24px;flex:1;max-width:420px;border-radius:7px;background:#fff;font:500 12px 'JetBrains Mono',monospace;color:#615C6E;display:flex;align-items:center;padding:0 10px">horarios.jovenescreativos.co/monitor</div></div>
+
+  <sc-if value="{{ isLogin }}">
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0">
+      <div style="background:#1C1A24;color:#fff;padding:56px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-120px;bottom:-140px;width:420px;height:420px;border-radius:50%;border:70px solid #F25C2A;box-sizing:border-box"></div>
+        <div style="position:absolute;right:220px;bottom:200px;width:40px;height:40px;border-radius:50%;background:#FFC93C"></div>
+        <div style="position:absolute;left:90px;bottom:90px;width:22px;height:22px;background:#3E8FD0;border-radius:5px;transform:rotate(20deg)"></div>
+        <div style="align-self:flex-start;background:#fff;border-radius:18px;padding:10px 16px"><img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:52px;width:auto;display:block"></div>
+        <div style="flex:1"></div>
+        <div style="position:relative;font:600 13px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#FFB59A;margin-bottom:14px">MONITORES · PROYECTO FINAL 2026</div>
+        <div style="position:relative;font:800 48px/1.05 'Outfit';letter-spacing:-.035em;max-width:440px">Mira rápido qué proyectos de tu grupo faltan por elegir hora</div>
+        <div style="flex:1.2"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:56px">
+        <div style="width:400px;display:flex;flex-direction:column">
+          <h2 style="margin:0 0 8px;font:800 34px/1.1 'Outfit';letter-spacing:-.03em">Ingresa a tu panel</h2>
+          <p style="margin:0 0 24px;font:500 16px 'Outfit';color:#615C6E">Usa el usuario y la clave que te dio coordinación.</p>
+          <sc-if value="{{ loginErr }}"><div style="padding:13px 16px;border-radius:14px;background:#FCE6E8;color:#9E2430;font:600 15px/1.4 'Outfit';margin-bottom:18px;display:flex;gap:10px;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="flex:none"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.5"></path></svg>{{ loginErr }}</div></sc-if>
+          <label style="font:700 15px 'Outfit';margin-bottom:8px">Usuario</label>
+          <input value="{{ user }}" onChange="{{ onUser }}" style="height:56px;border:2px solid #E7E2DD;border-radius:16px;padding:0 16px;font:600 17px 'Outfit';color:#1C1A24">
+          <label style="font:700 15px 'Outfit';margin:18px 0 8px">Clave</label>
+          <input type="password" value="{{ pass }}" onChange="{{ onPass }}" onKeyDown="{{ passKey }}" placeholder="••••••••" style="height:56px;border:2px solid {{ passBorder }};border-radius:16px;padding:0 16px;font:700 18px 'Outfit';letter-spacing:.12em;color:#1C1A24">
+          <button onClick="{{ login }}" style="margin-top:26px;height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0" style-hover="background:#E04E1D">Entrar</button>
+          <div style="text-align:center;margin-top:16px;font:500 14px 'Outfit';color:#615C6E">¿Olvidaste la clave? Pídela a coordinación</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}">
+    <div style="flex:1;display:flex;min-height:0">
+      <div style="width:228px;flex:none;border-right:1px solid #F0EBE6;padding:18px 16px 20px;display:flex;flex-direction:column;gap:20px;background:#FCFAF8">
+        <img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:62px;width:auto;display:block;align-self:flex-start">
+        <div style="display:grid;gap:4px">
+          <div style="height:42px;border-radius:12px;background:#FFE9DF;color:#9C3210;font:700 15px 'Outfit';display:flex;align-items:center;padding:0 12px">Mi grupo</div>
+          <div style="height:42px;border-radius:12px;color:#615C6E;font:600 15px 'Outfit';display:flex;align-items:center;padding:0 12px">Solicitudes enviadas</div>
+          <div style="height:42px;border-radius:12px;color:#615C6E;font:600 15px 'Outfit';display:flex;align-items:center;padding:0 12px">Ayuda</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="border-radius:18px;background:#fff;border:1px solid #F0EBE6;padding:14px;display:grid;gap:10px">
+          <div style="font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#8A8496">MIS TURNOS COMO MONITOR DE SALA</div>
+          <sc-for list="{{ turnos }}" as="t" hint-placeholder-count="2">
+            <div style="display:flex;gap:10px;align-items:center">
+              <span style="flex:none;width:40px;height:42px;border-radius:12px;background:#FFF1EA;color:#C9461B;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 9px 'JetBrains Mono',monospace">{{ t.wd }}</span><span style="font:800 16px/1 'Outfit'">{{ t.num }}</span></span>
+              <span style="min-width:0"><span style="display:block;font:700 13.5px 'Outfit'">{{ t.hours }}</span><span style="display:block;font:500 12px 'Outfit';color:#615C6E">{{ t.sala }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div style="width:38px;height:38px;border-radius:50%;background:#FFC93C;display:flex;align-items:center;justify-content:center;font:800 14px 'Outfit'">LM</div>
+          <div><div style="font:700 14px 'Outfit'">Laura Méndez</div><div style="font:500 12.5px 'Outfit';color:#615C6E">Monitora · Cali G2</div></div>
+        </div>
+      </div>
+
+      <sc-if value="{{ isLoading }}">
+        <div style="flex:1;padding:30px;display:grid;gap:16px;align-content:start;animation:shimmer 1.4s ease-in-out infinite">
+          <div style="height:12px;width:160px;border-radius:6px;background:#F0EBE6"></div>
+          <div style="height:34px;width:380px;border-radius:10px;background:#F0EBE6"></div>
+          <div style="height:12px;border-radius:6px;background:#F0EBE6"></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"><div style="height:84px;border-radius:16px;background:#F5F2EF"></div><div style="height:84px;border-radius:16px;background:#F5F2EF"></div><div style="height:84px;border-radius:16px;background:#F5F2EF"></div><div style="height:84px;border-radius:16px;background:#F5F2EF"></div></div>
+          <div style="height:46px;border-radius:14px;background:#F5F2EF"></div>
+          <sc-for list="{{ skel }}" as="k" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:2.2fr 1.8fr 170px 120px 150px;gap:16px;padding-top:10px"><div style="height:14px;border-radius:7px;background:#F0EBE6"></div><div style="height:14px;border-radius:7px;background:#F5F2EF"></div><div style="height:14px;border-radius:7px;background:#F0EBE6"></div><div style="height:14px;border-radius:7px;background:#F5F2EF"></div><div></div></div></sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isDesk }}">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:24px 30px 0">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
+            <div>
+              <div style="font:600 12px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em;text-transform:uppercase">Cali · Grupo 2 · Laura Méndez</div>
+              <div style="font:800 32px/1.1 'Outfit';letter-spacing:-.03em;margin-top:6px;white-space:nowrap">{{ m.con }} de {{ m.total }} proyectos con hora</div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button onClick="{{ copyLink }}" style="height:46px;padding:0 16px;border-radius:14px;border:1.5px solid #E7E2DD;background:#fff;color:#1C1A24;font:700 15px 'Outfit';display:flex;align-items:center;gap:8px" style-hover="border-color:#1C1A24"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 006.4 0l3-3a4.5 4.5 0 00-6.4-6.4l-1 1"></path><path d="M14 10a4.5 4.5 0 00-6.4 0l-3 3a4.5 4.5 0 006.4 6.4l1-1"></path></svg>Copiar enlace de inscripción</button>
+              <button onClick="{{ copyPend }}" disabled="{{ noPend }}" style="height:46px;padding:0 18px;border-radius:14px;border:0;background:{{ pendBtnBg }};color:#fff;font:700 15px 'Outfit'">{{ pendBtnLabel }}</button>
+            </div>
+          </div>
+          <div style="height:12px;border-radius:6px;background:#F2EEEA;margin-top:14px;overflow:hidden;display:flex"><div style="width:{{ m.pct }};background:#1F9D6B;border-radius:6px;transition:width .4s"></div></div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+              <button onClick="{{ f.on }}" style="text-align:left;border-radius:16px;padding:13px 16px;border:2px solid {{ f.border }};background:{{ f.bg }};display:flex;flex-direction:column;gap:6px">
+                <span style="display:flex;align-items:center;gap:8px;font:600 14px 'Outfit';color:#4A4556"><i style="width:10px;height:10px;border-radius:50%;background:{{ f.dot }};display:block"></i>{{ f.label }}</span>
+                <span style="font:800 28px/1 'Outfit';color:#1C1A24">{{ f.count }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="margin-top:14px;height:46px;border:2px solid #E7E2DD;border-radius:14px;display:flex;align-items:center;padding:0 14px;gap:10px;flex:none">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9A94A6" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+            <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Buscar por nombre o documento" style="flex:1;border:0;font:500 15px 'Outfit';color:#1C1A24;background:transparent">
+            <sc-if value="{{ q }}"><button onClick="{{ clearQ }}" style="border:0;background:#F0EBE6;border-radius:9px;height:28px;padding:0 10px;font:600 13px 'Outfit';color:#615C6E">Limpiar</button></sc-if>
+          </div>
+
+          <sc-if value="{{ showCelebra }}">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:30px">
+              <div style="position:relative;width:140px;height:140px;margin-bottom:22px"><div style="position:absolute;inset:0;border-radius:50%;border:18px solid #FFE1D3"></div><div style="position:absolute;inset:32px;border-radius:50%;background:#1F9D6B;display:flex;align-items:center;justify-content:center;color:#fff"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2 8.8-9.2"></path></svg></div><div style="position:absolute;right:-6px;top:6px;width:18px;height:18px;border-radius:50%;background:#FFC93C"></div><div style="position:absolute;left:-4px;bottom:14px;width:12px;height:12px;background:#3E8FD0;transform:rotate(45deg)"></div></div>
+              <div style="font:800 26px 'Outfit';letter-spacing:-.02em;margin-bottom:8px">¡Tu grupo está al día!</div>
+              <div style="font:500 16px/1.5 'Outfit';color:#615C6E;max-width:420px">Los {{ m.total }} proyectos ya eligieron su hora. No tienes que hacer nada más.</div>
+              <button onClick="{{ showAll }}" style="margin-top:22px;height:50px;padding:0 20px;border-radius:16px;background:#E3F5EC;color:#17734F;font:700 15px 'Outfit';border:0">Ver los {{ m.total }} proyectos</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showTable }}">
+            <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.8fr) 178px 112px 150px;gap:16px;padding:14px 4px 10px;border-bottom:1px solid #F0EBE6;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8A8496">
+              <span>Integrantes</span><span>Proyecto</span><span>Estado</span><span>Eligió</span><span></span>
+            </div>
+            <div style="flex:1;overflow:auto;min-height:0">
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+                <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.8fr) 178px 112px 150px;gap:16px;align-items:center;border-bottom:1px solid #F4F0EC;padding:11px 4px">
+                  <div style="min-width:0">
+                    <div style="font:700 15px 'Outfit';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.n1 }}</div>
+                    <sc-if value="{{ r.n2 }}"><div style="font:600 14px 'Outfit';color:#3F3A4A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.n2 }}</div></sc-if>
+                    <sc-if value="{{ r.inc }}"><div style="font:600 13px 'Outfit';color:#8A5A00;display:flex;align-items:center;gap:6px"><i style="width:7px;height:7px;border-radius:50%;background:#F2B630;display:block"></i>Falta registrar a su pareja</div></sc-if>
+                    <div style="font:500 12px 'JetBrains Mono',monospace;color:#8A8496;margin-top:2px">{{ r.doc }}</div>
+                  </div>
+                  <div style="font:500 14px/1.35 'Outfit';color:#3F3A4A">{{ r.proj }}</div>
+                  <div style="display:grid;gap:4px;justify-items:start">
+                    <span style="display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px;border-radius:999px;background:{{ r.badgeBg }};color:{{ r.badgeFg }};font:700 13px 'Outfit';white-space:nowrap"><i style="width:8px;height:8px;border-radius:50%;background:{{ r.dot }};display:block"></i>{{ r.label }}</span>
+                    <sc-if value="{{ r.cambio }}"><span style="font:600 12px 'Outfit';color:#8A5A00">Cambio solicitado</span></sc-if>
+                  </div>
+                  <div style="font:500 13.5px 'Outfit';color:#615C6E">{{ r.fecha }}</div>
+                  <div style="display:flex;justify-content:flex-end">
+                    <sc-if value="{{ r.canAsk }}"><button onClick="{{ r.ask }}" style="height:38px;padding:0 14px;border-radius:12px;border:1.5px solid #E7E2DD;background:#fff;color:#1C1A24;font:700 13.5px 'Outfit';white-space:nowrap" style-hover="border-color:#F25C2A;color:#C9461B">Pedir cambio de hora</button></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noResults }}">
+                <div style="padding:56px 20px;text-align:center;display:grid;gap:6px;justify-items:center">
+                  <div style="width:56px;height:56px;border-radius:18px;background:#F5F2EF;color:#615C6E;display:flex;align-items:center;justify-content:center;margin-bottom:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg></div>
+                  <div style="font:800 19px 'Outfit'">Sin resultados para “{{ q }}”</div>
+                  <div style="font:500 15px 'Outfit';color:#615C6E">Prueba con otro nombre o con el número de documento.</div>
+                  <button onClick="{{ clearQ }}" style="margin-top:12px;height:44px;padding:0 18px;border-radius:14px;border:0;background:#1C1A24;color:#fff;font:700 14.5px 'Outfit'">Limpiar búsqueda</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ modalOpen }}">
+    <div style="position:absolute;inset:40px 0 0 0;background:rgba(28,26,36,.45);display:flex;align-items:center;justify-content:center;z-index:5">
+      <div style="width:500px;border-radius:24px;background:#fff;padding:26px;display:flex;flex-direction:column;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)">
+        <div style="font:800 23px 'Outfit';letter-spacing:-.02em">Pedir cambio de hora</div>
+        <div style="font:500 14.5px/1.45 'Outfit';color:#615C6E;margin:4px 0 16px">La solicitud llega a coordinación. Tú no cambias la hora: ellos la revisan y avisan a los estudiantes.</div>
+        <div style="border-radius:16px;background:#FBF8F5;border:1px solid #F0EBE6;padding:14px 16px;display:flex;justify-content:space-between;gap:14px;align-items:center">
+          <div style="min-width:0"><div style="font:700 15.5px 'Outfit'">{{ mr.names }}</div><div style="font:500 13.5px 'Outfit';color:#615C6E">{{ mr.proj }}</div></div>
+          <div style="text-align:right;flex:none"><div style="font:600 10.5px 'JetBrains Mono',monospace;color:#8A8496;letter-spacing:.06em">HORA ACTUAL</div><div style="font:800 16px 'Outfit'">{{ mr.time }}</div></div>
+        </div>
+        <div style="font:700 14px 'Outfit';margin:16px 0 8px">Hora que prefieren (opcional)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ altTimes }}" as="a" hint-placeholder-count="5"><button onClick="{{ a.on }}" style="height:40px;padding:0 14px;border-radius:12px;border:2px solid {{ a.border }};background:{{ a.bg }};font:700 14px 'Outfit';color:#1C1A24">{{ a.label }}</button></sc-for></div>
+        <div style="font:700 14px 'Outfit';margin:16px 0 8px">Motivo</div>
+        <textarea value="{{ motivo }}" onChange="{{ onMotivo }}" placeholder="Ej. Juan Pablo trabaja a esa hora" style="height:84px;border:2px solid {{ motivoBorder }};border-radius:14px;padding:12px 14px;font:500 15px/1.4 'Outfit';color:#1C1A24;resize:none"></textarea>
+        <sc-if value="{{ motivoErr }}"><div style="margin-top:6px;font:600 13.5px 'Outfit';color:#C2303D">Cuéntale a coordinación por qué necesitan el cambio</div></sc-if>
+        <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+          <button onClick="{{ closeModal }}" style="height:46px;padding:0 18px;border-radius:14px;border:1.5px solid #E7E2DD;background:#fff;font:700 15px 'Outfit';color:#1C1A24">Cancelar</button>
+          <button onClick="{{ sendModal }}" style="height:46px;padding:0 18px;border-radius:14px;border:0;background:#F25C2A;color:#fff;font:700 15px 'Outfit'">Enviar a coordinación</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toast }}">
+    <div style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:#1C1A24;color:#fff;border-radius:14px;padding:13px 18px;font:600 15px 'Outfit';box-shadow:0 10px 30px -10px rgba(0,0,0,.4);white-space:nowrap;display:flex;align-items:center;gap:10px;z-index:6"><span style="width:20px;height:20px;border-radius:50%;background:#1F9D6B;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2 8.8-9.2"></path></svg></span>{{ toast }}</div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMovil }}">
+<div style="width:390px;height:844px;border-radius:50px;border:9px solid #1C1A24;background:#FBF8F5;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'Outfit',sans-serif;color:#1C1A24;box-shadow:0 24px 60px -24px rgba(120,40,10,.35)">
+  <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:700 14px 'Outfit';position:relative;z-index:2;background:{{ statusBg }};color:{{ statusFg }}"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><i style="width:16px;height:10px;border-radius:2px;background:currentColor;display:block"></i><i style="width:22px;height:11px;border-radius:3px;border:1.5px solid currentColor;display:block;box-sizing:border-box"></i></span></div>
+
+  <sc-if value="{{ isLogin }}">
+    <div style="height:280px;flex:none;background:#1C1A24;color:#fff;padding:12px 24px 28px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-90px;bottom:-110px;width:260px;height:260px;border-radius:50%;border:44px solid #F25C2A;box-sizing:border-box"></div>
+      <div style="position:absolute;right:150px;bottom:120px;width:24px;height:24px;border-radius:50%;background:#FFC93C"></div>
+      <div style="position:absolute;left:40px;bottom:24px;width:14px;height:14px;background:#3E8FD0;border-radius:4px;transform:rotate(20deg)"></div>
+      <div style="align-self:flex-start;background:#fff;border-radius:16px;padding:7px 12px"><img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:40px;width:auto;display:block"></div>
+      <div style="flex:1"></div>
+      <div style="position:relative;font:600 11.5px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#FFB59A;margin-bottom:10px">MONITORES · PROYECTO FINAL</div>
+      <div style="position:relative;font:800 30px/1.06 'Outfit';letter-spacing:-.03em;max-width:280px">Mira qué proyectos faltan por elegir hora</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;padding:24px 22px 22px">
+      <sc-if value="{{ loginErr }}"><div style="padding:12px 14px;border-radius:14px;background:#FCE6E8;color:#9E2430;font:600 14.5px/1.4 'Outfit';margin-bottom:14px">{{ loginErr }}</div></sc-if>
+      <label style="font:700 15px 'Outfit';margin-bottom:8px">Usuario</label>
+      <input value="{{ user }}" onChange="{{ onUser }}" style="height:56px;border:2px solid #E7E2DD;border-radius:16px;padding:0 16px;font:600 17px 'Outfit';color:#1C1A24;background:#fff">
+      <label style="font:700 15px 'Outfit';margin:16px 0 8px">Clave</label>
+      <input type="password" value="{{ pass }}" onChange="{{ onPass }}" onKeyDown="{{ passKey }}" placeholder="••••••••" style="height:56px;border:2px solid {{ passBorder }};border-radius:16px;padding:0 16px;font:700 18px 'Outfit';letter-spacing:.12em;color:#1C1A24;background:#fff">
+      <div style="flex:1"></div>
+      <button onClick="{{ login }}" style="height:58px;border-radius:20px;background:#F25C2A;color:#fff;font:700 18px 'Outfit';border:0">Entrar</button>
+      <div style="text-align:center;margin-top:14px;font:500 13.5px 'Outfit';color:#615C6E">¿Olvidaste la clave? Pídela a coordinación</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}">
+    <div style="height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:2px 20px 0">
+      <img src="assets/logo-jc.png" alt="Jóvenes creaTIvos" style="height:42px;width:auto;display:block">
+      <div style="width:36px;height:36px;border-radius:50%;background:#FFC93C;display:flex;align-items:center;justify-content:center;font:800 13px 'Outfit'">LM</div>
+    </div>
+    <sc-if value="{{ isLoading }}">
+      <div style="flex:1;padding:16px 20px;display:grid;gap:14px;align-content:start;animation:shimmer 1.4s ease-in-out infinite">
+        <div style="height:12px;width:140px;border-radius:6px;background:#F0EBE6"></div><div style="height:30px;width:260px;border-radius:10px;background:#F0EBE6"></div><div style="height:10px;border-radius:5px;background:#F0EBE6"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="height:62px;border-radius:16px;background:#F0EBE6"></div><div style="height:62px;border-radius:16px;background:#F0EBE6"></div><div style="height:62px;border-radius:16px;background:#F0EBE6"></div><div style="height:62px;border-radius:16px;background:#F0EBE6"></div></div>
+        <sc-for list="{{ skel }}" as="k" hint-placeholder-count="4"><div style="height:92px;border-radius:20px;background:#F0EBE6"></div></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isDesk }}">
+      <div style="flex:1;min-height:0;overflow:auto;padding:12px 20px 16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="font:600 11.5px 'JetBrains Mono',monospace;color:#615C6E;letter-spacing:.06em">CALI · GRUPO 2</div>
+          <div style="font:800 26px/1.1 'Outfit';letter-spacing:-.025em;margin-top:4px">{{ m.con }} de {{ m.total }} proyectos con hora</div>
+          <div style="height:10px;border-radius:5px;background:#EDE7E1;margin-top:12px;overflow:hidden"><div style="height:100%;width:{{ m.pct }};background:#1F9D6B;border-radius:5px"></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+            <button onClick="{{ f.on }}" style="text-align:left;border-radius:16px;padding:10px 12px;border:2px solid {{ f.border }};background:{{ f.mbg }};display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:58px">
+              <span style="display:flex;align-items:center;gap:7px;font:600 13.5px/1.2 'Outfit';color:#4A4556"><i style="flex:none;width:9px;height:9px;border-radius:50%;background:{{ f.dot }};display:block"></i>{{ f.label }}</span>
+              <span style="font:800 22px 'Outfit';color:#1C1A24">{{ f.count }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="border-radius:20px;background:#fff;border:1px solid #F0EBE6;padding:12px 14px;display:grid;gap:8px">
+          <div style="font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;color:#8A8496">MIS TURNOS COMO MONITOR DE SALA</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ turnos }}" as="t" hint-placeholder-count="2"><span style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:12px;background:#FFF1EA;font:700 13px 'Outfit';color:#7A3A20">{{ t.short }}</span></sc-for></div>
+        </div>
+        <div style="height:50px;border:2px solid #E7E2DD;border-radius:16px;display:flex;align-items:center;padding:0 14px;gap:10px;background:#fff;flex:none">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9A94A6" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+          <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Nombre o documento" style="flex:1;min-width:0;border:0;font:500 16px 'Outfit';color:#1C1A24;background:transparent">
+        </div>
+        <sc-if value="{{ showCelebra }}">
+          <div style="border-radius:24px;background:#E3F5EC;padding:22px;text-align:center;display:grid;gap:6px;justify-items:center">
+            <div style="width:60px;height:60px;border-radius:50%;background:#1F9D6B;color:#fff;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2 8.8-9.2"></path></svg></div>
+            <div style="font:800 20px 'Outfit';color:#17734F">¡Tu grupo está al día!</div>
+            <div style="font:500 14.5px 'Outfit';color:#17734F">Los {{ m.total }} proyectos ya tienen hora.</div>
+            <button onClick="{{ showAll }}" style="margin-top:6px;height:44px;padding:0 16px;border-radius:14px;background:#fff;color:#17734F;font:700 14px 'Outfit';border:0">Ver los proyectos</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showTable }}">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+            <div style="border-radius:20px;background:#fff;border:1px solid #F0EBE6;padding:14px 16px;display:grid;gap:8px;flex:none">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+                <div style="min-width:0"><div style="font:700 15.5px 'Outfit'">{{ r.n1 }}</div><sc-if value="{{ r.n2 }}"><div style="font:600 14px 'Outfit';color:#3F3A4A">{{ r.n2 }}</div></sc-if><sc-if value="{{ r.inc }}"><div style="font:600 12.5px 'Outfit';color:#8A5A00">Falta registrar a su pareja</div></sc-if></div>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:{{ r.badgeBg }};color:{{ r.badgeFg }};font:700 12px 'Outfit'"><i style="width:7px;height:7px;border-radius:50%;background:{{ r.dot }};display:block"></i>{{ r.mlabel }}</span>
+              </div>
+              <div style="font:500 13.5px 'Outfit';color:#615C6E">{{ r.proj }}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:8px;border-top:1px dashed #EDE4DC">
+                <span style="font:500 12px 'JetBrains Mono',monospace;color:#8A8496">{{ r.mfecha }}</span>
+                <sc-if value="{{ r.canAsk }}"><button onClick="{{ r.ask }}" style="height:34px;padding:0 12px;border-radius:11px;border:1.5px solid #E7E2DD;background:#fff;color:#1C1A24;font:700 13px 'Outfit'">Pedir cambio</button></sc-if>
+                <sc-if value="{{ r.cambio }}"><span style="font:600 12.5px 'Outfit';color:#8A5A00">Cambio solicitado</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noResults }}">
+            <div style="padding:30px 10px;text-align:center;display:grid;gap:6px;justify-items:center">
+              <div style="font:800 18px 'Outfit'">Sin resultados para “{{ q }}”</div>
+              <div style="font:500 14.5px 'Outfit';color:#615C6E">Prueba con otro nombre o documento.</div>
+              <button onClick="{{ clearQ }}" style="margin-top:10px;height:44px;padding:0 16px;border-radius:14px;border:0;background:#1C1A24;color:#fff;font:700 14px 'Outfit'">Limpiar búsqueda</button>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+      <div style="flex:none;padding:12px 20px 20px;border-top:1px solid #F0EBE6;background:#FBF8F5;display:flex;gap:10px">
+        <button onClick="{{ copyPend }}" disabled="{{ noPend }}" style="flex:1;height:56px;border-radius:18px;border:0;background:{{ pendBtnBg }};color:#fff;font:700 16px 'Outfit'">{{ pendBtnShort }}</button>
+        <button onClick="{{ copyLink }}" aria-label="Copiar enlace de inscripción" style="flex:none;width:56px;height:56px;border-radius:18px;border:2px solid #E7E2DD;background:#fff;color:#1C1A24;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 006.4 0l3-3a4.5 4.5 0 00-6.4-6.4l-1 1"></path><path d="M14 10a4.5 4.5 0 00-6.4 0l-3 3a4.5 4.5 0 006.4 6.4l1-1"></path></svg></button>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ modalOpen }}">
+    <div style="position:absolute;inset:0;background:rgba(28,26,36,.45);display:flex;align-items:flex-end;z-index:5">
+      <div style="width:100%;border-radius:28px 28px 0 0;background:#fff;padding:12px 20px 24px;display:flex;flex-direction:column">
+        <div style="width:44px;height:5px;border-radius:3px;background:#E7E2DD;align-self:center;margin-bottom:14px"></div>
+        <div style="font:800 22px 'Outfit';letter-spacing:-.02em">Pedir cambio de hora</div>
+        <div style="font:500 14px/1.45 'Outfit';color:#615C6E;margin:4px 0 12px">Coordinación la revisa y avisa a los estudiantes.</div>
+        <div style="border-radius:16px;background:#FBF8F5;border:1px solid #F0EBE6;padding:12px 14px"><div style="font:700 15px 'Outfit'">{{ mr.names }}</div><div style="font:500 13px 'Outfit';color:#615C6E">Hora actual: <b style="color:#1C1A24">{{ mr.time }}</b></div></div>
+        <div style="font:700 14px 'Outfit';margin:14px 0 8px">Hora que prefieren (opcional)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ altTimes }}" as="a" hint-placeholder-count="5"><button onClick="{{ a.on }}" style="height:44px;padding:0 14px;border-radius:12px;border:2px solid {{ a.border }};background:{{ a.bg }};font:700 14px 'Outfit';color:#1C1A24">{{ a.label }}</button></sc-for></div>
+        <div style="font:700 14px 'Outfit';margin:14px 0 8px">Motivo</div>
+        <textarea value="{{ motivo }}" onChange="{{ onMotivo }}" placeholder="Ej. Juan Pablo trabaja a esa hora" style="height:76px;border:2px solid {{ motivoBorder }};border-radius:14px;padding:12px 14px;font:500 15px/1.4 'Outfit';color:#1C1A24;resize:none"></textarea>
+        <sc-if value="{{ motivoErr }}"><div style="margin-top:6px;font:600 13.5px 'Outfit';color:#C2303D">Escribe el motivo del cambio</div></sc-if>
+        <button onClick="{{ sendModal }}" style="margin-top:16px;height:56px;border-radius:18px;border:0;background:#F25C2A;color:#fff;font:700 17px 'Outfit'">Enviar a coordinación</button>
+        <button onClick="{{ closeModal }}" style="margin-top:6px;height:44px;border-radius:14px;border:0;background:transparent;font:600 15px 'Outfit';color:#615C6E">Cancelar</button>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toast }}">
+    <div style="position:absolute;left:16px;right:16px;bottom:96px;background:#1C1A24;color:#fff;border-radius:14px;padding:13px 16px;font:600 14.5px/1.35 'Outfit';box-shadow:0 10px 30px -10px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px;z-index:6"><span style="flex:none;width:20px;height:20px;border-radius:50%;background:#1F9D6B;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2 8.8-9.2"></path></svg></span>{{ toast }}</div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;movil&quot;],&quot;default&quot;:&quot;web&quot;,&quot;tsType&quot;:&quot;'web'|'movil'&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;loginErr&quot;,&quot;cargando&quot;,&quot;escritorio&quot;,&quot;alDia&quot;,&quot;sinResultados&quot;,&quot;copiado&quot;,&quot;modal&quot;],&quot;default&quot;:&quot;login&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const LEAD=['Valentina Gómez Ríos','Santiago Muñoz Cárdenas','Isabella Mosquera Riascos','Samuel Valencia Ortiz','Mariana Caicedo Lasso','Juan Esteban Rivas Paz','Luciana Angulo Possu','Mateo Hurtado Vélez','Sara Lucumí Carabalí','Nicolás Rengifo Arce','Daniela Banguera Sinisterra','Sebastián Ocoró Mina','Gabriela Viveros Paz','Tomás Arboleda Cuero','Salomé Quiñones Grueso','Alejandro Zúñiga Bolaños','Camila Palacios Mena','Emmanuel Cortés Valencia','Valeria Escobar Lozano','Jerónimo Murillo Rentería','Antonella Castillo Rodallega','Martín Ibarra Cifuentes','Manuela Perea Asprilla','Julián Montaño Riascos','Laura Sofía Obando Ruiz','Andrés Felipe Prado','María José Saa Collazos','David Carabalí Lucumí','Ana Lucía Ramos Ospina','Esteban Satizábal Rey','Paula Andrea Mena Torres','Kevin Arango Popó','Natalia Becerra Ayala','Brayan Hinestroza Rivas','Juliana Cuéllar Gómez','Cristian Vergara Mina','Sofía Benítez Holguín','Miguel Ángel Ruiz Lara','Ximena Patiño Lasso','Diego Alejandro Lara'];
+const PART=['Juan Pablo Ortiz','Laura Daniela Cuero','Kevin Andrés Possu','María Paula Rivas','Óscar Iván Mina','Yuliana Riascos','Johan Steven Vélez','Karen Lizeth Paz','Duván Grueso','Lina Marcela Arce','Wilmer Sinisterra','Tatiana Mosquera','Harold Cuero','Angie Lorena Valencia','Jhon Fredy Lasso','Leidy Carabalí','Andrés Camilo Torres','Viviana Ocoró','Felipe Holguín','Mayra Alejandra Popó','Esteban Rentería','Camilo Bolaños','Dayana Asprilla','Jhojan Cifuentes','Stefany Lozano','Brahian Ospina','Melissa Rey'];
+const PROJ=['App de reciclaje para el barrio','Agenda digital para la tienda','Juego para aprender tablas','Mapa de rutas del MIO','Inventario para la panadería','Chatbot de tareas','Web del grupo de danza','Recetario del Pacífico','Calculadora de ahorro','Registro de mascotas perdidas','Tienda de artesanías','Alarma para tomar agua','Quiz de historia de Cali','Turnos para la barbería','Guía de huertas caseras','Bitácora de lectura','Portafolio de fotografía','Control de gastos familiar','Directorio de oficios','Clases de salsa en línea','Reportes de huecos','App para el equipo de fútbol','Diccionario de palabras caleñas','Recordatorio de citas médicas','Feria virtual del colegio','Banco de tiempo vecinal','Carta digital del restaurante','Podcast del barrio','Simulador de presupuesto','Mercado campesino en línea','Galería de grafiti','Rutas en bicicleta','Agenda cultural juvenil','Juego de reciclaje','Tutor de inglés básico','Venta de ropa usada','Registro de voluntarios','Mapa de wifi gratis','Encuestas para el JAC','Menú saludable semanal'];
+const SL=[480,495,525,555,570,600,645,660,690,960,975,990,1005,1020,1035,1050,1080,1095,1110,1125,1140,1155,1170,1185,1200,1215,1230,1245,1260,1275];
+const SIN=new Set([5,11,17,26,33,38]);
+const INC=new Set([11,22]);
+const hm=min=>{const h=Math.floor(min/60),m=String(min%60).padStart(2,'0');return (h>12?h-12:h)+':'+m+(min<720?' a. m.':' p. m.');};
+const FD=['9 nov','9 nov','9 nov','10 nov','10 nov','11 nov'];
+const FH=['8:04 a. m.','8:12 a. m.','9:31 a. m.','12:45 p. m.','3:20 p. m.','6:02 p. m.','7:48 p. m.','9:15 p. m.'];
+function buildRows(alDia){let pi=0;return LEAD.map((n,i)=>{const pair=i%3!==2;let n2=null;if(pair&&!INC.has(i)){n2=PART[pi%PART.length];pi++;}const has=alDia||!SIN.has(i);const time=i===0?1095:SL[(i*7)%SL.length];return {id:i,n1:n,n2,inc:INC.has(i),doc:i===0?'1144087321':String(1100000000+((i*7919*131)%89999999)),proj:PROJ[i],has,time,fecha:has?FD[i%6]+' · '+FH[(i*3)%8]:'—',cambio:false};});}
+const ALT=[1110,1155,1200,1230,1260];
+function initFor(start){
+  const b={step:'login',user:'laura.mendez',pass:'',loginErr:'',filter:'all',q:'',rows:buildRows(false),modal:null,alt:null,motivo:'',motivoErr:false,toast:'',showAll:false};
+  const m={
+    loginErr:{pass:'clave123',loginErr:'Usuario o clave incorrectos. Intenta otra vez.'},
+    cargando:{step:'loading'},
+    escritorio:{step:'desk'},
+    alDia:{step:'desk',rows:buildRows(true)},
+    sinResultados:{step:'desk',q:'Karol'},
+    copiado:{step:'desk',filter:'sin',toast:'Copiado. Pégalo en el WhatsApp del grupo'},
+    modal:{step:'desk',modal:0,alt:1155,motivo:'Juan Pablo entra a trabajar a las 6:00 p. m.'}
+  };
+  return {...b,...(m[start]||{})};
+}
+function copyText(t){try{navigator.clipboard&&navigator.clipboard.writeText(t);}catch(e){}}
+
+class Component extends DCLogic {
+  state=initFor((this.props||{}).start);
+  componentDidUpdate(pp){if(pp.start!==this.props.start)this.setState(initFor(this.props.start));}
+  componentWillUnmount(){clearTimeout(this.t);clearTimeout(this.tt);}
+  showToast(msg){clearTimeout(this.tt);this.setState({toast:msg});this.tt=setTimeout(()=>this.setState({toast:''}),2600);}
+  login=()=>{
+    const {user,pass}=this.state;
+    if(!user.trim()||!pass)return this.setState({loginErr:'Escribe tu usuario y tu clave.'});
+    if(user.trim()!=='laura.mendez'||pass!=='rofe2026')return this.setState({loginErr:'Usuario o clave incorrectos. Intenta otra vez.'});
+    this.setState({step:'loading',loginErr:''});
+    this.t=setTimeout(()=>this.setState({step:'desk'}),1200);
+  };
+  copyPend=()=>{
+    const p=this.state.rows.filter(r=>!r.has);
+    const txt='Hola, a estos proyectos les falta elegir la hora de su presentación final (jueves 12 de noviembre):\n'+p.map((r,i)=>(i+1)+'. '+r.n1+(r.n2?' y '+r.n2:'')).join('\n')+'\nEntren a horarios.jovenescreativos.co con su documento. Toma menos de 1 minuto.';
+    copyText(txt);this.showToast('Copiado. Pégalo en el WhatsApp del grupo');
+  };
+  copyLink=()=>{copyText('https://horarios.jovenescreativos.co');this.showToast('Enlace de inscripción copiado');};
+  sendModal=()=>{
+    if(!this.state.motivo.trim())return this.setState({motivoErr:true});
+    const id=this.state.modal;
+    this.setState(s=>({rows:s.rows.map(r=>r.id===id?{...r,cambio:true}:r),modal:null,alt:null,motivo:'',motivoErr:false}));
+    this.showToast('Solicitud enviada a coordinación');
+  };
+  renderVals(){
+    const s=this.state,isWeb=this.props.modo==='web'||this.props.modo==null&&false;
+    const web=this.props.modo==='web';
+    const total=s.rows.length,con=s.rows.filter(r=>r.has).length,sin=total-con,inc=s.rows.filter(r=>r.inc).length;
+    const FL=[['all','Todos',total,'#1C1A24'],['con','Con hora',con,'#1F9D6B'],['sin','Sin hora',sin,'#9A94A6'],['inc','Pareja incompleta',inc,'#F2B630']];
+    const filters=FL.map(([id,label,count,dot])=>{const a=s.filter===id;return {label,count,dot,border:a?'#1C1A24':'#F0EBE6',bg:a?'#fff':'#FBF9F7',mbg:a?'#fff':'#F7F3EF',on:()=>this.setState({filter:id,showAll:true})};});
+    const q=s.q.trim().toLowerCase();
+    const norm=x=>x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    let rows=s.rows.filter(r=>s.filter==='all'||(s.filter==='con'&&r.has)||(s.filter==='sin'&&!r.has)||(s.filter==='inc'&&r.inc));
+    if(q)rows=rows.filter(r=>norm(r.n1+' '+(r.n2||'')).includes(norm(q))||r.doc.includes(q));
+    rows=rows.slice().sort((a,b)=>(a.has-b.has)||a.id-b.id);
+    const mrRow=s.modal!=null?s.rows.find(r=>r.id===s.modal):null;
+    const showCelebra=sin===0&&!s.showAll&&!q&&s.step==='desk';
+    return {
+      isWeb:web,isMovil:!web,
+      statusBg:s.step==='login'?'#1C1A24':'transparent',statusFg:s.step==='login'?'#fff':'#1C1A24',
+      isLogin:s.step==='login',isApp:s.step!=='login',isLoading:s.step==='loading',isDesk:s.step==='desk',
+      user:s.user,pass:s.pass,loginErr:s.loginErr,passBorder:s.loginErr?'#D64553':'#E7E2DD',
+      onUser:e=>this.setState({user:e.target.value,loginErr:''}),onPass:e=>this.setState({pass:e.target.value,loginErr:''}),
+      passKey:e=>{if(e.key==='Enter')this.login();},login:this.login,
+      skel:[1,2,3,4,5,6],
+      turnos:[{wd:'JUE',num:'12',hours:'6:00 – 7:00 p. m.',sala:'Sala 4 · con Luisa Polanco',short:'Jue 12 · 6:00 p. m. · Sala 4'},{wd:'JUE',num:'12',hours:'7:00 – 8:00 p. m.',sala:'Sala 4 · con Johan Ramírez',short:'Jue 12 · 7:00 p. m. · Sala 4'}],
+      m:{total,con,pct:(con/total*100).toFixed(1)+'%'},
+      filters,q:s.q,onQ:e=>this.setState({q:e.target.value}),clearQ:()=>this.setState({q:''}),
+      noPend:sin===0,pendBtnBg:sin===0?'#C9C3CC':'#1C1A24',
+      pendBtnLabel:sin===0?'Sin pendientes':'Copiar lista de pendientes ('+sin+')',pendBtnShort:sin===0?'Sin pendientes':'Copiar pendientes ('+sin+')',
+      copyPend:this.copyPend,copyLink:this.copyLink,
+      showCelebra,showTable:!showCelebra,showAll:()=>this.setState({showAll:true}),
+      noResults:rows.length===0,
+      rows:rows.map(r=>({...r,
+        label:r.has?'Con hora · Jue 12 · '+hm(r.time):'Sin hora',mlabel:r.has?hm(r.time):'Sin hora',
+        badgeBg:r.has?'#E3F5EC':'#F0EBE6',badgeFg:r.has?'#17734F':'#615C6E',dot:r.has?'#1F9D6B':'#9A94A6',
+        mfecha:r.has?'Jue 12 · eligió '+r.fecha:'Aún no elige',
+        canAsk:r.has&&!r.cambio,ask:()=>this.setState({modal:r.id,alt:null,motivo:'',motivoErr:false})})),
+      modalOpen:!!mrRow,mr:mrRow?{names:mrRow.n1+(mrRow.n2?' y '+mrRow.n2:''),proj:mrRow.proj,time:'Jue 12 · '+hm(mrRow.time)}:{},
+      altTimes:ALT.map(t=>{const a=s.alt===t;return {label:hm(t),border:a?'#F25C2A':'#E7E2DD',bg:a?'#FFF1EA':'#fff',on:()=>this.setState({alt:a?null:t})};}),
+      motivo:s.motivo,onMotivo:e=>this.setState({motivo:e.target.value,motivoErr:false}),motivoErr:s.motivoErr,motivoBorder:s.motivoErr?'#D64553':'#E7E2DD',
+      closeModal:()=>this.setState({modal:null}),sendModal:this.sendModal,
+      toast:s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

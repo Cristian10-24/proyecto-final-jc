@@ -1,38 +1,4 @@
-/* Tokens tomados de /prototipos/diseno (Jóvenes creaTIvos). */
-:root {
-  --orange: #f25c2a;
-  --orange-dark: #c9461b;
-  --orange-darker: #9c3210;
-  --orange-soft: #fff1ea;
-  --orange-tint: #fff5f0;
-  --orange-ring: #ffe1d3;
-  --orange-chip: #ffe9df;
-  --orange-busy: #f79a78;
-  --ink: #1c1a24;
-  --ink-2: #3f3a4a;
-  --muted: #615c6e;
-  --muted-2: #8a8496;
-  --line: #e7e2dd;
-  --line-2: #f0ebe6;
-  --surface: #fbf9f7;
-  --surface-2: #f7f4f1;
-  --bg: #fbf8f5;
-  --green: #1f9d6b;
-  --green-dark: #17734f;
-  --green-soft: #e3f5ec;
-  --yellow: #f2b630;
-  --yellow-soft: #fff7dc;
-  --yellow-ink: #5a4300;
-  --yellow-text: #8a5a00;
-  --red: #d64553;
-  --red-ink: #c2303d;
-  --red-dark: #9e2430;
-  --red-soft: #fce6e8;
-  --sun: #ffc93c;
-  --blue: #3e8fd0;
-  --font: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, monospace;
-}
+/* Variables del sistema visual: src/app/tokens.css (importado antes que este archivo en layout.tsx). */
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
