@@ -3,18 +3,25 @@
 
 export type Pais = "CO" | "EC" | "PA" | "UY";
 
+// clausura: día de clausura de la ciudad; solo se presenta ANTES de ese día (ADR 0005).
 export const CIUDADES = [
-  { codigo: "CLO", nombre: "Cali", pais: "CO" },
-  { codigo: "CTG", nombre: "Cartagena", pais: "CO" },
-  { codigo: "BAQ", nombre: "Barranquilla", pais: "CO" },
-  { codigo: "MED", nombre: "Medellín", pais: "CO" },
-  { codigo: "GYE", nombre: "Guayaquil", pais: "EC" },
-  { codigo: "QTO", nombre: "Quito", pais: "EC" },
-  { codigo: "BOG", nombre: "Bogotá D.C.", pais: "CO" },
-  { codigo: "COL", nombre: "Colonia", pais: "UY" },
-  { codigo: "PAY", nombre: "Paysandú", pais: "UY" },
-  { codigo: "PTY", nombre: "Panamá", pais: "PA" },
-] as const satisfies readonly { codigo: string; nombre: string; pais: Pais }[];
+  { codigo: "CLO", nombre: "Cali", pais: "CO", clausura: "2026-11-14" },
+  { codigo: "CTG", nombre: "Cartagena", pais: "CO", clausura: "2026-11-19" },
+  { codigo: "BAQ", nombre: "Barranquilla", pais: "CO", clausura: "2026-11-21" },
+  { codigo: "MED", nombre: "Medellín", pais: "CO", clausura: "2026-11-24" },
+  { codigo: "GYE", nombre: "Guayaquil", pais: "EC", clausura: "2026-11-27" },
+  { codigo: "QTO", nombre: "Quito", pais: "EC", clausura: "2026-11-28" },
+  { codigo: "BOG", nombre: "Bogotá D.C.", pais: "CO", clausura: "2026-12-01" },
+  { codigo: "COL", nombre: "Colonia", pais: "UY", clausura: "2026-12-03" },
+  { codigo: "PAY", nombre: "Paysandú", pais: "UY", clausura: "2026-12-05" },
+  { codigo: "PTY", nombre: "Panamá", pais: "PA", clausura: "2026-12-05" },
+] as const satisfies readonly { codigo: string; nombre: string; pais: Pais; clausura: string }[];
+
+/** true si la ciudad todavía puede presentar ese día ('YYYY-MM-DD'). */
+export function presentaAntesDeClausura(ciudad: string, dia: string): boolean {
+  const c = CIUDADES.find((x) => x.nombre === ciudad);
+  return !!c && dia < c.clausura;
+}
 
 export type CodigoCiudad = (typeof CIUDADES)[number]["codigo"];
 

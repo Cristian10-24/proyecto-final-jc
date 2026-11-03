@@ -31,4 +31,39 @@ export type ChangeLog = {
   fecha: Date;
 };
 
-export type RateLimit = { _id: string; count: number; expiraEn: Date };
+export type Integrante = { documento: string; nombre: string };
+
+/** Proyecto importado del Excel. Su hora vive en el asiento (asientos.proyectoId), no aquí. */
+export type Proyecto = {
+  _id: ObjectId;
+  codigo: string;
+  ciudad: string;
+  nombre: string;
+  grupo?: string;
+  integrantes: Integrante[];
+  creadoEn: Date;
+  actualizadoEn: Date;
+};
+
+export type Mentor = { _id: string; nombre: string; correo?: string; celular?: string };
+
+/** Un asiento = un bloque de 15 min con un mentor. `ciudades`: quién puede tomarlo. */
+export type Asiento = {
+  _id: ObjectId;
+  dia: string;
+  inicio: Date;
+  mentorId: string;
+  ciudades: string[];
+  proyectoId: ObjectId | null;
+  reservadoEn?: Date;
+};
+
+/**
+ * Configuración de un día: qué ciudades presentan y desde cuándo pueden elegir.
+ * `cupos` es exacto para las ciudades sin sobrante y un mínimo para la ciudad de sobrante,
+ * que se queda con todo lo que no tomen las demás (a lo sumo una por día).
+ */
+export type CupoCiudad = { ciudad: string; cupos: number | null; sobrante: boolean; abre: Date | null };
+export type DiaConfig = { _id: string; ciudades: CupoCiudad[] };
+
+export type RateLimit ={ _id: string; count: number; expiraEn: Date };

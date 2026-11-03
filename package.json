@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "db:local": "node scripts/mongo-local.mjs",
     "usuario:add": "tsx --env-file=.env.local scripts/usuario.ts add",
-    "usuario:list": "tsx --env-file=.env.local scripts/usuario.ts list"
+    "usuario:list": "tsx --env-file=.env.local scripts/usuario.ts list",
+    "verificar:franjas": "tsx scripts/verificar-franjas.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

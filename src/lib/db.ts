@@ -1,5 +1,5 @@
 import { MongoClient, type Db } from "mongodb";
-import type { ChangeLog, RateLimit, User } from "./types";
+import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, User } from "./types";
 
 declare global {
   // Se reutiliza entre recargas en desarrollo y entre invocaciones en Vercel.
@@ -50,12 +50,22 @@ export async function collections() {
     users: db.collection<User>("users"),
     changeLog: db.collection<ChangeLog>("changeLog"),
     rateLimits: db.collection<RateLimit>("rateLimits"),
+    proyectos: db.collection<Proyecto>("proyectos"),
+    mentores: db.collection<Mentor>("mentores"),
+    asientos: db.collection<Asiento>("asientos"),
+    dias: db.collection<DiaConfig>("dias"),
   };
 }
 
 async function ensureIndexes(db: Db) {
   await Promise.all([
     db.collection("users").createIndex({ usuario: 1 }, { unique: true }),
+    db.collection("proyectos").createIndex({ codigo: 1 }, { unique: true }),
+    db.collection("proyectos").createIndex({ "integrantes.documento": 1 }, { unique: true }),
+    db.collection("asientos").createIndex({ inicio: 1, mentorId: 1 }, { unique: true }),
+    db.collection("asientos").createIndex({ dia: 1, ciudades: 1, proyectoId: 1 }),
+    // Un proyecto nunca tiene dos asientos: es la garantía contra la doble reserva.
+    db.collection("asientos").createIndex({ proyectoId: 1 }, { unique: true, partialFilterExpression: { proyectoId: { $type: "objectId" } } }),
     db.collection("changeLog").createIndex({ proyectoId: 1, fecha: -1 }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),

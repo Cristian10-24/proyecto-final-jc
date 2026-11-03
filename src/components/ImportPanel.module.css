@@ -1,0 +1,41 @@
+/* Administración · importar. Mismo lenguaje del panel de usuarios. */
+.kicker { font: 600 11px var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.title { margin: 4px 0 0; font: 800 27px/1.1 var(--font); letter-spacing: -.03em; }
+.lead { margin: 8px 0 18px; font: 500 15px/1.5 var(--font); color: var(--muted); max-width: 640px; }
+
+.grid { display: grid; gap: 16px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cardHead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cardTitle { margin: 0; font: 800 19px var(--font); letter-spacing: -.02em; }
+.link { font: 700 14px var(--font); color: var(--orange-dark); }
+.desc { margin: 0; font: 500 14px/1.45 var(--font); color: var(--muted); }
+
+.file { display: flex; align-items: center; min-height: 52px; padding: 0 16px; border: 2px dashed var(--line); border-radius: 14px; font: 600 14.5px var(--font); color: var(--ink-2); cursor: pointer; overflow: hidden; }
+.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file:focus-within { border-color: var(--orange); }
+.file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ok { border-radius: 14px; background: var(--green-soft); color: var(--green-dark); padding: 12px 14px; font: 700 14px var(--font); }
+
+.resumen { display: grid; gap: 12px; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat { background: var(--surface-2); border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; min-width: 92px; }
+.stat b { font: 800 22px var(--font); }
+.stat span { font: 600 12.5px var(--font); color: var(--muted); }
+
+.tabla { width: 100%; border-collapse: collapse; font: 500 14px var(--font); }
+.tabla th { text-align: left; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.tabla td { padding: 8px; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+.tabla td:first-child { text-transform: capitalize; white-space: nowrap; }
+
+.filas { border-radius: 14px; padding: 12px 14px; font: 500 13.5px/1.45 var(--font); max-height: 340px; overflow: auto; }
+.filas ul { margin: 6px 0 0; padding-left: 18px; }
+.filasError { background: var(--red-soft); color: var(--red-dark); }
+.filasWarn { background: var(--yellow-soft); color: var(--yellow-ink); }
+.filasTitulo { font-weight: 700; }
+.fila { font: 600 12px var(--mono); margin-right: 8px; opacity: .8; }
+
+@media (min-width: 1000px) {
+  .grid { grid-template-columns: 1fr 1fr; align-items: start; }
+}
