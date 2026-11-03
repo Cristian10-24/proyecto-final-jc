@@ -10,7 +10,7 @@ Lo que queda abierto. Cada línea dice quién lo hace. Al resolver una, se borra
 - Archivo real de inscritos: importarlo y revisar en la vista previa columnas reconocidas, monitores por asignar y errores por fila.
 
 - Atlas: crear un usuario de base de datos con readWrite SOLO sobre `proyecto_final_jc_pruebas` y ponerlo en `.env.atlas.local` en lugar del usuario personal (que tiene acceso a otras bases del cluster).
-- Confirmar que `revisor-pruebas` corre con los permisos de `.claude/settings.json` (en esta sesión el modo automático negó lanzar el subagente; puede requerir abrir una sesión nueva).
+- `revisor-pruebas` sigue sin lanzarse en modo automático, también en sesión nueva (3-nov: "Auto-Mode Bypass"). Probar lanzarlo con el modo de permisos normal o autorizarlo en la configuración.
 
 ## Técnicos (bajos, conscientes)
 - Formato de fechas repetido en cinco componentes (ImportPanel, HorariosPanel, portal, SeguimientoPanel, ResumenPanel): unificar en un módulo de `src/lib`. Hoy hay diferencias menores ("Jue 12 de nov" / "jue 12 nov").

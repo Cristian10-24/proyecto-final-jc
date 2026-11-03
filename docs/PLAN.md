@@ -73,7 +73,7 @@ Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; des
 **Reglas de la Fase 2.** Sin Google Apps Script; mismo diseño del prototipo con `tokens.css`; refresco periódico (sin websockets); un paso a la vez.
 
 ### Pasos de la Fase 2
-- [ ] 8. Leer el prototipo una vez y crear `docs/EVALUACION.md` (máx. 100 líneas). Después no volver a abrir index.html salvo para una pantalla concreta.
+- [x] 8. Leer el prototipo una vez y crear `docs/EVALUACION.md` (máx. 100 líneas). Después no volver a abrir index.html salvo para una pantalla concreta.
 - [ ] 9. Importador: Ruta, Salas y Monitores; asignación automática de salas y descarga del Plan de salas.
 - [ ] 10. Módulo de evaluación: `src/lib/evaluacion/`, `/api/evaluacion/*`, colecciones `evaluacion_*`. Funciones puras con pruebas (incluida `calc()`). Un mentor solo evalúa sus proyectos. Borrador automático. Todo deja changeLog.
 - [ ] 11. Vista del MENTOR ("Mis evaluaciones"), igual al prototipo: agenda del día por bloques de 15 min, filtros por estado y pantalla de evaluar; en cada hora, su SALA y ENLACE con "Abrir sala". Coordinación y admin pueden ver la vista de cualquier mentor.
