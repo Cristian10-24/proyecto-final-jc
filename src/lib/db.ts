@@ -2,7 +2,7 @@ import { MongoClient, type ClientSession, type Db } from "mongodb";
 import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./evaluacion/datos";
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
 import type { PlanSala } from "./salas";
-import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
+import type { Asiento, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
 declare global {
   // Se reutiliza entre recargas en desarrollo y entre invocaciones en Vercel.
@@ -108,6 +108,7 @@ export async function collections() {
     mentores: db.collection<Mentor>("mentores"),
     asientos: db.collection<Asiento>("asientos"),
     dias: db.collection<DiaConfig>("dias"),
+    inscripciones: db.collection<InscripcionesConfig>("inscripciones"),
     salasConfig: db.collection<SalasConfig>("salasConfig"),
     planSalas: db.collection<PlanSala>("planSalas"),
     evalResultados: db.collection<EvalResultado>("evaluacion_resultados"),

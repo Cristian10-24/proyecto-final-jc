@@ -28,7 +28,7 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion" | "reglas_cupos" | "cierre_inscripciones";
   anterior?: string;
   nuevo?: string;
   motivo?: string;
@@ -77,8 +77,12 @@ export type Asiento = {
  * `cupos` es exacto para las ciudades sin sobrante y un mínimo para la ciudad de sobrante,
  * que se queda con todo lo que no tomen las demás (a lo sumo una por día).
  */
-export type CupoCiudad = { ciudad: string; cupos: number | null; sobrante: boolean; abre: Date | null };
-export type DiaConfig = { _id: string; ciudades: CupoCiudad[] };
+export type CupoCiudad = { ciudad: string; cupos: number | null; sobrante: boolean; abre: Date | null; /** Máximo del día (Paso 17); sin él, los cupos son exactos (o "todo lo que sobre" si es la de sobrante). */ max?: number | null };
+/** `editadoEn`: las reglas se editaron en pantalla (Paso 17); mandan hasta la próxima importación de la hoja Cupos. */
+export type DiaConfig = { _id: string; ciudades: CupoCiudad[]; editadoEn?: Date; editadoPor?: string };
+
+/** Cierre de inscripciones por ciudad (Paso 17): por defecto `horasAntes` antes de su primer bloque; `porCiudad` lo fija a mano. */
+export type InscripcionesConfig = { _id: "cierre"; horasAntes: number; porCiudad: Record<string, Date>; actualizadoEn: Date };
 
 export type RateLimit ={ _id: string; count: number; expiraEn: Date };
 

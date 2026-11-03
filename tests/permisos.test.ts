@@ -53,6 +53,9 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["cambiar el mentor desde el tablero", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z", asiento: ID }), ctx)],
   ["anular una evaluación", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "anular", motivo: "Error de mentor" }), ctx)],
   ["liberar una hora", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "liberar" }), ctx)],
+  ["ver las reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).GET()],
+  ["aplicar reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).POST(json("POST", { accion: "aplicar", dia: "2026-11-12", ciudades: [] }))],
+  ["guardar el cierre de inscripciones", async () => (await import("@/app/api/admin/reglas/cierre/route")).POST(json("POST", { horasAntes: 24, porCiudad: {} }))],
   ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
 ];
 
@@ -188,6 +191,20 @@ describe("Anular evaluación: motivo obligatorio y origen", () => {
       expect((await POST(json("POST", body), ctx)).status).toBe(400);
     const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "anular", motivo: "Error de mentor" }) });
     expect((await POST(req, ctx)).status).toBe(403);
+  });
+});
+
+describe("Reglas y cierre: origen y validación", () => {
+  it("403 desde otro origen; 400 con datos inválidos", async () => {
+    await como("admin");
+    const otro = (body: unknown) => new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify(body) });
+    const reglas = await import("@/app/api/admin/reglas/route"), cierre = await import("@/app/api/admin/reglas/cierre/route");
+    expect((await reglas.POST(otro({ accion: "previa", dia: "2026-11-12", ciudades: [] }))).status).toBe(403);
+    expect((await cierre.POST(otro({ horasAntes: 24, porCiudad: {} }))).status).toBe(403);
+    for (const body of [{ accion: "previa", dia: "12-11-2026", ciudades: [] }, { accion: "borrar", dia: "2026-11-12", ciudades: [] }, { accion: "previa", dia: "2026-11-12", ciudades: [{ ciudad: "Narnia", minimo: 1, maximo: null, sobrante: false, abre: null }] }, { accion: "previa", dia: "2026-11-12", ciudades: [], otro: 1 }])
+      expect((await reglas.POST(json("POST", body))).status).toBe(400);
+    for (const body of [{ horasAntes: -1, porCiudad: {} }, { horasAntes: "24", porCiudad: {} }, { horasAntes: 24, porCiudad: { Cali: "mañana" } }, { horasAntes: 24, porCiudad: { Narnia: null } }])
+      expect((await cierre.POST(json("POST", body))).status).toBe(400);
   });
 });
 

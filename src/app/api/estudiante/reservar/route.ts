@@ -11,7 +11,7 @@ const Body = z
   })
   .strict();
 
-const ESTADO: Record<string, number> = { sin_proyecto: 404, ya_tiene_hora: 409, sin_cupo: 409, bloque_pasado: 409, dia_no_disponible: 403, aun_no_abre: 403 };
+const ESTADO: Record<string, number> = { sin_proyecto: 404, ya_tiene_hora: 409, sin_cupo: 409, bloque_pasado: 409, dia_no_disponible: 403, aun_no_abre: 403, cerrado: 403 };
 
 /**
  * El estudiante reserva un bloque con su documento. Sin sesión ni cookie: el documento identifica al
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   if (r.ok) return NextResponse.json({ ok: true, inicio: r.inicio.toISOString(), dia: r.dia });
   if (r.error === "sin_proyecto") await contar("ip", ip);
   return NextResponse.json(
-    { error: r.error, mensaje: MENSAJES_RESERVA[r.error] }, // la hora existente se ve con /consultar
+    { error: r.error, mensaje: MENSAJES_RESERVA[r.error], ...(r.cierre ? { cierre: r.cierre } : {}), ...(r.abre ? { abre: r.abre } : {}) }, // la hora existente se ve con /consultar
     { status: ESTADO[r.error] ?? 400 },
   );
 }

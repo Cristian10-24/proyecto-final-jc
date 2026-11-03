@@ -28,7 +28,7 @@ const PASO: Partial<Record<Vista, number>> = { datos: 1, dia: 2, hora: 3, confir
 const ATRAS: Partial<Record<Vista, Vista>> = { datos: "ingreso", dia: "datos", hora: "dia", confirmar: "hora" };
 
 type Respuesta = { ok: true; data: unknown } | { ok: false; status: number; data: ErrorApi };
-type ErrorApi = { error?: string; mensaje?: string; abre?: string; inicio?: string };
+type ErrorApi = { error?: string; mensaje?: string; abre?: string; inicio?: string; cierre?: string };
 
 async function api(ruta: string, body: Record<string, string>): Promise<Respuesta> {
   try {
@@ -63,6 +63,7 @@ function validarDocumento(v: string): string | null {
 export default function Portal({ estado }: { estado: EstadoInicial }) {
   const [vista, setVista] = useState<Vista>(estado.estado === "abierto" ? "ingreso" : estado.estado);
   const [abre, setAbre] = useState<string | null>(estado.estado === "antes" ? estado.abre : null);
+  const [cierre, setCierre] = useState<string | null>(null);
   const [valor, setValor] = useState("");
   const [errorDoc, setErrorDoc] = useState<string | null>(null);
   const [documento, setDocumento] = useState("");
@@ -91,12 +92,14 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
     };
     if (r.status === 0) return avisar(AVISO_RED);
     if (r.status === 429) return avisar(AVISO_429);
-    if (r.data.error === "aun_no_abre" && r.data.abre) {
-      setAbre(r.data.abre);
+    // "Aún no abre" con fecha (consultar, reservar) o sin ella (agenda: se usa la que ya llegó de consultar).
+    if (r.data.error === "aun_no_abre") {
+      if (r.data.abre) setAbre(r.data.abre);
       ir("antes");
       return true;
     }
     if (r.data.error === "cerrado") {
+      setCierre(r.data.cierre ?? null);
       ir("cerrado");
       return true;
     }
@@ -517,11 +520,13 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
             <Titulo enfocar={false}>Las inscripciones ya cerraron</Titulo>
             <p className={s.texto}>Si aún no tienes hora, escríbele a tu monitor.</p>
           </>}>
-            <div className={`${s.tarjeta} ${s.soloWeb}`}>
-              <Kicker>Inscripciones cerradas</Kicker>
-              <div className={s.nombre}>Ya no se pueden elegir horas</div>
-              <div className={s.meta}>Tu monitor te ayuda por WhatsApp.</div>
-            </div>
+            {cierre ? <FechaClave iso={cierre} titulo="Cerró el" cerrada /> : (
+              <div className={`${s.tarjeta} ${s.soloWeb}`}>
+                <Kicker>Inscripciones cerradas</Kicker>
+                <div className={s.nombre}>Ya no se pueden elegir horas</div>
+                <div className={s.meta}>Tu monitor te ayuda por WhatsApp.</div>
+              </div>
+            )}
           </Pantalla>
         )}
       </main>

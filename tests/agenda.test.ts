@@ -3,7 +3,7 @@ import {
   agruparPorHora, ciudadesDelDia, ciudadesExplicitas, diasPorCiudad, generarAsientos, gruposDelDia, horasDisponibles,
   puedeElegir, repartoPorHora, repartoProporcional, resumenPorDia, TODAS, type HoraMentores,
 } from "@/lib/agenda";
-import { inicioUTC } from "@/lib/edicion";
+import { esDia, inicioUTC } from "@/lib/edicion";
 import type { CupoCiudad, DiaConfig } from "@/lib/types";
 
 const cupo = (ciudad: string, cupos: number | null, sobrante = false, abre: Date | null = null): CupoCiudad => ({ ciudad, cupos, sobrante, abre });
@@ -71,6 +71,23 @@ describe("caso 80 Cali / 40 Cartagena (jueves 12, 128 asientos)", () => {
   it("guía 2026: Cali 77 y Cartagena 51 llenan el día", () => {
     const g = generarAsientos(JUEVES, new Map([["2026-11-12", [cupo("Cali", 77, true), cupo("Cartagena", 51)]]]));
     expect(resumenPorDia(g)[0]!.porCiudad).toEqual({ Cali: 77, Cartagena: 51 });
+  });
+
+  it("máximo por ciudad (Paso 17): el sobrante llena hasta su máximo y lo demás va a quien tenga máximo mayor que sus cupos", () => {
+    const cm = (ciudad: string, cupos: number | null, max: number | null, sobrante = false): CupoCiudad => ({ ...cupo(ciudad, cupos, sobrante), max });
+    // 128 asientos: Cali 80 (máx 100, sobrante), Cartagena 0 (máx 40) → Cali 100, Cartagena 28.
+    expect(gruposDelDia([cm("Cali", 80, 100, true), cm("Cartagena", 0, 40)], 128, "2026-11-12", new Set())).toEqual([
+      { ciudades: ["Cartagena"], cuota: 28 }, { ciudades: ["Cali"], cuota: 100 },
+    ]);
+    // Si ni el sobrante ni los máximos alcanzan, lo que queda va sin ciudad.
+    expect(gruposDelDia([cm("Cali", 80, 90, true), cm("Cartagena", 10, 20)], 128, "2026-11-12", new Set())).toEqual([
+      { ciudades: ["Cartagena"], cuota: 20 }, { ciudades: [], cuota: 18 }, { ciudades: ["Cali"], cuota: 90 },
+    ]);
+    // Sin máximos se comporta como antes.
+    expect(gruposDelDia([cupo("Cali", 80, true), cupo("Cartagena", 40)], 128, "2026-11-12", new Set())).toEqual([
+      { ciudades: ["Cartagena"], cuota: 40 }, { ciudades: ["Cali"], cuota: 88 },
+    ]);
+    expect(() => gruposDelDia([cm("Cali", 80, 70, true)], 128, "2026-11-12", new Set())).toThrow(/máximo de Cali/);
   });
 
   it("errores de configuración del día", () => {
@@ -155,5 +172,11 @@ describe("horas disponibles", () => {
   it("agrupa por hora de Colombia", () => {
     const g = agruparPorHora(horasDisponibles(asientos, "Cali", new Date(0)));
     expect(g.map((x) => [x.hora, x.bloques.length])).toEqual([[8, 2], [16, 2]]);
+  });
+});
+
+describe("esDia", () => {
+  it("solo fechas que existen", () => {
+    expect([esDia("2026-11-12"), esDia("2026-02-31"), esDia("2026-13-01"), esDia("12-11-2026")]).toEqual([true, false, false, false]);
   });
 });

@@ -2,6 +2,7 @@ import { ObjectId, type AnyBulkWriteOperation, type ClientSession } from "mongod
 import { diasPorCiudad, resumenPorDia } from "../agenda";
 import { horaCO } from "../ciudades";
 import { collections, transaccion } from "../db";
+import { diasEditados } from "../reglasCupos";
 import type { Actor, Asiento } from "../types";
 import { clave, type ErrorFila } from "./excel";
 import { HOJAS_MENTORES, type LibroMentores } from "./mentores";
@@ -164,8 +165,11 @@ export async function previaMentores(libro: LibroMentores): Promise<PreviaMentor
   const horas = new Map<string, number>();
   for (const h of libro.horas) for (const m of h.mentores) horas.set(m, (horas.get(m) ?? 0) + 1);
   const nombre = new Map(libro.mentores.map((m) => [m._id, m.nombre]));
+  // Reglas editadas en pantalla (Paso 17): mandan hasta esta importación, que las reemplaza con la hoja Cupos.
+  const editados = await diasEditados();
+  const avisos = editados.length ? [...libro.avisos, { hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `Hay reglas de cupos editadas en pantalla para ${editados.join(", ")}: al importar, la hoja Cupos las reemplaza.` }] : libro.avisos;
   return {
-    mentores: libro.mentores.length, avisos: libro.avisos, errores, dias: resumenPorDia(libro.asientos),
+    mentores: libro.mentores.length, avisos, errores, dias: resumenPorDia(libro.asientos),
     horasPorMentor: [...horas].map(([id, n]) => ({ nombre: nombre.get(id) ?? id, horas: n })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     reservadosQueSeConservan: await asientos.countDocuments({ proyectoId: { $type: "objectId" } }),
   };

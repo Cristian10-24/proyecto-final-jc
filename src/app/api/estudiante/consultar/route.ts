@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { consultar } from "@/lib/estudiante";
 import { intentar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
-import { cuerpoInvalido, documentoSchema, guardia, noEncontrado } from "@/lib/rutaEstudiante";
+import { estadoCiudad } from "@/lib/reglasCupos";
+import { cuerpoInvalido, documentoSchema, guardia, MENSAJE_CERRADO, noEncontrado } from "@/lib/rutaEstudiante";
 
 const Body = z.object({ documento: documentoSchema }).strict();
 
@@ -20,5 +21,11 @@ export async function POST(req: Request) {
 
   const vista = await consultar(documento);
   if (!vista) return noEncontrado(g.ip);
+  // Quien ya tiene hora la sigue viendo; quien no, ve si las inscripciones de su ciudad cerraron o aún no abren.
+  if (!vista.hora) {
+    const e = await estadoCiudad(vista.proyecto.ciudad);
+    if (e.estado === "cerrado") return NextResponse.json({ error: "cerrado", mensaje: MENSAJE_CERRADO, cierre: e.cierre }, { status: 403 });
+    if (e.estado === "antes") return NextResponse.json({ error: "aun_no_abre", mensaje: MENSAJE_CERRADO, abre: e.abre }, { status: 403 });
+  }
   return NextResponse.json(vista);
 }

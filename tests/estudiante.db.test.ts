@@ -90,9 +90,8 @@ describe("agenda", () => {
     const now = new Date();
     await c.proyectos.insertOne({ _id: new ObjectId(), codigo: "P-7000000009", ciudad: "Barranquilla", nombre: "B", integrantes: [{ documento: "7000000009", nombre: "Eva Prueba" }], creadoEn: now, actualizadoEn: now });
     // Barranquilla tiene días propios (el 13): la fila Todas del 17 no le aplica.
-    expect(await agenda("7000000009", undefined, AHORA)).toEqual({ dias: [
-      { dia: "2026-11-13", estado: "aun_no_abre", abre: ABRE_BAQ.toISOString() },
-    ] });
+    // Paso 17: si todos sus días abren después, la ciudad entera "aún no abre" (el portal muestra la fecha).
+    expect(await agenda("7000000009", undefined, AHORA)).toEqual({ error: "aun_no_abre", abre: ABRE_BAQ.toISOString() });
     await c.proyectos.insertOne({ _id: new ObjectId(), codigo: "P-7000000010", ciudad: "Medellín", nombre: "M", integrantes: [{ documento: "7000000010", nombre: "Juan Prueba" }], creadoEn: now, actualizadoEn: now });
     expect(await agenda("7000000010", undefined, AHORA)).toEqual({ dias: [{ dia: "2026-11-17", estado: "disponible" }] });
   });

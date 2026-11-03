@@ -157,9 +157,9 @@ export function leerLibroMentores(wb: ExcelJS.Workbook): LibroMentores {
     if (!total) { errores.push({ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `El ${dia} tiene cupos pero ningún mentor en Horarios.` }); continue; }
     try {
       const grupos = gruposDelDia(lista, total, dia, ciudadesExplicitas([...cupos.values()].map((ciudades) => ({ ciudades }))));
-      const resto = grupos[grupos.length - 1]!;
-      if (resto.cuota > 0 && resto.ciudades.length === 0)
-        avisos.push({ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `El ${dia} sobran ${resto.cuota} asientos sin ciudad (ninguna ciudad está marcada como Sobrante). Se pueden reetiquetar después.` });
+      const sinCiudad = grupos.filter((g) => !g.ciudades.length).reduce((a, g) => a + g.cuota, 0);
+      if (sinCiudad > 0)
+        avisos.push({ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `El ${dia} sobran ${sinCiudad} asientos sin ciudad (ninguna ciudad los recibe como Sobrante o por su máximo). Se pueden reetiquetar después.` });
     } catch (e) {
       errores.push({ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `El ${dia}: ${(e as Error).message}.` });
     }

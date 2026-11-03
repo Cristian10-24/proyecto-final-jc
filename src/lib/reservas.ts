@@ -2,6 +2,7 @@ import { MongoServerError, type ObjectId } from "mongodb";
 import { ciudadesExplicitas, puedeElegir } from "./agenda";
 import { horaCO } from "./ciudades";
 import { collections } from "./db";
+import { estadoCiudad } from "./reglasCupos";
 import { diaCOL } from "./edicion";
 
 // Reserva de un bloque por el estudiante. Sin bloqueos en memoria: un solo findOneAndUpdate atómico
@@ -10,7 +11,7 @@ import { diaCOL } from "./edicion";
 
 export type ResultadoReserva =
   | { ok: true; inicio: Date; dia: string }
-  | { ok: false; error: "sin_proyecto" | "ya_tiene_hora" | "dia_no_disponible" | "aun_no_abre" | "bloque_pasado" | "sin_cupo"; inicio?: Date };
+  | { ok: false; error: "sin_proyecto" | "ya_tiene_hora" | "dia_no_disponible" | "aun_no_abre" | "bloque_pasado" | "sin_cupo" | "cerrado"; inicio?: Date; cierre?: string; abre?: string };
 
 export const MENSAJES_RESERVA: Record<Exclude<ResultadoReserva, { ok: true }>["error"], string> = {
   sin_proyecto: "No encontramos un proyecto con ese documento.",
@@ -19,6 +20,7 @@ export const MENSAJES_RESERVA: Record<Exclude<ResultadoReserva, { ok: true }>["e
   aun_no_abre: "La elección de hora para ese día todavía no está abierta para tu ciudad.",
   bloque_pasado: "Esa hora ya pasó. Elige otra.",
   sin_cupo: "Alguien acaba de tomar esa hora. Elige otra.",
+  cerrado: "Las inscripciones de tu ciudad ya cerraron.",
 };
 
 /** Asiento del proyecto, si ya tiene uno. */
@@ -35,6 +37,9 @@ export async function reservar(documento: string, inicio: Date, ahora = new Date
   const actual = await asientoDe(proyecto._id);
   if (actual) return { ok: false, error: "ya_tiene_hora", inicio: actual.inicio };
   if (inicio.getTime() <= ahora.getTime()) return { ok: false, error: "bloque_pasado" };
+  const e = await estadoCiudad(proyecto.ciudad, ahora);
+  if (e.estado === "cerrado") return { ok: false, error: "cerrado", cierre: e.cierre };
+  if (e.estado === "antes") return { ok: false, error: "aun_no_abre", abre: e.abre };
 
   const dia = diaCOL(inicio);
   const configs = await dias.find({}).toArray();

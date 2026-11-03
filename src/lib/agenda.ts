@@ -54,9 +54,10 @@ export function repartoProporcional(total: number, cuotas: number[]): number[] {
 }
 
 /**
- * Grupos de un día: cada ciudad sin sobrante recibe exactamente sus cupos; la ciudad de sobrante,
- * sus cupos (mínimo) más todo lo que quede. Sin ciudad de sobrante, lo que quede va a un grupo
- * sin ciudad (el admin lo reetiqueta después). Si la ciudad de sobrante es "Todas", ese resto es libre.
+ * Grupos de un día: cada ciudad recibe sus cupos (mínimo). Lo que quede va primero a la ciudad de sobrante, hasta
+ * su máximo (sin máximo, todo); después, a las demás que tengan un máximo mayor que sus cupos, en orden, hasta su
+ * máximo. Lo que aún quede va a un grupo sin ciudad (el admin lo reetiqueta después). Si la ciudad de sobrante es
+ * "Todas", ese resto es libre. El último grupo es el de sobrante (o el sin ciudad, si no hay sobrante).
  */
 export function gruposDelDia(cupos: CupoCiudad[], asientosDelDia: number, dia: string, explicitas: Set<string>): { ciudades: string[]; cuota: number }[] {
   const sobrantes = cupos.filter((c) => c.sobrante);
@@ -67,8 +68,20 @@ export function gruposDelDia(cupos: CupoCiudad[], asientosDelDia: number, dia: s
   const sumaFijos = fijos.reduce((a, c) => a + c.cupos!, 0);
   const minimo = sobrantes[0]?.cupos ?? 0;
   if (sumaFijos + minimo > asientosDelDia) throw new Error(`Los cupos (${sumaFijos + minimo}) superan los asientos del día (${asientosDelDia})`);
-  const resto = { ciudades: sobrantes.flatMap((c) => expandirCiudades(c.ciudad, dia, explicitas)), cuota: asientosDelDia - sumaFijos };
-  return [...fijos.map((c) => ({ ciudades: [c.ciudad], cuota: c.cupos! })), resto];
+  const bajo = cupos.find((c) => c.max != null && c.max < (c.cupos ?? 0));
+  if (bajo) throw new Error(`El máximo de ${bajo.ciudad} (${bajo.max}) es menor que sus cupos (${bajo.cupos})`);
+  let queda = asientosDelDia - sumaFijos - minimo;
+  const sob = sobrantes[0];
+  const extraSob = sob ? Math.min(queda, (sob.max ?? Infinity) - minimo) : 0;
+  queda -= extraSob;
+  const grupos = fijos.map((c) => {
+    const extra = Math.min(queda, Math.max(0, (c.max ?? c.cupos!) - c.cupos!));
+    queda -= extra;
+    return { ciudades: [c.ciudad], cuota: c.cupos! + extra };
+  });
+  if (!sob) return [...grupos, { ciudades: [], cuota: queda }];
+  const resto = { ciudades: expandirCiudades(sob.ciudad, dia, explicitas), cuota: minimo + extraSob };
+  return [...grupos, ...(queda > 0 ? [{ ciudades: [], cuota: queda }] : []), resto];
 }
 
 /** Asientos de una edición: 4 bloques de 15 min por mentor y hora, con las ciudades repartidas por hora. */

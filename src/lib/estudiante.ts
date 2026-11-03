@@ -1,6 +1,7 @@
 import { ciudadesDelDia, ciudadesExplicitas, horasDisponibles, puedeElegir } from "./agenda";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
+import { estadoCiudad } from "./reglasCupos";
 import type { Asiento, Integrante, Proyecto } from "./types";
 
 // Lo que ve el estudiante (DECISIONES): nombres completos, ciudad, nombre y descripción del proyecto
@@ -69,6 +70,8 @@ export type Agenda =
   | { error: "sin_proyecto" }
   | { error: "ya_tiene_hora"; hora: HoraVista }
   | { error: "dia_no_disponible" }
+  | { error: "cerrado"; cierre: string }
+  | { error: "aun_no_abre"; abre: string }
   | { dias: DiaVista[] }
   | { dia: string; bloques: string[] };
 
@@ -81,6 +84,10 @@ export async function agenda(documento: string, dia: string | undefined, ahora =
   if (!p) return { error: "sin_proyecto" };
   const h = await horaDe(p, documento);
   if (h) return { error: "ya_tiene_hora", hora: h.vista };
+  // Inscripciones de su ciudad (Paso 17): cerradas desde su cierre o aún sin abrir ningún día.
+  const e = await estadoCiudad(p.ciudad, ahora);
+  if (e.estado === "cerrado") return { error: "cerrado", cierre: e.cierre };
+  if (e.estado === "antes") return { error: "aun_no_abre", abre: e.abre };
   const { dias, asientos } = await collections();
 
   if (dia) {

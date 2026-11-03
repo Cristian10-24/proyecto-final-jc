@@ -21,4 +21,5 @@ export function horaCOL(d: Date): number {
   return new Date(d.getTime() - OFFSET_COL_H * 3600_000).getUTCHours();
 }
 
-export const esDia = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + "T00:00:00Z"));
+/** 'YYYY-MM-DD' que existe de verdad (31 de febrero no: Date.parse lo correría al mes siguiente). */
+export const esDia = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + "T00:00:00Z")) && new Date(s + "T00:00:00Z").toISOString().slice(0, 10) === s;

@@ -112,7 +112,7 @@ async function main() {
   console.log(`Base local: ${dbHost()} / ${dbName()}${desfase ? ` · calendario movido ${desfase} días` : ""} · día en vivo: ${vivo}`);
   const hay = (await c.proyectos.countDocuments()) + (await c.asientos.countDocuments());
   if (hay && !process.argv.includes("--reset")) throw new Error("La base ya tiene proyectos o asientos. Usa --reset para reemplazarlos por la demo.");
-  await Promise.all([c.proyectos, c.asientos, c.dias, c.mentores, c.changeLog, c.rateLimits, c.planSalas, c.salasConfig, c.evalResultados, c.evalBorradores, c.evalConfig, c.evalMonitor, c.cambiosSugeridos]
+  await Promise.all([c.proyectos, c.asientos, c.dias, c.mentores, c.changeLog, c.rateLimits, c.planSalas, c.salasConfig, c.evalResultados, c.evalBorradores, c.evalConfig, c.evalMonitor, c.cambiosSugeridos, c.evalAnuladas, c.inscripciones]
     .map((col) => (col as { deleteMany: (f: object) => Promise<unknown> }).deleteMany({})));
 
   // ---- usuarios (uno por rol + monitores para la asignación automática) ----

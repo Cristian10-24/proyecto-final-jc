@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { esDia } from "@/lib/edicion";
 import { agenda } from "@/lib/estudiante";
-import { cuerpoInvalido, documentoSchema, guardia, noEncontrado } from "@/lib/rutaEstudiante";
+import { cuerpoInvalido, documentoSchema, guardia, MENSAJE_CERRADO, noEncontrado } from "@/lib/rutaEstudiante";
 
 const Body = z.object({ documento: documentoSchema, dia: z.string().refine(esDia).optional() }).strict();
 
@@ -22,6 +22,9 @@ export async function POST(req: Request) {
     if (r.error === "sin_proyecto") return noEncontrado(g.ip);
     // Sin la hora: esta ruta no cuenta para el límite por documento, así que no da datos del proyecto.
     if (r.error === "ya_tiene_hora") return NextResponse.json({ error: r.error, mensaje: "Tu proyecto ya tiene una hora elegida." }, { status: 409 });
+    // Sin la fecha: esta ruta no cuenta para el límite por documento y la fecha dejaría deducir la ciudad
+    // (el portal ya la recibió de /consultar).
+    if (r.error === "cerrado" || r.error === "aun_no_abre") return NextResponse.json({ error: r.error, mensaje: MENSAJE_CERRADO }, { status: 403 });
     return NextResponse.json({ error: r.error, mensaje: "Ese día no está habilitado para tu ciudad." }, { status: 403 });
   }
   return NextResponse.json(r);
