@@ -57,6 +57,17 @@ describe("caso 80 Cali / 40 Cartagena (jueves 12, 128 asientos)", () => {
     expect(resumenPorDia(sin)[0]!.porCiudad).toEqual({ Cali: 80, Cartagena: 40, "(sin ciudad)": 8 });
   });
 
+  it("datos reales (Horarios, jueves 12: 136 asientos): Cali 96 y Cartagena 40, hora por hora", () => {
+    const real: HoraMentores[] = [[8, 1], [9, 2], [10, 1], [11, 2], [16, 4], [17, 4], [18, 8], [19, 6], [20, 6]].map(([hora, n]) => ({
+      dia: "2026-11-12", hora: hora!, mentores: Array.from({ length: n! }, (_, i) => `m${i + 1}`),
+    }));
+    const r = generarAsientos(real, cupos);
+    expect(resumenPorDia(r)[0]).toEqual({ dia: "2026-11-12", asientos: 136, porCiudad: { Cali: 96, Cartagena: 40 } });
+    expect([...repartoPorHora(r)].map(([h, x]) => [h, x.Cali, x.Cartagena])).toEqual([
+      [8, 3, 1], [9, 5, 3], [10, 3, 1], [11, 6, 2], [16, 11, 5], [17, 12, 4], [18, 22, 10], [19, 17, 7], [20, 17, 7],
+    ]);
+  });
+
   it("guía 2026: Cali 77 y Cartagena 51 llenan el día", () => {
     const g = generarAsientos(JUEVES, new Map([["2026-11-12", [cupo("Cali", 77, true), cupo("Cartagena", 51)]]]));
     expect(resumenPorDia(g)[0]!.porCiudad).toEqual({ Cali: 77, Cartagena: 51 });
