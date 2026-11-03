@@ -1,4 +1,4 @@
-import { MongoServerError, ObjectId, type Filter } from "mongodb";
+import { MongoServerError, ObjectId, type ClientSession, type Filter } from "mongodb";
 import { ciudadesExplicitas, diasPorCiudad, puedeElegir } from "../agenda";
 import type { SessionUser } from "../auth";
 import { horaCO } from "../ciudades";
@@ -37,6 +37,11 @@ export type CambioSugerido = {
   estado: "pendiente" | "aprobado" | "rechazado";
   creadoPor: string;
   creadoEn: Date;
+  /** Al resolverla (Paso 14): quién, cuándo, la hora nueva (aprobada) o el motivo (rechazada). */
+  resueltoPor?: string;
+  resueltoEn?: Date;
+  nuevo?: string;
+  respuesta?: string;
 };
 
 const actorDe = (u: SessionUser): Actor => ({ rol: u.rol, usuario: u.usuario });
@@ -65,9 +70,21 @@ export type FilaSala = {
 export type SalaMonitor = { dia: string; hora: number; inicio: string; sala: number; mentorId: string; mentor: string; enlace?: string };
 
 /** Sus salas por día y hora (también las que no tienen estudiantes) y los proyectos de cada una. */
-export async function listaSalas(user: SessionUser): Promise<{ salas: SalaMonitor[]; filas: FilaSala[] }> {
+export type MiSugerencia = VistaSugerencia & { proyecto: string; integrantes: string[]; anterior: string };
+
+/** Las sugerencias que hizo este monitor (las últimas 30), con su estado: aunque el proyecto ya no esté en sus salas. */
+async function misSugerencias(user: SessionUser): Promise<MiSugerencia[]> {
+  if (!puede(user.rol, "monitorear_salas")) return [];
+  const c = await collections();
+  const lista = await c.cambiosSugeridos.find({ creadoPor: user.usuario }).sort({ creadoEn: -1 }).limit(30).toArray();
+  const ps = new Map((await c.proyectos.find({ _id: { $in: lista.map((x) => x.proyectoId) } }, { projection: { nombre: 1, integrantes: 1 } }).toArray()).map((p) => [String(p._id), p]));
+  return lista.map((x) => ({ ...vistaSugerencia(x), anterior: x.anterior, proyecto: ps.get(String(x.proyectoId))?.nombre ?? "(proyecto borrado)", integrantes: ps.get(String(x.proyectoId))?.integrantes.map((i) => i.nombre) ?? [] }));
+}
+
+export async function listaSalas(user: SessionUser): Promise<{ salas: SalaMonitor[]; filas: FilaSala[]; sugerencias: MiSugerencia[] }> {
   const plan = await salasDelMonitor(user);
-  if (!plan.length) return { salas: [], filas: [] };
+  const sugerencias = await misSugerencias(user);
+  if (!plan.length) return { salas: [], filas: [], sugerencias };
   const c = await collections();
   // Asientos ocupados en la hora de cada sala, con el mentor de esa sala.
   const asis = await c.asientos.find({
@@ -105,7 +122,7 @@ export async function listaSalas(user: SessionUser): Promise<{ salas: SalaMonito
     });
   }
   filas.sort((x, y) => x.inicio.localeCompare(y.inicio) || x.integrantes[0]!.nombre.localeCompare(y.integrantes[0]!.nombre, "es"));
-  return { salas, filas };
+  return { salas, filas, sugerencias };
 }
 
 type ErrorSala = { error: "no_existe" | "sin_hora" | "otra_sala" };
@@ -131,8 +148,15 @@ export type DetalleSala = {
   })[];
   /** Ya hay una evaluación guardada: no se reprograma (se perdería o quedaría con otro mentor). */
   evaluado: boolean;
-  sugerencia: { detalle: string; motivo: string; creadoEn: string } | null;
+  /** La última sugerencia del proyecto (pendiente o ya resuelta por el admin). */
+  sugerencia: VistaSugerencia | null;
 };
+/** `deOtro`: hay una sugerencia pendiente de otro monitor (no se muestra su texto, solo que existe). */
+export type VistaSugerencia = { detalle: string; motivo: string; creadoEn: string; estado: CambioSugerido["estado"]; nuevo?: string; respuesta?: string; deOtro?: boolean };
+const vistaSugerencia = (x: CambioSugerido): VistaSugerencia => ({
+  detalle: x.detalle, motivo: x.motivo, creadoEn: x.creadoEn.toISOString(), estado: x.estado,
+  ...(x.nuevo ? { nuevo: x.nuevo } : {}), ...(x.respuesta ? { respuesta: x.respuesta } : {}),
+});
 
 export async function detalleSala(user: SessionUser, proyectoId: string): Promise<DetalleSala | ErrorSala> {
   const r = await cargar(user, proyectoId);
@@ -142,7 +166,8 @@ export async function detalleSala(user: SessionUser, proyectoId: string): Promis
   const [evals, notas, sugerencia, mentor, crit, salaDe] = await Promise.all([
     c.evalResultados.find({ proyectoId: p._id }).toArray(),
     c.evalMonitor.find({ proyectoId: p._id }).toArray(),
-    c.cambiosSugeridos.findOne({ proyectoId: p._id, estado: "pendiente" }),
+    // Solo las suyas (con texto y respuesta); de otro monitor solo se dice que hay una pendiente.
+    c.cambiosSugeridos.findOne({ proyectoId: p._id, $or: [{ creadoPor: user.usuario }, { estado: "pendiente" }] }, { sort: { creadoEn: -1 } }),
     c.mentores.findOne({ _id: asiento.mentorId }),
     criterios(), salasDe([asiento]),
   ]);
@@ -163,7 +188,8 @@ export async function detalleSala(user: SessionUser, proyectoId: string): Promis
       };
     }),
     evaluado: evals.some((e) => !e.noPresento),
-    sugerencia: sugerencia ? { detalle: sugerencia.detalle, motivo: sugerencia.motivo, creadoEn: sugerencia.creadoEn.toISOString() } : null,
+    sugerencia: !sugerencia ? null : sugerencia.creadoPor === user.usuario ? vistaSugerencia(sugerencia)
+      : { detalle: "", motivo: "", creadoEn: sugerencia.creadoEn.toISOString(), estado: "pendiente", deOtro: true },
   };
 }
 
@@ -228,14 +254,33 @@ export async function cuposReprogramar(user: SessionUser, proyectoId: string): P
   };
 }
 
-class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio") { super(codigo); } }
+export class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio") { super(codigo); } }
 
 /**
- * Reprograma a un cupo libre (de su ciudad, día habilitado, futuro). En una transacción: libera el asiento
- * actual, toma el nuevo y deja changeLog. Como el prototipo, quien estaba como "No se presentó" vuelve a
- * Pendiente (y la asistencia que marcó el monitor se borra; motivo y observación quedan). El borrador del
- * mentor anterior se descarta. Si ya hay una evaluación guardada, no se reprograma.
+ * Dentro de una transacción: mueve el proyecto de su asiento actual `viejoId` al primer asiento libre que cumpla
+ * alguno de `filtros` (en orden). Como el prototipo, quien estaba como "No se presentó" vuelve a Pendiente, se borra
+ * la asistencia que marcó el monitor (motivo y observación quedan) y el borrador del mentor anterior. Si ya hay una
+ * evaluación guardada no se mueve (quedaría con otro mentor). Lo usan el monitor (reprogramar) y el admin (aprobar).
  */
+export async function moverProyecto(s: ClientSession, proyectoId: ObjectId, viejoId: ObjectId, filtros: Filter<Asiento>[], usuario: string, ahora: Date): Promise<Asiento> {
+  const c = await collections();
+  if (await c.evalResultados.findOne({ proyectoId, noPresento: false }, { session: s, projection: { _id: 1 } })) throw new Falla("ya_evaluado");
+  // El asiento actual tiene que seguir siendo el mismo (nadie lo movió mientras tanto).
+  const suelto = await c.asientos.findOneAndUpdate({ _id: viejoId, proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
+  if (!suelto) throw new Falla("cambio");
+  let nuevo: Asiento | null = null;
+  for (const f of filtros) {
+    nuevo = await c.asientos.findOneAndUpdate({ $and: [f, { proyectoId: null }, { _id: { $ne: viejoId } }] }, { $set: { proyectoId, reservadoEn: ahora } }, { session: s, returnDocument: "after", sort: { mentorId: 1 } });
+    if (nuevo) break;
+  }
+  if (!nuevo) throw new Falla("sin_cupo");
+  await c.evalResultados.deleteMany({ proyectoId }, { session: s }); // solo quedaban "No se presentó"
+  await c.evalMonitor.updateMany({ proyectoId }, { $set: { asistencia: null, actualizadoEn: ahora, actualizadoPor: usuario } }, { session: s });
+  await c.evalBorradores.deleteOne({ _id: String(proyectoId) }, { session: s });
+  return nuevo;
+}
+
+/** Reprograma a un cupo libre (de su ciudad, día habilitado, futuro) en una transacción con changeLog (ver moverProyecto). */
 export async function reprogramar(user: SessionUser, proyectoId: string, asientoId: string, motivo: string): Promise<{ ok: true; inicio: string; mentor: string; sigueEnTusSalas: boolean } | ErrorSala | { error: "sin_cupo" | "ya_evaluado" | "cambio" }> {
   const r = await cargar(user, proyectoId);
   if ("error" in r) return r;
@@ -246,16 +291,7 @@ export async function reprogramar(user: SessionUser, proyectoId: string, asiento
   let nuevo: Asiento | null = null;
   try {
     await transaccion(async (s) => {
-      if (await c.evalResultados.findOne({ proyectoId: p._id, noPresento: false }, { session: s, projection: { _id: 1 } })) throw new Falla("ya_evaluado");
-      // El asiento actual tiene que seguir siendo el mismo (nadie lo movió mientras tanto).
-      const suelto = await c.asientos.findOneAndUpdate({ _id: viejo._id, proyectoId: p._id }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
-      if (!suelto) throw new Falla("cambio");
-      nuevo = await c.asientos.findOneAndUpdate({ _id: new ObjectId(asientoId), ...filtroLibre(p.ciudad, dias, ahora) },
-        { $set: { proyectoId: p._id, reservadoEn: ahora } }, { session: s, returnDocument: "after" });
-      if (!nuevo) throw new Falla("sin_cupo");
-      await c.evalResultados.deleteMany({ proyectoId: p._id }, { session: s }); // solo quedaban "No se presentó"
-      await c.evalMonitor.updateMany({ proyectoId: p._id }, { $set: { asistencia: null, actualizadoEn: ahora, actualizadoPor: user.usuario } }, { session: s });
-      await c.evalBorradores.deleteOne({ _id: String(p._id) }, { session: s });
+      nuevo = await moverProyecto(s, p._id, viejo._id, [{ _id: new ObjectId(asientoId), ...filtroLibre(p.ciudad, dias, ahora) }], user.usuario, ahora);
       await c.changeLog.insertOne({
         proyectoId: p._id, accion: "cambiar_hora", anterior: `${etiqueta(viejo.inicio)} · ${viejo.mentorId}`,
         nuevo: `${etiqueta(nuevo.inicio)} · ${nuevo.mentorId}`, motivo, actor: actorDe(user), fecha: ahora,

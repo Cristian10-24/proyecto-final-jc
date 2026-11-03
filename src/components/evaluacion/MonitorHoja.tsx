@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { diaCOL } from "@/lib/edicion";
 import { digitosTelefono, MOTIVOS_INASISTENCIA, primerNombre, type MotivoInasistencia } from "@/lib/evaluacion/criterios";
-import type { Asistencia, CupoLibre, DetalleSala } from "@/lib/evaluacion/monitor";
+import type { Asistencia, CupoLibre, DetalleSala, VistaSugerencia } from "@/lib/evaluacion/monitor";
 import s from "./Evaluacion.module.css";
 import { claseResultado, fechaLarga, horaTxt } from "./comun";
 
@@ -130,7 +130,8 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
     setOcupado(false);
     if (!r?.data?.ok) return fallo(r);
     cambio.current = true;
-    setD((x) => x && { ...x, sugerencia: { detalle: detalle.trim(), motivo: motivoSug.trim(), creadoEn: new Date().toISOString() } });
+    setD((x) => x && { ...x, sugerencia: { detalle: detalle.trim(), motivo: motivoSug.trim(), creadoEn: new Date().toISOString(), estado: "pendiente" } });
+    setDetalle(""); setMotivoSug("");
     avisar("Sugerencia enviada a administración");
   }
 
@@ -242,9 +243,8 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
             <section className={`ev-tarjeta ${s.parte}`}>
               <h3>Sugerir un cambio especial</h3>
               <p className={s.pista}>Para otro día, otra ciudad o una fecha después de la clausura de {d.ciudad}. Administración lo aprueba o lo rechaza; mientras tanto la hora no cambia.</p>
-              {d.sugerencia ? (
-                <div className="ev-aviso ev-aviso-warn">Sugerencia enviada: {d.sugerencia.detalle}. Motivo: {d.sugerencia.motivo}. Pendiente de administración.</div>
-              ) : (
+              {d.sugerencia && <EstadoSugerencia x={d.sugerencia} />}
+              {d.sugerencia?.estado !== "pendiente" && (
                 <>
                   <div className={s.campo}>
                     <label htmlFor="sug-detalle">Qué cambio sugieres</label>
@@ -276,4 +276,18 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
       {toast && <div className={s.toast} role="status">{toast}</div>}
     </div>
   );
+}
+
+/** Estado de una sugerencia del monitor: pendiente, aprobada (con la hora nueva) o rechazada (con el motivo). */
+/** Texto con punto final (sin duplicarlo: "8:00 a. m." o un texto que ya termina en punto). */
+const conPunto = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+
+export function EstadoSugerencia({ x }: { x: VistaSugerencia }) {
+  if (x.deOtro) return <div className="ev-aviso ev-aviso-warn">Otro monitor ya sugirió un cambio para este proyecto; está pendiente de administración.</div>;
+  const nuevo = x.nuevo?.split(" · ")[0];
+  if (x.estado === "aprobado")
+    return <div className={`ev-aviso ${s.sugOk}`}>Aprobada: {conPunto(x.detalle)}{nuevo ? ` Nueva hora: ${fechaLarga(nuevo.slice(0, 10))}, ${conPunto(nuevo.slice(11))}` : ""}</div>;
+  if (x.estado === "rechazado")
+    return <div className="ev-aviso ev-aviso-error">Rechazada: {conPunto(x.detalle)}{x.respuesta ? ` Motivo de administración: ${conPunto(x.respuesta)}` : ""} Puedes sugerir otro cambio.</div>;
+  return <div className="ev-aviso ev-aviso-warn">Sugerencia enviada: {conPunto(x.detalle)} Motivo: {conPunto(x.motivo)} Pendiente de administración.</div>;
 }

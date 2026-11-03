@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { puede, ROL_TXT, type Permiso } from "@/lib/permisos";
 import s from "./AppShell.module.css";
@@ -25,6 +26,20 @@ export function iniciales(nombre: string): string {
 
 export default function AppShell({ user, active, children }: { user: SessionUser; active: Seccion; children: React.ReactNode }) {
   const nav = NAV.filter((n) => puede(user.rol, n.permiso));
+  // Contador de cambios sugeridos por los monitores que esperan respuesta (junto a "Horarios").
+  const [pendientes, setPendientes] = useState(0);
+  useEffect(() => {
+    if (!puede(user.rol, "cambiar_horario")) return;
+    const leer = () => fetch("/api/admin/sugerencias/conteo", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setPendientes(d.pendientes)).catch(() => null);
+    void leer();
+    const t = setInterval(leer, 60_000);
+    const alCambiar = (e: Event) => { const n = (e as CustomEvent<unknown>).detail; if (Number.isInteger(n)) setPendientes(n as number); };
+    window.addEventListener("pfjc-pendientes", alCambiar);
+    return () => { clearInterval(t); window.removeEventListener("pfjc-pendientes", alCambiar); };
+  }, [user.rol]);
+  const etiqueta = (n: (typeof NAV)[number]) => (
+    <>{n.label}{n.key === "horarios" && pendientes > 0 && <span className={s.badge} aria-label={`${pendientes} cambios sugeridos pendientes`}>{pendientes}</span>}</>
+  );
 
   async function salir() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
@@ -40,7 +55,7 @@ export default function AppShell({ user, active, children }: { user: SessionUser
         <img src="/logo-jc.png" alt="Jóvenes creaTIvos" className={s.logo} />
         <nav className={s.nav}>
           {nav.map((n) => (
-            <a key={n.key} href={n.href} className={`${s.navItem} ${n.key === active ? s.navOn : ""}`} aria-current={n.key === active ? "page" : undefined}>{n.label}</a>
+            <a key={n.key} href={n.href} className={`${s.navItem} ${n.key === active ? s.navOn : ""}`} aria-current={n.key === active ? "page" : undefined}>{etiqueta(n)}</a>
           ))}
         </nav>
         <div style={{ flex: 1 }} />
@@ -68,7 +83,7 @@ export default function AppShell({ user, active, children }: { user: SessionUser
         </div>
         {nav.length > 1 && (
           <nav className={s.tabs} aria-label="Secciones">
-            {nav.map((n) => <a key={n.key} href={n.href} className={`${s.tab} ${n.key === active ? s.tabOn : ""}`}>{n.label}</a>)}
+            {nav.map((n) => <a key={n.key} href={n.href} className={`${s.tab} ${n.key === active ? s.tabOn : ""}`}>{etiqueta(n)}</a>)}
           </nav>
         )}
         {children}

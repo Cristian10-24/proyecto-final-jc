@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { diaCOL, horaCOL } from "@/lib/edicion";
 import { estadoFila, estadoPersona, primerNombre } from "@/lib/evaluacion/criterios";
-import type { FilaSala, IntegranteSala, SalaMonitor } from "@/lib/evaluacion/monitor";
+import type { FilaSala, IntegranteSala, MiSugerencia, SalaMonitor } from "@/lib/evaluacion/monitor";
 import EvalShell from "./EvalShell";
-import MonitorHoja from "./MonitorHoja";
+import MonitorHoja, { EstadoSugerencia } from "./MonitorHoja";
 import s from "./Evaluacion.module.css";
 import { claseResultado, fechaLarga, horaTxt } from "./comun";
 
@@ -14,7 +14,7 @@ import { claseResultado, fechaLarga, horaTxt } from "./comun";
 // estudiantes de esa sala (de cualquier ciudad). Mismo tema, lista y fondo por estado que la vista del mentor.
 // Se refresca cada minuto mientras no haya una ficha abierta.
 
-type Datos = { salas: SalaMonitor[]; filas: FilaSala[] };
+type Datos = { salas: SalaMonitor[]; filas: FilaSala[]; sugerencias: MiSugerencia[] };
 type Estado = "" | "pendientes" | "presentes" | "ausentes" | "sinMotivo";
 const ESTADOS: [Estado, string][] = [["", "Todos los estados"], ["pendientes", "Pendientes"], ["presentes", "Se presentaron"], ["ausentes", "No se presentaron"], ["sinMotivo", "Inasistencias sin motivo registrado"]];
 const sinTildes = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -142,6 +142,21 @@ export default function MonitorPanel({ user }: { user: SessionUser }) {
             ))}
           </div>
         </>
+      )}
+
+      {carga === "listo" && datos && datos.sugerencias.length > 0 && (
+        <section className={s.sugerencias} aria-labelledby="mis-sug">
+          <h2 id="mis-sug">Tus sugerencias de cambio</h2>
+          <div className={s.lista}>
+            {datos.sugerencias.map((x) => (
+              <div key={x.creadoEn} className={s.sugItem}>
+                <div className={s.nombre}>{x.integrantes.join(" y ")}</div>
+                <div className={s.sub}>{x.proyecto} · hora al sugerir: {fechaLarga(x.anterior.slice(0, 10))}, {x.anterior.slice(11)}</div>
+                <EstadoSugerencia x={x} />
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {abierto && <MonitorHoja id={abierto} onCerrar={(cambio) => { setAbierto(null); if (cambio) void cargar(); }} />}

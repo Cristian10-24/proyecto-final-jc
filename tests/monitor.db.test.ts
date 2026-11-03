@@ -52,6 +52,7 @@ beforeAll(async () => {
   await asiento("a815", D, 8, 15, "mentor-a", "Cartagena", "P2");
   await asiento("b8", D, 8, 0, "mentor-b", "Cali", "P3");
   await asiento("a9", D, 9, 0, "mentor-a", "Cali"); // libre, Cali
+  await asiento("a9b", D, 9, 0, "mentor-0", "Cali"); // libre a la misma hora: va primero por mentor; no es el elegido
   await asiento("a915", D, 9, 15, "mentor-a", "Cartagena"); // libre, Cartagena
   await asiento("b2", D2, 8, 0, "mentor-b", "Cali"); // libre, pero Cali no presenta ese día
   await asiento("a2", D2, 8, 0, "mentor-a", "Cartagena", "P4"); // mismo mentor y hora que la sala de mon1, otro día
@@ -70,9 +71,9 @@ describe("quién ve qué", () => {
     expect(r.salas.map((x) => [x.hora, x.sala, x.mentor])).toEqual([[8, 1, "Mentor A"], [9, 1, "Mentor A"]]);
     expect(r.filas.map((f) => [f.codigo, f.ciudad])).toEqual([["P1", "Cali"], ["P2", "Cartagena"]]);
     expect((await mon.listaSalas(mon2)).filas.map((f) => f.codigo)).toEqual(["P3"]);
-    expect(await mon.listaSalas(monSin)).toEqual({ salas: [], filas: [] });
-    expect(await mon.listaSalas(mentorA)).toEqual({ salas: [], filas: [] });
-    expect(await mon.listaSalas(admin)).toEqual({ salas: [], filas: [] });
+    expect(await mon.listaSalas(monSin)).toEqual({ salas: [], filas: [], sugerencias: [] });
+    expect(await mon.listaSalas(mentorA)).toEqual({ salas: [], filas: [], sugerencias: [] });
+    expect(await mon.listaSalas(admin)).toEqual({ salas: [], filas: [], sugerencias: [] });
   });
 
   it("no abre ni escribe en proyectos de otras salas", async () => {
@@ -125,7 +126,7 @@ describe("reprogramar", () => {
   it("ofrece solo cupos libres de su ciudad en sus días habilitados", async () => {
     const r = await mon.cuposReprogramar(mon1, String(P.P1));
     if ("error" in r) throw new Error(r.error);
-    expect(r.cupos.map((x) => x.id)).toEqual([String(S.a9)]); // ni el de Cartagena ni el del día que Cali no presenta
+    expect(r.cupos.map((x) => x.id).sort()).toEqual([String(S.a9b), String(S.a9)].sort()); // ni el de Cartagena ni el del día que Cali no presenta
     expect(await mon.reprogramar(mon1, String(P.P1), String(S.a915), "Cita médica")).toEqual({ error: "sin_cupo" });
     expect(await mon.reprogramar(mon1, String(P.P1), String(S.b2), "Cita médica")).toEqual({ error: "sin_cupo" });
   });
@@ -140,6 +141,7 @@ describe("reprogramar", () => {
     expect(r).toMatchObject({ ok: true, mentor: "Mentor A", sigueEnTusSalas: true });
     expect((await c.asientos.findOne({ _id: S.a8 }))?.proyectoId).toBeNull();
     expect((await c.asientos.findOne({ _id: S.a9 }))?.proyectoId).toEqual(P.P1);
+    expect((await c.asientos.findOne({ _id: S.a9b }))?.proyectoId).toBeNull(); // el elegido, no otro de la misma hora
     expect(await c.evalResultados.countDocuments({ proyectoId: P.P1 })).toBe(0);
     expect((await c.evalMonitor.find({ proyectoId: P.P1 }).sort({ documento: 1 }).toArray()).map((n) => [n.asistencia, n.motivo])).toEqual([[null, null], [null, "Salud"]]);
     const log = await c.changeLog.findOne({ proyectoId: P.P1, accion: "cambiar_hora" });

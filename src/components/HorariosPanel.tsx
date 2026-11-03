@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { horaCO } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
+import type { FilaSugerencia } from "@/lib/sugerencias";
 import AppShell from "./AppShell";
 import s from "./HorariosPanel.module.css";
 
@@ -124,6 +125,8 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
       <div className={s.kicker}>Administración</div>
       <h1 className={s.title}>Horarios</h1>
       <p className={s.lead}>Busca un proyecto para ver su historial, liberar o cambiar su hora y asignarle monitor. Todas las horas están en hora COL.</p>
+
+      <Bandeja dias={dias} version={version} onHecho={trasAccion} />
 
       <section className={s.card}>
         <div className={s.filtros}>
@@ -353,8 +356,8 @@ function Motivo({ valor, onCambio, opcional }: { valor: string; onCambio: (v: st
   );
 }
 
-function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar }: {
-  p: Proyecto; dias: string[]; motivo: string; setMotivo: (v: string) => void; ocupado: boolean;
+function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar, sinMotivo }: {
+  p: Proyecto; dias: string[]; motivo: string; setMotivo: (v: string) => void; ocupado: boolean; sinMotivo?: boolean;
   onCancelar: () => void; onEnviar: (inicio: string, otraCiudad: boolean) => Promise<{ error?: string } | null>;
 }) {
   const [dia, setDia] = useState(() => (p.hora ? diaCOL(new Date(p.hora.inicio)) : ""));
@@ -432,7 +435,7 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
         </div>
       )}
 
-      <Motivo valor={motivo} onCambio={setMotivo} opcional />
+      {!sinMotivo && <Motivo valor={motivo} onCambio={setMotivo} opcional />}
 
       {elegido && !elegido.deSuCiudad ? (
         <>
@@ -451,6 +454,115 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
         </div>
       )}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Bandeja de cambios sugeridos (Paso 14) */
+
+const fmtCuando = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
+
+function Bandeja({ dias, version, onHecho }: { dias: string[]; version: number; onHecho: (msg: string) => Promise<void> }) {
+  const [datos, setDatos] = useState<{ estado: "cargando" | "error" | "listo"; pendientes: FilaSugerencia[]; resueltas: FilaSugerencia[] }>({ estado: "cargando", pendientes: [], resueltas: [] });
+  const [abierta, setAbierta] = useState<{ id: string; modo: "aprobar" | "rechazar" } | null>(null);
+  const [motivo, setMotivo] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+  const [verResueltas, setVerResueltas] = useState(false);
+
+  const cargar = useCallback(async () => {
+    try {
+      const r = await api<{ pendientes: FilaSugerencia[]; resueltas: FilaSugerencia[] }>("/api/admin/sugerencias");
+      setDatos(r.ok && r.data ? { estado: "listo", ...r.data } : (d) => ({ ...d, estado: "error" }));
+      // El contador del menú (AppShell) se actualiza al momento, sin esperar su refresco.
+      if (r.ok && r.data) window.dispatchEvent(new CustomEvent("pfjc-pendientes", { detail: r.data.pendientes.length }));
+    } catch (e) { if (!(e instanceof SinSesion)) setDatos((d) => ({ ...d, estado: "error" })); }
+  }, []);
+  useEffect(() => { void cargar(); }, [cargar, version]);
+
+  const MENSAJE: Record<string, string> = {
+    ya_resuelta: "Otra persona ya resolvió esta sugerencia.", sin_hora: "El proyecto ya no tiene hora: asígnala desde la lista.",
+    ya_evaluado: "El proyecto ya tiene una evaluación guardada: no se puede mover.", cambio: "La hora del proyecto cambió mientras tanto. Vuelve a abrirla.",
+    misma_hora: "Esa es la hora que ya tiene.", no_existe: "La sugerencia ya no existe.",
+  };
+  async function resolver(id: string, body: Record<string, unknown>, msg: string): Promise<{ error?: string } | null> {
+    setOcupado(true); setError("");
+    try {
+      const r = await api<{ ok?: boolean; error?: string }>(`/api/admin/sugerencias/${id}`, body);
+      if (r.ok) { setAbierta(null); setMotivo(""); await onHecho(msg); void cargar(); return null; }
+      if (r.data?.error !== "sin_cupo") setError((r.data?.error && MENSAJE[r.data.error]) || "No se pudo guardar.");
+      return r.data;
+    } catch (e) { if (!(e instanceof SinSesion)) setError(ERROR_RED); return null; }
+    finally { setOcupado(false); }
+  }
+
+  if (datos.estado === "listo" && !datos.pendientes.length && !datos.resueltas.length) return null;
+  return (
+    <section className={s.card} aria-labelledby="bandeja-t">
+      <div className={s.bandejaHead}>
+        <h2 id="bandeja-t" className={s.panelTitulo}>Cambios sugeridos por los monitores</h2>
+        {datos.estado === "listo" && <Chip tono={datos.pendientes.length ? "amarillo" : "verde"}>{datos.pendientes.length ? `${datos.pendientes.length} pendiente${datos.pendientes.length === 1 ? "" : "s"}` : "Al día"}</Chip>}
+      </div>
+      {datos.estado === "cargando" && <div className={s.skelFila} />}
+      {datos.estado === "error" && <div className="note note-error">No pudimos cargar la bandeja. <button type="button" className="btn-link" onClick={() => void cargar()}>Intentar de nuevo</button></div>}
+      {datos.pendientes.map((x) => {
+        const p: Proyecto = { id: x.proyectoId, codigo: x.codigo, nombre: x.proyecto, ciudad: x.ciudad, integrantes: x.integrantes.map((nombre, i) => ({ nombre, documento: String(i) })), monitor: null, hora: x.hora };
+        const esta = abierta?.id === x.id;
+        return (
+          <article key={x.id} className={s.sugerencia}>
+            <div className={s.sugTop}>
+              <div>
+                <div className={s.pNombre}>{x.integrantes.join(" y ")}</div>
+                <div className={s.sub}>{x.proyecto} · {x.codigo} · {x.ciudad}</div>
+              </div>
+              <div className={s.sub}>{x.monitor} · {fmtCuando.format(new Date(x.creadoEn))}</div>
+            </div>
+            <div className={s.sugDatos}>
+              <Dato k="Hora actual">{x.hora ? `${etiquetaHora(x.hora.inicio)} · ${x.hora.mentor}` : "Sin hora"}</Dato>
+              <Dato k="Sugiere">{x.detalle}</Dato>
+              <Dato k="Motivo">{x.motivo}</Dato>
+            </div>
+            {!esta && (
+              <div className={s.acts}>
+                <button type="button" className="btn btn-ghost" onClick={() => { setAbierta({ id: x.id, modo: "rechazar" }); setMotivo(""); setError(""); }}>Rechazar</button>
+                <button type="button" className="btn btn-primary" disabled={!x.hora} onClick={() => { setAbierta({ id: x.id, modo: "aprobar" }); setMotivo(""); setError(""); }}>Aprobar</button>
+              </div>
+            )}
+            {esta && error && <div className="note note-error">{error}</div>}
+            {esta && abierta.modo === "aprobar" && (
+              <>
+                <div className="note note-warn">Elige el bloque nuevo. Puede ser otro día, otra ciudad o después de la clausura de {x.ciudad}: la pantalla te avisa y queda en el historial.</div>
+                <CambiarHora p={p} dias={dias} motivo={motivo} setMotivo={setMotivo} ocupado={ocupado} onCancelar={() => setAbierta(null)} sinMotivo
+                  onEnviar={(inicio, otraCiudad) => resolver(x.id, { accion: "aprobar", inicio, otraCiudad }, "Sugerencia aprobada: hora cambiada")} />
+              </>
+            )}
+            {esta && abierta.modo === "rechazar" && (
+              <div className={s.panel}>
+                <label className={s.campo}>
+                  <span className="label">Motivo del rechazo (lo ve el monitor)</span>
+                  <input className={`input ${s.inputSm}`} value={motivo} maxLength={300} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: ese día no hay cupos para Cali" />
+                </label>
+                <div className={s.acts}>
+                  <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => setAbierta(null)}>Cancelar</button>
+                  <button type="button" className="btn btn-dark" disabled={ocupado || motivo.trim().length < 3} onClick={() => void resolver(x.id, { accion: "rechazar", motivo: motivo.trim() }, "Sugerencia rechazada")}>{ocupado ? "Guardando…" : "Rechazar sugerencia"}</button>
+                </div>
+              </div>
+            )}
+          </article>
+        );
+      })}
+      {datos.resueltas.length > 0 && (
+        <>
+          <button type="button" className="btn-link" aria-expanded={verResueltas} onClick={() => setVerResueltas((v) => !v)}>{verResueltas ? "Ocultar" : "Ver"} las últimas resueltas ({datos.resueltas.length})</button>
+          {verResueltas && datos.resueltas.map((x) => (
+            <div key={x.id} className={s.sugResuelta}>
+              <Chip tono={x.estado === "aprobado" ? "verde" : "neutro"}>{x.estado === "aprobado" ? "Aprobada" : "Rechazada"}</Chip>
+              <span><b>{x.integrantes.join(" y ")}</b> · {x.detalle}{x.estado === "aprobado" && x.nuevo ? ` → ${etiquetaDia(x.nuevo.slice(0, 10))} · ${x.nuevo.split(" · ")[0]!.slice(11)}` : ""}{x.respuesta ? ` · ${x.respuesta}` : ""}</span>
+              <span className={s.sub}>{x.resueltoPor}{x.resueltoEn ? ` · ${fmtCuando.format(new Date(x.resueltoEn))}` : ""}</span>
+            </div>
+          ))}
+        </>
+      )}
+    </section>
   );
 }
 

@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import type { ObjectId } from "mongodb";
 import type { Actor } from "./types";
 import { z } from "zod";
-import { collections } from "./db";
+import { collections, transaccion } from "./db";
 import { clave } from "./importar/excel";
 import { idMentor } from "./importar/mentores";
 import { ROLES, type RolUsuario } from "./permisos";
@@ -92,15 +92,15 @@ export async function errorMentor(mentorId: string | undefined, excepto?: Object
  */
 export async function restablecerClave(id: ObjectId, claveDada: string | undefined, actor: Actor): Promise<{ clave: string; usuario: User } | null> {
   const { users, changeLog } = await collections();
-  const clave = claveDada ?? generarClave();
-  const u = await users.findOneAndUpdate(
-    { _id: id },
-    { $set: { passwordHash: await hashClave(clave), actualizadoEn: new Date() }, $inc: { tokenVersion: 1 } },
-    { returnDocument: "after" },
-  );
-  if (!u) return null;
-  await changeLog.insertOne({ accion: "restablecer_clave", nuevo: `${u.usuario} (${claveDada ? "clave asignada" : "clave temporal"})`, actor, fecha: new Date() });
-  return { clave, usuario: u };
+  const clave = claveDada ?? generarClave(), hash = await hashClave(clave);
+  let u: User | null = null;
+  // La clave y su registro, juntos: nunca queda una clave cambiada sin changeLog.
+  await transaccion(async (s) => {
+    u = await users.findOneAndUpdate({ _id: id }, { $set: { passwordHash: hash, actualizadoEn: new Date() }, $inc: { tokenVersion: 1 } }, { returnDocument: "after", session: s });
+    if (u) await changeLog.insertOne({ accion: "restablecer_clave", nuevo: `${u.usuario} (${claveDada ? "clave asignada" : "clave temporal"})`, actor, fecha: new Date() }, { session: s });
+  });
+  const hecho = u as User | null;
+  return hecho ? { clave, usuario: hecho } : null;
 }
 
 /** Lo que se muestra de un usuario (nunca el hash). */

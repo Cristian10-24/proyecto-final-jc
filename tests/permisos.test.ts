@@ -45,6 +45,10 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["cambiar el monitor de una sala", async () => (await import("@/app/api/admin/salas/route")).POST(json("POST", { accion: "monitor", id: "2026-11-12|8|1", monitor: null }))],
   ["recalcular el plan de salas", async () => (await import("@/app/api/admin/salas/route")).POST(json("POST", { accion: "recalcular" }))],
   ["descargar el plan de salas", async () => (await import("@/app/api/admin/salas/excel/route")).GET()],
+  ["ver la bandeja de cambios sugeridos", async () => (await import("@/app/api/admin/sugerencias/route")).GET(new Request("http://localhost/x"))],
+  ["ver cuántas sugerencias hay", async () => (await import("@/app/api/admin/sugerencias/conteo/route")).GET()],
+  ["aprobar una sugerencia", async () => (await import("@/app/api/admin/sugerencias/[id]/route")).POST(json("POST", { accion: "aprobar", inicio: "2026-11-12T13:00:00.000Z" }), ctx)],
+  ["rechazar una sugerencia", async () => (await import("@/app/api/admin/sugerencias/[id]/route")).POST(json("POST", { accion: "rechazar", motivo: "No hay cupo" }), ctx)],
   ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
 ];
 
@@ -122,6 +126,15 @@ describe("Usuarios por Excel: POST desde otro origen", () => {
   it("403 aunque sea admin", async () => {
     await como("admin");
     const res = await (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", headers: { Origin: "https://otro.test", Host: "localhost" }, body: new FormData() }));
+    expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
+  });
+});
+
+describe("Bandeja: POST desde otro origen", () => {
+  it("403 aunque sea admin", async () => {
+    await como("admin");
+    const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "rechazar", motivo: "No hay cupo" }) });
+    const res = await (await import("@/app/api/admin/sugerencias/[id]/route")).POST(req, ctx);
     expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
   });
 });
