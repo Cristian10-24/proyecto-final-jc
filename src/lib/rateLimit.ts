@@ -46,4 +46,15 @@ export async function contar(tipo: TipoLimite, sujeto: string): Promise<void> {
   await rateLimits.updateOne({ _id }, { $inc: { count: 1 }, $setOnInsert: { expiraEn } }, { upsert: true });
 }
 
+/**
+ * Suma un intento y dice si se pasó del límite, en una sola operación atómica: con peticiones
+ * simultáneas nadie se cuela por encima del tope (para los límites que cuentan todos los intentos).
+ */
+export async function intentar(tipo: TipoLimite, sujeto: string): Promise<boolean> {
+  const { rateLimits } = await collections();
+  const { _id, expiraEn } = claveLimite(tipo, sujeto);
+  const doc = await rateLimits.findOneAndUpdate({ _id }, { $inc: { count: 1 }, $setOnInsert: { expiraEn } }, { upsert: true, returnDocument: "after" });
+  return (doc?.count ?? 0) > LIMITES[tipo];
+}
+
 export const MENSAJE_BLOQUEO = "Demasiados intentos. Espera unos minutos e intenta otra vez.";

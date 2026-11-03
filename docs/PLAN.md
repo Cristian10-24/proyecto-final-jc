@@ -30,7 +30,7 @@ Alternativa descartada (diseño a: colección `cuotas` + contadores) y otras dec
 - [x] Base copiada de validation-jc: login, usuarios, límites, base local en replica set.
 - [x] 1. Plantillas de Excel (proyectos y mentores con disponibilidad) e importador con vista previa y errores por fila; genera los asientos etiquetados por ciudad. Fuente de verdad: hoja Horarios; `verificar:franjas` solo informa diferencias con "Proyectos por franja".
 - [x] 2. Funciones puras de agenda: días por ciudad, horas disponibles y reparto proporcional por hora. Pruebas con el caso 80 Cali / 40 Cartagena.
-- [ ] 3. Ruta de reserva atómica y prueba de concurrencia con 300 simultáneos (pool de 5, sin doble asignación).
+- [x] 3. Ruta de reserva atómica y prueba de concurrencia con 300 simultáneos (pool de 5, sin doble asignación).
 - [ ] 3b. Sistema visual (una sola vez): leer solo los `.dc.html` de `docs/diseno/`; crear `src/app/tokens.css` (colores, Outfit y JetBrains Mono, radios, sombras, espaciados), `docs/DISENO.md` (máx. 80 líneas: pantallas y estados por rol, textos de botones y mensajes, componentes repetidos) y copiar los logos a `public/`. Desde aquí, portal, admin y monitor usan SOLO `docs/DISENO.md` y `tokens.css`; si un prototipo contradice el PLAN, gana el PLAN (anotar en DECISIONES). Móvil primero: estudiante en 390 px, admin en 1280 px.
 - [ ] 4. Portal del estudiante, móvil primero: documento → datos y pareja (solo lectura) → día → hora → confirmar → "tu horario", con todos los estados de error.
 - [ ] 5. Admin: liberar o cambiar la hora de un proyecto y reetiquetar asientos libres de un día; todo con registro en changeLog.
