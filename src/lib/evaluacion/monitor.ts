@@ -1,10 +1,11 @@
-import { MongoServerError, ObjectId, type ClientSession, type Filter } from "mongodb";
+import { MongoServerError, ObjectId, type Filter } from "mongodb";
 import { ciudadesExplicitas, diasPorCiudad, puedeElegir } from "../agenda";
 import type { SessionUser } from "../auth";
 import { horaCO } from "../ciudades";
 import { collections, transaccion } from "../db";
 import { diaCOL, horaCOL, inicioUTC } from "../edicion";
 import { enmascararNumero } from "../estudiante";
+import { Falla, moverProyecto } from "../mover";
 import { puede } from "../permisos";
 import type { Actor, Asiento, Ruta } from "../types";
 import { primerNombre, type MotivoInasistencia } from "./criterios";
@@ -252,32 +253,6 @@ export async function cuposReprogramar(user: SessionUser, proyectoId: string): P
     cupos: libres.map((a) => ({ id: String(a._id), inicio: a.inicio.toISOString(), mentor: nombre.get(a.mentorId) ?? a.mentorId }))
       .sort((x, y) => x.inicio.localeCompare(y.inicio) || x.mentor.localeCompare(y.mentor, "es")),
   };
-}
-
-export class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio") { super(codigo); } }
-
-/**
- * Dentro de una transacción: mueve el proyecto de su asiento actual `viejoId` al primer asiento libre que cumpla
- * alguno de `filtros` (en orden). Como el prototipo, quien estaba como "No se presentó" vuelve a Pendiente, se borra
- * la asistencia que marcó el monitor (motivo y observación quedan) y el borrador del mentor anterior. Si ya hay una
- * evaluación guardada no se mueve (quedaría con otro mentor). Lo usan el monitor (reprogramar) y el admin (aprobar).
- */
-export async function moverProyecto(s: ClientSession, proyectoId: ObjectId, viejoId: ObjectId, filtros: Filter<Asiento>[], usuario: string, ahora: Date): Promise<Asiento> {
-  const c = await collections();
-  if (await c.evalResultados.findOne({ proyectoId, noPresento: false }, { session: s, projection: { _id: 1 } })) throw new Falla("ya_evaluado");
-  // El asiento actual tiene que seguir siendo el mismo (nadie lo movió mientras tanto).
-  const suelto = await c.asientos.findOneAndUpdate({ _id: viejoId, proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
-  if (!suelto) throw new Falla("cambio");
-  let nuevo: Asiento | null = null;
-  for (const f of filtros) {
-    nuevo = await c.asientos.findOneAndUpdate({ $and: [f, { proyectoId: null }, { _id: { $ne: viejoId } }] }, { $set: { proyectoId, reservadoEn: ahora } }, { session: s, returnDocument: "after", sort: { mentorId: 1 } });
-    if (nuevo) break;
-  }
-  if (!nuevo) throw new Falla("sin_cupo");
-  await c.evalResultados.deleteMany({ proyectoId }, { session: s }); // solo quedaban "No se presentó"
-  await c.evalMonitor.updateMany({ proyectoId }, { $set: { asistencia: null, actualizadoEn: ahora, actualizadoPor: usuario } }, { session: s });
-  await c.evalBorradores.deleteOne({ _id: String(proyectoId) }, { session: s });
-  return nuevo;
 }
 
 /** Reprograma a un cupo libre (de su ciudad, día habilitado, futuro) en una transacción con changeLog (ver moverProyecto). */

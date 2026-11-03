@@ -23,8 +23,11 @@ Lo que queda abierto. Cada línea dice quién lo hace. Al resolver una, se borra
 - Sin `Content-Security-Policy`: agregarla y probar que no rompa los scripts en línea de Next.
 - La skill `security-review` necesita un remoto (`origin/HEAD`): se reemplazó por `revisor-seguridad` sobre todo el código. Correrla cuando exista el repositorio en GitHub.
 
-## Para la Fase 2 (ver PLAN)
-- Pasos 8 a 15: evaluación, salas y monitores, cambios sugeridos, seguimiento general y usuarios.
+## Fase 3 (ver PLAN)
+- Pasos 16 a 18 y cierre técnico, antes de las presentaciones del 12; el despliegue va después.
+
+## Más adelante
+- Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".
 
 ## Mejoras futuras
-- Modo oscuro del módulo de evaluación: los colores ya son variables `--ev-*` en `src/app/tema-evaluacion.css`; falta redefinirlas en `@media (prefers-color-scheme: dark)` con los valores del prototipo (su bloque oscuro) y probar contraste.
+- (El modo oscuro pasó al Paso 18 del PLAN.)

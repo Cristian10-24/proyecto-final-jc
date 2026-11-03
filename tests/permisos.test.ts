@@ -49,6 +49,9 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["ver cuántas sugerencias hay", async () => (await import("@/app/api/admin/sugerencias/conteo/route")).GET()],
   ["aprobar una sugerencia", async () => (await import("@/app/api/admin/sugerencias/[id]/route")).POST(json("POST", { accion: "aprobar", inicio: "2026-11-12T13:00:00.000Z" }), ctx)],
   ["rechazar una sugerencia", async () => (await import("@/app/api/admin/sugerencias/[id]/route")).POST(json("POST", { accion: "rechazar", motivo: "No hay cupo" }), ctx)],
+  ["cambiar la hora (Horarios o tablero)", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z" }), ctx)],
+  ["cambiar el mentor desde el tablero", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z", asiento: ID }), ctx)],
+  ["liberar una hora", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "liberar" }), ctx)],
   ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
 ];
 
@@ -145,6 +148,11 @@ describe("Bandeja: POST desde otro origen", () => {
     const res = await (await import("@/app/api/admin/sugerencias/[id]/route")).POST(req, ctx);
     expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
   });
+});
+
+describe("mentor y monitor no ven el tablero de horarios", () => {
+  for (const rol of ["mentor", "monitor"] as const)
+    it(`${rol}: 403`, async () => { await como(rol); expect((await (await import("@/app/api/admin/tablero/route")).GET(new Request("http://localhost/x"))).status).toBe(403); });
 });
 
 describe("mentor y monitor no ven el seguimiento general ni cambian criterios", () => {

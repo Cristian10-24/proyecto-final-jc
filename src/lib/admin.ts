@@ -3,10 +3,11 @@ import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
+import { Falla, liberarProyecto, moverProyecto } from "./mover";
 import type { Actor, Asiento, Proyecto } from "./types";
 
 // Acciones del admin sobre horas, asientos y monitores. Toda acción deja registro en changeLog.
-// Cambiar la hora es la única que usa transacción: libera el asiento viejo y toma el nuevo, o nada.
+// Liberar y cambiar la hora van en transacción, con la lógica común de mover.ts (también la usa el tablero).
 
 const etiqueta = (inicio: Date) => `${diaCOL(inicio)} ${horaCO(inicio)}`;
 export const claveGrupo = (ciudades: string[]) => (ciudades.length ? [...ciudades].sort((a, b) => a.localeCompare(b, "es")).join(" + ") : "(sin ciudad)");
@@ -59,47 +60,62 @@ export async function historial(proyectoId: ObjectId) {
 
 export type ResultadoAdmin = { ok: true; inicio?: string } | { ok: false; error: string; mensaje: string };
 
-/** Libera la hora y registra el cambio en la misma transacción: nunca queda un asiento liberado sin registro. */
+const MENSAJE: Record<Falla["codigo"], string> = {
+  sin_cupo: "Ese bloque ya no tiene asientos libres para esta ciudad.",
+  ya_evaluado: "Ya tiene una evaluación guardada: no se mueve ni se libera.",
+  cambio: "La hora del proyecto cambió mientras tanto. Recarga y vuelve a intentarlo.",
+  sin_hora: "Ese proyecto no tiene hora.",
+};
+const falla = (e: Falla): ResultadoAdmin => ({ ok: false, error: e.codigo, mensaje: MENSAJE[e.codigo] });
+
+/** Libera la hora y registra el cambio en la misma transacción (lógica común en mover.ts). */
 export async function liberar(proyectoId: ObjectId, motivo: string, actor: Actor): Promise<ResultadoAdmin> {
-  const { asientos, changeLog } = await collections();
-  let liberado = false;
-  await transaccion(async (s) => {
-    const a = await asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
-    liberado = !!a;
-    if (a) await changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(a.inicio), motivo, actor, fecha: new Date() }, { session: s });
-  });
-  return liberado ? { ok: true } : { ok: false, error: "sin_hora", mensaje: "Ese proyecto no tiene hora." };
+  const { changeLog } = await collections();
+  try {
+    await transaccion(async (s) => {
+      const ahora = new Date();
+      const a = await liberarProyecto(s, proyectoId, actor.usuario ?? actor.rol, ahora);
+      await changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(a.inicio), motivo, actor, fecha: ahora }, { session: s });
+    });
+  } catch (e) {
+    if (e instanceof Falla) return falla(e);
+    throw e;
+  }
+  return { ok: true };
 }
 
 /**
- * Pone el proyecto en el bloque `inicio`: libera su asiento actual (si tiene) y toma uno libre de ese
- * bloque, en una transacción. Por defecto solo asientos de su ciudad; con `otraCiudad`, cualquiera libre.
+ * Pone el proyecto en el bloque `inicio` (o en el asiento `asiento` de ese bloque, para cambiar de mentor): libera su
+ * asiento actual (si tiene) y toma uno libre, en una transacción (lógica común en mover.ts). Por defecto solo asientos
+ * de su ciudad; con `otraCiudad`, cualquiera libre. Un proyecto con evaluación guardada no se mueve.
  */
-export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string }, actor: Actor): Promise<ResultadoAdmin> {
+export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string; asiento?: ObjectId }, actor: Actor): Promise<ResultadoAdmin> {
   const c = await collections();
   const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!proyecto) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
-  let resultado: ResultadoAdmin = { ok: false, error: "sin_cupo", mensaje: "Ese bloque ya no tiene asientos libres para esta ciudad." };
+  const ciudad: Filter<Asiento> = opciones.otraCiudad ? {} : { ciudades: proyecto.ciudad };
+  const filtros: Filter<Asiento>[] = opciones.asiento
+    ? [{ _id: opciones.asiento, inicio, ...ciudad }]
+    : [{ inicio, ciudades: proyecto.ciudad }, ...(opciones.otraCiudad ? [{ inicio }] : [])];
+  let resultado: ResultadoAdmin = { ok: false, error: "sin_cupo", mensaje: MENSAJE.sin_cupo };
   try {
     await transaccion(async (s) => {
-      const viejo = await c.asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
-      if (viejo && viejo.inicio.getTime() === inicio.getTime()) throw new Error("misma_hora");
-      // Primero un asiento de su ciudad; si no hay y el admin lo aceptó, uno de otra ciudad.
-      const tomar = (filtro: Filter<Asiento>) => c.asientos.findOneAndUpdate(
-        { inicio, proyectoId: null, ...filtro }, { $set: { proyectoId, reservadoEn: new Date() } }, { session: s, returnDocument: "after" });
-      const nuevo = (await tomar({ ciudades: proyecto.ciudad })) ?? (opciones.otraCiudad ? await tomar({}) : null);
-      if (!nuevo) throw new Error("sin_cupo");
+      const viejo = await c.asientos.findOne({ proyectoId }, { session: s });
+      if (viejo && (opciones.asiento ? viejo._id.equals(opciones.asiento) : viejo.inicio.getTime() === inicio.getTime())) throw new Error("misma_hora");
+      const ahora = new Date();
+      const nuevo = await moverProyecto(s, proyectoId, viejo?._id ?? null, filtros, actor.usuario ?? actor.rol, ahora);
       const ajeno = !nuevo.ciudades.includes(proyecto.ciudad);
+      const cambioMentor = !!viejo && viejo.inicio.getTime() === nuevo.inicio.getTime();
       await c.changeLog.insertOne({
-        proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: etiqueta(viejo.inicio) } : {}),
-        nuevo: `${etiqueta(nuevo.inicio)}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}`,
-        motivo: opciones.motivo, actor, fecha: new Date(),
+        proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: `${etiqueta(viejo.inicio)}${cambioMentor ? ` · ${viejo.mentorId}` : ""}` } : {}),
+        nuevo: `${etiqueta(nuevo.inicio)}${cambioMentor ? ` · ${nuevo.mentorId}` : ""}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}`,
+        motivo: opciones.motivo, actor, fecha: ahora,
       }, { session: s });
       resultado = { ok: true, inicio: nuevo.inicio.toISOString() };
     });
   } catch (e) {
     if (e instanceof Error && e.message === "misma_hora") return { ok: false, error: "misma_hora", mensaje: "El proyecto ya tiene esa hora." };
-    if (e instanceof Error && e.message === "sin_cupo") return resultado;
+    if (e instanceof Falla) return falla(e);
     // Un integrante reservó en el mismo instante: el índice único sobre proyectoId lo frenó.
     if (e instanceof MongoServerError && e.code === 11000) return { ok: false, error: "ya_tiene_hora", mensaje: "El proyecto acaba de reservar una hora. Recarga y vuelve a intentarlo." };
     throw e;

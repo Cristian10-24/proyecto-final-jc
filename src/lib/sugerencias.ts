@@ -2,7 +2,8 @@ import { MongoServerError, ObjectId, type Filter } from "mongodb";
 import { horaCO } from "./ciudades";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
-import { Falla, moverProyecto, type CambioSugerido } from "./evaluacion/monitor";
+import type { CambioSugerido } from "./evaluacion/monitor";
+import { Falla, moverProyecto } from "./mover";
 import type { Actor, Asiento } from "./types";
 
 // Bandeja de cambios sugeridos (Paso 14): el monitor sugiere un cambio especial (otro día, otra ciudad, después de la
