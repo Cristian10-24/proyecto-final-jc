@@ -9,12 +9,13 @@ import s from "./Evaluacion.module.css";
 // creaTIvos, "Evaluación del proyecto final", el logo de Sofka y las pestañas. Aplica el tema .tema-evaluacion
 // (Lexend + Inter y colores --ev-*); el resto de la app sigue con AppShell y tokens.css.
 
-export type SeccionEval = "evaluaciones" | "salas";
+export type SeccionEval = "evaluaciones" | "salas" | "seguimiento";
 
 const TABS: { key: SeccionEval; label: string; href: string; permiso: Permiso }[] = [
   { key: "evaluaciones", label: "Mis evaluaciones", href: "/mentor", permiso: "evaluar" },
   { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "salas", label: "Mis salas", href: "/monitor/salas", permiso: "monitorear_salas" },
+  { key: "seguimiento", label: "Seguimiento general", href: "/evaluacion/seguimiento", permiso: "ver_evaluaciones" },
 ];
 
 export default function EvalShell({ user, active, children }: { user: SessionUser; active: SeccionEval; children: React.ReactNode }) {

@@ -73,6 +73,13 @@ const soloMonitor: [string, () => Promise<Response>][] = [
   ["ver cupos para reprogramar", async () => (await import("@/app/api/evaluacion/salas/[id]/cupos/route")).GET(new Request("http://localhost/x"), ctx)],
 ];
 
+// Seguimiento general, Excel de resultados y criterios: coordinación y admin.
+const soloCoordinacion: [string, () => Promise<Response>][] = [
+  ["ver el seguimiento general", async () => (await import("@/app/api/evaluacion/seguimiento/route")).GET(new Request("http://localhost/x"))],
+  ["descargar el Excel de resultados", async () => (await import("@/app/api/evaluacion/seguimiento/excel/route")).GET(new Request("http://localhost/x"))],
+  ["guardar los criterios", async () => (await import("@/app/api/evaluacion/criterios/route")).POST(json("POST", { exA: 0.9, exB: 3 }))],
+];
+
 describe("matriz de permisos", () => {
   const tabla: Record<Permiso, [boolean, boolean, boolean, boolean]> = {
     // [mentor, monitor, coordinador, admin]
@@ -86,6 +93,7 @@ describe("matriz de permisos", () => {
     evaluar: [true, false, false, false],
     ver_evaluaciones: [false, false, true, true],
     monitorear_salas: [false, true, false, false],
+    editar_criterios: [false, false, true, true],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -139,6 +147,30 @@ describe("Bandeja: POST desde otro origen", () => {
   });
 });
 
+describe("mentor y monitor no ven el seguimiento general ni cambian criterios", () => {
+  for (const rol of ["mentor", "monitor"] as const)
+    for (const [nombre, llamar] of soloCoordinacion) it(`${rol}: 403 al ${nombre}`, async () => { await como(rol); expect((await llamar()).status).toBe(403); });
+});
+
+describe("Criterios: POST desde otro origen y validación", () => {
+  it("403 desde otro origen aunque sea coordinación", async () => {
+    await como("coordinador");
+    const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ exA: 0.9, exB: 3 }) });
+    const res = await (await import("@/app/api/evaluacion/criterios/route")).POST(req);
+    expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
+  });
+  it("criterios y filtro inválidos: 400 antes de tocar la base", async () => {
+    await como("coordinador");
+    const { POST } = await import("@/app/api/evaluacion/criterios/route");
+    for (const body of [{ exA: 1.2, exB: 3 }, { exA: -0.1, exB: 3 }, { exA: 0.9, exB: 5 }, { exA: "0.9", exB: 3 }, { exA: 0.9, exB: 3, otro: 1 }])
+      expect((await POST(json("POST", body))).status).toBe(400);
+    expect((await POST(new Request("http://localhost/x", { method: "POST", body: "no es json" }))).status).toBe(400);
+    const { GET } = await import("@/app/api/evaluacion/seguimiento/route");
+    for (const q of ["dia=12-11-2026", "ciudad=Narnia", "dia=2026-11-12&otro=1"])
+      expect((await GET(new Request(`http://localhost/x?${q}`))).status).toBe(400);
+  });
+});
+
 describe("coordinación y admin no entran a Mis salas", () => {
   for (const rol of ["coordinador", "admin"] as const)
     for (const [nombre, llamar] of soloMonitor) it(`${rol}: 403 al ${nombre}`, async () => { await como(rol); expect((await llamar()).status).toBe(403); });
@@ -146,7 +178,7 @@ describe("coordinación y admin no entran a Mis salas", () => {
 
 describe("sin sesión", () => {
   beforeAll(() => { estado.token = ""; estado.usuario = null; });
-  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones, ...soloMonitor]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
+  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones, ...soloMonitor, ...soloCoordinacion]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
 });
 
 describe("sesión con clave restablecida", () => {

@@ -20,13 +20,14 @@ export type Permiso =
   | "cambiar_horario"
   | "evaluar"
   | "ver_evaluaciones"
-  | "monitorear_salas";
+  | "monitorear_salas"
+  | "editar_criterios";
 
 const PERMISOS: Record<RolUsuario, readonly Permiso[]> = {
   mentor: ["evaluar"],
   monitor: ["ver_seguimiento", "monitorear_salas"],
-  coordinador: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "ver_evaluaciones"],
-  admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones"],
+  coordinador: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "ver_evaluaciones", "editar_criterios"],
+  admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones", "editar_criterios"],
 };
 
 export function puede(rol: string | undefined, permiso: Permiso): boolean {
