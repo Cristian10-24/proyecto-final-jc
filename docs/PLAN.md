@@ -57,7 +57,8 @@ Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; des
 - Hoja "Salas" en el importador: Sala (1 a 7) y Enlace.
 - El sistema asigna sala a cada mentor en cada hora según los mentores activos (máximo 7 a la vez), y mantiene al mentor en la misma sala en horas seguidas cuando se pueda.
 - El admin descarga el "Plan de salas" (Día, Hora, Sala, Mentor) en Excel.
-- Importar monitores: Día, Hora, Sala y Monitor (acepta Mentor en lugar de Sala). Un monitor por sala y hora; un monitor puede tener salas en horas no seguidas. Se valida que nadie esté en dos salas a la misma hora. Los monitores son usuarios con rol monitor; si un nombre no coincide, aviso en la vista previa.
+- Monitores, dos formas: importar (Día, Hora, Sala y Monitor; acepta Mentor en lugar de Sala) o automática desde "Disponibilidad monitores" (Monitor, Día, Hora), repartiendo la carga y en la misma sala en horas seguidas cuando se pueda. Lo importado manda. Un monitor por sala y hora; nadie en dos salas a la misma hora. Los monitores son usuarios con rol monitor; si un nombre no coincide, aviso en la vista previa. El admin cambia el monitor de una sala (changeLog).
+- En las presentaciones el monitor ve estudiantes de cualquier ciudad, solo los de sus salas asignadas; en la inscripción (Fase 1) sigue viendo solo su ciudad.
 
 **Cambios de hora.**
 - El monitor reprograma directamente a un cupo libre de la ciudad del estudiante, en los días habilitados para esa ciudad.
@@ -74,10 +75,10 @@ Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; des
 
 ### Pasos de la Fase 2
 - [x] 8. Leer el prototipo una vez y crear `docs/EVALUACION.md` (máx. 100 líneas). Después no volver a abrir index.html salvo para una pantalla concreta.
-- [ ] 9. Importador: Ruta, Salas y Monitores; asignación automática de salas y descarga del Plan de salas.
+- [ ] 9. Importador: Ruta, Salas, Monitores y Disponibilidad monitores; asignación automática de salas y de monitores (lo importado manda), plan de salas en el admin con salas sin monitor marcadas y cambio de monitor (changeLog), y descarga del Plan de salas.
 - [ ] 10. Módulo de evaluación: `src/lib/evaluacion/`, `/api/evaluacion/*`, colecciones `evaluacion_*`. Funciones puras con pruebas (incluida `calc()`). Un mentor solo evalúa sus proyectos. Borrador automático. Todo deja changeLog.
 - [ ] 11. Vista del MENTOR ("Mis evaluaciones"), igual al prototipo: agenda del día por bloques de 15 min, filtros por estado y pantalla de evaluar; en cada hora, su SALA y ENLACE con "Abrir sala". Coordinación y admin pueden ver la vista de cualquier mentor.
-- [ ] 12. Vista del MONITOR por horario: sus salas por día y hora con ENLACE, mentor y proyectos con contacto completo. Por integrante: se presentó sí/no, motivo de inasistencia, comentarios, reprogramar en su ciudad o sugerir cambio especial.
+- [ ] 12. Vista del MONITOR por horario: sus salas asignadas por día y hora (estudiantes de cualquier ciudad) con ENLACE, mentor y proyectos con contacto completo. Pruebas de permisos: solo los de sus salas. Por integrante: se presentó sí/no, motivo de inasistencia, comentarios, reprogramar en su ciudad o sugerir cambio especial.
 - [ ] 13. Admin: bandeja de cambios sugeridos (aprobar o rechazar) en /admin/horarios.
-- [ ] 14. Seguimiento general (coordinación y admin): todas las tablas del prototipo, criterios editables y CSV.
+- [ ] 14. Seguimiento general (coordinación y admin): todas las tablas del prototipo y criterios editables, sin CSV (descarga en Excel por confirmar).
 - [ ] 15. Usuarios: integrar la gestión del prototipo (agregar, cargar por Excel Nombre/Correo/Rol, revisión de nombres) con los usuarios y roles actuales. Sin login por correo y código.

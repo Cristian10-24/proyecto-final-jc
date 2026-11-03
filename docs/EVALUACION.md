@@ -83,9 +83,7 @@ este archivo; el prototipo solo se abre para mirar una pantalla concreta. Textos
 Apps Script, login por código al correo, carga de estudiantes por CSV/pegado, carga de cupos, "Borrar ejemplos/todo",
 correo "Copiar texto" (sin correos por ahora). Los cupos libres salen de nuestras reservas y el monitor va por sala y hora.
 
-## Incoherencias del prototipo (preguntar antes de decidir)
-1. `crit` trae `apA = 0,7` y `apB = 2` que `calc()` no usa; "En proceso" tiene color y texto de correo pero nunca sale.
-2. El export incluye "Asunto del correo" y "Mensaje para el estudiante" (solo Aprobado/Excelente): ¿se exportan sin correos?
-3. Guardar exige todo completo, así que una evaluación guardada nunca queda Incompleto; con el borrador automático del PLAN,
-   ¿el borrador cuenta como Incompleto en el seguimiento o sigue Pendiente hasta "Guardar evaluación"?
-4. El prototipo asigna monitor por estudiante; el PLAN, por sala y hora. La tabla "por monitor" se calcularía por sala.
+## Incoherencias del prototipo (resueltas, ver DECISIONES)
+1. `calc()` tal cual: se ignoran `apA`/`apB` y "En proceso". 2. Sin CSV (Excel de resultados por confirmar).
+3. El borrador automático no cuenta: sigue Pendiente hasta "Guardar evaluación".
+4. Monitor por sala y hora (cualquier ciudad); la tabla "por monitor" cuenta por esa asignación.
