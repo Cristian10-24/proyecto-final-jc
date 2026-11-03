@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import type { ObjectId } from "mongodb";
+import type { Actor } from "./types";
 import { z } from "zod";
 import { collections } from "./db";
 import { clave } from "./importar/excel";
@@ -83,6 +84,23 @@ export async function errorMentor(mentorId: string | undefined, excepto?: Object
   if (await users.findOne({ mentorId, ...(excepto ? { _id: { $ne: excepto } } : {}) }))
     return "Ya hay un usuario para ese mentor.";
   return null;
+}
+
+/**
+ * Restablecer la clave: la dada o una temporal nueva. Cierra sus sesiones abiertas y deja changeLog (sin la clave).
+ * Devuelve la clave UNA sola vez; en la base queda solo el hash.
+ */
+export async function restablecerClave(id: ObjectId, claveDada: string | undefined, actor: Actor): Promise<{ clave: string; usuario: User } | null> {
+  const { users, changeLog } = await collections();
+  const clave = claveDada ?? generarClave();
+  const u = await users.findOneAndUpdate(
+    { _id: id },
+    { $set: { passwordHash: await hashClave(clave), actualizadoEn: new Date() }, $inc: { tokenVersion: 1 } },
+    { returnDocument: "after" },
+  );
+  if (!u) return null;
+  await changeLog.insertOne({ accion: "restablecer_clave", nuevo: `${u.usuario} (${claveDada ? "clave asignada" : "clave temporal"})`, actor, fecha: new Date() });
+  return { clave, usuario: u };
 }
 
 /** Lo que se muestra de un usuario (nunca el hash). */

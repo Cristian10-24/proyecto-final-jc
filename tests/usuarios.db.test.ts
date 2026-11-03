@@ -205,6 +205,21 @@ describe("aplicar", () => {
   });
 });
 
+describe("restablecer clave", () => {
+  it("genera una temporal, cierra sesiones y deja changeLog sin la clave", async () => {
+    const { restablecerClave } = await import("@/lib/usuarios");
+    const c = await db.collections();
+    const u = (await c.users.findOne({ usuario: "solo.salas" }))!;
+    const r = await restablecerClave(u._id, undefined, { rol: "admin", usuario: "admin.p" });
+    expect(await bcrypt.compare(r!.clave, r!.usuario.passwordHash)).toBe(true);
+    expect(r!.usuario.tokenVersion).toBe((u.tokenVersion ?? 0) + 1);
+    const log = await c.changeLog.findOne({ accion: "restablecer_clave" }, { sort: { fecha: -1 } });
+    expect([log?.nuevo, log?.actor.usuario]).toEqual(["solo.salas (clave temporal)", "admin.p"]);
+    expect(JSON.stringify(log)).not.toContain(r!.clave);
+    expect(await restablecerClave(new ObjectId(), undefined, { rol: "admin", usuario: "admin.p" })).toBeNull();
+  });
+});
+
 describe("revisión de nombres", () => {
   it("mentores sin usuario, usuarios que no coinciden, salas sin monitor y monitores sin salas", async () => {
     const r = await ux.revisionNombres();

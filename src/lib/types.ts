@@ -28,7 +28,7 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave";
   anterior?: string;
   nuevo?: string;
   motivo?: string;

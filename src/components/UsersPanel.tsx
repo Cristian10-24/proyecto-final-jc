@@ -213,7 +213,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
           <div className={s.state}><i className={s.dot} style={{ background: u.activo ? "var(--green)" : "var(--muted-2)" }} />{u.activo ? "Activo" : "Inactivo"}</div>
           <div className={s.acts}>
             <button type="button" className={s.act} onClick={() => editar(u)}>Editar</button>
-            <button type="button" className={s.act} onClick={() => setClave({ id: u.id, usuario: u.usuario, claveModo: "generar", clave: "", saving: false, error: "" })}>Clave</button>
+            <button type="button" className={s.act} onClick={() => setClave({ id: u.id, usuario: u.usuario, claveModo: "generar", clave: "", saving: false, error: "" })}>Restablecer clave</button>
             {!esYo(u.id) && (
               <button type="button" className={`${s.act} ${u.activo ? s.actWarn : s.actOk}`} onClick={() => alternarActivo(u)}>{u.activo ? "Desactivar" : "Activar"}</button>
             )}
@@ -298,11 +298,11 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       {clave && (
         <div className={s.overlay} onClick={(e) => e.target === e.currentTarget && !clave.saving && setClave(null)}>
           <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="c-title">
-            <div id="c-title" className={s.modalTitle}>Clave de {clave.usuario}</div>
+            <div id="c-title" className={s.modalTitle}>Restablecer clave de {clave.usuario}</div>
             <div className={s.modalSub}>La clave anterior deja de funcionar y se cierran las sesiones abiertas de este usuario.</div>
             <div className={s.claveOpts}>
               {(["generar", "asignar"] as const).map((m) => (
-                <button key={m} type="button" className={`${s.pill} ${clave.claveModo === m ? s.pillOn : ""}`} onClick={() => setClave({ ...clave, claveModo: m })}>{m === "generar" ? "Generar una nueva" : "Asignar una"}</button>
+                <button key={m} type="button" className={`${s.pill} ${clave.claveModo === m ? s.pillOn : ""}`} onClick={() => setClave({ ...clave, claveModo: m })}>{m === "generar" ? "Generar una temporal" : "Asignar una"}</button>
               ))}
             </div>
             {clave.claveModo === "asignar" && <input className="input" value={clave.clave} onChange={(e) => setClave({ ...clave, clave: e.target.value })} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />}
@@ -343,7 +343,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
                 </div>
               ))}
             </div>
-            <div className={s.once}>Entrégalas ahora: no se volverán a mostrar. Si una se pierde, genera otra con «Clave».</div>
+            <div className={s.once}>Entrégalas ahora: no se volverán a mostrar. Si una se pierde, usa «Restablecer clave».</div>
             <div className={s.modalActions}>
               <button type="button" className={s.cancel} onClick={() => void copiar(claves.map((k) => `${k.nombre} · usuario: ${k.usuario} · clave: ${k.clave}`).join("\n"), "Claves copiadas")}>Copiar todas</button>
               <button type="button" className={s.save} onClick={() => setClaves(null)}>Listo, ya las guardé</button>
