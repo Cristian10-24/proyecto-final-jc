@@ -16,7 +16,7 @@ type Proyecto = {
 };
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
 type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
-type Bloque = { inicio: string; libres: number; deSuCiudad: boolean };
+type Bloque = { inicio: string; libres: number; deSuCiudad: boolean; otras: string[] };
 type Grupo = { grupo: string; ciudades: string[]; libres: number; ocupados: number };
 type Estado = "" | "con_hora" | "sin_hora" | "sin_monitor";
 
@@ -357,7 +357,6 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
   onCancelar: () => void; onEnviar: (inicio: string, otraCiudad: boolean) => Promise<{ error?: string } | null>;
 }) {
   const [dia, setDia] = useState(() => (p.hora ? diaCOL(new Date(p.hora.inicio)) : ""));
-  const [otra, setOtra] = useState(false);
   const [datos, setDatos] = useState<{ estado: "inicial" | "cargando" | "error" | "listo"; tiene: boolean; bloques: Bloque[] }>({ estado: "inicial", tiene: true, bloques: [] });
   const [elegido, setElegido] = useState<Bloque | null>(null);
   const [noCabe, setNoCabe] = useState(false);
@@ -366,10 +365,10 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
     if (!dia) return;
     setDatos((d) => ({ ...d, estado: "cargando" }));
     try {
-      const r = await api<{ ciudadTieneElDia: boolean; bloques: Bloque[] }>(`/api/admin/proyectos/${p.id}/bloques?dia=${dia}&otra=${otra ? 1 : 0}`);
+      const r = await api<{ ciudadTieneElDia: boolean; bloques: Bloque[] }>(`/api/admin/proyectos/${p.id}/bloques?dia=${dia}`);
       setDatos(r.ok && r.data ? { estado: "listo", tiene: r.data.ciudadTieneElDia, bloques: r.data.bloques } : { estado: "error", tiene: true, bloques: [] });
     } catch (e) { if (!(e instanceof SinSesion)) setDatos({ estado: "error", tiene: true, bloques: [] }); }
-  }, [p.id, dia, otra]);
+  }, [p.id, dia]);
 
   useEffect(() => { setElegido(null); void cargar(); }, [cargar]);
 
@@ -405,19 +404,12 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
       {dia && datos.estado !== "inicial" && !datos.tiene && (
         <div className="note note-warn">Esta ciudad no presenta ese día.</div>
       )}
-      {dia && (!datos.tiene || otra) && (
-        <label className={`check ${otra ? "is-on" : ""} ${s.checkSm}`}>
-          <input type="checkbox" className={s.oculto} checked={otra} onChange={(e) => setOtra(e.target.checked)} />
-          <span className="check-box" aria-hidden>{otra ? "✓" : ""}</span>
-          Usar asientos de otra ciudad
-        </label>
-      )}
 
       {noCabe && <div className="note note-error"><b>No cabe.</b>&nbsp;Ese bloque se llenó. Elige otro.</div>}
 
       {dia && datos.estado === "cargando" && datos.bloques.length === 0 && <div className={s.skelFila} />}
       {dia && datos.estado === "error" && <div className="note note-error">No pudimos cargar los bloques. <button type="button" className="btn-link" onClick={() => void cargar()}>Intentar de nuevo</button></div>}
-      {dia && datos.estado === "listo" && datos.bloques.length === 0 && (datos.tiene || otra) && <p className={s.panelTxt}>No quedan bloques libres ese día.</p>}
+      {dia && datos.estado === "listo" && datos.bloques.length === 0 && <p className={s.panelTxt}>No quedan bloques libres ese día.</p>}
 
       {porHora.length > 0 && (
         <div className={`${s.horas} ${datos.estado === "cargando" ? s.recargando : ""}`}>
@@ -430,7 +422,7 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
                     className={`${s.bloque} ${elegido?.inicio === b.inicio ? s.opcionOn : ""} ${b.deSuCiudad ? "" : s.bloqueOtra}`}
                     onClick={() => { setElegido(b); setNoCabe(false); }}>
                     <b>{horaCO(new Date(b.inicio))}</b>
-                    <span>{esLaActual(b) ? "Hora actual" : `${b.libres} ${b.libres === 1 ? "libre" : "libres"}${b.deSuCiudad ? "" : " · otra ciudad"}`}</span>
+                    <span>{esLaActual(b) ? "Hora actual" : b.deSuCiudad ? `${b.libres} ${b.libres === 1 ? "libre" : "libres"}` : `de ${b.otras.join(", ")}`}</span>
                   </button>
                 ))}
               </div>
@@ -443,7 +435,7 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
 
       {elegido && !elegido.deSuCiudad ? (
         <>
-          <div className="note note-warn">{etiquetaHora(elegido.inicio)} COL usa un asiento que no es de {p.ciudad}. Se reetiqueta para este proyecto.</div>
+          <div className="note note-warn">A las {etiquetaHora(elegido.inicio)} COL no quedan asientos de {p.ciudad}: este asiento era de {elegido.otras.join(", ")}. Quedará anotado en el historial.</div>
           <div className={s.acts}>
             <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => setElegido(null)}>Cancelar</button>
             <button type="button" className="btn btn-dark" disabled={ocupado} onClick={() => void mover(elegido)}>{ocupado ? "Moviendo…" : "Mover de todas formas"}</button>

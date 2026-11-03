@@ -81,16 +81,16 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
     await client.withSession((s) => s.withTransaction(async () => {
       const viejo = await c.asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
       if (viejo && viejo.inicio.getTime() === inicio.getTime()) throw new Error("misma_hora");
-      const nuevo = await c.asientos.findOneAndUpdate(
-        { inicio, proyectoId: null, ...(opciones.otraCiudad ? {} : { ciudades: proyecto.ciudad }) },
-        { $set: { proyectoId, reservadoEn: new Date() } },
-        { session: s, returnDocument: "after" },
-      );
+      // Primero un asiento de su ciudad; si no hay y el admin lo aceptó, uno de otra ciudad.
+      const tomar = (filtro: Filter<Asiento>) => c.asientos.findOneAndUpdate(
+        { inicio, proyectoId: null, ...filtro }, { $set: { proyectoId, reservadoEn: new Date() } }, { session: s, returnDocument: "after" });
+      const nuevo = (await tomar({ ciudades: proyecto.ciudad })) ?? (opciones.otraCiudad ? await tomar({}) : null);
       if (!nuevo) throw new Error("sin_cupo");
+      const ajeno = !nuevo.ciudades.includes(proyecto.ciudad);
       await c.changeLog.insertOne({
-        proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: etiqueta(viejo.inicio) } : {}), nuevo: etiqueta(nuevo.inicio),
-        motivo: opciones.otraCiudad && !nuevo.ciudades.includes(proyecto.ciudad) ? `${opciones.motivo} (asiento de otra ciudad)`.trim() : opciones.motivo,
-        actor, fecha: new Date(),
+        proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: etiqueta(viejo.inicio) } : {}),
+        nuevo: `${etiqueta(nuevo.inicio)}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}`,
+        motivo: opciones.motivo, actor, fecha: new Date(),
       }, { session: s });
       resultado = { ok: true, inicio: nuevo.inicio.toISOString() };
     }));
@@ -104,18 +104,22 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
   return resultado;
 }
 
-/** Bloques con asiento libre en un día: de la ciudad del proyecto, o de cualquiera con `otraCiudad`. */
-export async function bloquesLibres(proyectoId: ObjectId, dia: string, otraCiudad: boolean) {
+/**
+ * Bloques con asiento libre en un día. `libres` cuenta los de su ciudad; `otras` dice de qué otras
+ * ciudades hay asientos libres. Un bloque solo con asientos ajenos sale con deSuCiudad: false, para
+ * que el admin lo use con advertencia.
+ */
+export async function bloquesLibres(proyectoId: ObjectId, dia: string) {
   const c = await collections();
   const p = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!p) return null;
-  const libres = await c.asientos.find({ dia, proyectoId: null, ...(otraCiudad ? {} : { ciudades: p.ciudad }) }).sort({ inicio: 1 }).toArray();
-  const porBloque = new Map<string, { inicio: string; libres: number; deSuCiudad: boolean }>();
+  const libres = await c.asientos.find({ dia, proyectoId: null }).sort({ inicio: 1 }).toArray();
+  const porBloque = new Map<string, { inicio: string; libres: number; deSuCiudad: boolean; otras: string[] }>();
   for (const a of libres) {
     const k = a.inicio.toISOString();
-    const b = porBloque.get(k) ?? { inicio: k, libres: 0, deSuCiudad: false };
-    b.libres++;
-    b.deSuCiudad ||= a.ciudades.includes(p.ciudad);
+    const b = porBloque.get(k) ?? { inicio: k, libres: 0, deSuCiudad: false, otras: [] };
+    if (a.ciudades.includes(p.ciudad)) { b.deSuCiudad = true; b.libres++; }
+    else if (!b.otras.includes(claveGrupo(a.ciudades))) b.otras.push(claveGrupo(a.ciudades));
     porBloque.set(k, b);
   }
   const todos = await c.dias.find({}).toArray();

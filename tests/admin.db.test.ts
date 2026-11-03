@@ -73,10 +73,10 @@ describe("cambiar hora", () => {
     expect((await c.asientos.findOne({ proyectoId: ids.CALI }))!.inicio).toEqual(B815);
   });
 
-  it("con otraCiudad puede usar un asiento de otra ciudad y lo anota en el motivo", async () => {
+  it("con otraCiudad usa un asiento de otra ciudad solo si no hay de la suya, y queda en el changeLog", async () => {
     const r = await admin.cambiarHora(ids.CALI2!, B13, { otraCiudad: true, motivo: "caso especial" }, actor);
     expect(r.ok).toBe(true);
-    expect((await admin.historial(ids.CALI2!))[0]!.motivo).toBe("caso especial (asiento de otra ciudad)");
+    expect((await admin.historial(ids.CALI2!))[0]).toMatchObject({ nuevo: "2026-11-13 4:00 p. m. · asiento de Barranquilla", motivo: "caso especial" });
   });
 
   it("misma hora → error claro", async () => {
@@ -84,12 +84,17 @@ describe("cambiar hora", () => {
   });
 
   it("bloques libres: de su ciudad, y si la ciudad presenta ese día", async () => {
-    const b = await admin.bloquesLibres(ids.CTG!, "2026-11-12", false);
-    expect(b).toEqual({ ciudadTieneElDia: true, bloques: [
-      { inicio: B8.toISOString(), libres: 1, deSuCiudad: true },
-      { inicio: inicioUTC("2026-11-12", 16, 0).toISOString(), libres: 4, deSuCiudad: true },
+    // A las 8:00 hay 1 libre de Cartagena y 1 de Cali (CALI se movió a las 8:15).
+    expect(await admin.bloquesLibres(ids.CTG!, "2026-11-12")).toEqual({ ciudadTieneElDia: true, bloques: [
+      { inicio: B8.toISOString(), libres: 1, deSuCiudad: true, otras: ["Cali"] },
+      { inicio: inicioUTC("2026-11-12", 16, 0).toISOString(), libres: 4, deSuCiudad: true, otras: [] },
     ] });
-    expect((await admin.bloquesLibres(ids.CTG!, "2026-11-13", false))!.ciudadTieneElDia).toBe(false);
+    // El 13 Cartagena no presenta y el único asiento (de Barranquilla) ya lo tomó CALI2.
+    expect(await admin.bloquesLibres(ids.CTG!, "2026-11-13")).toEqual({ ciudadTieneElDia: false, bloques: [] });
+    // Un bloque solo con asientos ajenos sale marcado.
+    const c = await db.collections();
+    await c.asientos.insertOne({ _id: new ObjectId(), dia: "2026-11-13", inicio: inicioUTC("2026-11-13", 17, 0), mentorId: "m9", ciudades: ["Barranquilla"], proyectoId: null });
+    expect((await admin.bloquesLibres(ids.CTG!, "2026-11-13"))!.bloques).toEqual([{ inicio: inicioUTC("2026-11-13", 17, 0).toISOString(), libres: 0, deSuCiudad: false, otras: ["Barranquilla"] }]);
   });
 });
 

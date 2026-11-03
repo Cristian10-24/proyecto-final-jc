@@ -42,7 +42,7 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `fix: Todas solo aplica a ciudades sin días asignados en Cupos`. 74 unitarias y 35 con base; typecheck y build pasan.
 - Verificar: `npx vitest run tests/agenda.test.ts`: una prueba por ciudad (Cali 12; Cartagena 12 y 13; Barranquilla 13, 17 y 18; las demás, Todas desde el 17).
 - La regla aplica al importar (etiquetas de asientos), en el portal (días) y al reservar. Semilla local recargada.
-- Confirmado: Cali solo el jueves 12. Pendiente: confirmar los días de Barranquilla (las pruebas usan 13, 17 y 18).
+- Confirmado: Cali solo el jueves 12; Barranquilla 13 (sobrante), 17 y 18.
 
 ## Paso 5 · Admin: horarios, monitores y reetiquetar
 - Commit: `feat: admin de horarios (liberar, cambiar, monitor, reetiquetar)`. revisor-pruebas: 74 unitarias y 44 con base; revisor-seguridad sin altos ni medios (2 bajos corregidos: 11000 en cambiar hora y filtros antes del límite); typecheck y build pasan.
