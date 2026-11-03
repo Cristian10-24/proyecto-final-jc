@@ -1,0 +1,74 @@
+/* Tema del módulo de evaluación (vista del mentor, del monitor en salas y seguimiento), tomado del prototipo
+   aprobado docs/diseno/evaluacion/index.html. Solo aplica dentro de .tema-evaluacion (lo pone EvalShell):
+   el portal del estudiante y la inscripción siguen con tokens.css, que no se toca.
+   Todos los colores son variables --ev-*: el modo oscuro (pendiente, ver docs/PENDIENTES.md) solo tendrá que
+   redefinirlas, igual que el prototipo en su @media (prefers-color-scheme: dark). */
+
+.tema-evaluacion {
+  --ev-navy: #121212;
+  --ev-orange: #ea7307;
+  --ev-orange-ink: #b25700;
+  --ev-on-orange: #1b1200;
+  --ev-bg: #f4f4f4;
+  --ev-surface: #ffffff;
+  --ev-surface-2: #ececec;
+  --ev-line: #dcdcdc;
+  --ev-ink: #121212;
+  --ev-muted: #5e5e5e;
+  --ev-on-navy: #ffffff;
+  --ev-ok: #1e7b34;
+  --ev-ok-bg: #ddf3e2;
+  --ev-mid: #8a5a00;
+  --ev-mid-bg: #fff1c9;
+  --ev-parcial: #c98a0b;
+  --ev-bad: #b42318;
+  --ev-bad-bg: #fbe1df;
+  --ev-info: #1f4e99;
+  --ev-info-bg: #dfe9fb;
+  --ev-idle: #5e5e5e;
+  --ev-idle-bg: #e6e6e6;
+  --ev-overlay: rgba(0, 0, 0, .5);
+  --ev-radius: 14px;
+  --ev-radius-s: 9px;
+  --ev-font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ev-font-titulo: Lexend, Inter, system-ui, sans-serif;
+
+  min-height: 100vh;
+  background: var(--ev-bg);
+  color: var(--ev-ink);
+  font: 15px/1.5 var(--ev-font);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+.tema-evaluacion h1, .tema-evaluacion h2, .tema-evaluacion h3 { font-family: var(--ev-font-titulo); line-height: 1.2; margin: 0; }
+.tema-evaluacion button, .tema-evaluacion input, .tema-evaluacion select, .tema-evaluacion textarea { font: inherit; color: inherit; }
+.tema-evaluacion :focus-visible { outline: 3px solid var(--ev-orange); outline-offset: 2px; }
+.tema-evaluacion a { color: inherit; }
+
+/* Controles del prototipo */
+.tema-evaluacion .ev-btn { appearance: none; border: 1px solid var(--ev-line); background: var(--ev-surface); padding: 10px 16px; border-radius: 999px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: var(--ev-ink); }
+.tema-evaluacion .ev-btn:hover { border-color: var(--ev-muted); }
+.tema-evaluacion .ev-btn-primario { background: var(--ev-orange); border-color: var(--ev-orange); color: var(--ev-on-orange); }
+.tema-evaluacion .ev-btn-primario:hover { filter: brightness(1.05); border-color: var(--ev-orange); }
+.tema-evaluacion .ev-btn-navy { background: var(--ev-navy); border-color: var(--ev-navy); color: var(--ev-on-navy); }
+.tema-evaluacion .ev-btn:disabled { opacity: .5; cursor: not-allowed; }
+.tema-evaluacion .ev-campo { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: var(--ev-radius-s); padding: 10px 12px; width: 100%; }
+.tema-evaluacion textarea.ev-campo { min-height: 76px; resize: vertical; }
+.tema-evaluacion .ev-tarjeta { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: var(--ev-radius); padding: 18px; }
+.tema-evaluacion .ev-aviso { font-size: 13.5px; padding: 10px 12px; border-radius: var(--ev-radius-s); background: var(--ev-surface-2); }
+.tema-evaluacion .ev-aviso-warn { background: var(--ev-mid-bg); color: var(--ev-mid); font-weight: 600; }
+.tema-evaluacion .ev-aviso-error { background: var(--ev-bad-bg); color: var(--ev-bad); font-weight: 600; }
+.tema-evaluacion .ev-muted { color: var(--ev-muted); }
+.tema-evaluacion .ev-small { font-size: 13px; }
+
+/* Chips de resultado (mismos colores que el prototipo) */
+.tema-evaluacion .ev-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.tema-evaluacion .ev-c-Excelente { background: var(--ev-ok-bg); color: var(--ev-ok); }
+.tema-evaluacion .ev-c-Aprobado { background: var(--ev-info-bg); color: var(--ev-info); }
+.tema-evaluacion .ev-c-Incompleto { background: var(--ev-mid-bg); color: var(--ev-mid); }
+.tema-evaluacion .ev-c-Pendiente { background: var(--ev-idle-bg); color: var(--ev-idle); }
+.tema-evaluacion .ev-c-NoSePresento { background: var(--ev-ink); color: var(--ev-bg); }
+.tema-evaluacion .ev-c-star { background: var(--ev-orange); color: var(--ev-on-orange); }
+.tema-evaluacion .ev-c-mail { background: var(--ev-surface-2); color: var(--ev-muted); }
+
+@keyframes ev-shimmer { 0% { opacity: .55; } 50% { opacity: 1; } 100% { opacity: .55; } }

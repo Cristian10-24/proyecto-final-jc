@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { calc, faltantes, ITEMS_A, MIN_B, primerNombre, TEMAS_B, type Borrador, type Formulario, type PartesB, type Resultado, type ValorA } from "@/lib/evaluacion/criterios";
 import type { DetalleEvaluacion, ResultadoIntegrante } from "@/lib/evaluacion/datos";
 import { diaCOL } from "@/lib/edicion";
-import h from "../HorariosPanel.module.css";
 import s from "./Evaluacion.module.css";
 import { claseGrande, fechaLarga, horaTxt, pct, uno } from "./comun";
 
@@ -213,8 +212,8 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
     <div className={s.hoja} role="dialog" aria-modal="true" aria-label={nombres || "Evaluación"}>
       <div className={s.hojaHead}>
         <div className={s.hojaHeadIn}>
-          <button type="button" className={s.volver} onClick={() => void cerrar()}>Volver</button>
-          <div className={s.hojaTitulo}>
+          <button type="button" className={`ev-btn ${s.volver}`} onClick={() => void cerrar()}>Volver</button>
+          <div style={{ flex: "1 1 260px", minWidth: 0 }}>
             <h2>{nombres || "Cargando…"}</h2>
             {d && (
               <>
@@ -229,45 +228,45 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
                 <span>{String(Math.floor(quedan / 60)).padStart(2, "0")}:{String(quedan % 60).padStart(2, "0")}</span>
               </div>
               <div className={s.fase}><b>{fase}</b>{faseTxt}</div>
-              <button type="button" className={s.relojBtn} onClick={botonReloj}>{reloj.inicio === null ? "Iniciar" : corriendo ? "Pausar" : "Reanudar"}</button>
+              <button type="button" className="ev-btn" onClick={botonReloj}>{reloj.inicio === null ? "Iniciar" : corriendo ? "Pausar" : "Reanudar"}</button>
             </div>
           )}
         </div>
       </div>
 
-      {error && <div className={s.hojaBody}><div className="note note-error" role="alert">{error}</div></div>}
-      {!d && !error && <div className={s.hojaBody}><div className={h.skel}>{[1, 2, 3].map((i) => <div key={i} className={h.skelFila} />)}</div></div>}
+      {error && <div className={s.hojaBody}><div className="ev-aviso ev-aviso-error" role="alert">{error}</div></div>}
+      {!d && !error && <div className={s.hojaBody}><div className={s.skel}>{[1, 2, 3].map((i) => <i key={i} />)}</div></div>}
 
       {d && (
         <div className={s.hojaBody}>
           <div className={s.col}>
             {sesionVencida && (
-              <div className="note note-error" role="alert">
+              <div className="ev-aviso ev-aviso-error" role="alert">
                 Tu sesión venció. Lo que llevas quedó guardado como borrador en este navegador.{" "}
                 <a href="/login">Vuelve a entrar</a> y abre otra vez a {pareja ? "esta pareja" : "este estudiante"} para seguir.
               </div>
             )}
-            {!d.editable && <div className="note note-info">Solo lectura: la evaluación la hace el mentor del proyecto.</div>}
+            {!d.editable && <div className="ev-aviso">Solo lectura: la evaluación la hace el mentor del proyecto.</div>}
             {d.editable && d.dia !== hoy && (
-              <div className="note note-warn">
+              <div className="ev-aviso ev-aviso-warn">
                 {pareja ? "Este proyecto" : "Este estudiante"} está programado para el {fechaLarga(d.dia).toLowerCase()} a las {horaTxt(d.inicio, d.ciudad)}, no para hoy. Verifica que sea la persona correcta antes de calificar.
               </div>
             )}
-            {recuperado && editable && <div className="note note-info">Recuperamos lo que llevabas sin guardar. Revisa y pulsa «Guardar evaluación».</div>}
+            {recuperado && editable && <div className="ev-aviso">Recuperamos lo que llevabas sin guardar. Revisa y pulsa «Guardar evaluación».</div>}
             {d.integrantes.map((x, i) => ns[i] && (
-              <div key={i} className={`note note-info ${s.banner}`}>
+              <div key={i} className={`ev-aviso ${s.banner}`}>
                 <span>{x.nombre} está marcado como «No se presentó».</span>
-                {editable && <button type="button" className="btn btn-ghost" onClick={() => void deshacer(i)}>Deshacer</button>}
+                {editable && <button type="button" className="ev-btn" onClick={() => void deshacer(i)}>Deshacer</button>}
               </div>
             ))}
             {d.descripcion && (
-              <section className={h.card}>
-                <div className={s.scoreK}>Sobre el proyecto</div>
-                <p className={s.pista} style={{ color: "var(--ink)", marginTop: 0 }}>{d.descripcion}</p>
+              <section className={`ev-tarjeta ${s.parte}`}>
+                <div className="ev-small ev-muted">Sobre el proyecto</div>
+                <p className={s.desc}>{d.descripcion}</p>
               </section>
             )}
 
-            <section className={`${h.card} ${s.parte}`}>
+            <section className={`ev-tarjeta ${s.parte}`}>
               <div>
                 <h3>Parte A · ¿Funciona?</h3>
                 <p className={s.pista}>{pareja ? "Minutos 0 a 6. Recorren juntos la app publicada. Esta parte cuenta igual para los dos." : "Minutos 0 a 6. El estudiante recorre su app publicada; tú marcas mientras observas."}</p>
@@ -282,7 +281,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
               </div>
             </section>
 
-            <section className={`${h.card} ${s.parte}`}>
+            <section className={`ev-tarjeta ${s.parte}`}>
               <div>
                 <h3>Parte B · ¿Lo entiende?</h3>
                 <p className={s.pista}>{pareja ? "Minutos 6 a 12. Reparte las preguntas entre los dos y califica a cada uno: el conocimiento es individual. Si los dos saben lo mismo, márcales el mismo nivel. Califica mínimo 2 temas por persona." : "Minutos 6 a 12. Pide que te muestre el código. Califica mínimo 2 temas; los que no preguntes déjalos sin marcar."}</p>
@@ -293,9 +292,9 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
                     <div className={s.qT}>{t}</div>
                     <div className={`${s.qD} ${s.qPregunta}`}>{pregunta}</div>
                     {d.integrantes.map((x, i) => (
-                      <div key={i} className={`${s.quien} ${pareja ? "" : s.quienSolo}`}>
+                      <div key={i} className={`${s.quienFila} ${pareja ? "" : s.quienSolo}`}>
                         {pareja && <span className={s.quienNombre}>{primerNombre(x.nombre)}</span>}
-                        {omitido(i) ? <span className={s.scoreK}>No se presentó</span> : (
+                        {omitido(i) ? <span className="ev-small ev-muted">No se presentó</span> : (
                           <Seg nivel etiqueta={`${t}${pareja ? ` · ${x.nombre}` : ""}`} opciones={LV.map((n) => [n, String(n)] as const)} valor={f.b[i]?.[k]} disabled={!editable} onPick={(v) => ponerB(i, k, v)} />
                         )}
                       </div>
@@ -306,7 +305,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
               </div>
             </section>
 
-            <section className={`${h.card} ${s.parte}`}>
+            <section className={`ev-tarjeta ${s.parte}`}>
               <div>
                 <h3>Cierre</h3>
                 <p className={s.pista}>Minutos 12 a 15. Retroalimentación para el estudiante (en pareja, aplica para ambos). Coordinación la usará para el mensaje final.</p>
@@ -314,9 +313,9 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
               {([["fortaleza", "Lo que hizo muy bien", "Ej.: su catálogo es claro y explicó con seguridad cómo llegan los datos."],
                 ["mejora", "Qué puede mejorar", "Ej.: terminar de conectar el formulario con la base de datos."],
                 ["percepcion", "Percepción del mentor", "Un mensaje personal para el estudiante."]] as const).map(([k, label, ph]) => (
-                <div key={k} className={s.campo} style={{ marginTop: 0 }}>
+                <div key={k} className={s.campo}>
                   <label htmlFor={`c-${k}`}>{label}</label>
-                  <textarea id={`c-${k}`} placeholder={ph} maxLength={2000} value={f[k]} disabled={!editable} onChange={(e) => cambiar({ ...f, [k]: e.target.value })} />
+                  <textarea className="ev-campo" id={`c-${k}`} placeholder={ph} maxLength={2000} value={f[k]} disabled={!editable} onChange={(e) => cambiar({ ...f, [k]: e.target.value })} />
                 </div>
               ))}
             </section>
@@ -326,8 +325,8 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
             {d.integrantes.map((x, i) => {
               const c = resultado(i);
               return (
-                <div key={i} className={`${h.card} ${s.score}`}>
-                  <span className={s.scoreK}>{pareja ? `Resultado de ${primerNombre(x.nombre)}` : "Resultado"}</span>
+                <div key={i} className={`ev-tarjeta ${s.score}`}>
+                  <span className="ev-small ev-muted">{pareja ? `Resultado de ${primerNombre(x.nombre)}` : "Resultado"}</span>
                   <span className={`${s.big} ${claseGrande(c.res as Resultado)}`}>{c.res}</span>
                   <div className={s.medidor}><span>Funciona (A)</span><b>{pct(c.a)}</b></div>
                   <div className={s.medidor}><span>Nivel promedio (B)</span><b>{c.nb ? `${uno(c.b)} (${c.nb} temas)` : "—"}</b></div>
@@ -335,7 +334,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
                 </div>
               );
             })}
-            <div className={h.card} style={{ padding: "var(--s-7)" }}>
+            <div className="ev-tarjeta">
               <label className={s.toggle}>
                 <input type="checkbox" checked={f.destacado} disabled={!editable} onChange={(e) => cambiar({ ...f, destacado: e.target.checked })} />
                 Nominar como proyecto destacado
@@ -343,11 +342,11 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
             </div>
             {editable && (
               <>
-                <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => void guardar()}>
+                <button type="button" className="ev-btn ev-btn-primario" disabled={ocupado} onClick={() => void guardar()}>
                   {ocupado ? "Guardando…" : pareja ? "Guardar evaluación de la pareja" : "Guardar evaluación"}
                 </button>
                 {d.integrantes.map((x, i) => !ns[i] && (
-                  <button key={i} type="button" className="btn btn-ghost" onClick={() => void noSePresento(i)}>
+                  <button key={i} type="button" className="ev-btn" onClick={() => void noSePresento(i)}>
                     {pareja ? `${primerNombre(x.nombre)} no se presentó` : "No se presentó"}
                   </button>
                 ))}
@@ -363,8 +362,8 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
           <div className={s.confirmarBox}>
             <p>{confirmar.texto}</p>
             <div className={s.confirmarActs}>
-              {confirmar.no && <button type="button" className="btn btn-ghost" onClick={() => { confirmar.ok(false); setConfirmar(null); }}>{confirmar.no}</button>}
-              <button type="button" className="btn btn-primary" autoFocus onClick={() => { confirmar.ok(true); setConfirmar(null); }}>{confirmar.si}</button>
+              {confirmar.no && <button type="button" className="ev-btn" onClick={() => { confirmar.ok(false); setConfirmar(null); }}>{confirmar.no}</button>}
+              <button type="button" className="ev-btn ev-btn-primario" autoFocus onClick={() => { confirmar.ok(true); setConfirmar(null); }}>{confirmar.si}</button>
             </div>
           </div>
         </div>

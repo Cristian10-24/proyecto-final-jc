@@ -15,9 +15,10 @@ export function horaTxt(iso: string, ciudad: string): string {
 }
 
 const CLASE: Record<Resultado, string> = {
-  Excelente: s.r_Excelente!, Aprobado: s.r_Aprobado!, Incompleto: s.r_Incompleto!, "No se presentó": s.r_NoSePresento!, Pendiente: s.r_Pendiente!,
+  Excelente: "ev-c-Excelente", Aprobado: "ev-c-Aprobado", Incompleto: "ev-c-Incompleto", "No se presentó": "ev-c-NoSePresento", Pendiente: "ev-c-Pendiente",
 };
-export const claseResultado = (r: Resultado) => CLASE[r];
+/** Chip de resultado con los colores del prototipo (clases globales de tema-evaluacion.css). */
+export const claseResultado = (r: Resultado) => `ev-chip ${CLASE[r]}`;
 export const claseGrande = (r: Resultado) => s[`big_${r === "No se presentó" ? "NoSePresento" : r}`];
 
 export const pct = (x: number | null) => (x === null ? "—" : `${Math.round(x * 100)} %`);

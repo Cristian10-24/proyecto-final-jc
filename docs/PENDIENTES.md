@@ -25,3 +25,6 @@ Lo que queda abierto. Cada línea dice quién lo hace. Al resolver una, se borra
 
 ## Para la Fase 2 (ver PLAN)
 - Pasos 8 a 15: evaluación, salas y monitores, cambios sugeridos, seguimiento general y usuarios.
+
+## Mejoras futuras
+- Modo oscuro del módulo de evaluación: los colores ya son variables `--ev-*` en `src/app/tema-evaluacion.css`; falta redefinirlas en `@media (prefers-color-scheme: dark)` con los valores del prototipo (su bloque oscuro) y probar contraste.

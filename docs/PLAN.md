@@ -71,7 +71,7 @@ Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; des
 - Aviso al salir o abrir otro estudiante sin guardar.
 - Prueba de carga simple: 7 mentores guardando a la vez.
 
-**Reglas de la Fase 2.** Sin Google Apps Script; mismo diseño del prototipo con `tokens.css`; refresco periódico (sin websockets); un paso a la vez.
+**Reglas de la Fase 2.** Sin Google Apps Script; el módulo de evaluación (vista del mentor, del monitor en salas y seguimiento: Pasos 11, 12 y 15) usa el diseño aprobado del prototipo con `EvalShell` y `src/app/tema-evaluacion.css`; portal e inscripción siguen con `tokens.css`; refresco periódico (sin websockets); un paso a la vez.
 
 ### Pasos de la Fase 2
 - [x] 8. Leer el prototipo una vez y crear `docs/EVALUACION.md` (máx. 100 líneas). Después no volver a abrir index.html salvo para una pantalla concreta.

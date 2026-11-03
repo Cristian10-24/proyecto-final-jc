@@ -5,9 +5,8 @@ import type { SessionUser } from "@/lib/auth";
 import { diaCOL } from "@/lib/edicion";
 import { primerNombre } from "@/lib/evaluacion/criterios";
 import type { FilaEvaluacion } from "@/lib/evaluacion/datos";
-import { puede, ROL_TXT } from "@/lib/permisos";
-import AppShell from "../AppShell";
-import h from "../HorariosPanel.module.css";
+import { puede } from "@/lib/permisos";
+import EvalShell from "./EvalShell";
 import EvaluarHoja from "./EvaluarHoja";
 import s from "./Evaluacion.module.css";
 import { claseResultado, fechaLarga, horaTxt } from "./comun";
@@ -85,102 +84,97 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
   }
 
   const nombreMentor = new Map((datos?.mentores ?? []).map((m) => [m.id, m.nombre]));
-  const titulo = verTodos ? "Evaluaciones" : `Hola, ${primerNombre(user.nombre)}`;
+  const titulo = verTodos ? (mentor ? nombreMentor.get(mentor) ?? "Evaluaciones" : "Todos los estudiantes") : `Hola, ${primerNombre(user.nombre)}`;
+  const lead = verTodos ? "Solo lectura: la evaluación la hace el mentor." : "Estos son tus estudiantes de la jornada.";
   return (
-    <AppShell user={user} active="evaluaciones">
-      <div className={h.kicker}>{ROL_TXT[user.rol]}</div>
-      <h1 className={h.title}>{titulo}</h1>
-      <p className={h.lead}>{verTodos ? "Avance de cada mentor. Solo lectura: la evaluación la hace el mentor." : "Estos son tus estudiantes de la jornada. Abre a cada uno para evaluarlo."}</p>
-
-      <section className={h.card}>
-        {carga === "cargando" && <div className={h.skel}>{[1, 2, 3, 4].map((i) => <div key={i} className={h.skelFila} />)}</div>}
-        {carga === "error" && (
-          <div className={h.vacio}><b>No se pudo cargar la lista</b><button type="button" className="btn btn-ghost" onClick={() => { setCarga("cargando"); void cargar(); }}>Reintentar</button></div>
+    <EvalShell user={user} active="evaluaciones">
+      <div className={s.hello}>
+        <div><h1>{titulo}</h1><p>{lead}</p></div>
+        {verTodos && datos && (
+          <select className={`ev-campo ${s.quien}`} aria-label="Mentor" value={mentor} onChange={(e) => setMentor(e.target.value)}>
+            <option value="">Todos los mentores</option>
+            {(datos.mentores ?? []).map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+          </select>
         )}
-        {carga === "listo" && datos && (
-          <>
-            {verTodos && (
-              <select className={`input ${h.select}`} aria-label="Mentor" value={mentor} onChange={(e) => setMentor(e.target.value)} style={{ maxWidth: 360 }}>
-                <option value="">Todos los mentores</option>
-                {(datos.mentores ?? []).map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-              </select>
-            )}
-            {!filas.length ? (
-              <div className={h.vacio}>
-                <b>{verTodos ? "Todavía no hay proyectos con hora" : "No tienes estudiantes asignados todavía"}</b>
-                {verTodos ? "Cuando los estudiantes elijan hora, aparecerán aquí." : "Coordinación debe registrarte con tu nombre escrito igual que en la hoja de horarios."}
-              </div>
-            ) : (
-              <>
-                <div className={s.avance}>
-                  <div className={s.avanceTxt}>
-                    <span>{hechos - noShow} evaluados · {noShow ? `${noShow} no se presentaron · ` : ""}{personas.length - hechos} pendientes de {personas.length}</span>
-                    <b>{Math.round((hechos / personas.length) * 100)} %</b>
-                  </div>
-                  <div className={s.barra}><i style={{ transform: `scaleX(${hechos / personas.length})` }} /></div>
-                </div>
+      </div>
 
-                <div className={h.filtros}>
-                  <select className={`input ${h.select}`} aria-label="Filtrar por fecha" value={diaSel} onChange={(e) => setFecha(e.target.value)}>
-                    <option value="">Todas las fechas</option>
-                    {dias.map((d) => <option key={d} value={d}>{d === hoy ? "Hoy, " : ""}{fechaLarga(d)}</option>)}
-                  </select>
-                  <input type="search" className={`input ${h.buscar}`} placeholder="Buscar por nombre, código o emprendimiento" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
-                  <select className={`input ${h.select}`} aria-label="Filtrar por estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado)}>
-                    {ESTADOS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
-                  </select>
-                </div>
+      {carga === "cargando" && <div className={s.skel}>{[1, 2, 3, 4].map((i) => <i key={i} />)}</div>}
+      {carga === "error" && (
+        <div className={`${s.lista} ${s.vacio}`}><h2>No se pudo cargar la lista</h2><p>Revisa tu conexión.</p><button type="button" className="ev-btn" onClick={() => { setCarga("cargando"); void cargar(); }}>Reintentar</button></div>
+      )}
+      {carga === "listo" && datos && !filas.length && (
+        <div className={`${s.lista} ${s.vacio}`}>
+          <h2>{verTodos ? "Todavía no hay proyectos con hora" : "No tienes estudiantes asignados todavía"}</h2>
+          <p>{verTodos ? "Cuando los estudiantes elijan hora, aparecerán aquí." : "Coordinación debe registrarte con tu nombre escrito igual que en la hoja de horarios."}</p>
+        </div>
+      )}
+      {carga === "listo" && datos && filas.length > 0 && (
+        <>
+          <div className={s.avanceTxt}>
+            <span>{hechos - noShow} evaluados · {noShow ? `${noShow} no se presentaron · ` : ""}{personas.length - hechos} pendientes de {personas.length}</span>
+            <span>{Math.round((hechos / personas.length) * 100)}%</span>
+          </div>
+          <div className={s.progreso}><i style={{ transform: `scaleX(${hechos / personas.length})` }} /></div>
 
-                {!visibles.length && <div className={h.vacio}>No hay estudiantes con ese filtro.</div>}
-                <div>
-                  {grupos.map((g) => (
-                    <div key={g.dia}>
-                      <div className={`${s.dia} ${g.dia === hoy ? s.diaHoy : ""}`}>{g.dia === hoy ? "Hoy, " : ""}{fechaLarga(g.dia)}</div>
-                      {g.horas.map((hh) => {
-                        const f0 = hh.filas[0]!;
-                        return (
-                          <div key={hh.clave}>
-                            {unMentor && (
-                              <div className={s.hora}>
-                                <span>{horaTxt(f0.inicio, "")}</span>
-                                <span className={s.salaTxt}>{f0.sala ? `Sala ${f0.sala}` : "Sala por asignar"}</span>
-                                {f0.enlace && <a className={`btn btn-dark ${s.abrirSala}`} href={f0.enlace} target="_blank" rel="noopener noreferrer">Abrir sala</a>}
-                              </div>
-                            )}
-                            {hh.filas.map((f) => <Item key={f.id} f={f} mentor={unMentor ? null : nombreMentor.get(f.mentorId) ?? f.mentorId} onAbrir={() => setAbierto(f.id)} />)}
-                          </div>
-                        );
-                      })}
+          <div className={s.filtros}>
+            <select className="ev-campo" aria-label="Filtrar por fecha" value={diaSel} onChange={(e) => setFecha(e.target.value)}>
+              <option value="">Todas las fechas</option>
+              {dias.map((d) => <option key={d} value={d}>{d === hoy ? "Hoy, " : ""}{fechaLarga(d)}</option>)}
+            </select>
+            <input type="search" className="ev-campo" placeholder="Buscar por nombre, código o emprendimiento" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
+            <select className="ev-campo" aria-label="Filtrar por estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado)}>
+              {ESTADOS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+            </select>
+          </div>
+
+          <div className={s.lista}>
+            {!visibles.length && <div className={s.vacio}><p>No hay estudiantes con ese filtro.</p></div>}
+            {grupos.map((g) => (
+              <div key={g.dia}>
+                <div className={`${s.dia} ${g.dia === hoy ? s.diaHoy : ""}`}>{g.dia === hoy ? "Hoy, " : ""}{fechaLarga(g.dia)}</div>
+                {g.horas.map((hh) => {
+                  const f0 = hh.filas[0]!;
+                  return (
+                    <div key={hh.clave}>
+                      {unMentor && (
+                        <div className={s.horaSala}>
+                          <b>{horaTxt(f0.inicio, "")}</b>
+                          <span>{f0.sala ? `Sala ${f0.sala}` : "Sala por asignar"}</span>
+                          {f0.enlace && <a className={`ev-btn ev-btn-navy ${s.abrirSala}`} href={f0.enlace} target="_blank" rel="noopener noreferrer">Abrir sala</a>}
+                        </div>
+                      )}
+                      {hh.filas.map((f) => <Item key={f.id} f={f} mentor={unMentor ? null : nombreMentor.get(f.mentorId) ?? f.mentorId} onAbrir={() => setAbierto(f.id)} />)}
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </section>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {abierto && <EvaluarHoja id={abierto} usuario={user.usuario} onCerrar={(cambio) => { setAbierto(null); if (cambio) void cargar(); }} />}
-    </AppShell>
+    </EvalShell>
   );
 }
 
 /** `mentor`: su nombre cuando la lista mezcla mentores (ahí cada fila dice también su sala). */
 function Item({ f, mentor, onAbrir }: { f: FilaEvaluacion; mentor: string | null; onAbrir: () => void }) {
   const pareja = f.integrantes.length > 1;
+  const quien = (x: { nombre: string }) => (pareja ? `${primerNombre(x.nombre)}: ` : "");
   const sub = [f.proyecto, f.ruta ? `Ruta ${f.ruta.toLowerCase()}` : null, f.ciudad, pareja ? "En pareja" : null, mentor, mentor !== null ? (f.sala ? `Sala ${f.sala}` : "Sala por asignar") : null].filter(Boolean).join(" · ");
   return (
     <button type="button" className={s.item} onClick={onAbrir}>
-      <span className={s.itemHora}>{horaTxt(f.inicio, "")}</span>
+      <span className={s.hora}>{horaTxt(f.inicio, "")}</span>
       <span>
-        <div className={s.itemNombre}>{f.integrantes.map((x) => x.nombre).join(" y ")}</div>
-        <div className={s.itemSub}>{sub}{horaUYde(f)}</div>
+        <div className={s.nombre}>{f.integrantes.map((x) => x.nombre).join(" y ")}</div>
+        <div className={s.sub}>{sub}{horaUYde(f)}</div>
       </span>
       <span className={s.tags}>
-        {f.integrantes.map((x) => <span key={x.i} className={`${h.chip} ${claseResultado(x.res)}`}><i />{pareja ? `${primerNombre(x.nombre)}: ` : ""}{x.res}</span>)}
-        {f.destacado && <span className={`${h.chip} ${s.r_Destacado}`}><i />Destacado</span>}
-        {f.integrantes.filter((x) => x.res === "No se presentó").map((x) => <span key={`m${x.i}`} className={`${h.chip} ${s.r_Incompleto}`}><i />{pareja ? `${primerNombre(x.nombre)}: ` : ""}Sin motivo</span>)}
-        {f.borrador && f.integrantes.some((x) => x.res === "Pendiente") && <span className={`${h.chip} ${s.r_Borrador}`}><i />Borrador sin guardar</span>}
+        {f.integrantes.map((x) => <span key={x.i} className={claseResultado(x.res)}>{quien(x)}{x.res}</span>)}
+        {f.destacado && <span className="ev-chip ev-c-star">Destacado</span>}
+        {f.integrantes.filter((x) => x.res === "No se presentó").map((x) => <span key={`m${x.i}`} className="ev-chip ev-c-Incompleto">{quien(x)}Sin motivo</span>)}
+        {f.borrador && f.integrantes.some((x) => x.res === "Pendiente") && <span className="ev-chip ev-c-mail">Borrador sin guardar</span>}
       </span>
     </button>
   );
