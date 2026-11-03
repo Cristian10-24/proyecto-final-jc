@@ -28,6 +28,10 @@ Next.js 16 (App Router) + TypeScript, driver `mongodb`, Zod, exceljs, Vitest. Ve
 - Antes de cerrar un paso: `npm test`, `npm run test:db`, `npm run typecheck`, `npm run build`.
 
 ## Registro
+- UN solo paso del PLAN a la vez. Al terminarlo: commit, entrada en la bitácora, mostrar solo esa
+  entrada y detenerse. No empezar el siguiente hasta que el usuario escriba "siguiente".
+- Al terminar cada paso, usar el subagente `revisor-pruebas`; en pasos de API y portal, también
+  `revisor-seguridad`. Los subagentes (`.claude/agents/`) nunca trabajan en paralelo sobre el mismo código.
 - Un commit por paso. Al terminar cada paso, entrada en `docs/BITACORA.md` (máx. 4 líneas:
   paso, commit, cómo verificar, pendiente) y marcar la casilla en `docs/PLAN.md`.
 - Si una decisión cambia el diseño: una línea en `docs/DECISIONES.md`.
