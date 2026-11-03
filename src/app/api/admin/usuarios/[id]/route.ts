@@ -30,7 +30,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "datos_invalidos", mensaje: "Un monitor necesita al menos una ciudad." }, { status: 400 });
 
   const mentorId = mentorIdDe(rol, cambios.nombre ?? actual.nombre);
-  const errM = mentorId !== actual.mentorId ? await errorMentor(mentorId, actual._id) : null;
+  const errM = mentorId !== actual.mentorId ? await errorMentor(mentorId, actual._id, cambios.nombre ?? actual.nombre) : null;
   if (errM) return NextResponse.json({ error: "mentor", mensaje: errM }, { status: 409 });
   const set = {
     ...(cambios.nombre !== undefined ? { nombre: cambios.nombre } : {}),

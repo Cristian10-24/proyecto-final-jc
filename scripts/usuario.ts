@@ -6,6 +6,10 @@
 // --rol: monitor (por defecto, exige ciudades) | coordinador | admin (ven todas las ciudades) | mentor (nombre igual que en Horarios).
 // Si el usuario ya existe, actualiza nombre, rol y ciudades, y cambia la clave solo si se da --clave
 // o si se pide --nueva-clave (genera una). Al cambiar la clave se cierran sus sesiones abiertas.
+//
+// Windows PowerShell 5.1 (npm.ps1) se come el `--` y las comillas: --rol=... y --clave=... le llegan a npm
+// (que los deja en npm_config_rol / npm_config_clave) y "Nombre Apellido" llega en dos palabras. Por eso
+// las opciones también se leen de npm_config_* y el nombre es todo lo que va entre el usuario y las ciudades.
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { closeDb, collections, dbHost, dbName } from "@/lib/db";
 import { ROLES, type RolUsuario } from "@/lib/permisos";
@@ -28,14 +32,17 @@ function baseLocalOAtlasExplicito(args: string[]) {
 const USO = 'Uso: npm run usuario:add -- usuario "Nombre" ["Ciudad1,Ciudad2"] [--rol=mentor|monitor|coordinador|admin] [--clave=CLAVE] [--nueva-clave]';
 
 async function add(args: string[]) {
-  const opt = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
+  const npm = (k: string) => process.env[`npm_config_${k.replace(/-/g, "_")}`];
+  const opt = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3) ?? npm(k);
   const rol = (opt("rol") ?? "monitor") as RolUsuario;
   if (!ROLES.includes(rol)) throw new Error(`Rol inválido "${rol}". ${USO}`);
   const claveArg = opt("clave");
   if (claveArg !== undefined && claveArg.length < 8) throw new Error("La clave debe tener al menos 8 caracteres");
 
-  const [usuarioRaw, nombreRaw, ciudadesRaw = ""] = args.filter((a) => !a.startsWith("--"));
-  const nombre = cleanSpaces(nombreRaw ?? "");
+  // Monitor: el último dato son las ciudades. Los demás roles no llevan ciudades: todo lo que sigue es el nombre.
+  const [usuarioRaw, ...resto] = args.filter((a) => !a.startsWith("--"));
+  const ciudadesRaw = rol === "monitor" && resto.length > 1 ? resto.pop()! : "";
+  const nombre = cleanSpaces(resto.join(" "));
   const ciudades = rol === "monitor"
     ? [...new Set(ciudadesRaw.split(",").map(normalizeCity).filter(Boolean).map((c) => ciudadExistente(c, NOMBRES_CIUDADES)))]
     : [];
@@ -53,9 +60,9 @@ async function add(args: string[]) {
   console.log(`Base: ${dbName()} en ${dbHost()}`);
 
   const existe = await users.findOne({ usuario });
-  const errM = await errorMentor(mentorIdDe(rol, nombre), existe?._id);
+  const errM = await errorMentor(mentorIdDe(rol, nombre), existe?._id, nombre);
   if (errM) throw new Error(errM);
-  const cambiarClave = !existe || claveArg !== undefined || args.includes("--nueva-clave");
+  const cambiarClave = !existe || claveArg !== undefined || args.includes("--nueva-clave") || npm("nueva-clave") === "true";
   const clave = cambiarClave ? claveArg ?? generarClave() : null;
   const now = new Date();
   await users.updateOne(
@@ -68,7 +75,7 @@ async function add(args: string[]) {
     },
     { upsert: true },
   );
-  console.log(`\n${existe ? "Actualizado" : "Creado"}:\n  Usuario: ${usuario}\n  Rol:     ${rol}`);
+  console.log(`\n${existe ? "Actualizado" : "Creado"}:\n  Usuario: ${usuario}\n  Nombre:  ${nombre}\n  Rol:     ${rol}`);
   console.log(`  Ciudades: ${rol === "monitor" ? ciudades.join(", ") : "todas"}`);
   console.log(clave ? `  Clave:   ${clave}   (guárdala: no se vuelve a mostrar)` : "  Clave:   sin cambios");
 }

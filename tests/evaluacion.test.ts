@@ -83,3 +83,15 @@ describe("usuario mentor", () => {
     expect(mentorIdDe("monitor", "Mentor Prueba")).toBeUndefined();
   });
 });
+
+describe("nombres parecidos de mentor", () => {
+  const horarios = ["Yehiron Bermúdez Ruiz", "Ana María Pérez", "Johan Ramírez", "Ana Gómez"];
+  it("sugiere por palabra en común o por escritura casi igual (sin tildes)", async () => {
+    const { parecidos } = await import("@/lib/usuarios");
+    expect(parecidos("Yehiron Bermudez", horarios)).toEqual(["Yehiron Bermúdez Ruiz"]);
+    expect(parecidos("Yeiron Bermudes Ruiz", horarios)[0]).toBe("Yehiron Bermúdez Ruiz");
+    expect(parecidos("Jhoan Ramires", horarios)).toEqual(["Johan Ramírez"]);
+    expect(parecidos("Ana", horarios)).toEqual(["Ana Gómez", "Ana María Pérez"]); // los dos que comparten "Ana"
+    expect(parecidos("Pedro Castillo", horarios)).toEqual([]);
+  });
+});

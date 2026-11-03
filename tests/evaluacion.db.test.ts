@@ -163,6 +163,7 @@ describe("usuarios mentor", () => {
     expect(await errorMentor("mentor-prueba-1")).toBeNull(); // sin Horarios importado no se puede comprobar
     await c.mentores.insertOne({ _id: "mentor-prueba-1", nombre: "Mentor Prueba 1" });
     expect(await errorMentor("mentor-inventado")).toContain("hoja Horarios");
+    expect(await errorMentor("mentr-prueba-1", undefined, "Mentr Prueba 1")).toBe("No hay un mentor \"Mentr Prueba 1\" en la hoja Horarios. ¿Quisiste decir \"Mentor Prueba 1\"? Escríbelo igual que allí.");
     const _id = new ObjectId();
     await c.users.insertOne({ _id, usuario: "mentor.1", nombre: "Mentor Prueba 1", passwordHash: "x", rol: "mentor", ciudades: [], mentorId: "mentor-prueba-1", activo: true, creadoEn: new Date() });
     expect(await errorMentor("mentor-prueba-1")).toBe("Ya hay un usuario para ese mentor.");

@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import type { ObjectId } from "mongodb";
 import { z } from "zod";
 import { collections } from "./db";
+import { clave } from "./importar/excel";
 import { idMentor } from "./importar/mentores";
 import { ROLES, type RolUsuario } from "./permisos";
 import type { User } from "./types";
@@ -52,12 +53,38 @@ export const EdicionUsuario = z
 /** El mentor se reconoce por su nombre, escrito igual que en la hoja Horarios. */
 export const mentorIdDe = (rol: RolUsuario, nombre: string) => (rol === "mentor" ? idMentor(nombre) : undefined);
 
+/** Distancia de edición entre dos textos (para sugerir nombres). */
+function distancia(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length]!;
+}
+
+/**
+ * Hasta 3 nombres parecidos a `nombre` (sin tildes ni mayúsculas): los que comparten alguna palabra
+ * o se escriben casi igual, del más al menos parecido.
+ */
+export function parecidos(nombre: string, candidatos: string[]): string[] {
+  const k = clave(nombre), palabras = new Set(k.split(" ").filter((p) => p.length > 2));
+  return candidatos
+    .map((c) => { const kc = clave(c); return { c, comunes: kc.split(" ").filter((p) => palabras.has(p)).length, d: distancia(k, kc) }; })
+    .filter((x) => x.comunes > 0 || x.d <= Math.max(2, Math.floor(k.length / 4)))
+    .sort((x, y) => y.comunes - x.comunes || x.d - y.d)
+    .slice(0, 3).map((x) => x.c);
+}
+
 /** Revisa el mentor de un usuario: que exista en Horarios (si ya se importó) y que no lo tenga otro usuario. */
-export async function errorMentor(mentorId: string | undefined, excepto?: ObjectId): Promise<string | null> {
+export async function errorMentor(mentorId: string | undefined, excepto?: ObjectId, nombre = mentorId ?? ""): Promise<string | null> {
   if (!mentorId) return null;
   const { mentores, users } = await collections();
-  if ((await mentores.estimatedDocumentCount()) && !(await mentores.findOne({ _id: mentorId })))
-    return "No hay un mentor con ese nombre en la hoja Horarios: escríbelo igual que allí.";
+  if ((await mentores.estimatedDocumentCount()) && !(await mentores.findOne({ _id: mentorId }))) {
+    const cerca = parecidos(nombre, (await mentores.find({}, { projection: { nombre: 1 } }).toArray()).map((m) => m.nombre));
+    return `No hay un mentor "${nombre}" en la hoja Horarios.${cerca.length ? ` ¿Quisiste decir ${cerca.map((n) => `"${n}"`).join(", ").replace(/, ([^,]*)$/, " o $1")}?` : ""} Escríbelo igual que allí.`;
+  }
   if (await users.findOne({ mentorId, ...(excepto ? { _id: { $ne: excepto } } : {}) }))
     return "Ya hay un usuario para ese mentor.";
   return null;

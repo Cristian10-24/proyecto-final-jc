@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const { users } = await collections();
   if (await users.findOne({ usuario })) return NextResponse.json({ error: "duplicado", mensaje: `Ya existe el usuario "${usuario}".` }, { status: 409 });
 
-  const errM = await errorMentor(mentorIdDe(rol, nombre));
+  const errM = await errorMentor(mentorIdDe(rol, nombre), undefined, nombre);
   if (errM) return NextResponse.json({ error: "mentor", mensaje: errM }, { status: 409 });
 
   const clave = claveDada ?? generarClave();
