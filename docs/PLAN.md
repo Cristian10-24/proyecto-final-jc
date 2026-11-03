@@ -21,9 +21,6 @@ Liberar es vaciar el asiento (sin contadores). Si una ciudad no usa sus cupos, e
 Solo el cambio de hora hecho por el admin usa una transacción (libera el asiento viejo y toma el nuevo).
 Alternativa descartada (diseño a: colección `cuotas` + contadores) y otras decisiones: `docs/DECISIONES.md`.
 
-## Preguntas para la Fase 2
-- ¿Cómo se entrega el enlace de la sala al estudiante? (En Fase 1, el monitor lo envía por WhatsApp.)
-
 ## Infraestructura
 - Repositorio y proyecto de Vercel: `proyecto-final-jc`. Base de Atlas: `proyecto_final_jc`, usuario readWrite solo sobre ella.
 - Vercel en `iad1` (`vercel.json`) y Atlas en AWS us-east-1: misma región.
@@ -39,3 +36,48 @@ Alternativa descartada (diseño a: colección `cuotas` + contadores) y otras dec
 - [x] 5. Admin: liberar o cambiar la hora de un proyecto, reetiquetar asientos libres de un día y asignar el monitor de los proyectos "por asignar"; todo con registro en changeLog.
 - [x] 6. Panel del monitor: quién eligió y quién falta, copiar pendientes para WhatsApp y exportar el cronograma a Excel.
 - [ ] 7. Preparar el despliegue: checklist en `docs/DESPLIEGUE.md` con lo que el usuario debe crear (GitHub, Atlas, Vercel, variables). Sin publicar nada.
+
+## Fase 2 · Evaluación, salas y monitores
+Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; después usar `docs/EVALUACION.md`).
+
+**Datos.** No hay carga de estudiantes: todo sale de los proyectos importados y de las reservas (día, hora y mentor asignados al reservar). La evaluación solo lee las reservas.
+
+**Criterios (exactamente los del prototipo; no los definimos nosotros).**
+- Parte A: 7 ítems sí / parcial / no; parcial vale 0,5. Parte B: 5 temas, escala 0–4, mínimo 2 calificados.
+- Tiempos 0–6 / 6–12 / 12–15 con cronómetro visual de 15 min; al terminar no bloquea nada.
+- Resultado igual a `calc()` (copiar su lógica tal cual, con pruebas): Pendiente, No se presentó, Incompleto (faltan ítems de A o menos de 2 temas de B), Excelente (A ≥ 90 % y B ≥ 3 por defecto, editables) y si no, Aprobado.
+- Motivos de inasistencia, destacados y todas las tablas del seguimiento del prototipo.
+- En pareja: Parte A y cierre comunes; Parte B y "no se presentó" por integrante.
+- Única corrección de texto: al terminar el tiempo, "Guarda la evaluación" (en lugar de "Guarda y envía el correo") mientras no haya correos.
+- Cualquier otra incoherencia entre el prototipo y la app se anota y se pregunta; no se resuelve sola.
+
+**Ruta.** El importador de proyectos reconoce Ruta (Básica / Avanzada) con sinónimos. Mismos criterios para ambas; la ruta sirve para las tablas del seguimiento.
+
+**Salas y monitores.**
+- Hoja "Salas" en el importador: Sala (1 a 7) y Enlace.
+- El sistema asigna sala a cada mentor en cada hora según los mentores activos (máximo 7 a la vez), y mantiene al mentor en la misma sala en horas seguidas cuando se pueda.
+- El admin descarga el "Plan de salas" (Día, Hora, Sala, Mentor) en Excel.
+- Importar monitores: Día, Hora, Sala y Monitor (acepta Mentor en lugar de Sala). Un monitor por sala y hora; un monitor puede tener salas en horas no seguidas. Se valida que nadie esté en dos salas a la misma hora. Los monitores son usuarios con rol monitor; si un nombre no coincide, aviso en la vista previa.
+
+**Cambios de hora.**
+- El monitor reprograma directamente a un cupo libre de la ciudad del estudiante, en los días habilitados para esa ciudad.
+- Fuera de eso (otro día, otra ciudad o después de su clausura, p. ej. Cali el martes 17), el monitor solo SUGIERE el cambio con un motivo; el admin lo aprueba o rechaza en /admin/horarios. Todo queda en changeLog.
+
+**Protección del mentor (no cambia criterios).**
+- Borrador guardado automáticamente en el servidor mientras califica; se recupera al recargar.
+- Sesión de toda la jornada; si vence, no se pierde el borrador.
+- El refresco periódico nunca sobrescribe el formulario abierto.
+- Aviso al salir o abrir otro estudiante sin guardar.
+- Prueba de carga simple: 7 mentores guardando a la vez.
+
+**Reglas de la Fase 2.** Sin Google Apps Script; mismo diseño del prototipo con `tokens.css`; refresco periódico (sin websockets); un paso a la vez.
+
+### Pasos de la Fase 2
+- [ ] 8. Leer el prototipo una vez y crear `docs/EVALUACION.md` (máx. 100 líneas). Después no volver a abrir index.html salvo para una pantalla concreta.
+- [ ] 9. Importador: Ruta, Salas y Monitores; asignación automática de salas y descarga del Plan de salas.
+- [ ] 10. Módulo de evaluación: `src/lib/evaluacion/`, `/api/evaluacion/*`, colecciones `evaluacion_*`. Funciones puras con pruebas (incluida `calc()`). Un mentor solo evalúa sus proyectos. Borrador automático. Todo deja changeLog.
+- [ ] 11. Vista del MENTOR ("Mis evaluaciones"), igual al prototipo: agenda del día por bloques de 15 min, filtros por estado y pantalla de evaluar; en cada hora, su SALA y ENLACE con "Abrir sala". Coordinación y admin pueden ver la vista de cualquier mentor.
+- [ ] 12. Vista del MONITOR por horario: sus salas por día y hora con ENLACE, mentor y proyectos con contacto completo. Por integrante: se presentó sí/no, motivo de inasistencia, comentarios, reprogramar en su ciudad o sugerir cambio especial.
+- [ ] 13. Admin: bandeja de cambios sugeridos (aprobar o rechazar) en /admin/horarios.
+- [ ] 14. Seguimiento general (coordinación y admin): todas las tablas del prototipo, criterios editables y CSV.
+- [ ] 15. Usuarios: integrar la gestión del prototipo (agregar, cargar por Excel Nombre/Correo/Rol, revisión de nombres) con los usuarios y roles actuales. Sin login por correo y código.

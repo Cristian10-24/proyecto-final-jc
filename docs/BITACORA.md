@@ -55,3 +55,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Verificar: /monitor (filtros, "Copiar pendientes" para WhatsApp, enlace), /admin (resumen y "Descargar cronograma"); `npx vitest run --config vitest.db.config.mts tests/seguimiento.db.test.ts`.
 - Antes (`118a059`): el admin puede usar asientos de otra ciudad con advertencia y queda en el changeLog. Barranquilla confirmada: 13, 17 y 18.
 - Pendiente: Paso 7 (checklist de despliegue); probar /monitor con un usuario monitor real en local.
+
+## Plan de la Fase 2
+- Commit: `docs: plan de la Fase 2 (evaluación, salas y monitores)`. PLAN con los pasos 8 a 15; prototipo en `docs/diseno/evaluacion/index.html`.
+- Verificar: `docs/PLAN.md` (sección Fase 2) y `docs/DECISIONES.md`.
+- Sigue pendiente el Paso 7 de la Fase 1 (checklist de despliegue) antes del Paso 8.

@@ -15,8 +15,8 @@
 - Sistema visual: `src/app/tokens.css` es la única fuente de variables (se importa antes de `globals.css`); `docs/DISENO.md` es la referencia de pantallas y textos.
 - Importador de inscritos flexible: columnas reconocidas por sinónimos (sin tildes ni mayúsculas); si falta una obligatoria (Ciudad, Nombre del proyecto, Nombre 1, Documento 1), el admin la elige en la vista previa. Reemplaza la plantilla fija del Paso 1: la columna Código ya no es obligatoria; sin ella, el proyecto se identifica como `P-<documento del integrante 1>`.
 - Monitor del proyecto: el de la columna Monitor si coincide con un usuario; si no, el único monitor de la ciudad; con varios (o ninguno) queda "por asignar" (monitor: null) para que el admin lo elija.
-- Sin solicitudes de cambio de hora en la app: el monitor avisa por fuera y el admin cambia la hora desde el admin.
-- Sin correos en Fase 1. Éxito del portal: "Tu monitor te enviará el enlace de la sala por WhatsApp".
+- Fase 1: sin solicitudes de cambio de hora en la app (el monitor avisa por fuera y el admin la cambia). Fase 2: el monitor reprograma dentro de su ciudad y días; fuera de eso sugiere y el admin aprueba o rechaza.
+- Sin correos en Fase 1. Éxito del portal: "Tu monitor te enviará el enlace de la sala por WhatsApp". En Fase 2 el enlace es el de la sala (hoja "Salas"), que ven el mentor y el monitor.
 - Portal: `consultar` y `reservar` cuentan para el límite por documento; `agenda` (días y bloques, sin datos personales) solo cuenta fallos por IP, y por eso sus respuestas nunca incluyen la hora de un proyecto (ni `reservar` al responder "ya tiene hora"): la hora se ve solo con `consultar`. Estado del portal por variables opcionales STUDENT_PORTAL_OPENS_AT / STUDENT_PORTAL_CLOSES_AT / STUDENT_PORTAL_ENABLED.
 - Desarrollo: `npm run dev:red` abre el servidor en el wifi y se niega a arrancar si la base no es local (venga o no de `.env.local`); sin SESSION_SECRET usa una temporal; `next.config.ts` permite las IP privadas del equipo (solo en desarrollo).
 - Admin "Horarios": lista con filtros y detalle con botones en lugar del tablero de arrastrar y soltar del prototipo. El admin sí ve mentor, documento completo y conteos de asientos libres.
@@ -25,3 +25,4 @@
 - changeLog guarda las horas como "AAAA-MM-DD h:mm a. m." (hora COL), tanto en reservas del estudiante como en acciones del admin.
 - Seguimiento: el monitor ve sus ciudades con documento enmascarado; "Copiar pendientes" arma un texto por ciudad con nombres, proyecto y el enlace del portal. El Excel del cronograma (con celulares completos) es solo para coordinación y admin.
 - Resumen de coordinación en /admin: avance por ciudad (de menor a mayor) y ocupación por día; Excel con una hoja por día (hora COL y UY, mentor = sala, monitor, integrantes).
+- Fase 2: los criterios de evaluación son exactamente los del prototipo (`docs/diseno/evaluacion/index.html`, copiado del zip de diseño; idéntico al archivo adjunto). Única corrección de texto: "Guarda la evaluación" en lugar de "Guarda y envía el correo".

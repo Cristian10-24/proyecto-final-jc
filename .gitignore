@@ -17,3 +17,6 @@ exports/
 !docs/plantillas/*.xlsx
 *.csv
 *.zip
+
+# Prototipo de evaluación: no se versiona hasta revisar en el Paso 8 que no trae datos reales
+docs/diseno/evaluacion/
