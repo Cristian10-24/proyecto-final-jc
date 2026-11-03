@@ -4,13 +4,14 @@ import type { SessionUser } from "@/lib/auth";
 import { puede, ROL_TXT, type Permiso } from "@/lib/permisos";
 import s from "./AppShell.module.css";
 
-export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "horarios" | "salas" | "importar" | "usuarios";
+export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "horarios" | "salas" | "importar" | "usuarios";
 
 // Cada sección aparece solo si el rol tiene el permiso (el servidor lo vuelve a validar).
 const NAV: { key: Seccion; label: string; href: string; permiso: Permiso }[] = [
   { key: "evaluaciones", label: "Mis evaluaciones", href: "/mentor", permiso: "evaluar" },
   { key: "resumen", label: "Resumen", href: "/admin", permiso: "ver_resumen" },
   { key: "seguimiento", label: "Seguimiento", href: "/monitor", permiso: "ver_seguimiento" },
+  { key: "missalas", label: "Mis salas", href: "/monitor/salas", permiso: "monitorear_salas" },
   { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "horarios", label: "Horarios", href: "/admin/horarios", permiso: "cambiar_horario" },
   { key: "salas", label: "Salas", href: "/admin/salas", permiso: "cambiar_horario" },

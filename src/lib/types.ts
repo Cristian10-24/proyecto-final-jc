@@ -26,7 +26,7 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio";
   anterior?: string;
   nuevo?: string;
   motivo?: string;
@@ -65,6 +65,9 @@ export type Asiento = {
   ciudades: string[];
   proyectoId: ObjectId | null;
   reservadoEn?: Date;
+  /** Sube en cada escritura de evaluación o nota sobre el proyecto del asiento: obliga a un conflicto de escritura
+   *  entre esas transacciones y la de reprogramar (sin esto, ambas podrían confirmarse a la vez). */
+  rev?: number;
 };
 
 /**

@@ -105,5 +105,15 @@ describe("fondo de la fila por estado", () => {
     expect(estadoFila([{ res: "Pendiente" }])).toBe("pendiente"); // también con borrador
     expect(estadoFila([{ res: "Incompleto" }])).toBe("pendiente"); // tras Deshacer, sin B todavía
     expect(estadoFila([{ res: "Pendiente", presente: true }])).toBe("presente"); // marcado por el monitor (Paso 12)
+    expect(estadoFila([{ res: "Pendiente", ausente: true }, { res: "No se presentó" }])).toBe("ausente"); // monitor + mentor
+    expect(estadoFila([{ res: "Pendiente", ausente: true }, { res: "Pendiente" }])).toBe("pendiente");
+    expect(estadoFila([{ res: "Aprobado", ausente: true }])).toBe("presente"); // la evaluación guardada manda
+  });
+
+  it("dígitos del celular para Llamar y WhatsApp (como el prototipo)", async () => {
+    const { digitosTelefono } = await import("@/lib/evaluacion/criterios");
+    expect(digitosTelefono("300 123 4567")).toBe("573001234567");
+    expect(digitosTelefono("+57 300-123-4567")).toBe("573001234567");
+    expect(digitosTelefono("099 123 456")).toBe("099123456"); // otros números: solo dígitos
   });
 });

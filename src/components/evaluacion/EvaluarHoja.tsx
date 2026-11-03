@@ -284,6 +284,17 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
                 <p className={s.desc}>{d.descripcion}</p>
               </section>
             )}
+            {d.integrantes.some((x) => x.monitor) && (
+              <section className={`ev-tarjeta ${s.parte}`}>
+                <div className="ev-small ev-muted">Lo que anotó el monitor</div>
+                {d.integrantes.filter((x) => x.monitor).map((x) => (
+                  <p key={x.i} className={s.desc}>
+                    {pareja && <b>{primerNombre(x.nombre)}: </b>}
+                    {[x.monitor!.motivo ? `Motivo de inasistencia: ${x.monitor!.motivo}` : null, x.monitor!.observacion].filter(Boolean).join(" · ")}
+                  </p>
+                ))}
+              </section>
+            )}
 
             <section className={`ev-tarjeta ${s.parte}`}>
               <div>

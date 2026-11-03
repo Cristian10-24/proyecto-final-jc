@@ -106,12 +106,13 @@ async function main() {
   const { hashClave, mentorIdDe } = await import("@/lib/usuarios");
   const { horaCOL } = await import("@/lib/edicion");
   const ev = await import("@/lib/evaluacion/datos");
+  const mon = await import("@/lib/evaluacion/monitor");
 
   const c = await collections();
   console.log(`Base local: ${dbHost()} / ${dbName()}${desfase ? ` · calendario movido ${desfase} días` : ""} · día en vivo: ${vivo}`);
   const hay = (await c.proyectos.countDocuments()) + (await c.asientos.countDocuments());
   if (hay && !process.argv.includes("--reset")) throw new Error("La base ya tiene proyectos o asientos. Usa --reset para reemplazarlos por la demo.");
-  await Promise.all([c.proyectos, c.asientos, c.dias, c.mentores, c.changeLog, c.rateLimits, c.planSalas, c.salasConfig, c.evalResultados, c.evalBorradores, c.evalConfig]
+  await Promise.all([c.proyectos, c.asientos, c.dias, c.mentores, c.changeLog, c.rateLimits, c.planSalas, c.salasConfig, c.evalResultados, c.evalBorradores, c.evalConfig, c.evalMonitor, c.cambiosSugeridos]
     .map((col) => (col as { deleteMany: (f: object) => Promise<unknown> }).deleteMany({})));
 
   // ---- usuarios (uno por rol + monitores para la asignación automática) ----
@@ -232,6 +233,10 @@ async function main() {
   if (p2) { ok(await ev.marcarAsistencia(yo, String(p2._id), 1, true), "pareja: uno no se presentó"); ok(await ev.guardarEvaluacion(yo, String(p2._id), form([{ b1: 2, b3: 3 }, {}], { a: A(2) })), "pareja: el otro Aprobado"); }
   if (p3) ok(await ev.marcarAsistencia(yo, String(p3._id), 0, true), "No se presentó");
   if (p4) ok(await ev.guardarBorrador(yo, String(p4._id), { a: { a1: "si", a2: "parcial" }, fortaleza: "Va bien la demo." }), "borrador sin guardar");
+  // Lo que anota monitor.demo en esas salas: un motivo de inasistencia y un "se presentó".
+  const monitorDemo: SessionUser = { id: new ObjectId().toHexString(), usuario: "monitor.demo", nombre: "Monitora Demo Cali", rol: "monitor", ciudades: ["Cali"] };
+  if (p2) ok(await mon.anotar(monitorDemo, String(p2._id), 1, { asistencia: "no", motivo: "Conexión o equipo", observacion: "Se le cayó el internet; escribió por WhatsApp." }), "monitor: motivo de inasistencia");
+  if (p4) ok(await mon.anotar(monitorDemo, String(p4._id), 0, { asistencia: "si", motivo: null, observacion: "" }), "monitor: se presentó");
   // Otros mentores ese día: unas pocas guardadas, para que el seguimiento tenga datos.
   for (const a of (await c.asientos.find({ dia: vivo, mentorId: { $ne: mentorDemo }, proyectoId: { $type: "objectId" } }).limit(3).toArray())) {
     const p = proyectos.find((x) => x._id.equals(a.proyectoId!))!;

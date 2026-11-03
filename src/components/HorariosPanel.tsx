@@ -26,6 +26,7 @@ const ESTADOS: { v: Estado; t: string }[] = [
 const ACCION: Record<string, string> = {
   reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada",
   asignar_monitor: "Monitor asignado", importar: "Importación", reetiquetar: "Asientos reetiquetados", monitor_sala: "Monitor de sala",
+  evaluar: "Evaluación", no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido",
 };
 const ROL: Record<string, string> = { admin: "Admin", coordinador: "Coordinación", monitor: "Monitor", estudiante: "Estudiante", sistema: "Sistema" };
 

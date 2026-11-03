@@ -23,6 +23,7 @@ export const TEMAS_B = [
 
 export const MIN_B = 2;
 export const MOTIVOS_INASISTENCIA = ["Salud", "Conexión o equipo", "Trabajo o estudio", "Calamidad familiar", "Se retiró del programa", "No avisó", "Otro"] as const;
+export type MotivoInasistencia = (typeof MOTIVOS_INASISTENCIA)[number];
 
 export type ItemA = (typeof ITEMS_A)[number][0];
 export type TemaB = (typeof TEMAS_B)[number][0];
@@ -75,16 +76,33 @@ export function faltantes(a: PartesA, integrantes: { nombre: string; b: PartesB;
 
 /**
  * Estado de una fila de la lista (mentor y monitor) para su fondo:
- * "presente" si al menos un integrante se presentó (evaluación guardada o, desde el Paso 12, marcado presente por el
- * monitor), "ausente" si todos están como No se presentó y "pendiente" en otro caso. Pareja mixta = "presente".
+ * "presente" si al menos un integrante se presentó (evaluación guardada o marcado presente por el monitor),
+ * "ausente" si nadie se presentó (No se presentó del mentor o ausente según el monitor) y "pendiente" en otro caso.
+ * Pareja mixta = "presente".
  */
-export function estadoFila(integrantes: { res: Resultado; presente?: boolean }[]): "presente" | "ausente" | "pendiente" {
-  if (integrantes.some((x) => x.presente || x.res === "Excelente" || x.res === "Aprobado")) return "presente";
-  if (integrantes.length && integrantes.every((x) => x.res === "No se presentó")) return "ausente";
+export function estadoFila(integrantes: Persona[]): Estado {
+  const e = integrantes.map(estadoPersona);
+  if (e.includes("presente")) return "presente";
+  if (e.length && e.every((x) => x === "ausente")) return "ausente";
+  return "pendiente";
+}
+
+type Persona = { res: Resultado; presente?: boolean; ausente?: boolean };
+type Estado = "presente" | "ausente" | "pendiente";
+/** Una persona: se presentó (evaluación guardada o el monitor la marcó), no se presentó (mentor o monitor) o pendiente. */
+export function estadoPersona(x: Persona): Estado {
+  if (x.presente || x.res === "Excelente" || x.res === "Aprobado") return "presente";
+  if (x.ausente || x.res === "No se presentó") return "ausente";
   return "pendiente";
 }
 
 export const primerNombre = (nombre: string) => nombre.trim().split(/\s+/)[0] ?? "";
+
+/** Celular para "Llamar" y "WhatsApp" (como el prototipo): solo dígitos; 10 que empiezan por 3 → prefijo 57. */
+export function digitosTelefono(celular: string): string {
+  const d = celular.replace(/\D/g, "");
+  return d.length === 10 && d[0] === "3" ? `57${d}` : d;
+}
 
 // ---- Validación de lo que manda el navegador ----
 

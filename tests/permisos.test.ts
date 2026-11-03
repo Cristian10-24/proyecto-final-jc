@@ -58,6 +58,16 @@ const verEvaluaciones: [string, () => Promise<Response>][] = [
   ["ver una evaluación", async () => (await import("@/app/api/evaluacion/proyectos/[id]/route")).GET(new Request("http://localhost/x"), ctx)],
 ];
 
+// Mis salas (presentaciones): solo el monitor, y dentro solo los proyectos de sus salas (pruebas con base).
+const soloMonitor: [string, () => Promise<Response>][] = [
+  ["ver sus salas", async () => (await import("@/app/api/evaluacion/salas/route")).GET(new Request("http://localhost/x"))],
+  ["ver la ficha de un proyecto de sala", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).GET(new Request("http://localhost/x"), ctx)],
+  ["anotar asistencia", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "anotar", i: 0, asistencia: "no", motivo: "Salud", observacion: "" }), ctx)],
+  ["reprogramar desde la sala", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "reprogramar", asiento: ID, motivo: "Cita médica" }), ctx)],
+  ["sugerir un cambio especial", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "sugerir", detalle: "Otro día", motivo: "Viaja" }), ctx)],
+  ["ver cupos para reprogramar", async () => (await import("@/app/api/evaluacion/salas/[id]/cupos/route")).GET(new Request("http://localhost/x"), ctx)],
+];
+
 describe("matriz de permisos", () => {
   const tabla: Record<Permiso, [boolean, boolean, boolean, boolean]> = {
     // [mentor, monitor, coordinador, admin]
@@ -70,6 +80,7 @@ describe("matriz de permisos", () => {
     cambiar_horario: [false, false, false, true],
     evaluar: [true, false, false, false],
     ver_evaluaciones: [false, false, true, true],
+    monitorear_salas: [false, true, false, false],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -89,7 +100,7 @@ describe("el monitor recibe 403", () => {
 describe("el mentor recibe 403", () => {
   beforeAll(() => como("mentor"));
   const seguimiento: [string, () => Promise<Response>] = ["ver el seguimiento", async () => (await import("@/app/api/monitor/seguimiento/route")).GET()];
-  for (const [nombre, llamar] of [...soloAdmin, seguimiento]) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
+  for (const [nombre, llamar] of [...soloAdmin, seguimiento, ...soloMonitor]) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
 });
 
 describe("coordinación y admin no escriben evaluaciones", () => {
@@ -97,9 +108,23 @@ describe("coordinación y admin no escriben evaluaciones", () => {
     for (const [nombre, llamar] of soloMentor) it(`${rol}: 403 al ${nombre}`, async () => { await como(rol); expect((await llamar()).status).toBe(403); });
 });
 
+describe("Mis salas: POST desde otro origen", () => {
+  it("403 aunque sea el monitor", async () => {
+    await como("monitor");
+    const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "anotar", i: 0, asistencia: "si", motivo: null, observacion: "" }) });
+    const res = await (await import("@/app/api/evaluacion/salas/[id]/route")).POST(req, ctx);
+    expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
+  });
+});
+
+describe("coordinación y admin no entran a Mis salas", () => {
+  for (const rol of ["coordinador", "admin"] as const)
+    for (const [nombre, llamar] of soloMonitor) it(`${rol}: 403 al ${nombre}`, async () => { await como(rol); expect((await llamar()).status).toBe(403); });
+});
+
 describe("sin sesión", () => {
   beforeAll(() => { estado.token = ""; estado.usuario = null; });
-  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
+  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones, ...soloMonitor]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
 });
 
 describe("sesión con clave restablecida", () => {

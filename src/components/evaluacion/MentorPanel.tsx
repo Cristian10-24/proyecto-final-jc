@@ -67,7 +67,8 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
     const r = f.integrantes.map((x) => x.res);
     if (estado === "pendientes") return r.includes("Pendiente");
     if (estado === "hechos") return r.some((x) => x !== "Pendiente" && x !== "No se presentó");
-    if (estado === "noShow" || estado === "gestionar") return r.includes("No se presentó"); // el motivo lo registra el monitor (Paso 12)
+    if (estado === "noShow") return r.includes("No se presentó");
+    if (estado === "gestionar") return f.integrantes.some((x) => x.res === "No se presentó" && !x.motivo); // el motivo lo registra el monitor
     return true;
   });
 
@@ -175,7 +176,7 @@ function Item({ f, mentor, onAbrir }: { f: FilaEvaluacion; mentor: string | null
       <span className={s.tags}>
         {f.integrantes.map((x) => <span key={x.i} className={claseResultado(x.res)}>{quien(x)}{x.res}</span>)}
         {f.destacado && <span className="ev-chip ev-c-star">Destacado</span>}
-        {f.integrantes.filter((x) => x.res === "No se presentó").map((x) => <span key={`m${x.i}`} className="ev-chip ev-c-Incompleto">{quien(x)}Sin motivo</span>)}
+        {f.integrantes.filter((x) => x.res === "No se presentó").map((x) => <span key={`m${x.i}`} className={`ev-chip ${x.motivo ? "ev-c-mail" : "ev-c-Incompleto"}`}>{quien(x)}{x.motivo ? `Motivo: ${x.motivo}` : "Sin motivo"}</span>)}
         {f.borrador && f.integrantes.some((x) => x.res === "Pendiente") && <span className="ev-chip ev-c-mail">Borrador sin guardar</span>}
       </span>
     </button>

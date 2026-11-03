@@ -2,7 +2,8 @@
 // y la interfaz las usa solo para mostrar u ocultar botones.
 //
 //  mentor       → solo evalúa los proyectos que tiene asignados (su nombre en Horarios = su usuario).
-//  monitor      → solo sus ciudades: ver quién ya eligió hora y copiar pendientes para WhatsApp.
+//  monitor      → inscripción: solo sus ciudades (ver quién ya eligió hora, copiar pendientes para WhatsApp);
+//                 presentaciones: solo los estudiantes de sus salas asignadas, de cualquier ciudad.
 //  coordinador  → todas las ciudades: lo mismo + resumen y Excel del cronograma.
 //  admin        → todo lo del coordinador + importar, usuarios, liberar o cambiar la hora de un proyecto.
 
@@ -18,11 +19,12 @@ export type Permiso =
   | "gestionar_usuarios"
   | "cambiar_horario"
   | "evaluar"
-  | "ver_evaluaciones";
+  | "ver_evaluaciones"
+  | "monitorear_salas";
 
 const PERMISOS: Record<RolUsuario, readonly Permiso[]> = {
   mentor: ["evaluar"],
-  monitor: ["ver_seguimiento"],
+  monitor: ["ver_seguimiento", "monitorear_salas"],
   coordinador: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "ver_evaluaciones"],
   admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones"],
 };
