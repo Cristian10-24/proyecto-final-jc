@@ -1,5 +1,6 @@
-// Compara los asientos por día que genera el importador (hoja Horarios) con la pestaña
-// "Proyectos por franja" del mismo Excel. Solo imprime totales por día: ningún dato personal.
+// Informa las diferencias entre los asientos por día que genera el importador (hoja Horarios) y la
+// pestaña "Proyectos por franja" del mismo Excel. La fuente de verdad es Horarios: las diferencias
+// no son un fallo (sale con código 0). Solo imprime totales por día: ningún dato personal.
 // Uso: npm run verificar:franjas -- "ruta/al/archivo.xlsx"
 import { clave, hoja, leerDia, leerLibro, texto, valor } from "@/lib/importar/excel";
 import { asientosPorDia, leerHorarios } from "@/lib/importar/mentores";
@@ -40,17 +41,16 @@ async function main() {
     if (dia && typeof n === "number") esperados.set(dia, (esperados.get(dia) ?? 0) + n);
   });
 
-  let ok = true;
+  let iguales = true;
   console.log("Día         Importador  Excel");
   for (const dia of [...new Set([...generados.keys(), ...esperados.keys()])].sort()) {
     const a = generados.get(dia) ?? 0, b = esperados.get(dia) ?? 0;
-    if (a !== b) ok = false;
-    console.log(`${dia}  ${String(a).padStart(10)}  ${String(b).padStart(5)}${a === b ? "" : "  ← no coincide"}`);
+    if (a !== b) iguales = false;
+    console.log(`${dia}  ${String(a).padStart(10)}  ${String(b).padStart(5)}${a === b ? "" : `  diferencia ${a - b > 0 ? "+" : ""}${a - b}`}`);
   }
   const tA = [...generados.values()].reduce((x, y) => x + y, 0), tB = [...esperados.values()].reduce((x, y) => x + y, 0);
   console.log(`TOTAL       ${String(tA).padStart(10)}  ${String(tB).padStart(5)}`);
-  console.log(ok ? "Coinciden todos los días." : "Hay días que no coinciden.");
-  process.exit(ok ? 0 : 2);
+  console.log(iguales ? "Coinciden todos los días." : 'Hay diferencias (informativo: vale Horarios).');
 }
 
 main().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(1); });

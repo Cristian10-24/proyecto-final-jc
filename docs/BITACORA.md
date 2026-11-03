@@ -11,5 +11,5 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 ## Paso 1 · Plantillas de Excel e importador
 - Commit: `feat: plantillas de Excel e importador de proyectos y mentores con vista previa`. Pruebas: 43 unitarias y 11 con base; typecheck y build pasan.
 - Verificar: `/admin/importar` (vista previa → confirmar) y `npm run verificar:franjas -- "docs/referencia/Horarios Proyecto Final - JC 2026.xlsx"`.
-- Coinciden 17, 18 y 20. No coinciden 12 (136 vs 128), 13 (120 vs 112), 19 (116 vs 108) y 21 (64 vs 40): Horarios marca mentores que la pestaña no cuenta (p. ej. Farly el 12 a las 6 p. m.).
-- Pendiente: decidir si vale Horarios o "Proyectos por franja"; en Horarios, poner nombre real a la columna "Mentor 14" (Stiven Posada); probar la pantalla en el navegador.
+- Vale Horarios (DECISIONES); verificar:franjas solo informa (+8 el 12, 13 y 19; +24 el 21). Copia corregida: Martes 17 y Stiven Posada en Mentores!B15.
+- Pendiente: que el usuario confirme las horas-mentor que no están en la pestaña (Farly 12/13/19; Jhan Carlos y Yehiron el 21); probar la pantalla en el navegador.

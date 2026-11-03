@@ -8,3 +8,4 @@
 - Reparto proporcional por puesto en orden de hora (Bresenham): cada hora recibe su parte de cada ciudad y los totales son exactos.
 - Identidad del mentor = encabezado de su columna en Horarios; la hoja Mentores solo agrega correo y celular (aviso si falta).
 - Reimportar mentores reemplaza mentores, días y asientos en una transacción, y se bloquea si ya hay reservas. Reimportar proyectos actualiza por código y no borra.
+- La fuente de verdad de la disponibilidad es la hoja Horarios; "Proyectos por franja" ya no es verificación obligatoria y `verificar:franjas` solo informa diferencias.
