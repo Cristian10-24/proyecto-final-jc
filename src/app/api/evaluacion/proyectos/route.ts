@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir } from "@/lib/auth";
 import { esDia } from "@/lib/edicion";
-import { criterios, listaEvaluaciones } from "@/lib/evaluacion/datos";
+import { criterios, listaEvaluaciones, mentoresConProyectos } from "@/lib/evaluacion/datos";
+import { puede } from "@/lib/permisos";
 
 const Filtro = z.object({
   dia: z.string().refine(esDia).optional(),
@@ -15,5 +16,9 @@ export async function GET(req: Request) {
   if (g.error) return g.error;
   const parsed = Filtro.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  return NextResponse.json({ filas: await listaEvaluaciones(g.user, parsed.data), criterios: await criterios() });
+  const [filas, crit, mentores] = await Promise.all([
+    listaEvaluaciones(g.user, parsed.data), criterios(),
+    puede(g.user.rol, "ver_evaluaciones") ? mentoresConProyectos() : Promise.resolve(null),
+  ]);
+  return NextResponse.json({ filas, criterios: crit, ...(mentores ? { mentores } : {}) });
 }

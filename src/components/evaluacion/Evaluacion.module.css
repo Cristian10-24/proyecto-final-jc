@@ -1,0 +1,111 @@
+/* Mentor · Mis evaluaciones y pantalla de evaluar (prototipo docs/diseno/evaluacion, resumen en docs/EVALUACION.md).
+   Tokens en src/app/tokens.css. Comparte encabezado, tarjeta, filtros y chips con HorariosPanel.module.css. */
+
+/* Avance */
+.avance { display: flex; flex-direction: column; gap: var(--s-3); }
+.avanceTxt { display: flex; justify-content: space-between; gap: var(--s-5); font: var(--t-small); color: var(--muted); }
+.barra { height: 8px; border-radius: var(--r-pill); background: var(--soft); overflow: hidden; }
+.barra i { display: block; width: 100%; height: 100%; background: var(--green); border-radius: inherit; transform-origin: left; transition: transform .3s; }
+
+/* Lista por día */
+.dia { margin-top: var(--s-5); font: var(--t-kicker); letter-spacing: var(--kicker-spacing); text-transform: uppercase; color: var(--muted-2); }
+.diaHoy { color: var(--orange-dark); }
+.hora { margin-top: var(--s-5); display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: var(--s-3) var(--s-5); border-radius: var(--r-md); background: var(--surface-2); font: 700 14px var(--font); }
+.abrirSala { margin-left: auto; width: auto !important; height: 36px !important; padding: 0 var(--s-6) !important; border-radius: var(--r-sm) !important; font: 700 13.5px var(--font) !important; }
+.salaTxt { font: 500 13.5px var(--font); color: var(--muted); }
+.item { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: var(--s-2) var(--s-6); align-items: start; width: 100%; padding: var(--s-6) var(--s-3); border: 0; border-bottom: 1px solid var(--line-2); background: transparent; text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: var(--r-sm); }
+.item:hover, .item:focus-visible { background: var(--orange-tint); outline: none; }
+.itemHora { font: 700 14px var(--font); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.itemNombre { font: 700 15.5px/1.3 var(--font); }
+.itemSub { font: var(--t-small); color: var(--muted); margin-top: 2px; }
+.tags { grid-column: 2; display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-2); }
+@media (min-width: 860px) {
+  .item { grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; }
+  .tags { grid-column: 3; margin-top: 0; justify-content: flex-end; max-width: 360px; }
+}
+
+/* Chips por resultado (punto de 8 px como el resto del sistema) */
+.r_Excelente { background: var(--green-soft); color: var(--green-dark); }
+.r_Aprobado { background: #e4f0fa; color: #22608f; }
+.r_Incompleto { background: var(--yellow-soft); color: var(--yellow-text); }
+.r_NoSePresento { background: var(--soft); color: var(--muted); }
+.r_Pendiente { background: #fff; color: var(--muted-2); box-shadow: inset 0 0 0 1.5px var(--line); }
+.r_Destacado { background: var(--orange-chip); color: var(--orange-darker); }
+.r_Borrador { background: var(--surface-2); color: var(--muted); }
+
+/* ---- Pantalla de evaluar (hoja completa) ---- */
+.hoja { position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow-y: auto; }
+/* En el celular la cabecera es alta (nombres, meta y cronómetro): solo queda fija en pantallas anchas. */
+.hojaHead { position: relative; z-index: 2; background: var(--ink); color: #fff; }
+@media (min-width: 860px) { .hojaHead { position: sticky; top: 0; } }
+.hojaHeadIn { max-width: 1100px; margin: 0 auto; padding: var(--s-6) var(--s-8); display: flex; gap: var(--s-6); align-items: center; flex-wrap: wrap; }
+.volver { flex: none; height: 40px; padding: 0 var(--s-6); border-radius: var(--r-sm); border: 1.5px solid rgba(255, 255, 255, .3); background: transparent; color: #fff; font: var(--t-label); font-size: 14px; cursor: pointer; }
+.volver:hover { background: rgba(255, 255, 255, .1); }
+.hojaTitulo { flex: 1 1 260px; min-width: 0; }
+.hojaTitulo h2 { margin: 0; font: var(--t-h2); font-size: 20px; letter-spacing: -.02em; }
+.meta { font: 500 13.5px/1.4 var(--font); color: rgba(255, 255, 255, .72); margin-top: 2px; }
+.reloj { display: flex; align-items: center; gap: var(--s-5); }
+.anillo { --p: 0; width: 58px; height: 58px; border-radius: 50%; background: conic-gradient(var(--orange) calc(var(--p) * 1turn), rgba(255, 255, 255, .18) 0); display: grid; place-items: center; flex: none; }
+.anillo span { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; font: 700 14px var(--font); font-variant-numeric: tabular-nums; }
+.fase { display: flex; flex-direction: column; font: 500 12.5px var(--font); color: rgba(255, 255, 255, .72); min-width: 150px; }
+.fase b { font: 700 15px var(--font); color: #fff; }
+.relojBtn { height: 40px; padding: 0 var(--s-6); border-radius: var(--r-sm); border: 0; background: #fff; color: var(--ink); font: var(--t-label); font-size: 14px; cursor: pointer; }
+
+.hojaBody { max-width: 1100px; margin: 0 auto; padding: var(--s-8); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); align-items: start; }
+@media (min-width: 860px) { .hojaBody { grid-template-columns: minmax(0, 1fr) 300px; } .lado { position: sticky; top: 110px; } }
+.col { display: flex; flex-direction: column; gap: var(--s-7); min-width: 0; }
+.lado { display: flex; flex-direction: column; gap: var(--s-5); }
+.hojaBody :global(.note) { padding: var(--s-4) var(--s-6); border-radius: var(--r-md); font: 500 14px/1.45 var(--font); display: block; }
+.parte h3 { margin: 0; font: var(--t-h2); letter-spacing: -.02em; }
+.pista { margin: var(--s-2) 0 0; font: var(--t-small); color: var(--muted); }
+.q { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3) var(--s-7); align-items: center; padding: var(--s-5) 0; border-top: 1px solid var(--line-2); }
+@media (min-width: 560px) { .q { grid-template-columns: minmax(0, 1fr) auto; } }
+.qT { font: 700 15px var(--font); }
+.qD { font: var(--t-small); color: var(--muted); margin-top: 2px; }
+.qb { padding: var(--s-5) 0; border-top: 1px solid var(--line-2); }
+.qPregunta { font-style: italic; }
+.quien { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); margin-top: var(--s-3); flex-wrap: wrap; }
+.quienSolo { justify-content: flex-end; }
+.quienNombre { font: 700 14px var(--font); }
+.leyenda { margin: var(--s-5) 0 0; font: 500 12.5px/1.5 var(--font); color: var(--muted-2); }
+
+/* Segmentos Sí / Parcial / No y 0–4 */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px; background: var(--surface-2); gap: 2px; }
+.seg button { appearance: none; border: 0; background: transparent; padding: 7px 13px; border-radius: var(--r-pill); cursor: pointer; font: 700 14px var(--font); color: var(--muted); min-width: 40px; }
+.seg button:disabled { cursor: default; }
+.seg button:not(:disabled):hover { color: var(--ink); }
+.seg button[aria-pressed="true"][data-v="si"] { background: var(--green); color: #fff; }
+.seg button[aria-pressed="true"][data-v="parcial"] { background: #c98a0b; color: #fff; }
+.seg button[aria-pressed="true"][data-v="no"] { background: var(--red); color: #fff; }
+.segNivel button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+.campo { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-5); }
+.campo label { font: 700 14px var(--font); }
+.campo textarea { min-height: 84px; resize: vertical; padding: var(--s-4) var(--s-6); border: 2px solid var(--line); border-radius: var(--r-md); background: #fff; font: 500 15px/1.45 var(--font); color: var(--ink); outline: none; }
+.campo textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 4px var(--orange-chip); }
+
+/* Lateral */
+.score { gap: var(--s-4) !important; padding: var(--s-7) !important; }
+.scoreK { font: var(--t-small); color: var(--muted); }
+.big { font: 800 28px var(--font); letter-spacing: -.02em; }
+.big_Excelente { color: var(--green); }
+.big_Aprobado { color: #22608f; }
+.big_Incompleto { color: #c98a0b; }
+.big_NoSePresento, .big_Pendiente { color: var(--muted); }
+.medidor { display: flex; justify-content: space-between; font: 500 14px var(--font); }
+.faltan { font: 500 13px/1.4 var(--font); color: var(--yellow-text); }
+.toggle { display: flex; gap: var(--s-4); align-items: center; font: 700 14.5px var(--font); cursor: pointer; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--orange); }
+.lado :global(.btn) { width: 100%; height: var(--h-button-sm); border-radius: var(--r-sm); font: var(--t-label); }
+.guardado { font: 500 12.5px var(--font); color: var(--muted-2); text-align: center; }
+.banner { display: flex; gap: var(--s-5); align-items: center; flex-wrap: wrap; }
+.banner :global(.btn) { width: auto; height: 36px; padding: 0 var(--s-6); border-radius: var(--r-sm); font: 700 13.5px var(--font); }
+
+/* Confirmación */
+.confirmar { position: fixed; inset: 0; z-index: 40; background: rgba(28, 26, 36, .45); display: grid; place-items: center; padding: var(--gutter); }
+.confirmarBox { width: min(440px, 100%); background: #fff; border-radius: var(--r-2xl); box-shadow: var(--sh-modal); padding: var(--s-8); display: flex; flex-direction: column; gap: var(--s-7); }
+.confirmarBox p { margin: 0; font: 600 15.5px/1.5 var(--font); white-space: pre-line; }
+.confirmarActs { display: flex; gap: var(--s-3); justify-content: flex-end; flex-wrap: wrap; }
+.confirmarActs :global(.btn) { width: auto; height: var(--h-button-sm); padding: 0 var(--s-8); border-radius: var(--r-sm); font: var(--t-label); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; background: var(--ink); color: #fff; padding: var(--s-5) var(--s-8); border-radius: var(--r-md); box-shadow: var(--sh-toast); font: 600 14.5px var(--font); max-width: calc(100% - 32px); }

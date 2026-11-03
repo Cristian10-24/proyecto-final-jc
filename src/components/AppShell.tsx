@@ -11,6 +11,7 @@ const NAV: { key: Seccion; label: string; href: string; permiso: Permiso }[] = [
   { key: "evaluaciones", label: "Mis evaluaciones", href: "/mentor", permiso: "evaluar" },
   { key: "resumen", label: "Resumen", href: "/admin", permiso: "ver_resumen" },
   { key: "seguimiento", label: "Seguimiento", href: "/monitor", permiso: "ver_seguimiento" },
+  { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "horarios", label: "Horarios", href: "/admin/horarios", permiso: "cambiar_horario" },
   { key: "salas", label: "Salas", href: "/admin/salas", permiso: "cambiar_horario" },
   { key: "importar", label: "Importar", href: "/admin/importar", permiso: "importar" },
@@ -26,6 +27,8 @@ export default function AppShell({ user, active, children }: { user: SessionUser
 
   async function salir() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
+    // Borradores de evaluación guardados en este navegador (solo existen si la sesión venció o no hubo conexión).
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith("pfjc-borrador-")) localStorage.removeItem(k); } catch { /* sin almacenamiento */ }
     window.location.assign("/login");
   }
 

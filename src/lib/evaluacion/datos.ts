@@ -1,9 +1,10 @@
 import { ObjectId, type ClientSession } from "mongodb";
 import type { SessionUser } from "../auth";
 import { collections, transaccion } from "../db";
-import { diaCOL } from "../edicion";
+import { diaCOL, horaCOL } from "../edicion";
 import { enmascararNumero } from "../estudiante";
 import { puede } from "../permisos";
+import { esHttps } from "../planSalas";
 import type { Actor, Proyecto, Ruta } from "../types";
 import {
   calc, CRITERIOS_DEFECTO, faltantes, primerNombre,
@@ -53,10 +54,31 @@ export async function criterios(): Promise<Criterios> {
   return c ? { exA: c.exA, exB: c.exB } : CRITERIOS_DEFECTO;
 }
 
+/** Sala y enlace del mentor en la hora de cada asiento (del plan de salas; vacío si aún no hay plan). */
+async function salasDe(asientos: { inicio: Date; mentorId: string }[]): Promise<(a: { inicio: Date; mentorId: string }) => { sala?: number; enlace?: string }> {
+  const { planSalas, salasConfig } = await collections();
+  const dias = [...new Set(asientos.map((a) => diaCOL(a.inicio)))];
+  const [plan, cfg] = await Promise.all([planSalas.find({ dia: { $in: dias } }).toArray(), salasConfig.findOne({ _id: "actual" })]);
+  const sala = new Map(plan.map((p) => [`${p.dia}|${p.hora}|${p.mentorId}`, p.sala]));
+  const enlace = new Map((cfg?.salas ?? []).filter((x) => esHttps(x.enlace)).map((x) => [x.sala, x.enlace]));
+  return (a) => {
+    const n = sala.get(`${diaCOL(a.inicio)}|${horaCOL(a.inicio)}|${a.mentorId}`);
+    return n === undefined ? {} : { sala: n, ...(enlace.has(n) ? { enlace: enlace.get(n)! } : {}) };
+  };
+}
+
+/** Mentores con proyectos (para que coordinación y admin elijan a quién ver). */
+export async function mentoresConProyectos(): Promise<{ id: string; nombre: string }[]> {
+  const { asientos, mentores } = await collections();
+  const ids: string[] = await asientos.distinct("mentorId", { proyectoId: { $type: "objectId" } });
+  const lista = await mentores.find({ _id: { $in: ids } }).toArray();
+  return lista.map((m) => ({ id: m._id, nombre: m.nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+}
+
 export type ResultadoIntegrante = { i: number; nombre: string; res: Resultado; a: number | null; b: number | null; nb: number };
 export type FilaEvaluacion = {
   id: string; codigo: string; proyecto: string; ciudad: string; ruta?: Ruta;
-  dia: string; inicio: string; mentorId: string; pareja: boolean;
+  dia: string; inicio: string; mentorId: string; pareja: boolean; sala?: number; enlace?: string;
   integrantes: ResultadoIntegrante[]; destacado: boolean; borrador: boolean;
 };
 
@@ -79,11 +101,11 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
   const asis = await asientos.find({ proyectoId: { $type: "objectId" }, ...(mentorId ? { mentorId } : {}), ...(filtro.dia ? { dia: filtro.dia } : {}) })
     .sort({ inicio: 1 }).toArray();
   const ids = asis.map((a) => a.proyectoId!);
-  const [lista, evals, borradores, crit] = await Promise.all([
+  const [lista, evals, borradores, crit, salaDe] = await Promise.all([
     proyectos.find({ _id: { $in: ids } }).toArray(),
     evalResultados.find({ proyectoId: { $in: ids } }).toArray(),
     evalBorradores.find({ _id: { $in: ids.map((x) => x.toHexString()) } }, { projection: { _id: 1 } }).toArray(),
-    criterios(),
+    criterios(), salasDe(asis),
   ]);
   const porId = new Map(lista.map((p) => [String(p._id), p]));
   const ev = new Map(evals.map((e) => [e._id, e]));
@@ -94,7 +116,7 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
     if (!p) continue;
     filas.push({
       id: String(p._id), codigo: p.codigo, proyecto: p.nombre, ciudad: p.ciudad, ...(p.ruta ? { ruta: p.ruta } : {}),
-      dia: diaCOL(a.inicio), inicio: a.inicio.toISOString(), mentorId: a.mentorId, pareja: p.integrantes.length > 1,
+      dia: diaCOL(a.inicio), inicio: a.inicio.toISOString(), mentorId: a.mentorId, pareja: p.integrantes.length > 1, ...salaDe(a),
       integrantes: resultados(p, ev, p._id, crit),
       destacado: p.integrantes.some((x) => ev.get(idEval(p._id, x.documento))?.destacado),
       borrador: conBorrador.has(String(p._id)),
@@ -105,11 +127,13 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
 
 export type DetalleEvaluacion = {
   id: string; codigo: string; proyecto: string; descripcion?: string; ciudad: string; ruta?: Ruta;
-  dia: string; inicio: string; mentorId: string; editable: boolean;
+  dia: string; inicio: string; mentorId: string; editable: boolean; sala?: number; enlace?: string;
   integrantes: (ResultadoIntegrante & { documento: string; noPresento: boolean })[];
   /** Lo guardado, armado como formulario (A y cierre de quien ya los tenga, como el prototipo). */
   guardado: Formulario;
   borrador: Borrador | null;
+  /** Última vez que se guardó (para descartar copias locales más viejas). */
+  guardadoEn: string | null;
   criterios: Criterios;
 };
 
@@ -134,10 +158,10 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
   if ("error" in r) return r;
   const { p, asiento, editable } = r;
   const { evalResultados, evalBorradores } = await collections();
-  const [evals, borrador, crit] = await Promise.all([
+  const [evals, borrador, crit, salaDe] = await Promise.all([
     evalResultados.find({ proyectoId: p._id }).toArray(),
     editable ? evalBorradores.findOne({ _id: String(p._id) }) : null,
-    criterios(),
+    criterios(), salasDe([asiento]),
   ]);
   const ev = new Map(evals.map((e) => [e._id, e]));
   const propios = p.integrantes.map((x) => ev.get(idEval(p._id, x.documento)));
@@ -148,7 +172,7 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
   return {
     id: String(p._id), codigo: p.codigo, proyecto: p.nombre, ...(p.descripcion ? { descripcion: p.descripcion } : {}),
     ciudad: p.ciudad, ...(p.ruta ? { ruta: p.ruta } : {}),
-    dia: diaCOL(asiento.inicio), inicio: asiento.inicio.toISOString(), mentorId: asiento.mentorId, editable,
+    dia: diaCOL(asiento.inicio), inicio: asiento.inicio.toISOString(), mentorId: asiento.mentorId, editable, ...salaDe(asiento),
     integrantes: resultados(p, ev, p._id, crit).map((x, i) => ({ ...x, documento: enmascararNumero(p.integrantes[i]!.documento), noPresento: !!propios[i]?.noPresento })),
     guardado: {
       a: conA?.a ?? {}, b: propios.map((e) => (e && !e.noPresento ? e.b : {})),
@@ -156,6 +180,7 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
       fortaleza: conCierre?.fortaleza ?? "", mejora: conCierre?.mejora ?? "", percepcion: conCierre?.percepcion ?? "",
     },
     borrador: borrador && borrador.actualizadoEn.getTime() > ultimo ? borrador.datos : null,
+    guardadoEn: ultimo ? new Date(ultimo).toISOString() : null,
     criterios: crit,
   };
 }

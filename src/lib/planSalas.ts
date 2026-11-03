@@ -193,7 +193,7 @@ export async function verPlan(): Promise<VistaPlan> {
   };
 }
 
-function esHttps(x: string): boolean {
+export function esHttps(x: string): boolean {
   try { return new URL(x).protocol === "https:"; } catch { return false; }
 }
 

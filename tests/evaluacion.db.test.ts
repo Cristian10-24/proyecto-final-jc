@@ -178,3 +178,22 @@ describe("usuarios mentor", () => {
     expect(await ev.detalleEvaluacion(mentor(3), ids.C1!)).toMatchObject({ editable: true, guardado: { destacado: true } }); // el nuevo mentor ve lo calificado
   });
 });
+
+describe("sala y enlace", () => {
+  it("cada proyecto lleva la sala de su mentor en esa hora; solo enlaces https", async () => {
+    const c = await db.collections();
+    await c.salasConfig.replaceOne({ _id: "actual" }, { salas: [{ sala: 1, enlace: "https://meet.ejemplo.org/1" }, { sala: 2, enlace: "javascript:alert(1)" }], importados: [], disponibilidad: [], actualizadoEn: new Date() }, { upsert: true });
+    await c.planSalas.insertMany([
+      { _id: `${DIA}|8|1`, dia: DIA, hora: 8, sala: 1, mentorId: "mentor-prueba-1", monitor: null, origen: null },
+      { _id: `${DIA}|8|2`, dia: DIA, hora: 8, sala: 2, mentorId: "mentor-prueba-2", monitor: null, origen: null },
+    ]);
+    const lista = await ev.listaEvaluaciones(admin, { dia: DIA });
+    expect(lista.find((f) => f.codigo === "C2")).toMatchObject({ sala: 1, enlace: "https://meet.ejemplo.org/1" });
+    const c3 = lista.find((f) => f.codigo === "C3")!;
+    expect([c3.sala, c3.enlace]).toEqual([2, undefined]);
+    expect(lista.find((f) => f.codigo === "L4")!.sala).toBeUndefined(); // 8:45, sin plan para mentor 4
+    const d = await ev.detalleEvaluacion(mentor(1), ids.L1!);
+    expect("error" in d ? null : d.sala).toBe(1);
+    expect(await ev.mentoresConProyectos()).toEqual([{ id: "mentor-prueba-1", nombre: "Mentor Prueba 1" }]); // solo los que están en Horarios
+  });
+});
