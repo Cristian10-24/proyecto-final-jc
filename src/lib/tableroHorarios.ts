@@ -13,8 +13,9 @@ export type Tarjeta = {
   id: string; codigo: string; proyecto: string; integrantes: string[]; ciudad: string; ruta?: Ruta;
   inicio?: string; asientoId?: string; mentor?: string; sala?: number; monitor?: string;
   estado: "presente" | "ausente" | "pendiente";
-  /** Tiene evaluación guardada: no se mueve ni se libera. */
+  /** Tiene evaluación guardada: no se mueve ni se libera. `evaluadoEn`: su última versión (para anular esa). */
   evaluado: boolean;
+  evaluadoEn?: string;
 };
 export type BloqueTablero = {
   inicio: string; total: number; ocupados: number;
@@ -73,14 +74,15 @@ export async function datosTablero(diaPedido?: string): Promise<DatosTablero> {
   const tarjeta = (p: Proyecto, a?: (typeof asientos)[number]): Tarjeta => {
     const integrantes = p.integrantes.map((x) => {
       const e = ev.get(idEval(p._id, x.documento)), n = nota.get(idEval(p._id, x.documento));
-      return { res: calc(e, crit).res, presente: n?.asistencia === "si", ausente: n?.asistencia === "no", evaluado: !!e && !e.noPresento };
+      return { res: calc(e, crit).res, presente: n?.asistencia === "si", ausente: n?.asistencia === "no", evaluado: !!e && !e.noPresento, en: e && !e.noPresento ? e.actualizadoEn.toISOString() : "" };
     });
+    const evaluadoEn = integrantes.map((x) => x.en).filter(Boolean).sort().at(-1);
     const s = a ? sala.get(`${horaCOL(a.inicio)}|${a.mentorId}`) : undefined;
     return {
       id: String(p._id), codigo: p.codigo, proyecto: p.nombre, integrantes: p.integrantes.map((x) => x.nombre), ciudad: p.ciudad, ...(p.ruta ? { ruta: p.ruta } : {}),
       ...(a ? { inicio: a.inicio.toISOString(), asientoId: String(a._id), mentor: nombreMentor.get(a.mentorId) ?? a.mentorId } : {}),
       ...(s ? { sala: s.sala, ...(s.monitor ? { monitor: nombreMonitor.get(s.monitor) ?? s.monitor } : {}) } : {}),
-      estado: estadoFila(integrantes), evaluado: integrantes.some((x) => x.evaluado),
+      estado: estadoFila(integrantes), evaluado: integrantes.some((x) => x.evaluado), ...(evaluadoEn ? { evaluadoEn } : {}),
     };
   };
 

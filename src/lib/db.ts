@@ -1,5 +1,5 @@
 import { MongoClient, type ClientSession, type Db } from "mongodb";
-import type { EvalBorrador, EvalConfig, EvalResultado } from "./evaluacion/datos";
+import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./evaluacion/datos";
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
 import type { PlanSala } from "./salas";
 import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
@@ -114,6 +114,7 @@ export async function collections() {
     evalBorradores: db.collection<EvalBorrador>("evaluacion_borradores"),
     evalConfig: db.collection<EvalConfig>("evaluacion_config"),
     evalMonitor: db.collection<EvalMonitor>("evaluacion_monitor"),
+    evalAnuladas: db.collection<EvalAnulada>("evaluacion_anuladas"),
     cambiosSugeridos: db.collection<CambioSugerido>("cambios_sugeridos"),
   };
 }
@@ -135,6 +136,7 @@ async function ensureIndexes(db: Db) {
     db.collection("planSalas").createIndex({ dia: 1, hora: 1, monitor: 1 }, { unique: true, partialFilterExpression: { monitor: { $type: "string" } } }),
     db.collection("evaluacion_resultados").createIndex({ proyectoId: 1 }),
     db.collection("evaluacion_monitor").createIndex({ proyectoId: 1 }),
+    db.collection("evaluacion_anuladas").createIndex({ proyectoId: 1, anuladoEn: -1 }),
     // Una sola sugerencia pendiente por proyecto (el admin la aprueba o rechaza en el Paso 14).
     db.collection("cambios_sugeridos").createIndex({ proyectoId: 1 }, { unique: true, partialFilterExpression: { estado: "pendiente" } }),
     // TTL: Mongo borra cada contador cuando termina su ventana.

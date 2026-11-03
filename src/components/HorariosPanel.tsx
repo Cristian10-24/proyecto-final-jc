@@ -13,7 +13,7 @@ import s from "./HorariosPanel.module.css";
 type Integrante = { nombre: string; documento: string };
 type Proyecto = {
   id: string; codigo: string; nombre: string; ciudad: string; grupo?: string;
-  integrantes: Integrante[]; monitor: string | null; hora: null | { inicio: string; mentor: string };
+  integrantes: Integrante[]; monitor: string | null; hora: null | { inicio: string; mentor: string }; evaluado?: boolean; evaluadoEn?: string;
 };
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
 type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
@@ -27,7 +27,7 @@ const ESTADOS: { v: Estado; t: string }[] = [
 const ACCION: Record<string, string> = {
   reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada",
   asignar_monitor: "Monitor asignado", importar: "Importación", reetiquetar: "Asientos reetiquetados", monitor_sala: "Monitor de sala",
-  evaluar: "Evaluación", no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada",
+  evaluar: "Evaluación", no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada", anular_evaluacion: "Evaluación anulada", restablecer_clave: "Clave restablecida", criterios: "Criterios",
 };
 const ROL: Record<string, string> = { admin: "Admin", coordinador: "Coordinación", monitor: "Monitor", estudiante: "Estudiante", sistema: "Sistema" };
 
@@ -211,7 +211,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
   nombreMonitor: (u: string | null) => string | null; onCerrar: () => void; onHecho: (msg: string) => Promise<void>;
 }) {
   const [hist, setHist] = useState<{ estado: "cargando" | "error" | "listo"; items: Cambio[] }>({ estado: "cargando", items: [] });
-  const [modo, setModo] = useState<"ver" | "liberar" | "cambiar">("ver");
+  const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "anular">("ver");
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -294,6 +294,22 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
           <div className={s.acts}>
             <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => { setError(""); setModo("cambiar"); }}>{p.hora ? "Cambiar hora" : "Asignar hora"}</button>
             {p.hora && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setModo("liberar"); }}>Liberar hora</button>}
+            {p.evaluado && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setMotivo(""); setModo("anular"); }}>Anular evaluación</button>}
+          </div>
+        )}
+        {modo === "ver" && p.evaluado && <div className="note note-info">Tiene evaluación guardada: no se mueve ni se libera. Si hace falta, anúlala primero.</div>}
+
+        {modo === "anular" && (
+          <div className={s.panel}>
+            <div className={s.panelTitulo}>¿Anular la evaluación de {p.nombre}?</div>
+            <div className="note note-warn">Salida de emergencia. La evaluación se guarda en el historial (no se borra) y el proyecto vuelve a Pendiente: se puede mover o volver a evaluar.</div>
+            <Motivo valor={motivo} onCambio={setMotivo} />
+            <div className={s.acts}>
+              <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => setModo("ver")}>Cancelar</button>
+              <button type="button" className="btn btn-dark" disabled={ocupado || motivo.trim().length < 3} onClick={() => void enviar({ accion: "anular", motivo: motivo.trim(), ...(p.evaluadoEn ? { version: p.evaluadoEn } : {}) }, "Evaluación anulada")}>
+                {ocupado ? "Anulando…" : "Sí, anular evaluación"}
+              </button>
+            </div>
           </div>
         )}
 

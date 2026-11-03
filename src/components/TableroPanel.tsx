@@ -207,7 +207,11 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
       )}
 
       {abierta && d && <Ficha t={abierta} d={d} mueve={mueve} ocupado={!!ocupado} onCerrar={() => setAbierta(null)} onLiberar={() => liberar(abierta)}
-        onCambiarMentor={(asiento) => void enviar(abierta, { accion: "cambiar", inicio: abierta.inicio, asiento, otraCiudad: true, motivo: "Tablero: cambio de mentor" }, "Mentor cambiado")} />}
+        onCambiarMentor={(asiento) => void enviar(abierta, { accion: "cambiar", inicio: abierta.inicio, asiento, otraCiudad: true, motivo: "Tablero: cambio de mentor" }, "Mentor cambiado")}
+        onAnular={(motivo) => { const t = abierta; setConfirmar({
+          titulo: `¿Anular la evaluación de ${t.proyecto}?`, avisos: ["La evaluación se guarda en el historial (no se borra) y el proyecto vuelve a Pendiente: se puede mover o volver a evaluar.", `Motivo: ${motivo}`], si: "Sí, anular",
+          ok: () => void enviar(t, { accion: "anular", motivo, ...(t.evaluadoEn ? { version: t.evaluadoEn } : {}) }, "Evaluación anulada"),
+        }); }} />}
 
       {confirmar && (
         <div className={s.overlay} role="alertdialog" aria-modal="true" aria-labelledby="c-t">
@@ -293,12 +297,13 @@ function TarjetaVista({ t, flotando, onClick }: { t: Tarjeta; flotando?: boolean
 const fmtFecha = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
 const ACCION: Record<string, string> = {
   reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada", asignar_monitor: "Monitor asignado", evaluar: "Evaluación",
-  no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada",
+  no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada", anular_evaluacion: "Evaluación anulada",
 };
 
-function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor }: {
-  t: Tarjeta; d: DatosTablero; mueve: boolean; ocupado: boolean; onCerrar: () => void; onLiberar: () => void; onCambiarMentor: (asiento: string) => void;
+function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onAnular }: {
+  t: Tarjeta; d: DatosTablero; mueve: boolean; ocupado: boolean; onCerrar: () => void; onLiberar: () => void; onCambiarMentor: (asiento: string) => void; onAnular: (motivo: string) => void;
 }) {
+  const [motivoAnular, setMotivoAnular] = useState("");
   const [hist, setHist] = useState<Cambio[] | null>(null);
   const [asiento, setAsiento] = useState("");
   useEffect(() => {
@@ -326,7 +331,16 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor }: {
           {t.inicio && <div><span>Monitor</span><b>{t.monitor ?? "Sin monitor"}</b></div>}
           <div><span>Estado</span><b><span className={`${s.estado} ${s[`estado_${t.estado}`]}`}>{t.evaluado ? "Evaluado" : ESTADO[t.estado]}</span></b></div>
         </div>
-        {mueve && t.evaluado && <div className="note note-warn">Ya tiene una evaluación guardada: no se mueve ni se libera.</div>}
+        {mueve && t.evaluado && (
+          <div className={s.panel}>
+            <div className="note note-warn">Ya tiene una evaluación guardada: no se mueve ni se libera. Salida de emergencia: anularla (se guarda en el historial y vuelve a Pendiente).</div>
+            <label className={s.campo}>
+              <span className="label">Motivo para anular la evaluación</span>
+              <input className="input" value={motivoAnular} maxLength={300} onChange={(e) => setMotivoAnular(e.target.value)} placeholder="Ej.: se evaluó al proyecto equivocado" />
+            </label>
+            <div className={s.acts}><button type="button" className="btn btn-dark" disabled={ocupado || motivoAnular.trim().length < 3} onClick={() => onAnular(motivoAnular.trim())}>Anular evaluación</button></div>
+          </div>
+        )}
         {mueve && !t.evaluado && t.inicio && (
           <div className={s.panel}>
             <label className={s.campo}>

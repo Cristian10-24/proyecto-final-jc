@@ -51,6 +51,7 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["rechazar una sugerencia", async () => (await import("@/app/api/admin/sugerencias/[id]/route")).POST(json("POST", { accion: "rechazar", motivo: "No hay cupo" }), ctx)],
   ["cambiar la hora (Horarios o tablero)", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z" }), ctx)],
   ["cambiar el mentor desde el tablero", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z", asiento: ID }), ctx)],
+  ["anular una evaluación", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "anular", motivo: "Error de mentor" }), ctx)],
   ["liberar una hora", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "liberar" }), ctx)],
   ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
 ];
@@ -176,6 +177,17 @@ describe("Criterios: POST desde otro origen y validación", () => {
     const { GET } = await import("@/app/api/evaluacion/seguimiento/route");
     for (const q of ["dia=12-11-2026", "ciudad=Narnia", "dia=2026-11-12&otro=1"])
       expect((await GET(new Request(`http://localhost/x?${q}`))).status).toBe(400);
+  });
+});
+
+describe("Anular evaluación: motivo obligatorio y origen", () => {
+  it("400 sin motivo, vacío, corto, largo o con campos de más; 403 desde otro origen", async () => {
+    await como("admin");
+    const { POST } = await import("@/app/api/admin/proyectos/[id]/route");
+    for (const body of [{ accion: "anular" }, { accion: "anular", motivo: "" }, { accion: "anular", motivo: "   " }, { accion: "anular", motivo: "ab" }, { accion: "anular", motivo: "x".repeat(301) }, { accion: "anular", motivo: "Error de mentor", otro: 1 }])
+      expect((await POST(json("POST", body), ctx)).status).toBe(400);
+    const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "anular", motivo: "Error de mentor" }) });
+    expect((await POST(req, ctx)).status).toBe(403);
   });
 });
 

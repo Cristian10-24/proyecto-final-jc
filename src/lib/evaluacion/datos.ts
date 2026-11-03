@@ -33,6 +33,8 @@ export type EvalResultado = {
   actualizadoEn: Date;
   actualizadoPor: string;
 };
+/** Evaluación anulada por el admin (salida de emergencia): se guarda tal como estaba, no se borra. */
+export type EvalAnulada = { _id?: ObjectId; proyectoId: ObjectId; evaluaciones: EvalResultado[]; motivo: string; anuladoPor: string; anuladoEn: Date };
 export type EvalBorrador = { _id: string; usuario: string; datos: Borrador; actualizadoEn: Date };
 export type EvalConfig = { _id: "criterios"; exA: number; exB: number; actualizadoEn: Date };
 

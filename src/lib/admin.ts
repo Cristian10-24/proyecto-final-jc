@@ -3,6 +3,9 @@ import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
+import { calc } from "./evaluacion/criterios";
+import { criterios } from "./evaluacion/datos";
+import { enmascararNumero } from "./estudiante";
 import { Falla, liberarProyecto, moverProyecto } from "./mover";
 import type { Actor, Asiento, Proyecto } from "./types";
 
@@ -17,6 +20,10 @@ export type FilaProyecto = {
   integrantes: { nombre: string; documento: string }[];
   monitor: string | null;
   hora: { inicio: string; mentor: string } | null;
+  /** Tiene evaluación guardada (no se mueve ni se libera; el admin puede anularla). */
+  evaluado: boolean;
+  /** Última vez que se guardó la evaluación: el admin anula esa versión y no otra más nueva. */
+  evaluadoEn?: string;
 };
 
 export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" };
@@ -40,6 +47,12 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
   const ocupados = await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }).toArray();
   const porProyecto = new Map(ocupados.map((a) => [String(a.proyectoId), a]));
   const nombres = new Map((await mentores.find({}).toArray()).map((m) => [m._id, m.nombre]));
+  const { evalResultados } = await collections();
+  const evaluadoEn = new Map<string, string>();
+  for (const e of await evalResultados.find({ proyectoId: { $in: lista.map((p) => p._id) }, noPresento: false }, { projection: { proyectoId: 1, actualizadoEn: 1 } }).toArray()) {
+    const k = String(e.proyectoId), t = e.actualizadoEn.toISOString();
+    if (!evaluadoEn.has(k) || evaluadoEn.get(k)! < t) evaluadoEn.set(k, t);
+  }
   return lista
     .map((p): FilaProyecto => {
       const a = porProyecto.get(String(p._id));
@@ -48,6 +61,7 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
         integrantes: p.integrantes.map((i) => ({ nombre: i.nombre, documento: i.documento })),
         monitor: p.monitor ?? null,
         hora: a ? { inicio: a.inicio.toISOString(), mentor: nombres.get(a.mentorId) ?? a.mentorId } : null,
+        evaluado: evaluadoEn.has(String(p._id)), ...(evaluadoEn.has(String(p._id)) ? { evaluadoEn: evaluadoEn.get(String(p._id))! } : {}),
       };
     });
 }
@@ -82,6 +96,41 @@ export async function liberar(proyectoId: ObjectId, motivo: string, actor: Actor
     throw e;
   }
   return { ok: true };
+}
+
+/**
+ * Salida de emergencia (solo admin): anula la evaluación del proyecto. Las evaluaciones se copian a
+ * `evaluacion_anuladas` (no se pierden), se borran de las vigentes y el proyecto vuelve a Pendiente: se puede mover o
+ * volver a evaluar. Toca el asiento (`rev`) para chocar con un guardado simultáneo del mentor. Deja changeLog.
+ */
+export async function anularEvaluacion(proyectoId: ObjectId, motivo: string, actor: Actor, version?: string): Promise<ResultadoAdmin> {
+  const c = await collections();
+  const p = await c.proyectos.findOne({ _id: proyectoId }, { projection: { integrantes: 1 } });
+  if (!p) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
+  let n = 0, cambio = false;
+  await transaccion(async (s) => {
+    const evals = await c.evalResultados.find({ proyectoId }, { session: s }).toArray();
+    const vigentes = evals.filter((e) => !e.noPresento);
+    n = vigentes.length;
+    if (!n) return;
+    // Solo la versión que vio el admin: si el mentor guardó después, se rechaza (vuelve a abrir la ficha).
+    const ultima = new Date(Math.max(...vigentes.map((e) => e.actualizadoEn.getTime()))).toISOString();
+    if (version && version !== ultima) { cambio = true; return; }
+    const crit = await criterios();
+    const ahora = new Date();
+    await c.asientos.updateOne({ proyectoId }, { $inc: { rev: 1 } }, { session: s });
+    await c.evalAnuladas.insertOne({ proyectoId, evaluaciones: evals, motivo, anuladoPor: actor.usuario ?? actor.rol, anuladoEn: ahora }, { session: s });
+    await c.evalResultados.deleteMany({ proyectoId }, { session: s });
+    await c.evalBorradores.deleteOne({ _id: String(proyectoId) }, { session: s }); // un borrador viejo no vuelve a ofrecerse
+    // Nunca el documento completo en el historial (lo ve coordinación): si no está el integrante, enmascarado.
+    const nombre = (doc: string) => p.integrantes.find((x) => x.documento === doc)?.nombre.split(" ")[0] ?? enmascararNumero(doc);
+    await c.changeLog.insertOne({
+      proyectoId, accion: "anular_evaluacion", anterior: evals.map((e) => `${nombre(e.documento)}: ${calc(e, crit).res}`).join(" · "),
+      nuevo: "Pendiente", motivo, actor, fecha: ahora,
+    }, { session: s });
+  });
+  if (cambio) return { ok: false, error: "cambio", mensaje: "El mentor guardó la evaluación otra vez mientras tanto. Cierra la ficha, revisa y vuelve a anular si hace falta." };
+  return n ? { ok: true } : { ok: false, error: "sin_evaluacion", mensaje: "Este proyecto no tiene una evaluación guardada." };
 }
 
 /**
