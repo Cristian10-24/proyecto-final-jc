@@ -1,6 +1,6 @@
-import { BLOQUES_POR_HORA, inicioUTC, MINUTOS_BLOQUE } from "./edicion";
+import { BLOQUES_POR_HORA, horaCOL, inicioUTC, MINUTOS_BLOQUE } from "./edicion";
 import { NOMBRES_CIUDADES, presentaAntesDeClausura } from "./ciudades";
-import type { CupoCiudad } from "./types";
+import type { Asiento, CupoCiudad, DiaConfig } from "./types";
 
 /** En la hoja Cupos, "Todas" = cualquier ciudad que aún no haya tenido su clausura ese día. */
 export const TODAS = "Todas";
@@ -91,4 +91,59 @@ export function resumenPorDia(asientos: { dia: string; ciudades: string[] }[]) {
     dias.set(a.dia, d);
   }
   return [...dias.values()].sort((a, b) => a.dia.localeCompare(b.dia));
+}
+
+/** Ciudades que presentan un día, con su apertura. Una fila explícita gana a "Todas". */
+export function ciudadesDelDia(cupos: CupoCiudad[], dia: string): Map<string, Date | null> {
+  const out = new Map<string, Date | null>();
+  for (const c of cupos) if (c.ciudad !== TODAS) out.set(c.ciudad, c.abre);
+  for (const c of cupos) if (c.ciudad === TODAS) for (const x of expandirCiudades(TODAS, dia)) if (!out.has(x)) out.set(x, c.abre);
+  return out;
+}
+
+/** Días en los que presenta una ciudad, en orden. */
+export function diasPorCiudad(dias: DiaConfig[], ciudad: string): string[] {
+  return dias.filter((d) => ciudadesDelDia(d.ciudades, d._id).has(ciudad)).map((d) => d._id).sort();
+}
+
+/** true si la ciudad presenta ese día y su apertura ya pasó (o no tiene). */
+export function puedeElegir(dia: DiaConfig | undefined, ciudad: string, ahora: Date): boolean {
+  if (!dia) return false;
+  const c = ciudadesDelDia(dia.ciudades, dia._id);
+  if (!c.has(ciudad)) return false;
+  const abre = c.get(ciudad);
+  return !abre || abre.getTime() <= ahora.getTime();
+}
+
+/** Bloques (inicio) con al menos un asiento libre para la ciudad, futuros y en orden. Sin conteos. */
+export function horasDisponibles(asientos: Pick<Asiento, "inicio" | "ciudades" | "proyectoId">[], ciudad: string, ahora: Date): Date[] {
+  const vistos = new Map<number, Date>();
+  for (const a of asientos)
+    if (!a.proyectoId && a.ciudades.includes(ciudad) && a.inicio.getTime() > ahora.getTime()) vistos.set(a.inicio.getTime(), a.inicio);
+  return [...vistos.keys()].sort((x, y) => x - y).map((t) => vistos.get(t)!);
+}
+
+/** Agrupa bloques por hora de Colombia, para mostrar "8 a. m.: 8:00 · 8:15 · 8:45". */
+export function agruparPorHora(bloques: Date[]): { hora: number; bloques: Date[] }[] {
+  const grupos: { hora: number; bloques: Date[] }[] = [];
+  for (const b of bloques) {
+    const h = horaCOL(b);
+    const g = grupos[grupos.length - 1];
+    if (g && g.hora === h) g.bloques.push(b);
+    else grupos.push({ hora: h, bloques: [b] });
+  }
+  return grupos;
+}
+
+/** Asientos por hora (COL) y por grupo de ciudades: para revisar el reparto. */
+export function repartoPorHora(asientos: Pick<AsientoNuevo, "inicio" | "ciudades">[]): Map<number, Record<string, number>> {
+  const out = new Map<number, Record<string, number>>();
+  for (const a of asientos) {
+    const h = horaCOL(a.inicio);
+    const r = out.get(h) ?? {};
+    const k = a.ciudades.length ? a.ciudades.join(" + ") : "(sin ciudad)";
+    r[k] = (r[k] ?? 0) + 1;
+    out.set(h, r);
+  }
+  return out;
 }
