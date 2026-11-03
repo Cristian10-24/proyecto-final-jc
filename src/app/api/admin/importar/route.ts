@@ -49,8 +49,8 @@ export async function POST(req: Request) {
   try {
     await aplicarMentores(libro, actor);
   } catch (e) {
-    if (e instanceof Error && e.message === "ya_hay_reservas")
-      return NextResponse.json({ error: "ya_hay_reservas", mensaje: "Alguien reservó mientras importabas. Revisa la vista previa otra vez." }, { status: 409 });
+    if (e instanceof Error && e.message === "conflictos")
+      return NextResponse.json({ error: "conflictos", mensaje: "Alguien reservó una hora que el archivo quita. Revisa la vista previa otra vez." }, { status: 409 });
     throw e;
   }
   return NextResponse.json({ tipo, previa, aplicado: true });

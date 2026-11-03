@@ -9,6 +9,7 @@ Meta: Fase 1 en producción antes de que empiecen las presentaciones, para que l
 - Jueves 12: 80 cupos reservados para Cali y máximo 40 para Cartagena. Viernes 13: lo que falte de Cartagena; Barranquilla se abre en la fecha y hora que configure el admin. Cali no puede el 13.
 - Uruguay participa: se muestra la hora COL y la de UY.
 - Límite de intentos: por documento (bajo) y por IP (solo fallos, con un tope alto).
+- Reimportar mentores: una hora-mentor que se quita y ya tiene proyecto reservado no se borra; la vista previa la muestra como conflicto con el proyecto afectado, para moverlo primero. La vista previa muestra el total de horas por mentor.
 - Fase 1 incluye una acción de admin para liberar o cambiar la hora de un proyecto, con registro en changeLog.
 
 ## Diseño: cupos por ciudad con asientos etiquetados (diseño b)

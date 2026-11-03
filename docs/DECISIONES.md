@@ -7,5 +7,5 @@
 - Ciudad "Todas" en Cupos = asientos libres para cualquier ciudad que aún no tenga su clausura ese día (del martes 17 en adelante). Una ciudad nunca presenta el día de su clausura ni después (ADR 0005).
 - Reparto proporcional por puesto en orden de hora (Bresenham): cada hora recibe su parte de cada ciudad y los totales son exactos.
 - Identidad del mentor = encabezado de su columna en Horarios; la hoja Mentores solo agrega correo y celular (aviso si falta).
-- Reimportar mentores reemplaza mentores, días y asientos en una transacción, y se bloquea si ya hay reservas. Reimportar proyectos actualiza por código y no borra.
+- Reimportar mentores sincroniza asientos en una transacción: reservados se conservan, libres se reetiquetan o borran; si una hora reservada desaparece, es conflicto y no se aplica nada. Reimportar proyectos actualiza por código y no borra.
 - La fuente de verdad de la disponibilidad es la hoja Horarios; "Proyectos por franja" ya no es verificación obligatoria y `verificar:franjas` solo informa diferencias.

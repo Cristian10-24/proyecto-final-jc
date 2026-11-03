@@ -68,13 +68,30 @@ describe("importar proyectos", () => {
     expect(previa.errores[0]?.mensaje).toMatch(/ya es del proyecto P-2/);
   });
 
-  it("con reservas no deja reemplazar asientos ni cambiar la ciudad de un proyecto con hora", async () => {
+  it("con reservas: reimportar conserva la reserva; quitar su hora-mentor es un conflicto", async () => {
     const c = await db.collections();
     const p2 = await c.proyectos.findOne({ codigo: "P-2" });
-    await c.asientos.updateOne({ ciudades: "Cartagena", proyectoId: null }, { $set: { proyectoId: p2!._id } });
+    // Reserva a las 9:00 del jueves con el mentor 3.
+    const reservado = await c.asientos.findOneAndUpdate({ dia: "2026-11-12", mentorId: "mentor-prueba-3", inicio: new Date("2026-11-12T14:00:00Z") }, { $set: { proyectoId: p2!._id } }, { returnDocument: "after" });
 
-    expect((await previaMentores(libroMentores())).errores[0]?.mensaje).toMatch(/Ya hay 1 proyectos con hora/);
-    await expect(aplicarMentores(libroMentores(), actor)).rejects.toThrow("ya_hay_reservas");
+    const mismo = await previaMentores(libroMentores());
+    expect(mismo.errores).toEqual([]);
+    expect(mismo.reservadosQueSeConservan).toBe(1);
+    expect(mismo.horasPorMentor).toEqual([{ nombre: "Mentor Prueba 1", horas: 3 }, { nombre: "Mentor Prueba 2", horas: 3 }, { nombre: "Mentor Prueba 3", horas: 2 }]);
+    await aplicarMentores(libroMentores(), actor);
+    expect(await c.asientos.findOne({ _id: reservado!._id })).toMatchObject({ proyectoId: p2!._id });
+    expect(await c.asientos.countDocuments()).toBe(32);
+
+    // Mentor 3 deja de estar el jueves: su asiento reservado no se borra, se reporta.
+    const sinM3 = leerLibroMentores(libro({
+      Horarios: horarios([{ dia: "Jueves 12 nov", horas: [8, 9], mentores: 2 }, { dia: "Viernes 13 nov", horas: [16], mentores: 2 }]),
+      Cupos: [ENC_CUPOS, ["Jueves 12 nov", "Cali", 8, "x", null], ["Jueves 12 nov", "Cartagena", 8, null, null], ["Viernes 13 nov", "Barranquilla", null, "x", null]],
+    }));
+    const previa = await previaMentores(sinM3);
+    expect(previa.errores).toHaveLength(1);
+    expect(previa.errores[0]!.mensaje).toMatch(/Conflicto: P-2 \(Cartagena\) tiene hora el 2026-11-12 a las 9:00 a\. m\. con Mentor Prueba 3/);
+    await expect(aplicarMentores(sinM3, actor)).rejects.toThrow("conflictos");
+    expect(await c.asientos.countDocuments()).toBe(32);
 
     const d = leer([["P-2", "Cali", "Dos", null, "2000000002", "Luis Dos", "2000000003", "Sara Tres"]]);
     expect((await previaProyectos(d.proyectos, d.errores)).errores[0]?.mensaje).toMatch(/ya tiene hora en Cartagena/);

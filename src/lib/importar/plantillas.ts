@@ -72,7 +72,7 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
       "  Una ciudad no puede presentar el día de su clausura ni después.",
       "  Abre: fecha y hora de Colombia desde la que esa ciudad puede elegir ese día (vacío = desde que se abre el portal).",
       "Los cupos se reparten en proporción en cada hora del día, para que todas las ciudades tengan opciones en todas las horas.",
-      "Volver a importar reemplaza mentores, cupos y asientos, y solo se puede mientras nadie haya reservado.",
+      "Volver a importar reemplaza mentores y cupos. Las horas ya reservadas se conservan; si el archivo quita una, la vista previa la muestra como conflicto.",
     ]);
   }
   return Buffer.from(await wb.xlsx.writeBuffer());

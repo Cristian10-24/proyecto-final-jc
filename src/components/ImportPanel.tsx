@@ -122,6 +122,11 @@ function ResumenMentores({ p }: { p: PreviaMentores }) {
           ))}
         </tbody>
       </table>
+      {p.reservadosQueSeConservan > 0 && <div className="note note-info">{p.reservadosQueSeConservan} horas ya reservadas se conservan tal cual.</div>}
+      <table className={s.tabla}>
+        <thead><tr><th>Mentor</th><th>Horas</th></tr></thead>
+        <tbody>{p.horasPorMentor.map((m) => <tr key={m.nombre}><td>{m.nombre}</td><td>{m.horas}</td></tr>)}</tbody>
+      </table>
     </div>
   );
 }
