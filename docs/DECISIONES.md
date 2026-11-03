@@ -23,3 +23,5 @@
 - Cambiar hora: el admin ve también los bloques que solo tienen asientos libres de otra ciudad ("de Cartagena"); puede usarlos tras la advertencia "este asiento era de Cartagena". Siempre se toma primero un asiento de su ciudad; si es ajeno, el changeLog lo anota ("· asiento de Cartagena"). Si el proyecto no tenía hora, la misma acción la asigna.
 - Reetiquetar: pasa N asientos LIBRES de un grupo de ciudades a otras, el mismo día, repartidos a lo largo del día (no los primeros). Los reservados no se tocan.
 - changeLog guarda las horas como "AAAA-MM-DD h:mm a. m." (hora COL), tanto en reservas del estudiante como en acciones del admin.
+- Seguimiento: el monitor ve sus ciudades con documento enmascarado; "Copiar pendientes" arma un texto por ciudad con nombres, proyecto y el enlace del portal. El Excel del cronograma (con celulares completos) es solo para coordinación y admin.
+- Resumen de coordinación en /admin: avance por ciudad (de menor a mayor) y ocupación por día; Excel con una hoja por día (hora COL y UY, mentor = sala, monitor, integrantes).

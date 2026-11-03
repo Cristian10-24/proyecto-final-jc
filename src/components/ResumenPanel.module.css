@@ -1,0 +1,72 @@
+/* Resumen de coordinación. Tokens en src/app/tokens.css; pantalla en docs/DISENO.md (4 · Coordinación). */
+.kicker { font: var(--t-kicker); letter-spacing: var(--kicker-spacing); color: var(--muted-2); text-transform: uppercase; }
+.title { margin: var(--s-1) 0 0; font: var(--t-h1); letter-spacing: -.03em; }
+.lead { margin: var(--s-3) 0 var(--s-8); font: var(--t-body); color: var(--muted); max-width: 640px; }
+.desc { margin: 0; font: var(--t-small); color: var(--muted); }
+.desc b { color: var(--ink); }
+.sub { color: var(--muted-2); }
+
+.grid { display: grid; gap: var(--s-7); }
+.card { background: var(--card); border: 1px solid var(--line-2); border-radius: var(--r-2xl); box-shadow: var(--sh-card); padding: var(--s-8); display: flex; flex-direction: column; gap: var(--s-6); min-width: 0; }
+.cardTitle { margin: 0; font: var(--t-h2); letter-spacing: -.02em; }
+
+/* En paneles los botones son compactos (el .btn global es el grande del portal). */
+.card :global(.btn) { width: auto; align-self: flex-start; height: var(--h-button-sm); padding: 0 var(--s-8); border-radius: var(--r-sm); font: var(--t-label); cursor: pointer; }
+.card :global(.btn:disabled) { cursor: progress; }
+.card :global(.note) { padding: var(--s-4) var(--s-6); border-radius: var(--r-md); font: 500 14px/1.45 var(--font); }
+.nota { flex-direction: column; gap: var(--s-2) !important; }
+.nota :global(.btn) { margin-top: var(--s-2); }
+
+/* Avance total */
+.total { justify-content: center; }
+.pctGrande { font: 800 56px/1 var(--font); letter-spacing: -.04em; }
+
+/* Barra de % (≥85 verde, 65–84 amarillo, <65 rojo) */
+.barra { flex: 1; height: var(--h-progress); border-radius: var(--r-pill); background: var(--soft); overflow: hidden; min-width: 80px; }
+.barraFill { height: 100%; border-radius: var(--r-pill); background: currentColor; }
+.verde { color: var(--green); }
+.amarillo { color: var(--yellow); }
+.rojo { color: var(--red); }
+.pctGrande.amarillo, .pct.amarillo { color: var(--yellow-text); }
+.pctGrande.verde, .pct.verde { color: var(--green-dark); }
+.pctGrande.rojo, .pct.rojo { color: var(--red-ink); }
+.ocupado { background: var(--orange); }
+.lleno { background: var(--red); }
+
+/* Tabla por ciudad */
+.tablaWrap { overflow-x: auto; margin: 0 calc(-1 * var(--s-3)); }
+.tabla { width: 100%; border-collapse: collapse; font: 500 14px/1.4 var(--font); }
+.tabla th { text-align: left; font: var(--t-kicker); text-transform: uppercase; letter-spacing: var(--kicker-spacing); color: var(--muted-2); padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tabla td { padding: var(--s-5) var(--s-3); border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+.tabla tr:last-child td { border-bottom: 0; }
+.ciudad { font-weight: 700; color: var(--ink); white-space: nowrap; }
+.avance { display: flex; align-items: center; gap: var(--s-5); min-width: 200px; }
+.pct { width: 42px; text-align: right; font: 700 13.5px var(--font); font-variant-numeric: tabular-nums; }
+.tabla .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dias { color: var(--muted); white-space: nowrap; }
+
+/* Ocupación por día */
+.ocupacion { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-4); }
+.ocupacion li { display: grid; grid-template-columns: 110px minmax(0, 1fr) 96px; align-items: center; gap: var(--s-6); }
+.diaNombre { font: 700 14px var(--font); color: var(--ink); white-space: nowrap; }
+.ocupados { font: 600 13.5px var(--font); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pie { margin: 0; font: 500 12.5px var(--font); color: var(--muted-2); }
+
+.spin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .45); border-top-color: #fff; animation: spin .8s linear infinite; }
+
+/* Vacío / error / skeleton */
+.vacio { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); padding: var(--s-9) var(--s-6); text-align: center; font: var(--t-small); color: var(--muted); }
+.vacio b { font: 700 16px var(--font); color: var(--ink); }
+.vacio :global(.btn) { align-self: center; margin-top: var(--s-2); }
+.skelGrande { height: 64px; width: 140px; border-radius: var(--r-sm); background: var(--soft); animation: shimmer 1.2s ease-in-out infinite; }
+.skelFila { height: 40px; border-radius: var(--r-sm); background: var(--soft); animation: shimmer 1.2s ease-in-out infinite; }
+
+@media (min-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+  .ancho { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .card :global(.btn) { width: 100%; }
+  .ocupacion li { grid-template-columns: 1fr auto; }
+  .ocupacion li .barra { grid-column: 1 / -1; grid-row: 2; }
+}

@@ -1,0 +1,97 @@
+import ExcelJS from "exceljs";
+import type { Filter } from "mongodb";
+import { scopeFilter, type SessionUser } from "./auth";
+import { CIUDADES, horaCO, horaUY } from "./ciudades";
+import { collections } from "./db";
+import { diaCOL } from "./edicion";
+import { enmascararNumero } from "./estudiante";
+import type { Proyecto } from "./types";
+
+// Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
+
+export type FilaSeguimiento = {
+  codigo: string; nombre: string; ciudad: string; grupo?: string; monitor: string | null;
+  integrantes: { nombre: string; documento: string }[]; // documento enmascarado
+  hora: string | null; // ISO
+};
+
+export async function seguimiento(user: Pick<SessionUser, "rol" | "ciudades">): Promise<FilaSeguimiento[]> {
+  const { proyectos, asientos } = await collections();
+  const lista = await proyectos.find(scopeFilter<Proyecto>(user) as Filter<Proyecto>, { projection: { codigo: 1, nombre: 1, ciudad: 1, grupo: 1, monitor: 1, integrantes: 1 } })
+    .sort({ ciudad: 1, nombre: 1 }).toArray();
+  const horas = new Map((await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }, { projection: { proyectoId: 1, inicio: 1 } }).toArray())
+    .map((a) => [String(a.proyectoId), a.inicio.toISOString()]));
+  return lista.map((p) => ({
+    codigo: p.codigo, nombre: p.nombre, ciudad: p.ciudad, ...(p.grupo ? { grupo: p.grupo } : {}), monitor: p.monitor ?? null,
+    integrantes: p.integrantes.map((i) => ({ nombre: i.nombre, documento: enmascararNumero(i.documento) })),
+    hora: horas.get(String(p._id)) ?? null,
+  }));
+}
+
+export type ResumenCiudad = { ciudad: string; proyectos: number; conHora: number; asientosLibres: number; dias: string[] };
+export type ResumenDia = { dia: string; capacidad: number; ocupados: number };
+
+/** Avance por ciudad (de menor a mayor) y ocupación por día. Coordinación y admin. */
+export async function resumen(): Promise<{ total: number; conHora: number; ciudades: ResumenCiudad[]; dias: ResumenDia[] }> {
+  const { proyectos, asientos } = await collections();
+  const porCiudad = await proyectos.aggregate<{ _id: string; n: number }>([{ $group: { _id: "$ciudad", n: { $sum: 1 } } }]).toArray();
+  const conHora = await asientos.aggregate<{ _id: string; n: number }>([
+    { $match: { proyectoId: { $type: "objectId" } } },
+    { $lookup: { from: "proyectos", localField: "proyectoId", foreignField: "_id", as: "p" } },
+    { $group: { _id: { $first: "$p.ciudad" }, n: { $sum: 1 } } },
+  ]).toArray();
+  const libres = await asientos.aggregate<{ _id: string; n: number; dias: string[] }>([
+    { $match: { proyectoId: null } }, { $unwind: "$ciudades" },
+    { $group: { _id: "$ciudades", n: { $sum: 1 }, dias: { $addToSet: "$dia" } } },
+  ]).toArray();
+  const dias = await asientos.aggregate<{ _id: string; capacidad: number; ocupados: number }>([
+    { $group: { _id: "$dia", capacidad: { $sum: 1 }, ocupados: { $sum: { $cond: [{ $eq: [{ $type: "$proyectoId" }, "objectId"] }, 1, 0] } } } },
+    { $sort: { _id: 1 } },
+  ]).toArray();
+  const ch = new Map(conHora.map((x) => [x._id, x.n])), li = new Map(libres.map((x) => [x._id, x]));
+  const ciudades = porCiudad.map((c): ResumenCiudad => ({
+    ciudad: c._id, proyectos: c.n, conHora: ch.get(c._id) ?? 0, asientosLibres: li.get(c._id)?.n ?? 0, dias: (li.get(c._id)?.dias ?? []).sort(),
+  })).sort((a, b) => a.conHora / a.proyectos - b.conHora / b.proyectos || a.ciudad.localeCompare(b.ciudad, "es"));
+  return {
+    total: ciudades.reduce((s, c) => s + c.proyectos, 0), conHora: ciudades.reduce((s, c) => s + c.conHora, 0),
+    ciudades, dias: dias.map((d) => ({ dia: d._id, capacidad: d.capacidad, ocupados: d.ocupados })),
+  };
+}
+
+const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const nombreHoja = (dia: string) => { const t = fmtDia.format(new Date(dia + "T12:00:00Z")).replace(/,/g, ""); return (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 31); };
+
+/**
+ * Cronograma en Excel: una hoja por día con hora (COL y UY), mentor (sala), monitor, ciudad, proyecto
+ * e integrantes con celular. Solo coordinación y admin (permiso descargar_excel).
+ */
+export async function cronogramaExcel(): Promise<Buffer> {
+  const { asientos, proyectos, mentores, users } = await collections();
+  const ocupados = await asientos.find({ proyectoId: { $type: "objectId" } }).sort({ inicio: 1, mentorId: 1 }).toArray();
+  const proys = new Map((await proyectos.find({ _id: { $in: ocupados.map((a) => a.proyectoId!) } }).toArray()).map((p) => [String(p._id), p]));
+  const nombresMentor = new Map((await mentores.find({}).toArray()).map((m) => [m._id, m.nombre]));
+  const nombresMonitor = new Map((await users.find({ rol: "monitor" }, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
+  const uruguay = new Set<string>(CIUDADES.filter((c) => c.pais === "UY").map((c) => c.nombre));
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Proyecto final JC 2026";
+  const porDia = new Map<string, typeof ocupados>();
+  for (const a of ocupados) porDia.set(diaCOL(a.inicio), [...(porDia.get(diaCOL(a.inicio)) ?? []), a]);
+  if (!porDia.size) wb.addWorksheet("Sin reservas").addRow(["Todavía no hay proyectos con hora."]);
+  for (const [dia, lista] of porDia) {
+    const ws = wb.addWorksheet(nombreHoja(dia));
+    ws.addRow(["Hora COL", "Hora UY", "Mentor (sala)", "Monitor", "Ciudad", "Proyecto", "Código", "Integrante 1", "Celular 1", "Integrante 2", "Celular 2"]).font = { bold: true };
+    for (const a of lista) {
+      const p = proys.get(String(a.proyectoId));
+      const [i1, i2] = p?.integrantes ?? [];
+      ws.addRow([
+        horaCO(a.inicio), p && uruguay.has(p.ciudad) ? horaUY(a.inicio) : "", nombresMentor.get(a.mentorId) ?? a.mentorId,
+        p?.monitor ? nombresMonitor.get(p.monitor) ?? p.monitor : "Por asignar", p?.ciudad ?? "", p?.nombre ?? "", p?.codigo ?? "",
+        i1?.nombre ?? "", i1?.celular ?? "", i2?.nombre ?? "", i2?.celular ?? "",
+      ]);
+    }
+    ws.columns.forEach((c, i) => { c.width = [11, 11, 26, 22, 14, 34, 16, 28, 16, 28, 16][i]; });
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+  }
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
