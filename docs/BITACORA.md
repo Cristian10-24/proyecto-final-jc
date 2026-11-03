@@ -98,3 +98,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 ## Ajuste · usuario:add desde PowerShell y nombres parecidos
 - Commit: `fix: usuario:add funciona desde PowerShell y sugiere el mentor más parecido`. En Windows PowerShell 5.1, `npm` (npm.ps1) se come el `--` y las comillas: ahora el script lee --rol/--clave también de `npm_config_*` y une el nombre en varias palabras. El error de mentor inexistente muestra el nombre recibido y hasta 3 parecidos ("¿Quisiste decir …?"), también en la página Usuarios. 146 unitarias y 76 con base; typecheck y build pasan.
 - Verificar: en PowerShell `npm run usuario:add -- mentor.x "Mentr Prueba 1" --rol=mentor` → sugiere "Mentor Prueba 1" (no escribe nada). La base local solo tenía los 3 mentores de la semilla: Yehiron no existía porque el Excel real no se ha importado ahí.
+
+## Semilla de demostración
+- Commit: `feat: semilla de demostración completa (npm run semilla:demo)`. Arma en memoria los libros de Mentores/Horarios/Cupos (9 mentores, 9 días reales, 1 a 7 por hora, reglas reales de Cupos), Proyectos (40, 4 ciudades, pareja e individual, Básica/Avanzada) y Salas y monitores (7 salas; monitor.demo de Cali importado en salas con Cali y Cartagena, el resto automático) y los pasa por los importadores reales; reserva la mitad y deja evaluaciones de ejemplo (Excelente+destacado, pareja con No se presentó, borrador). 146 unitarias y 76 con base; typecheck y build pasan.
+- Verificar: `npm run semilla:demo -- --reset --hoy=2026-11-03` (probado en `proyecto_final_jc_pruebas`; tu base local NO se tocó) → usuarios *.demo con clave `demo-2026` (solo local). Se niega con Atlas, con URI no local y con --hoy después del 21.
+- Pendiente: Paso 12.
