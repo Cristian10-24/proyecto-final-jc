@@ -1,7 +1,10 @@
 import bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
+import type { ObjectId } from "mongodb";
 import { z } from "zod";
-import { ROLES } from "./permisos";
+import { collections } from "./db";
+import { idMentor } from "./importar/mentores";
+import { ROLES, type RolUsuario } from "./permisos";
 import type { User } from "./types";
 import { cleanSpaces, normalizeCity } from "./validation/name";
 
@@ -45,6 +48,20 @@ export const EdicionUsuario = z
   })
   .strict()
   .superRefine(conCiudades);
+
+/** El mentor se reconoce por su nombre, escrito igual que en la hoja Horarios. */
+export const mentorIdDe = (rol: RolUsuario, nombre: string) => (rol === "mentor" ? idMentor(nombre) : undefined);
+
+/** Revisa el mentor de un usuario: que exista en Horarios (si ya se importó) y que no lo tenga otro usuario. */
+export async function errorMentor(mentorId: string | undefined, excepto?: ObjectId): Promise<string | null> {
+  if (!mentorId) return null;
+  const { mentores, users } = await collections();
+  if ((await mentores.estimatedDocumentCount()) && !(await mentores.findOne({ _id: mentorId })))
+    return "No hay un mentor con ese nombre en la hoja Horarios: escríbelo igual que allí.";
+  if (await users.findOne({ mentorId, ...(excepto ? { _id: { $ne: excepto } } : {}) }))
+    return "Ya hay un usuario para ese mentor.";
+  return null;
+}
 
 /** Lo que se muestra de un usuario (nunca el hash). */
 export function vistaUsuario(u: User) {

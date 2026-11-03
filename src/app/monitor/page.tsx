@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import SeguimientoPanel from "@/components/SeguimientoPanel";
 import { getCurrentUser } from "@/lib/auth";
+import { inicioPorRol, puede } from "@/lib/permisos";
 
 export const metadata = { title: "Seguimiento · Proyecto final · Jóvenes creaTIvos" };
 export const dynamic = "force-dynamic";
@@ -9,5 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function MonitorPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (!puede(user.rol, "ver_seguimiento")) redirect(inicioPorRol(user.rol));
   return <SeguimientoPanel user={user} />;
 }

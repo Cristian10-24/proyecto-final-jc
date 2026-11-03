@@ -13,6 +13,8 @@ export type User = {
   passwordHash: string;
   rol: RolUsuario;
   ciudades: string[];
+  /** Solo rol mentor: su id en Horarios (idMentor de su nombre). */
+  mentorId?: string;
   activo: boolean;
   /** Sube al restablecer la clave o desactivar: invalida las sesiones abiertas. */
   tokenVersion?: number;
@@ -24,7 +26,7 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente";
   anterior?: string;
   nuevo?: string;
   motivo?: string;

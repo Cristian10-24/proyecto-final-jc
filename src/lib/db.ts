@@ -1,4 +1,5 @@
 import { MongoClient, type ClientSession, type Db } from "mongodb";
+import type { EvalBorrador, EvalConfig, EvalResultado } from "./evaluacion/datos";
 import type { PlanSala } from "./salas";
 import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
@@ -108,12 +109,17 @@ export async function collections() {
     dias: db.collection<DiaConfig>("dias"),
     salasConfig: db.collection<SalasConfig>("salasConfig"),
     planSalas: db.collection<PlanSala>("planSalas"),
+    evalResultados: db.collection<EvalResultado>("evaluacion_resultados"),
+    evalBorradores: db.collection<EvalBorrador>("evaluacion_borradores"),
+    evalConfig: db.collection<EvalConfig>("evaluacion_config"),
   };
 }
 
 async function ensureIndexes(db: Db) {
   await Promise.all([
     db.collection("users").createIndex({ usuario: 1 }, { unique: true }),
+    // Dos usuarios mentor nunca comparten mentor (nombres equivalentes darían el mismo mentorId).
+    db.collection("users").createIndex({ mentorId: 1 }, { unique: true, partialFilterExpression: { mentorId: { $type: "string" } } }),
     db.collection("proyectos").createIndex({ codigo: 1 }, { unique: true }),
     db.collection("proyectos").createIndex({ "integrantes.documento": 1 }, { unique: true }),
     db.collection("asientos").createIndex({ inicio: 1, mentorId: 1 }, { unique: true }),
@@ -124,6 +130,7 @@ async function ensureIndexes(db: Db) {
     // Un mentor tiene una sola sala por hora, y un monitor nunca está en dos salas a la misma hora.
     db.collection("planSalas").createIndex({ dia: 1, hora: 1, mentorId: 1 }, { unique: true }),
     db.collection("planSalas").createIndex({ dia: 1, hora: 1, monitor: 1 }, { unique: true, partialFilterExpression: { monitor: { $type: "string" } } }),
+    db.collection("evaluacion_resultados").createIndex({ proyectoId: 1 }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),
   ]);

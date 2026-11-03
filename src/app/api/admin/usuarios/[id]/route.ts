@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { collections } from "@/lib/db";
-import { EdicionUsuario, mensajeZod, vistaUsuario } from "@/lib/usuarios";
+import { EdicionUsuario, errorMentor, mensajeZod, mentorIdDe, vistaUsuario } from "@/lib/usuarios";
 
 /** Editar nombre, rol, ciudades o activo (solo administración). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -29,13 +29,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (rol === "monitor" && ciudades.length === 0)
     return NextResponse.json({ error: "datos_invalidos", mensaje: "Un monitor necesita al menos una ciudad." }, { status: 400 });
 
+  const mentorId = mentorIdDe(rol, cambios.nombre ?? actual.nombre);
+  const errM = mentorId !== actual.mentorId ? await errorMentor(mentorId, actual._id) : null;
+  if (errM) return NextResponse.json({ error: "mentor", mensaje: errM }, { status: 409 });
   const set = {
     ...(cambios.nombre !== undefined ? { nombre: cambios.nombre } : {}),
     ...(cambios.activo !== undefined ? { activo: cambios.activo } : {}),
-    rol, ciudades, actualizadoEn: new Date(),
+    rol, ciudades, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}),
   };
   // Desactivar también invalida las sesiones abiertas (por si luego se reactiva).
-  await users.updateOne({ _id: actual._id }, { $set: set, ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) });
+  await users.updateOne({ _id: actual._id }, { $set: set, ...(mentorId ? {} : { $unset: { mentorId: "" } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) });
   const u = await users.findOne({ _id: actual._id });
   return NextResponse.json({ usuario: vistaUsuario(u!) });
 }

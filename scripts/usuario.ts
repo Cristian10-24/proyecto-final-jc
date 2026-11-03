@@ -3,13 +3,13 @@
 //   npm run usuario:add -- usuario "Nombre Apellido" --rol=coordinador [--clave=CLAVE]
 //   npm run usuario:add -- usuario "Nombre Apellido" --rol=admin [--clave=CLAVE]
 //   npm run usuario:list
-// --rol: monitor (por defecto, exige ciudades) | coordinador | admin (ven todas las ciudades).
+// --rol: monitor (por defecto, exige ciudades) | coordinador | admin (ven todas las ciudades) | mentor (nombre igual que en Horarios).
 // Si el usuario ya existe, actualiza nombre, rol y ciudades, y cambia la clave solo si se da --clave
 // o si se pide --nueva-clave (genera una). Al cambiar la clave se cierran sus sesiones abiertas.
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { closeDb, collections, dbHost, dbName } from "@/lib/db";
 import { ROLES, type RolUsuario } from "@/lib/permisos";
-import { generarClave, hashClave } from "@/lib/usuarios";
+import { errorMentor, generarClave, hashClave, mentorIdDe } from "@/lib/usuarios";
 import { ciudadExistente, cleanSpaces, normalizeCity } from "@/lib/validation/name";
 
 /**
@@ -25,7 +25,7 @@ function baseLocalOAtlasExplicito(args: string[]) {
   if (!local) console.log(`ATENCIÓN: escribiendo en una base que no es local (${host}).`);
 }
 
-const USO = 'Uso: npm run usuario:add -- usuario "Nombre" ["Ciudad1,Ciudad2"] [--rol=monitor|coordinador|admin] [--clave=CLAVE] [--nueva-clave]';
+const USO = 'Uso: npm run usuario:add -- usuario "Nombre" ["Ciudad1,Ciudad2"] [--rol=mentor|monitor|coordinador|admin] [--clave=CLAVE] [--nueva-clave]';
 
 async function add(args: string[]) {
   const opt = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
@@ -53,14 +53,17 @@ async function add(args: string[]) {
   console.log(`Base: ${dbName()} en ${dbHost()}`);
 
   const existe = await users.findOne({ usuario });
+  const errM = await errorMentor(mentorIdDe(rol, nombre), existe?._id);
+  if (errM) throw new Error(errM);
   const cambiarClave = !existe || claveArg !== undefined || args.includes("--nueva-clave");
   const clave = cambiarClave ? claveArg ?? generarClave() : null;
   const now = new Date();
   await users.updateOne(
     { usuario },
     {
-      $set: { nombre, ciudades, rol, activo: true, actualizadoEn: now, ...(clave ? { passwordHash: await hashClave(clave) } : {}) },
+      $set: { nombre, ciudades, rol, activo: true, ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}), actualizadoEn: now, ...(clave ? { passwordHash: await hashClave(clave) } : {}) },
       $setOnInsert: { creadoEn: now },
+      ...(rol === "mentor" ? {} : { $unset: { mentorId: "" } }),
       ...(clave ? { $inc: { tokenVersion: existe ? 1 : 0 } } : {}),
     },
     { upsert: true },

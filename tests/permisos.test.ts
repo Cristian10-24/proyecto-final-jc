@@ -24,10 +24,10 @@ vi.mock("@/lib/db", () => ({
   }),
 }));
 
-async function como(rol: "monitor" | "coordinador" | "admin") {
+async function como(rol: "mentor" | "monitor" | "coordinador" | "admin") {
   const { createToken } = await import("@/lib/auth");
   const _id = new ObjectId();
-  estado.usuario = { _id, usuario: `prueba-${rol}`, nombre: "Usuario Prueba", rol, ciudades: rol === "monitor" ? ["Cali"] : [], activo: true, tokenVersion: 0 };
+  estado.usuario = { _id, usuario: `prueba-${rol}`, nombre: "Usuario Prueba", rol, ciudades: rol === "monitor" ? ["Cali"] : [], ...(rol === "mentor" ? { mentorId: "mentor-prueba" } : {}), activo: true, tokenVersion: 0 };
   estado.token = createToken(_id.toHexString(), 0);
 }
 
@@ -47,16 +47,29 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["descargar el plan de salas", async () => (await import("@/app/api/admin/salas/excel/route")).GET()],
 ];
 
+// Escribir una evaluación: solo el mentor (coordinación y admin solo leen).
+const soloMentor: [string, () => Promise<Response>][] = [
+  ["guardar una evaluación", async () => (await import("@/app/api/evaluacion/proyectos/[id]/route")).POST(json("POST", { accion: "presente", i: 0 }), ctx)],
+  ["guardar un borrador", async () => (await import("@/app/api/evaluacion/proyectos/[id]/route")).POST(json("POST", { accion: "borrador", formulario: {} }), ctx)],
+];
+// Ver evaluaciones: el mentor (las suyas), coordinación y admin; el monitor no.
+const verEvaluaciones: [string, () => Promise<Response>][] = [
+  ["ver la lista de evaluaciones", async () => (await import("@/app/api/evaluacion/proyectos/route")).GET(new Request("http://localhost/x"))],
+  ["ver una evaluación", async () => (await import("@/app/api/evaluacion/proyectos/[id]/route")).GET(new Request("http://localhost/x"), ctx)],
+];
+
 describe("matriz de permisos", () => {
-  const tabla: Record<Permiso, [boolean, boolean, boolean]> = {
-    // [monitor, coordinador, admin]
-    ver_seguimiento: [true, true, true],
-    ver_todas_las_ciudades: [false, true, true],
-    ver_resumen: [false, true, true],
-    descargar_excel: [false, true, true],
-    importar: [false, false, true],
-    gestionar_usuarios: [false, false, true],
-    cambiar_horario: [false, false, true],
+  const tabla: Record<Permiso, [boolean, boolean, boolean, boolean]> = {
+    // [mentor, monitor, coordinador, admin]
+    ver_seguimiento: [false, true, true, true],
+    ver_todas_las_ciudades: [false, false, true, true],
+    ver_resumen: [false, false, true, true],
+    descargar_excel: [false, false, true, true],
+    importar: [false, false, false, true],
+    gestionar_usuarios: [false, false, false, true],
+    cambiar_horario: [false, false, false, true],
+    evaluar: [true, false, false, false],
+    ver_evaluaciones: [false, false, true, true],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -70,12 +83,23 @@ describe("el coordinador recibe 403", () => {
 
 describe("el monitor recibe 403", () => {
   beforeAll(() => como("monitor"));
-  for (const [nombre, llamar] of soloAdmin) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
+  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones]) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
+});
+
+describe("el mentor recibe 403", () => {
+  beforeAll(() => como("mentor"));
+  const seguimiento: [string, () => Promise<Response>] = ["ver el seguimiento", async () => (await import("@/app/api/monitor/seguimiento/route")).GET()];
+  for (const [nombre, llamar] of [...soloAdmin, seguimiento]) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
+});
+
+describe("coordinación y admin no escriben evaluaciones", () => {
+  for (const rol of ["coordinador", "admin"] as const)
+    for (const [nombre, llamar] of soloMentor) it(`${rol}: 403 al ${nombre}`, async () => { await como(rol); expect((await llamar()).status).toBe(403); });
 });
 
 describe("sin sesión", () => {
   beforeAll(() => { estado.token = ""; estado.usuario = null; });
-  for (const [nombre, llamar] of soloAdmin) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
+  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
 });
 
 describe("sesión con clave restablecida", () => {

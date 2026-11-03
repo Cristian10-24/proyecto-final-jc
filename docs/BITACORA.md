@@ -84,3 +84,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Verificar: Importar › "Salas y monitores" (plantilla con Salas, Monitores y Disponibilidad monitores) y /admin/salas (día, "Sin monitor", cambiar monitor, Recalcular, Descargar plan de salas); `npx vitest run tests/salas.test.ts` y `npx vitest run --config vitest.db.config.mts tests/salas.db.test.ts`.
 - En el navegador solo vi el estado vacío y la tarjeta de Importar (tu servidor estaba en uso; no importé nada en tu base local): la tabla con datos está cubierta por pruebas, falta verla. revisor-pruebas ya se lanza: se quitó de PENDIENTES.
 - Pendiente: confirmar si se quiere el Excel de resultados de la evaluación (Paso 14); Paso 10.
+
+## Paso 10 · Módulo de evaluación
+- Commit: `feat: módulo de evaluación (calc, guardar, borrador, No se presentó) y rol mentor`. revisor-pruebas: 145 unitarias y 73 con base (luego 75 con las correcciones); revisor-seguridad sin altos: 1 medio corregido (índice único `users.mentorId` y 409 si dos mentores comparten nombre) y bajos corregidos (mentor debe existir en Horarios, `exigir` con varios permisos, el asiento se vuelve a revisar dentro de la transacción); typecheck y build pasan.
+- Verificar: `npx vitest run tests/evaluacion.test.ts` (calc, faltantes, Zod) y `npx vitest run --config vitest.db.config.mts tests/evaluacion.db.test.ts` (dueño, pareja, No se presentó/Deshacer, borrador, 7 mentores a la vez); `npm run usuario:add -- mentor.x "Nombre como en Horarios" --rol=mentor` entra a /mentor (página mínima: la vista llega en el Paso 11).
+- Solo backend y API (`/api/evaluacion/proyectos`); sin pantalla todavía. Pendiente: Paso 11 (vista del mentor). Sin límite de tamaño del cuerpo aparte de Zod (igual que las demás rutas).

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
-import { generarClave, hashClave, mensajeZod, NuevoUsuario, vistaUsuario } from "@/lib/usuarios";
+import { generarClave, hashClave, errorMentor, mensajeZod, mentorIdDe, NuevoUsuario, vistaUsuario } from "@/lib/usuarios";
 
 /** Lista de usuarios + ciudades disponibles (solo administración). */
 export async function GET() {
@@ -27,10 +27,13 @@ export async function POST(req: Request) {
   const { users } = await collections();
   if (await users.findOne({ usuario })) return NextResponse.json({ error: "duplicado", mensaje: `Ya existe el usuario "${usuario}".` }, { status: 409 });
 
+  const errM = await errorMentor(mentorIdDe(rol, nombre));
+  if (errM) return NextResponse.json({ error: "mentor", mensaje: errM }, { status: 409 });
+
   const clave = claveDada ?? generarClave();
   const now = new Date();
   const doc = {
-    _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [],
+    _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [], ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}),
     activo: true, passwordHash: await hashClave(clave), tokenVersion: 0, creadoEn: now, actualizadoEn: now,
   };
   await users.insertOne(doc);

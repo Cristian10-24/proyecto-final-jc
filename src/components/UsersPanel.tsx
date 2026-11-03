@@ -8,6 +8,7 @@ import AppShell from "./AppShell";
 import s from "./UsersPanel.module.css";
 
 const ROL_DESC: Record<RolUsuario, string> = {
+  mentor: "Evalúa solo los proyectos que tiene asignados. El nombre debe escribirse igual que en la hoja Horarios.",
   monitor: "Solo sus ciudades: ve quién ya eligió hora y copia los pendientes para WhatsApp.",
   coordinador: "Todas las ciudades: lo mismo que un monitor, resumen y Excel del cronograma.",
   admin: "Todo: además importa los Excel, gestiona usuarios y libera o cambia horas.",
@@ -159,7 +160,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             <div className={s.user}>{u.usuario}</div>
           </div>
           <span className={`${s.rol} ${s[`rol_${u.rol}`]}`}>{ROL_TXT[u.rol]}</span>
-          <div className={s.cities}>{u.rol === "monitor" ? u.ciudades.join(", ") : "Todas las ciudades"}</div>
+          <div className={s.cities}>{u.rol === "monitor" ? u.ciudades.join(", ") : u.rol === "mentor" ? "Sus proyectos asignados" : "Todas las ciudades"}</div>
           <div className={s.state}><i className={s.dot} style={{ background: u.activo ? "var(--green)" : "var(--muted-2)" }} />{u.activo ? "Activo" : "Inactivo"}</div>
           <div className={s.acts}>
             <button type="button" className={s.act} onClick={() => editar(u)}>Editar</button>
