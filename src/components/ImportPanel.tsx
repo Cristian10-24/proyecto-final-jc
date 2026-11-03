@@ -4,18 +4,21 @@ import { useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import type { PreviaMentores, PreviaProyectos } from "@/lib/importar/aplicar";
 import type { ErrorFila } from "@/lib/importar/excel";
+import type { PreviaSalas } from "@/lib/planSalas";
 import AppShell from "./AppShell";
 import s from "./ImportPanel.module.css";
 
-type Tipo = "proyectos" | "mentores";
+type Tipo = "proyectos" | "mentores" | "salas";
 type Resultado =
   | { tipo: "proyectos"; previa: PreviaProyectos; aplicado: boolean }
-  | { tipo: "mentores"; previa: PreviaMentores; aplicado: boolean };
+  | { tipo: "mentores"; previa: PreviaMentores; aplicado: boolean }
+  | { tipo: "salas"; previa: PreviaSalas; aplicado: boolean };
 type Estado = { archivo: File | null; cargando: boolean; error: string; resultado: Resultado | null; mapa: Record<string, string> };
 
 const TITULO: Record<Tipo, { titulo: string; desc: string }> = {
   proyectos: { titulo: "Proyectos", desc: "Una fila por proyecto con su ciudad e integrantes (individual o en pareja)." },
   mentores: { titulo: "Mentores y disponibilidad", desc: "Hojas Mentores, Horarios y Cupos. Genera los asientos de 15 min por ciudad." },
+  salas: { titulo: "Salas y monitores", desc: "Hojas Salas, Monitores y Disponibilidad monitores. Asigna sala a cada mentor y un monitor a cada sala." },
 };
 
 const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
@@ -23,7 +26,7 @@ const etiquetaDia = (dia: string) => { const t = fmtDia.format(new Date(dia + "T
 const vacio: Estado = { archivo: null, cargando: false, error: "", resultado: null, mapa: {} };
 
 export default function ImportPanel({ user }: { user: SessionUser }) {
-  const [estados, setEstados] = useState<Record<Tipo, Estado>>({ proyectos: vacio, mentores: vacio });
+  const [estados, setEstados] = useState<Record<Tipo, Estado>>({ proyectos: vacio, mentores: vacio, salas: vacio });
   const set = (t: Tipo, e: Partial<Estado>) => setEstados((x) => ({ ...x, [t]: { ...x[t], ...e } }));
 
   async function enviar(tipo: Tipo, modo: "previa" | "confirmar") {
@@ -53,7 +56,7 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
       <p className={s.lead}>Descarga la plantilla, llénala y súbela. Primero verás una vista previa con los errores por fila; nada se guarda hasta que confirmes.</p>
 
       <div className={s.grid}>
-        {(["proyectos", "mentores"] as const).map((tipo) => {
+        {(["proyectos", "mentores", "salas"] as const).map((tipo) => {
           const e = estados[tipo];
           const errores = e.resultado?.previa.errores ?? [];
           return (
@@ -76,13 +79,13 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
                 </button>
                 {e.resultado && !e.resultado.aplicado && errores.length === 0 && (
                   <button type="button" className="btn btn-primary" disabled={e.cargando} onClick={() => enviar(tipo, "confirmar")}>
-                    {e.resultado.tipo === "proyectos" ? `Importar ${e.resultado.previa.total} proyectos` : "Importar mentores y cupos"}
+                    {e.resultado.tipo === "proyectos" ? `Importar ${e.resultado.previa.total} proyectos` : e.resultado.tipo === "salas" ? "Importar salas y monitores" : "Importar mentores y cupos"}
                   </button>
                 )}
               </div>
 
               {e.error && <div className="note note-error">{e.error}</div>}
-              {e.resultado?.aplicado && <div className={s.ok}>{e.resultado.tipo === "proyectos" ? `${e.resultado.previa.total} proyectos importados. Ya pueden elegir hora cuando abran las inscripciones.` : "Mentores, cupos y asientos importados."}</div>}
+              {e.resultado?.aplicado && <div className={s.ok}>{e.resultado.tipo === "proyectos" ? `${e.resultado.previa.total} proyectos importados. Ya pueden elegir hora cuando abran las inscripciones.` : e.resultado.tipo === "salas" ? <>Plan de salas guardado. Revísalo en <a href="/admin/salas">Salas</a>.</> : "Mentores, cupos y asientos importados."}</div>}
               {e.resultado?.tipo === "proyectos" && e.resultado.previa.faltan.length > 0 && (
                 <Mapeo p={e.resultado.previa} mapa={e.mapa} cargando={e.cargando}
                   onCambio={(campo, encabezado) => set(tipo, { mapa: { ...e.mapa, [campo]: encabezado } })}
@@ -90,6 +93,7 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
               )}
               {e.resultado?.tipo === "proyectos" && e.resultado.previa.faltan.length === 0 && <ResumenProyectos p={e.resultado.previa} />}
               {e.resultado?.tipo === "mentores" && <ResumenMentores p={e.resultado.previa} />}
+              {e.resultado?.tipo === "salas" && e.resultado.previa.horasSala > 0 && <ResumenSalas p={e.resultado.previa} />}
               {errores.length > 0 && <Filas titulo={`${errores.length} ${errores.length === 1 ? "error" : "errores"}: corrige el archivo y vuelve a subirlo`} filas={errores} tono="error" />}
               {e.resultado && e.resultado.previa.avisos.length > 0 && <Filas titulo="Avisos (no impiden importar)" filas={e.resultado.previa.avisos} tono="warn" />}
             </section>
@@ -164,6 +168,25 @@ function ResumenMentores({ p }: { p: PreviaMentores }) {
         <thead><tr><th>Mentor</th><th className={s.num}>Horas</th></tr></thead>
         <tbody>{p.horasPorMentor.map((m) => <tr key={m.nombre}><td>{m.nombre}</td><td className={s.num}>{m.horas}</td></tr>)}</tbody>
       </table>
+    </div>
+  );
+}
+
+function ResumenSalas({ p }: { p: PreviaSalas }) {
+  return (
+    <div className={s.resumen}>
+      <div className={s.stats}><Stat n={p.salas} t="salas" /><Stat n={p.horasSala} t="horas-sala" /><Stat n={p.sinMonitor} t="sin monitor" /></div>
+      <p className={s.desc}>Monitores: {p.porOrigen.importado} de la hoja Monitores · {p.porOrigen.automatico} automáticos · {p.porOrigen.admin} cambios manuales que se conservan.</p>
+      <table className={s.tabla}>
+        <thead><tr><th>Día</th><th className={s.num}>Horas-sala</th><th className={s.num}>Sin monitor</th></tr></thead>
+        <tbody>{p.dias.map((d) => <tr key={d.dia}><td>{etiquetaDia(d.dia)}</td><td className={s.num}>{d.horasSala}</td><td className={s.num}>{d.sinMonitor}</td></tr>)}</tbody>
+      </table>
+      {p.cargaPorMonitor.length > 0 && (
+        <table className={s.tabla}>
+          <thead><tr><th>Monitor</th><th className={s.num}>Salas</th></tr></thead>
+          <tbody>{p.cargaPorMonitor.map((m) => <tr key={m.nombre}><td>{m.nombre}</td><td className={s.num}>{m.salas}</td></tr>)}</tbody>
+        </table>
+      )}
     </div>
   );
 }

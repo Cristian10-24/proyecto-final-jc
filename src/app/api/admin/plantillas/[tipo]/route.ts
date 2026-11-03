@@ -3,9 +3,9 @@ import { z } from "zod";
 import { exigir } from "@/lib/auth";
 import { plantilla } from "@/lib/importar/plantillas";
 
-const Tipo = z.object({ tipo: z.enum(["proyectos", "mentores"]) }).strict();
+const Tipo = z.object({ tipo: z.enum(["proyectos", "mentores", "salas"]) }).strict();
 
-/** Descarga la plantilla vacía de proyectos o de mentores (solo administración). */
+/** Descarga la plantilla vacía de proyectos, mentores o salas y monitores (solo administración). */
 export async function GET(_req: Request, { params }: { params: Promise<{ tipo: string }> }) {
   const g = await exigir("importar");
   if (g.error) return g.error;

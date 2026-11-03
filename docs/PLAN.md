@@ -75,7 +75,7 @@ Prototipo: `docs/diseno/evaluacion/index.html` (leerlo una vez en el Paso 8; des
 
 ### Pasos de la Fase 2
 - [x] 8. Leer el prototipo una vez y crear `docs/EVALUACION.md` (máx. 100 líneas). Después no volver a abrir index.html salvo para una pantalla concreta.
-- [ ] 9. Importador: Ruta, Salas, Monitores y Disponibilidad monitores; asignación automática de salas y de monitores (lo importado manda), plan de salas en el admin con salas sin monitor marcadas y cambio de monitor (changeLog), y descarga del Plan de salas.
+- [x] 9. Importador: Ruta, Salas, Monitores y Disponibilidad monitores; asignación automática de salas y de monitores (lo importado manda), plan de salas en el admin con salas sin monitor marcadas y cambio de monitor (changeLog), y descarga del Plan de salas.
 - [ ] 10. Módulo de evaluación: `src/lib/evaluacion/`, `/api/evaluacion/*`, colecciones `evaluacion_*`. Funciones puras con pruebas (incluida `calc()`). Un mentor solo evalúa sus proyectos. Borrador automático. Todo deja changeLog.
 - [ ] 11. Vista del MENTOR ("Mis evaluaciones"), igual al prototipo: agenda del día por bloques de 15 min, filtros por estado y pantalla de evaluar; en cada hora, su SALA y ENLACE con "Abrir sala". Coordinación y admin pueden ver la vista de cualquier mentor.
 - [ ] 12. Vista del MONITOR por horario: sus salas asignadas por día y hora (estudiantes de cualquier ciudad) con ENLACE, mentor y proyectos con contacto completo. Pruebas de permisos: solo los de sus salas. Por integrante: se presentó sí/no, motivo de inasistencia, comentarios, reprogramar en su ciudad o sugerir cambio especial.

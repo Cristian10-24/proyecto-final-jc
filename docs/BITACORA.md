@@ -78,3 +78,9 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Verificar: `docs/EVALUACION.md`; desde aquí no se vuelve a abrir `index.html` salvo para una pantalla concreta.
 - revisor-pruebas volvió a ser negado en sesión nueva (modo automático); queda en PENDIENTES y las pruebas se corrieron directo.
 - Pendiente: responder las 4 incoherencias de `docs/EVALUACION.md` antes del Paso 10; Paso 9.
+
+## Paso 9 · Ruta, salas y monitores
+- Commit: `feat: plan de salas con monitores (importados y automáticos) y Ruta del proyecto`. revisor-pruebas: 112 unitarias y 60 con base; revisor-seguridad sin altos ni medios (4 bajos corregidos: enlace https al mostrar, largo del enlace, cambio de monitor + changeLog en transacción, apóstrofo contra fórmulas en el Excel); typecheck y build pasan.
+- Verificar: Importar › "Salas y monitores" (plantilla con Salas, Monitores y Disponibilidad monitores) y /admin/salas (día, "Sin monitor", cambiar monitor, Recalcular, Descargar plan de salas); `npx vitest run tests/salas.test.ts` y `npx vitest run --config vitest.db.config.mts tests/salas.db.test.ts`.
+- En el navegador solo vi el estado vacío y la tarjeta de Importar (tu servidor estaba en uso; no importé nada en tu base local): la tabla con datos está cubierta por pruebas, falta verla. revisor-pruebas ya se lanza: se quitó de PENDIENTES.
+- Pendiente: confirmar si se quiere el Excel de resultados de la evaluación (Paso 14); Paso 10.

@@ -4,6 +4,8 @@ import { exigir, sameOrigin } from "@/lib/auth";
 import { aplicarMentores, aplicarProyectos, previaMentores, previaProyectos } from "@/lib/importar/aplicar";
 import { leerLibro } from "@/lib/importar/excel";
 import { leerLibroMentores } from "@/lib/importar/mentores";
+import { leerLibroSalas } from "@/lib/importar/salas";
+import { aplicarSalas, previaSalas } from "@/lib/planSalas";
 import { CAMPOS, leerLibroProyectos, type Campo } from "@/lib/importar/proyectos";
 
 const MAX_BYTES = 4 * 1024 * 1024; // Vercel corta los cuerpos de más de 4,5 MB
@@ -13,7 +15,7 @@ const CAMPOS_PROYECTO = CAMPOS.map((c) => c.campo) as [Campo, ...Campo[]];
 const Mapa = z.partialRecord(z.enum(CAMPOS_PROYECTO), z.string().max(200));
 const Campos = z
   .object({
-    tipo: z.enum(["proyectos", "mentores"]),
+    tipo: z.enum(["proyectos", "mentores", "salas"]),
     modo: z.enum(["previa", "confirmar"]),
     mapa: z.string().max(5000).optional().transform((s, ctx) => {
       if (!s) return {};
@@ -53,6 +55,20 @@ export async function POST(req: Request) {
     const { asignaciones, ...previa } = await previaProyectos(lectura);
     if (modo === "previa" || previa.errores.length) return NextResponse.json({ tipo, previa, aplicado: false });
     await aplicarProyectos(lectura.proyectos, asignaciones, actor);
+    return NextResponse.json({ tipo, previa, aplicado: true });
+  }
+
+  if (tipo === "salas") {
+    const libro = leerLibroSalas(wb);
+    const previa = await previaSalas(libro);
+    if (modo === "previa" || previa.errores.length) return NextResponse.json({ tipo, previa, aplicado: false });
+    try {
+      await aplicarSalas(libro, actor);
+    } catch (e) {
+      if (e instanceof Error && e.message === "errores")
+        return NextResponse.json({ error: "conflictos", mensaje: "Los horarios o los monitores cambiaron. Revisa la vista previa otra vez." }, { status: 409 });
+      throw e;
+    }
     return NextResponse.json({ tipo, previa, aplicado: true });
   }
 

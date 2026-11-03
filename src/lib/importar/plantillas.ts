@@ -1,18 +1,20 @@
 import ExcelJS from "exceljs";
 import { COLUMNAS_CUPOS, HOJAS_MENTORES } from "./mentores";
 import { COLUMNAS_PROYECTOS, HOJA_PROYECTOS } from "./proyectos";
+import { COLUMNAS_DISPONIBILIDAD, COLUMNAS_MONITORES, COLUMNAS_SALAS } from "./salas";
+import { HOJAS_SALAS } from "../salas";
 
 type Fila = (string | number | null)[];
 
 /** Filas de ejemplo INVENTADAS, en el orden de COLUMNAS_PROYECTOS. */
 export const EJEMPLO_PROYECTOS: Fila[] = [
-  ["Cali", "Individual", "App de reciclaje escolar", "Mapa de puntos de reciclaje para el colegio.", "Ana Ejemplo Pérez", "1000000001", "+57 300 000 0001", "ana.ejemplo@ejemplo.org", null, null, null, null, "Grupo 1", null],
-  ["Cartagena", "En pareja", "Guía turística accesible", "Recorridos narrados por audio.", "Luis Ejemplo Gómez", "1000000002", "300 000 0002", "luis.ejemplo@ejemplo.org", "Sara Ejemplo Ruiz", "1000000003", "0057 300 000 0003", "sara.ejemplo@ejemplo.org", "Grupo 3", null],
+  ["Cali", "Individual", "App de reciclaje escolar", "Mapa de puntos de reciclaje para el colegio.", "Ana Ejemplo Pérez", "1000000001", "+57 300 000 0001", "ana.ejemplo@ejemplo.org", null, null, null, null, "Grupo 1", null, "Básica"],
+  ["Cartagena", "En pareja", "Guía turística accesible", "Recorridos narrados por audio.", "Luis Ejemplo Gómez", "1000000002", "300 000 0002", "luis.ejemplo@ejemplo.org", "Sara Ejemplo Ruiz", "1000000003", "0057 300 000 0003", "sara.ejemplo@ejemplo.org", "Grupo 3", null, "Avanzada"],
 ];
 
 // Plantillas vacías (con filas de ejemplo INVENTADAS) que el admin descarga desde "Importar".
 
-export type TipoPlantilla = "proyectos" | "mentores";
+export type TipoPlantilla = "proyectos" | "mentores" | "salas";
 
 function hojaCon(wb: ExcelJS.Workbook, nombre: string, columnas: readonly string[], filas: Fila[], anchos?: number[]) {
   const ws = wb.addWorksheet(nombre);
@@ -33,7 +35,7 @@ function instrucciones(wb: ExcelJS.Workbook, lineas: string[]) {
 export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   if (tipo === "proyectos") {
-    const ws = hojaCon(wb, HOJA_PROYECTOS, COLUMNAS_PROYECTOS, EJEMPLO_PROYECTOS, [12, 12, 30, 40, 26, 16, 18, 28, 26, 16, 18, 28, 10, 18]);
+    const ws = hojaCon(wb, HOJA_PROYECTOS, COLUMNAS_PROYECTOS, EJEMPLO_PROYECTOS, [12, 12, 30, 40, 26, 16, 18, 28, 26, 16, 18, 28, 10, 18, 12]);
     // Documentos y celulares como texto: Excel no les quita ceros ni los pasa a notación científica.
     for (const c of [6, 7, 10, 11]) ws.getColumn(c).numFmt = "@";
     instrucciones(wb, [
@@ -44,9 +46,33 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
       "Obligatorios: Ciudad, Nombre del proyecto, Nombre 1 y Documento 1. Modalidad: Individual o En pareja.",
       "Integrante 2: solo si es en pareja, con nombre y documento. Un documento no puede estar en dos proyectos.",
       "Documentos sin puntos ni espacios, como texto (no decimales). Celular con o sin indicativo: +57 300 123 4567 o 3001234567.",
+      "Ruta (opcional): Básica o Avanzada. Se usa en las tablas del seguimiento de la evaluación.",
       "Monitor (opcional): si no viene, se asigna el monitor de la ciudad; si la ciudad tiene varios, queda por asignar.",
       "El estudiante ve su documento, celular y correo enmascarados (•••• 4567, an•••@gmail.com).",
       "Volver a importar actualiza cada proyecto (por el documento del integrante 1); los que no estén en el archivo no se borran.",
+    ]);
+  } else if (tipo === "salas") {
+    hojaCon(wb, HOJAS_SALAS.salas, COLUMNAS_SALAS, [1, 2, 3].map((n) => [n, `https://meet.ejemplo.org/sala-${n}`]), [8, 50]);
+    hojaCon(wb, HOJAS_SALAS.monitores, COLUMNAS_MONITORES, [
+      ["Jueves 12 nov", "08 am", 1, "Monitora Ejemplo Uno"],
+      ["Jueves 12 nov", "09 am", 1, "Monitora Ejemplo Uno"],
+    ], [16, 10, 8, 28]);
+    hojaCon(wb, HOJAS_SALAS.disponibilidad, COLUMNAS_DISPONIBILIDAD, [
+      ["Monitor Ejemplo Dos", "Jueves 12 nov", "08 am"],
+      ["Monitor Ejemplo Dos", "Jueves 12 nov", "09 am"],
+      ["Monitor Ejemplo Dos", "Viernes 13 nov", "08 am"],
+    ], [28, 16, 10]);
+    instrucciones(wb, [
+      "Plantilla de salas y monitores · Proyecto final JC 2026",
+      "Importa primero mentores y disponibilidad: las salas se asignan a los mentores de cada hora.",
+      "Salas: número de sala (1 a 7) y su enlace (https://). Nunca hay más mentores a la vez que salas.",
+      "Cada mentor queda en una sala por hora y conserva la misma sala en horas seguidas cuando se puede.",
+      "Monitores (opcional): un monitor fijo por día, hora y sala. En lugar de Sala puedes poner una columna Mentor.",
+      "Disponibilidad monitores (opcional): una fila por monitor, día y hora en que puede acompañar.",
+      "  El sistema asigna un monitor a cada sala libre, repartiendo la carga y en la misma sala en horas seguidas cuando se puede.",
+      "Lo de la hoja Monitores manda sobre lo automático. Nadie puede estar en dos salas a la misma hora.",
+      "El nombre del monitor debe ser igual al de su usuario (o escribe el usuario). Si no coincide, la vista previa avisa y esa fila no se usa.",
+      "Las horas son de Colombia y en punto (08 am, 4 pm, 16:00). Volver a importar rehace el plan; los cambios hechos a mano se conservan si siguen valiendo.",
     ]);
   } else {
     hojaCon(wb, HOJAS_MENTORES.mentores, ["N°", "Nombre del mentor", "Correo", "Celular"], [

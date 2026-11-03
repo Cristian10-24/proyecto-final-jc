@@ -1,6 +1,6 @@
 import type ExcelJS from "exceljs";
 import { NOMBRES_CIUDADES } from "../ciudades";
-import type { Integrante } from "../types";
+import type { Integrante, Ruta } from "../types";
 import { ciudadExistente, cleanSpaces, normalizeCity, normalizeDocumento, toProperName } from "../validation/name";
 import { clave, hoja, texto, valor, type ErrorFila } from "./excel";
 
@@ -11,7 +11,7 @@ import { clave, hoja, texto, valor, type ErrorFila } from "./excel";
 export const HOJA_PROYECTOS = "Proyectos";
 
 export type Campo =
-  | "codigo" | "ciudad" | "modalidad" | "proyecto" | "descripcion" | "grupo" | "monitor"
+  | "codigo" | "ciudad" | "modalidad" | "proyecto" | "descripcion" | "grupo" | "monitor" | "ruta"
   | "nombre1" | "documento1" | "celular1" | "correo1" | "nombre2" | "documento2" | "celular2" | "correo2";
 
 export const CAMPOS: { campo: Campo; etiqueta: string; obligatorio?: true }[] = [
@@ -29,6 +29,7 @@ export const CAMPOS: { campo: Campo; etiqueta: string; obligatorio?: true }[] = 
   { campo: "correo2", etiqueta: "Correo 2" },
   { campo: "grupo", etiqueta: "Grupo" },
   { campo: "monitor", etiqueta: "Monitor" },
+  { campo: "ruta", etiqueta: "Ruta" },
   { campo: "codigo", etiqueta: "Código" },
 ];
 
@@ -43,6 +44,7 @@ export function detectarCampo(encabezado: string): Campo | null {
   if (/\scodigo\s/.test(k)) return "codigo";
   if (/ciudad|sede|municipio/.test(k)) return "ciudad";
   if (/modalidad|tipo de proyecto|individual o/.test(k)) return "modalidad";
+  if (/\sruta\s|\snivel\s/.test(k)) return "ruta";
   if (/descripcion|resumen|de que trata/.test(k)) return "descripcion";
   if (/monitor/.test(k)) return /celular|telefono|whatsapp|correo|email|mail|documento|cedula/.test(k) ? null : "monitor";
   if (/\sgrupo\s/.test(k)) return "grupo";
@@ -57,7 +59,7 @@ export function detectarCampo(encabezado: string): Campo | null {
 export type ProyectoLeido = {
   /** codigoGenerado: no venía columna Código (P-<documento 1>); la vista previa lo cambia por el del proyecto existente. */
   fila: number; codigo: string; codigoGenerado?: true; ciudad: string; nombre: string; descripcion?: string;
-  grupo?: string; monitorTexto?: string; integrantes: Integrante[];
+  grupo?: string; monitorTexto?: string; ruta?: Ruta; integrantes: Integrante[];
 };
 
 export type Columna = { indice: number; encabezado: string; campo: Campo | null };
@@ -121,6 +123,15 @@ function leerModalidad(v: ExcelJS.CellValue): 1 | 2 | null {
   return null;
 }
 
+/** "Básica", "basico", "B" → Básica; "Avanzada", "A" → Avanzada; vacío → null; otro texto → error. */
+export function leerRuta(v: ExcelJS.CellValue): { ruta: Ruta } | { error: string } | null {
+  const k = clave(texto(v));
+  if (!k) return null;
+  if (k.startsWith("b")) return { ruta: "Básica" };
+  if (k.startsWith("a")) return { ruta: "Avanzada" };
+  return { error: `Ruta: escribe Básica o Avanzada, no "${texto(v)}".` };
+}
+
 /** Hoja de inscritos: la llamada "Proyectos" o, si no existe, la primera del libro. */
 function hojaInscritos(wb: ExcelJS.Workbook) {
   return hoja(wb, HOJA_PROYECTOS) ?? wb.worksheets[0];
@@ -170,6 +181,8 @@ export function leerLibroProyectos(wb: ExcelJS.Workbook, mapaManual: Partial<Rec
     const descripcion = cleanSpaces(texto(celda(row, "descripcion")));
     const grupo = cleanSpaces(texto(celda(row, "grupo")));
     const monitorTexto = cleanSpaces(texto(celda(row, "monitor")));
+    const ruta = leerRuta(celda(row, "ruta"));
+    if (ruta && "error" in ruta) errs.push(ruta.error);
 
     const integrantes: Integrante[] = [];
     let incompleta = false;
@@ -213,6 +226,7 @@ export function leerLibroProyectos(wb: ExcelJS.Workbook, mapaManual: Partial<Rec
     else proyectos.push({
       fila: r, codigo, ciudad, nombre, integrantes, ...(codigoArchivo ? {} : { codigoGenerado: true as const }),
       ...(descripcion ? { descripcion } : {}), ...(grupo ? { grupo } : {}), ...(monitorTexto ? { monitorTexto } : {}),
+      ...(ruta && "ruta" in ruta ? { ruta: ruta.ruta } : {}),
     });
   });
   return { hoja: H, proyectos, errores, columnas, faltan: [] };

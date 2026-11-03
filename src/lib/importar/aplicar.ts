@@ -104,8 +104,9 @@ export async function aplicarProyectos(leidos: ProyectoLeido[], asignaciones: Ma
   if (leidos.length)
     await proyectos.bulkWrite(leidos.map((p) => {
       const monitor = asignaciones.get(p.codigo) ?? null;
-      const unset: { grupo?: ""; descripcion?: "" } = {};
+      const unset: { grupo?: ""; descripcion?: ""; ruta?: "" } = {};
       if (!p.grupo) unset.grupo = "";
+      if (!p.ruta) unset.ruta = "";
       if (!p.descripcion) unset.descripcion = "";
       return {
         updateOne: {
@@ -113,7 +114,7 @@ export async function aplicarProyectos(leidos: ProyectoLeido[], asignaciones: Ma
           update: {
             $set: {
               ciudad: p.ciudad, nombre: p.nombre, integrantes: p.integrantes, actualizadoEn: now,
-              ...(p.grupo ? { grupo: p.grupo } : {}), ...(p.descripcion ? { descripcion: p.descripcion } : {}), ...(monitor ? { monitor } : {}),
+              ...(p.grupo ? { grupo: p.grupo } : {}), ...(p.descripcion ? { descripcion: p.descripcion } : {}), ...(p.ruta ? { ruta: p.ruta } : {}), ...(monitor ? { monitor } : {}),
             },
             ...(Object.keys(unset).length ? { $unset: unset } : {}),
             $setOnInsert: { _id: new ObjectId(), creadoEn: now, ...(monitor ? {} : { monitor: null }) },

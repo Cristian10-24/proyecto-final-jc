@@ -1,5 +1,6 @@
 import { MongoClient, type ClientSession, type Db } from "mongodb";
-import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, User } from "./types";
+import type { PlanSala } from "./salas";
+import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
 declare global {
   // Se reutiliza entre recargas en desarrollo y entre invocaciones en Vercel.
@@ -105,6 +106,8 @@ export async function collections() {
     mentores: db.collection<Mentor>("mentores"),
     asientos: db.collection<Asiento>("asientos"),
     dias: db.collection<DiaConfig>("dias"),
+    salasConfig: db.collection<SalasConfig>("salasConfig"),
+    planSalas: db.collection<PlanSala>("planSalas"),
   };
 }
 
@@ -118,6 +121,9 @@ async function ensureIndexes(db: Db) {
     // Un proyecto nunca tiene dos asientos: es la garantía contra la doble reserva.
     db.collection("asientos").createIndex({ proyectoId: 1 }, { unique: true, partialFilterExpression: { proyectoId: { $type: "objectId" } } }),
     db.collection("changeLog").createIndex({ proyectoId: 1, fecha: -1 }),
+    // Un mentor tiene una sola sala por hora, y un monitor nunca está en dos salas a la misma hora.
+    db.collection("planSalas").createIndex({ dia: 1, hora: 1, mentorId: 1 }, { unique: true }),
+    db.collection("planSalas").createIndex({ dia: 1, hora: 1, monitor: 1 }, { unique: true, partialFilterExpression: { monitor: { $type: "string" } } }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),
   ]);

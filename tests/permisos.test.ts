@@ -41,6 +41,10 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["crear usuario", async () => (await import("@/app/api/admin/usuarios/route")).POST(json("POST", { usuario: "nuevo", nombre: "Nuevo Usuario", rol: "monitor", ciudades: ["Cali"] }))],
   ["editar usuario", async () => (await import("@/app/api/admin/usuarios/[id]/route")).PATCH(json("PATCH", { rol: "admin" }), ctx)],
   ["restablecer clave", async () => (await import("@/app/api/admin/usuarios/[id]/clave/route")).POST(json("POST", {}), ctx)],
+  ["ver el plan de salas", async () => (await import("@/app/api/admin/salas/route")).GET()],
+  ["cambiar el monitor de una sala", async () => (await import("@/app/api/admin/salas/route")).POST(json("POST", { accion: "monitor", id: "2026-11-12|8|1", monitor: null }))],
+  ["recalcular el plan de salas", async () => (await import("@/app/api/admin/salas/route")).POST(json("POST", { accion: "recalcular" }))],
+  ["descargar el plan de salas", async () => (await import("@/app/api/admin/salas/excel/route")).GET()],
 ];
 
 describe("matriz de permisos", () => {

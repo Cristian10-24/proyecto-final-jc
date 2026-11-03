@@ -1,5 +1,6 @@
 import type { ObjectId } from "mongodb";
 import type { RolUsuario } from "./permisos";
+import type { Disponible, MonitorFijo, Sala } from "./salas";
 
 export type Rol = "estudiante" | RolUsuario;
 
@@ -23,13 +24,15 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala";
   anterior?: string;
   nuevo?: string;
   motivo?: string;
   actor: Actor;
   fecha: Date;
 };
+
+export type Ruta = "Básica" | "Avanzada";
 
 export type Integrante = { documento: string; nombre: string; celular?: string; correo?: string };
 
@@ -41,6 +44,7 @@ export type Proyecto = {
   nombre: string;
   descripcion?: string;
   grupo?: string;
+  ruta?: Ruta;
   /** Usuario del monitor; null = por asignar (la ciudad tiene varios monitores o ninguno). */
   monitor?: string | null;
   integrantes: Integrante[];
@@ -70,3 +74,6 @@ export type CupoCiudad = { ciudad: string; cupos: number | null; sobrante: boole
 export type DiaConfig = { _id: string; ciudades: CupoCiudad[] };
 
 export type RateLimit ={ _id: string; count: number; expiraEn: Date };
+
+/** Lo último importado en el libro de salas y monitores (ya reconocido): permite recalcular el plan. */
+export type SalasConfig = { _id: "actual"; salas: Sala[]; importados: MonitorFijo[]; disponibilidad: Disponible[]; actualizadoEn: Date };
