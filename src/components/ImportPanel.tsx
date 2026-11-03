@@ -11,16 +11,16 @@ type Tipo = "proyectos" | "mentores";
 type Resultado =
   | { tipo: "proyectos"; previa: PreviaProyectos; aplicado: boolean }
   | { tipo: "mentores"; previa: PreviaMentores; aplicado: boolean };
-type Estado = { archivo: File | null; cargando: boolean; error: string; resultado: Resultado | null };
+type Estado = { archivo: File | null; cargando: boolean; error: string; resultado: Resultado | null; mapa: Record<string, string> };
 
 const TITULO: Record<Tipo, { titulo: string; desc: string }> = {
   proyectos: { titulo: "Proyectos", desc: "Una fila por proyecto con su ciudad e integrantes (individual o en pareja)." },
   mentores: { titulo: "Mentores y disponibilidad", desc: "Hojas Mentores, Horarios y Cupos. Genera los asientos de 15 min por ciudad." },
 };
 
-const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
-const etiquetaDia = (dia: string) => fmtDia.format(new Date(dia + "T12:00:00Z"));
-const vacio: Estado = { archivo: null, cargando: false, error: "", resultado: null };
+const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const etiquetaDia = (dia: string) => { const t = fmtDia.format(new Date(dia + "T12:00:00Z")).replace(/[.,]/g, ""); return t.charAt(0).toUpperCase() + t.slice(1); };
+const vacio: Estado = { archivo: null, cargando: false, error: "", resultado: null, mapa: {} };
 
 export default function ImportPanel({ user }: { user: SessionUser }) {
   const [estados, setEstados] = useState<Record<Tipo, Estado>>({ proyectos: vacio, mentores: vacio });
@@ -34,6 +34,7 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
     fd.set("tipo", tipo);
     fd.set("modo", modo);
     fd.set("archivo", archivo);
+    if (tipo === "proyectos" && Object.keys(estados.proyectos.mapa).length) fd.set("mapa", JSON.stringify(estados.proyectos.mapa));
     try {
       const res = await fetch("/api/admin/importar", { method: "POST", body: fd });
       if (res.status === 401) return window.location.assign("/login");
@@ -64,25 +65,33 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
               <p className={s.desc}>{TITULO[tipo].desc}</p>
 
               <label className={s.file}>
-                <input type="file" accept=".xlsx" onChange={(ev) => set(tipo, { archivo: ev.target.files?.[0] ?? null, resultado: null, error: "" })} />
-                <span>{e.archivo ? e.archivo.name : "Elegir archivo .xlsx"}</span>
+                <input type="file" accept=".xlsx" onChange={(ev) => set(tipo, { archivo: ev.target.files?.[0] ?? null, resultado: null, error: "", mapa: {} })} />
+                <span className={s.fileMain}>{e.archivo ? e.archivo.name : "Arrastra el archivo o haz clic para elegirlo"}</span>
+                <span className={s.fileSub}>{e.archivo ? "Cambiar archivo" : "Excel .xlsx · hasta 4 MB"}</span>
               </label>
 
               <div className={s.acts}>
                 <button type="button" className="btn btn-ghost" disabled={!e.archivo || e.cargando} onClick={() => enviar(tipo, "previa")}>
-                  {e.cargando ? "Revisando…" : "Ver vista previa"}
+                  {e.cargando ? "Revisando…" : "Revisar archivo"}
                 </button>
                 {e.resultado && !e.resultado.aplicado && errores.length === 0 && (
-                  <button type="button" className="btn btn-primary" disabled={e.cargando} onClick={() => enviar(tipo, "confirmar")}>Confirmar importación</button>
+                  <button type="button" className="btn btn-primary" disabled={e.cargando} onClick={() => enviar(tipo, "confirmar")}>
+                    {e.resultado.tipo === "proyectos" ? `Importar ${e.resultado.previa.total} proyectos` : "Importar mentores y cupos"}
+                  </button>
                 )}
               </div>
 
               {e.error && <div className="note note-error">{e.error}</div>}
-              {e.resultado?.aplicado && <div className={s.ok}>Importación guardada.</div>}
-              {e.resultado?.tipo === "proyectos" && <ResumenProyectos p={e.resultado.previa} />}
+              {e.resultado?.aplicado && <div className={s.ok}>{e.resultado.tipo === "proyectos" ? `${e.resultado.previa.total} proyectos importados. Ya pueden elegir hora cuando abran las inscripciones.` : "Mentores, cupos y asientos importados."}</div>}
+              {e.resultado?.tipo === "proyectos" && e.resultado.previa.faltan.length > 0 && (
+                <Mapeo p={e.resultado.previa} mapa={e.mapa} cargando={e.cargando}
+                  onCambio={(campo, encabezado) => set(tipo, { mapa: { ...e.mapa, [campo]: encabezado } })}
+                  onRevisar={() => enviar(tipo, "previa")} />
+              )}
+              {e.resultado?.tipo === "proyectos" && e.resultado.previa.faltan.length === 0 && <ResumenProyectos p={e.resultado.previa} />}
               {e.resultado?.tipo === "mentores" && <ResumenMentores p={e.resultado.previa} />}
               {errores.length > 0 && <Filas titulo={`${errores.length} ${errores.length === 1 ? "error" : "errores"}: corrige el archivo y vuelve a subirlo`} filas={errores} tono="error" />}
-              {e.resultado?.tipo === "mentores" && e.resultado.previa.avisos.length > 0 && <Filas titulo="Avisos (no impiden importar)" filas={e.resultado.previa.avisos} tono="warn" />}
+              {e.resultado && e.resultado.previa.avisos.length > 0 && <Filas titulo="Avisos (no impiden importar)" filas={e.resultado.previa.avisos} tono="warn" />}
             </section>
           );
         })}
@@ -98,10 +107,38 @@ function ResumenProyectos({ p }: { p: PreviaProyectos }) {
         <Stat n={p.total} t="proyectos válidos" /><Stat n={p.nuevos} t="nuevos" /><Stat n={p.actualizados} t="se actualizan" />
       </div>
       <table className={s.tabla}>
-        <thead><tr><th>Ciudad</th><th>Proyectos</th></tr></thead>
-        <tbody>{Object.entries(p.porCiudad).sort(([a], [b]) => a.localeCompare(b, "es")).map(([c, n]) => <tr key={c}><td>{c}</td><td>{n}</td></tr>)}</tbody>
+        <thead><tr><th>Ciudad</th><th className={s.num}>Proyectos</th></tr></thead>
+        <tbody>{Object.entries(p.porCiudad).sort(([a], [b]) => a.localeCompare(b, "es")).map(([c, n]) => <tr key={c}><td>{c}</td><td className={s.num}>{n}</td></tr>)}</tbody>
       </table>
+      {p.monitores.porAsignar.length > 0 && (
+        <div className="note note-warn">
+          Monitor por asignar: {p.monitores.porAsignar.map((x) => `${x.ciudad} (${x.proyectos}, ${x.motivo})`).join(" · ")}. Se importan igual y quedan marcados para que les asignes monitor.
+        </div>
+      )}
       {p.fueraDelArchivo > 0 && <div className="note note-info">{p.fueraDelArchivo} proyectos de la base no están en este archivo: se conservan.</div>}
+    </div>
+  );
+}
+
+/** Campos obligatorios que no se reconocieron: el admin elige la columna de cada uno. */
+function Mapeo({ p, mapa, cargando, onCambio, onRevisar }: {
+  p: PreviaProyectos; mapa: Record<string, string>; cargando: boolean;
+  onCambio: (campo: string, encabezado: string) => void; onRevisar: () => void;
+}) {
+  const listo = p.faltan.every((f) => mapa[f.campo]);
+  return (
+    <div className={s.mapeo}>
+      <div className={s.filasTitulo}>Elige qué columna corresponde a cada campo</div>
+      {p.faltan.map((f) => (
+        <label key={f.campo} className={s.mapeoFila}>
+          <span>{f.etiqueta}</span>
+          <select className="input" value={mapa[f.campo] ?? ""} onChange={(ev) => onCambio(f.campo, ev.target.value)}>
+            <option value="">Elegir columna…</option>
+            {p.columnas.map((c) => <option key={c.indice} value={c.encabezado}>{c.encabezado}</option>)}
+          </select>
+        </label>
+      ))}
+      <button type="button" className="btn btn-dark" disabled={!listo || cargando} onClick={onRevisar}>{cargando ? "Revisando…" : "Revisar con estas columnas"}</button>
     </div>
   );
 }
@@ -112,11 +149,11 @@ function ResumenMentores({ p }: { p: PreviaMentores }) {
     <div className={s.resumen}>
       <div className={s.stats}><Stat n={p.mentores} t="mentores" /><Stat n={p.dias.length} t="días" /><Stat n={total} t="asientos" /></div>
       <table className={s.tabla}>
-        <thead><tr><th>Día</th><th>Asientos</th><th>Por ciudad</th></tr></thead>
+        <thead><tr><th>Día</th><th className={s.num}>Asientos</th><th>Por ciudad</th></tr></thead>
         <tbody>
           {p.dias.map((d) => (
             <tr key={d.dia}>
-              <td>{etiquetaDia(d.dia)}</td><td>{d.asientos}</td>
+              <td>{etiquetaDia(d.dia)}</td><td className={s.num}>{d.asientos}</td>
               <td>{Object.entries(d.porCiudad).map(([c, n]) => `${c}: ${n}`).join(" · ")}</td>
             </tr>
           ))}
@@ -124,8 +161,8 @@ function ResumenMentores({ p }: { p: PreviaMentores }) {
       </table>
       {p.reservadosQueSeConservan > 0 && <div className="note note-info">{p.reservadosQueSeConservan} horas ya reservadas se conservan tal cual.</div>}
       <table className={s.tabla}>
-        <thead><tr><th>Mentor</th><th>Horas</th></tr></thead>
-        <tbody>{p.horasPorMentor.map((m) => <tr key={m.nombre}><td>{m.nombre}</td><td>{m.horas}</td></tr>)}</tbody>
+        <thead><tr><th>Mentor</th><th className={s.num}>Horas</th></tr></thead>
+        <tbody>{p.horasPorMentor.map((m) => <tr key={m.nombre}><td>{m.nombre}</td><td className={s.num}>{m.horas}</td></tr>)}</tbody>
       </table>
     </div>
   );

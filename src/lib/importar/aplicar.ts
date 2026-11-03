@@ -1,11 +1,11 @@
 import { ObjectId, type AnyBulkWriteOperation, type ClientSession } from "mongodb";
-import { resumenPorDia } from "../agenda";
+import { diasPorCiudad, resumenPorDia } from "../agenda";
 import { horaCO } from "../ciudades";
 import { collections, getClient } from "../db";
 import type { Actor, Asiento } from "../types";
-import type { ErrorFila } from "./excel";
+import { clave, type ErrorFila } from "./excel";
 import { HOJAS_MENTORES, type LibroMentores } from "./mentores";
-import { HOJA_PROYECTOS, type ProyectoLeido } from "./proyectos";
+import { CAMPOS, type Campo, type Columna, type LecturaProyectos, type ProyectoLeido } from "./proyectos";
 
 // Vista previa (no escribe) y aplicación de cada importación. La vista previa también revisa contra
 // la base: documentos que ya son de otro proyecto, proyectos con hora que cambian de ciudad y horas-mentor
@@ -13,51 +13,110 @@ import { HOJA_PROYECTOS, type ProyectoLeido } from "./proyectos";
 
 export type PreviaProyectos = {
   total: number; nuevos: number; actualizados: number; fueraDelArchivo: number;
-  porCiudad: Record<string, number>; errores: ErrorFila[];
+  porCiudad: Record<string, number>; errores: ErrorFila[]; avisos: ErrorFila[];
+  /** Columnas del archivo y el campo reconocido en cada una; `faltan` = obligatorios sin columna. */
+  columnas: Columna[]; faltan: { campo: Campo; etiqueta: string }[];
+  monitores: { asignados: number; porAsignar: { ciudad: string; proyectos: number; motivo: string }[] };
 };
 
-export async function previaProyectos(leidos: ProyectoLeido[], errores: ErrorFila[]): Promise<PreviaProyectos> {
-  const { proyectos, asientos } = await collections();
-  const errs = [...errores];
+type MonitorUsuario = { usuario: string; nombre: string; ciudades: string[] };
+
+/**
+ * Monitor de un proyecto: el de la columna Monitor si coincide con un usuario; si no, el único monitor
+ * de su ciudad. Con varios (o ninguno) queda por asignar, para que el admin lo elija.
+ */
+export function asignarMonitor(p: Pick<ProyectoLeido, "ciudad" | "monitorTexto">, monitores: MonitorUsuario[]): { monitor: string | null; motivo?: string; noExiste?: string } {
+  let noExiste: string | undefined;
+  if (p.monitorTexto) {
+    const k = clave(p.monitorTexto);
+    const m = monitores.find((x) => clave(x.nombre) === k || x.usuario === p.monitorTexto!.toLowerCase());
+    if (m) return { monitor: m.usuario };
+    noExiste = p.monitorTexto;
+  }
+  const deCiudad = monitores.filter((m) => m.ciudades.includes(p.ciudad));
+  if (deCiudad.length === 1) return { monitor: deCiudad[0]!.usuario, ...(noExiste ? { noExiste } : {}) };
+  return { monitor: null, motivo: deCiudad.length ? "varios monitores en la ciudad" : "la ciudad no tiene monitor", ...(noExiste ? { noExiste } : {}) };
+}
+
+export async function previaProyectos(lectura: LecturaProyectos): Promise<PreviaProyectos & { asignaciones: Map<string, string | null> }> {
+  const { proyectos, asientos, dias, users } = await collections();
+  const { proyectos: leidos, columnas, faltan } = lectura;
+  const errs = [...lectura.errores];
+  const avisos: ErrorFila[] = [];
   const existentes = await proyectos.find({}, { projection: { codigo: 1, ciudad: 1, "integrantes.documento": 1 } }).toArray();
   const porCodigo = new Map(existentes.map((p) => [p.codigo, p]));
   const duenoDoc = new Map(existentes.flatMap((p) => p.integrantes.map((i) => [i.documento, p.codigo] as const)));
   const conHora = new Set((await asientos.find({ proyectoId: { $type: "objectId" } }, { projection: { proyectoId: 1 } }).toArray()).map((a) => String(a.proyectoId)));
+  const configDias = await dias.find({}).toArray();
+  if (!configDias.length && leidos.length)
+    avisos.push({ hoja: "", fila: 0, mensaje: "Aún no hay mentores ni cupos importados: no se pudo revisar qué ciudades tienen días habilitados." });
+  const monitores = (await users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray()) as MonitorUsuario[];
 
-  let nuevos = 0, actualizados = 0;
+  let nuevos = 0, actualizados = 0, asignados = 0;
   const porCiudad: Record<string, number> = {};
+  const pendientes = new Map<string, { ciudad: string; proyectos: number; motivo: string }>();
+  const asignaciones = new Map<string, string | null>();
   for (const p of leidos) {
     const actual = porCodigo.get(p.codigo);
-    const err = (mensaje: string) => errs.push({ hoja: HOJA_PROYECTOS, fila: p.fila, mensaje });
+    const hoja = lectura.hoja;
+    const err = (mensaje: string) => errs.push({ hoja, fila: p.fila, mensaje });
     for (const i of p.integrantes) {
       const dueno = duenoDoc.get(i.documento);
-      if (dueno && dueno !== p.codigo) err(`El documento ${i.documento} ya es del proyecto ${dueno}.`);
+      if (dueno && dueno !== p.codigo) err(`Documento repetido: ${i.documento} ya es del proyecto ${dueno}.`);
     }
     if (actual && actual.ciudad !== p.ciudad && conHora.has(String(actual._id)))
       err(`El proyecto ${p.codigo} ya tiene hora en ${actual.ciudad}: libera su hora antes de cambiarle la ciudad.`);
+    if (configDias.length && diasPorCiudad(configDias, p.ciudad).length === 0)
+      err(`${p.ciudad} no tiene días habilitados en la hoja Cupos.`);
     if (actual) actualizados++; else nuevos++;
     porCiudad[p.ciudad] = (porCiudad[p.ciudad] ?? 0) + 1;
+
+    const a = asignarMonitor(p, monitores);
+    asignaciones.set(p.codigo, a.monitor);
+    if (a.noExiste) avisos.push({ hoja, fila: p.fila, mensaje: `No hay un monitor "${a.noExiste}"; se asigna por ciudad.` });
+    if (a.monitor) asignados++;
+    else {
+      const x = pendientes.get(p.ciudad) ?? { ciudad: p.ciudad, proyectos: 0, motivo: a.motivo! };
+      x.proyectos++;
+      pendientes.set(p.ciudad, x);
+    }
   }
   const enArchivo = new Set(leidos.map((p) => p.codigo));
   errs.sort((a, b) => a.fila - b.fila);
-  return { total: leidos.length, nuevos, actualizados, fueraDelArchivo: existentes.filter((p) => !enArchivo.has(p.codigo)).length, porCiudad, errores: errs };
+  return {
+    total: leidos.length, nuevos, actualizados, fueraDelArchivo: existentes.filter((p) => !enArchivo.has(p.codigo)).length,
+    porCiudad, errores: errs, avisos, columnas,
+    faltan: faltan.map((f) => ({ campo: f, etiqueta: CAMPOS.find((c) => c.campo === f)!.etiqueta })),
+    monitores: { asignados, porAsignar: [...pendientes.values()].sort((a, b) => a.ciudad.localeCompare(b.ciudad, "es")) },
+    asignaciones,
+  };
 }
 
-export async function aplicarProyectos(leidos: ProyectoLeido[], actor: Actor) {
+/** Guarda los proyectos. Un monitor ya asignado no se borra si el archivo no trae uno para ese proyecto. */
+export async function aplicarProyectos(leidos: ProyectoLeido[], asignaciones: Map<string, string | null>, actor: Actor) {
   const { proyectos, changeLog } = await collections();
   const now = new Date();
   if (leidos.length)
-    await proyectos.bulkWrite(leidos.map((p) => ({
-      updateOne: {
-        filter: { codigo: p.codigo },
-        update: {
-          $set: { ciudad: p.ciudad, nombre: p.nombre, integrantes: p.integrantes, actualizadoEn: now, ...(p.grupo ? { grupo: p.grupo } : {}) },
-          ...(p.grupo ? {} : { $unset: { grupo: "" } }),
-          $setOnInsert: { _id: new ObjectId(), creadoEn: now },
+    await proyectos.bulkWrite(leidos.map((p) => {
+      const monitor = asignaciones.get(p.codigo) ?? null;
+      const unset: { grupo?: ""; descripcion?: "" } = {};
+      if (!p.grupo) unset.grupo = "";
+      if (!p.descripcion) unset.descripcion = "";
+      return {
+        updateOne: {
+          filter: { codigo: p.codigo },
+          update: {
+            $set: {
+              ciudad: p.ciudad, nombre: p.nombre, integrantes: p.integrantes, actualizadoEn: now,
+              ...(p.grupo ? { grupo: p.grupo } : {}), ...(p.descripcion ? { descripcion: p.descripcion } : {}), ...(monitor ? { monitor } : {}),
+            },
+            ...(Object.keys(unset).length ? { $unset: unset } : {}),
+            $setOnInsert: { _id: new ObjectId(), creadoEn: now, ...(monitor ? {} : { monitor: null }) },
+          },
+          upsert: true,
         },
-        upsert: true,
-      },
-    })), { ordered: false });
+      };
+    }), { ordered: false });
   await changeLog.insertOne({ accion: "importar", nuevo: `proyectos: ${leidos.length}`, actor, fecha: now });
 }
 

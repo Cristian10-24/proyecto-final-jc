@@ -15,7 +15,10 @@
     "db:local": "node scripts/mongo-local.mjs",
     "usuario:add": "tsx --env-file=.env.local scripts/usuario.ts add",
     "usuario:list": "tsx --env-file=.env.local scripts/usuario.ts list",
-    "verificar:franjas": "tsx scripts/verificar-franjas.ts"
+    "verificar:franjas": "tsx scripts/verificar-franjas.ts",
+    "plantillas:ejemplo": "tsx scripts/plantillas-ejemplo.ts",
+    "semilla:local": "tsx --env-file-if-exists=.env.local scripts/semilla-local.ts",
+    "dev:red": "node scripts/dev-red.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

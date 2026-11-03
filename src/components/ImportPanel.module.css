@@ -1,41 +1,50 @@
-/* Administración · importar. Mismo lenguaje del panel de usuarios. */
-.kicker { font: 600 11px var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-.title { margin: 4px 0 0; font: 800 27px/1.1 var(--font); letter-spacing: -.03em; }
-.lead { margin: 8px 0 18px; font: 500 15px/1.5 var(--font); color: var(--muted); max-width: 640px; }
+/* Administración · importar. Tokens en src/app/tokens.css; pantalla en docs/DISENO.md (5 · Importar inscritos). */
+.kicker { font: var(--t-kicker); letter-spacing: var(--kicker-spacing); color: var(--muted-2); text-transform: uppercase; }
+.title { margin: var(--s-1) 0 0; font: var(--t-h1); letter-spacing: -.03em; }
+.lead { margin: var(--s-3) 0 var(--s-8); font: var(--t-body); color: var(--muted); max-width: 640px; }
 
-.grid { display: grid; gap: 16px; }
-.card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.cardHead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.cardTitle { margin: 0; font: 800 19px var(--font); letter-spacing: -.02em; }
+.grid { display: grid; gap: var(--s-7); }
+.card { background: var(--card); border: 1px solid var(--line-2); border-radius: var(--r-2xl); box-shadow: var(--sh-card); padding: var(--s-8); display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+.cardHead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-5); flex-wrap: wrap; }
+.cardTitle { margin: 0; font: var(--t-h2); letter-spacing: -.02em; }
 .link { font: 700 14px var(--font); color: var(--orange-dark); }
-.desc { margin: 0; font: 500 14px/1.45 var(--font); color: var(--muted); }
+.desc { margin: 0; font: var(--t-small); color: var(--muted); }
 
-.file { display: flex; align-items: center; min-height: 52px; padding: 0 16px; border: 2px dashed var(--line); border-radius: 14px; font: 600 14.5px var(--font); color: var(--ink-2); cursor: pointer; overflow: hidden; }
-.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.file:focus-within { border-color: var(--orange); }
-.file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-1); min-height: 96px; padding: var(--s-6); border: 2px dashed var(--line); border-radius: var(--r-lg); background: var(--surface); text-align: center; cursor: pointer; overflow: hidden; transition: border-color .15s, background .15s; }
+.file:hover, .file:focus-within { border-color: var(--orange); background: var(--orange-tint); }
+.file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.fileMain { font: 700 15px var(--font); color: var(--ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fileSub { font: 500 13px var(--font); color: var(--muted); }
 
-.acts { display: flex; gap: 8px; flex-wrap: wrap; }
-.ok { border-radius: 14px; background: var(--green-soft); color: var(--green-dark); padding: 12px 14px; font: 700 14px var(--font); }
+.acts { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+/* En el admin los botones son compactos (el .btn global es el grande del portal). */
+.acts :global(.btn), .mapeo :global(.btn) { width: auto; height: var(--h-button-sm); padding: 0 var(--s-8); border-radius: var(--r-sm); font: var(--t-label); }
+.mapeo :global(.btn) { justify-self: start; }
+.ok { border-radius: var(--r-md); background: var(--green-soft); color: var(--green-dark); padding: var(--s-5) var(--s-6); font: 700 14px var(--font); }
 
-.resumen { display: grid; gap: 12px; }
-.stats { display: flex; gap: 8px; flex-wrap: wrap; }
-.stat { background: var(--surface-2); border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; min-width: 92px; }
+.resumen { display: grid; gap: var(--s-5); }
+.stats { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+.stat { background: var(--surface-2); border-radius: var(--r-md); padding: var(--s-4) var(--s-6); display: flex; flex-direction: column; min-width: 96px; }
 .stat b { font: 800 22px var(--font); }
 .stat span { font: 600 12.5px var(--font); color: var(--muted); }
 
 .tabla { width: 100%; border-collapse: collapse; font: 500 14px var(--font); }
-.tabla th { text-align: left; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
-.tabla td { padding: 8px; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+.tabla th { text-align: left; font: var(--t-kicker); text-transform: uppercase; letter-spacing: var(--kicker-spacing); color: var(--muted-2); padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); }
+.tabla td { padding: var(--s-3); border-bottom: 1px solid var(--line-2); vertical-align: top; }
 .tabla td:first-child { white-space: nowrap; }
 .tabla td:last-child { overflow-wrap: anywhere; }
+.num { font-variant-numeric: tabular-nums; text-align: right; }
 
-.filas { border-radius: 14px; padding: 12px 14px; font: 500 13.5px/1.45 var(--font); max-height: 340px; overflow: auto; }
-.filas ul { margin: 6px 0 0; padding-left: 18px; }
+.mapeo { display: grid; gap: var(--s-4); padding: var(--s-6); border-radius: var(--r-md); background: var(--surface-2); }
+.mapeoFila { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: var(--s-5); font: var(--t-label); }
+.mapeoFila select { height: var(--h-button-sm); }
+
+.filas { border-radius: var(--r-md); padding: var(--s-5) var(--s-6); font: 500 13.5px/1.45 var(--font); max-height: 340px; overflow: auto; }
+.filas ul { margin: var(--s-2) 0 0; padding-left: 18px; }
 .filasError { background: var(--red-soft); color: var(--red-dark); }
 .filasWarn { background: var(--yellow-soft); color: var(--yellow-ink); }
 .filasTitulo { font-weight: 700; }
-.fila { font: 600 12px var(--mono); margin-right: 8px; opacity: .8; }
+.fila { font: 600 12px var(--mono); margin-right: var(--s-3); opacity: .8; }
 
 @media (min-width: 1000px) {
   .grid { grid-template-columns: 1fr 1fr; align-items: start; }

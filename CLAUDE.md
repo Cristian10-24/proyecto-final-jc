@@ -14,7 +14,8 @@ Next.js 16 (App Router) + TypeScript, driver `mongodb`, Zod, exceljs, Vitest. Ve
 
 ## Comandos
 - `npm run db:local` — MongoDB local en el puerto 27018 (replica set). Dejarla abierta.
-- `npm run dev` · `npm test` · `npm run test:db` · `npm run typecheck` · `npm run build`
+- `npm run dev:red` (dev en el wifi, solo base local) · `npm run semilla:local -- --reset` (3 casos de prueba)
+- `npm test` · `npm run test:db` · `npm run typecheck` · `npm run build` · `npm run plantillas:ejemplo`
 - `npm run usuario:add -- admin "Nombre" --rol=admin`
 
 ## Reglas

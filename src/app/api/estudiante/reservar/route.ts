@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sameOrigin } from "@/lib/auth";
-import { studentPortalOpen } from "@/lib/portal";
-import { bloqueado, clientIp, contar, intentar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
+import { contar, intentar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
 import { MENSAJES_RESERVA, reservar } from "@/lib/reservas";
-import { normalizeDocumento } from "@/lib/validation/name";
+import { cuerpoInvalido, documentoSchema, guardia } from "@/lib/rutaEstudiante";
 
 const Body = z
   .object({
-    documento: z.string().max(30).transform(normalizeDocumento).pipe(z.string().min(5).max(15)),
+    documento: documentoSchema,
     inicio: z.iso.datetime(),
   })
   .strict();
@@ -21,16 +19,12 @@ const ESTADO: Record<string, number> = { sin_proyecto: 404, ya_tiene_hora: 409, 
  * cuerpo inválido o documento inexistente). Solo responde lo mínimo: no da datos de otros proyectos.
  */
 export async function POST(req: Request) {
-  if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
-  if (!studentPortalOpen()) return NextResponse.json({ error: "cerrado", mensaje: "La elección de horario está cerrada." }, { status: 403 });
-  const ip = clientIp(req);
-  if (await bloqueado("ip", ip)) return NextResponse.json({ error: "bloqueado", mensaje: MENSAJE_BLOQUEO }, { status: 429 });
+  const g = await guardia(req);
+  if (g.error) return g.error;
+  const { ip } = g;
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) {
-    await contar("ip", ip);
-    return NextResponse.json({ error: "datos_invalidos", mensaje: "Revisa el documento y la hora." }, { status: 400 });
-  }
+  if (!parsed.success) return cuerpoInvalido(ip, "Revisa el documento y la hora.");
   const { documento, inicio } = parsed.data;
 
   if (await intentar("documento", documento)) return NextResponse.json({ error: "bloqueado", mensaje: MENSAJE_BLOQUEO }, { status: 429 });
@@ -39,7 +33,7 @@ export async function POST(req: Request) {
   if (r.ok) return NextResponse.json({ ok: true, inicio: r.inicio.toISOString(), dia: r.dia });
   if (r.error === "sin_proyecto") await contar("ip", ip);
   return NextResponse.json(
-    { error: r.error, mensaje: MENSAJES_RESERVA[r.error], ...(r.inicio ? { inicio: r.inicio.toISOString() } : {}) },
+    { error: r.error, mensaje: MENSAJES_RESERVA[r.error] }, // la hora existente se ve con /consultar
     { status: ESTADO[r.error] ?? 400 },
   );
 }

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ObjectId } from "mongodb";
 import { usarBaseLocal } from "./helpers/base-local";
 import { ENC_CUPOS, ENC_PROYECTOS, horarios, libro } from "./helpers/libros";
 
@@ -48,13 +49,14 @@ describe("importar proyectos", () => {
 
   it("inserta y luego actualiza por código", async () => {
     const a = leer([["P-1", "Cali", "Uno", "G1", "2000000001", "Ana Uno", null, null], ["P-2", "Cartagena", "Dos", null, "2000000002", "Luis Dos", "2000000003", "Sara Tres"]]);
-    const p1 = await previaProyectos(a.proyectos, a.errores);
+    const p1 = await previaProyectos(a);
     expect(p1).toMatchObject({ total: 2, nuevos: 2, actualizados: 0, errores: [] });
-    await aplicarProyectos(a.proyectos, actor);
+    await aplicarProyectos(a.proyectos, p1.asignaciones, actor);
 
     const b = leer([["P-1", "Cali", "Uno corregido", null, "2000000001", "Ana Uno", null, null]]);
-    expect(await previaProyectos(b.proyectos, b.errores)).toMatchObject({ nuevos: 0, actualizados: 1, fueraDelArchivo: 1 });
-    await aplicarProyectos(b.proyectos, actor);
+    const pb = await previaProyectos(b);
+    expect(pb).toMatchObject({ nuevos: 0, actualizados: 1, fueraDelArchivo: 1 });
+    await aplicarProyectos(b.proyectos, pb.asignaciones, actor);
     const { proyectos } = await db.collections();
     const p = await proyectos.findOne({ codigo: "P-1" });
     expect(p).toMatchObject({ nombre: "Uno corregido" });
@@ -64,7 +66,7 @@ describe("importar proyectos", () => {
 
   it("detecta un documento que ya es de otro proyecto en la base", async () => {
     const c = leer([["P-9", "Cali", "Nueve", null, "2000000003", "Sara Tres", null, null]]);
-    const previa = await previaProyectos(c.proyectos, c.errores);
+    const previa = await previaProyectos(c);
     expect(previa.errores[0]?.mensaje).toMatch(/ya es del proyecto P-2/);
   });
 
@@ -94,12 +96,41 @@ describe("importar proyectos", () => {
     expect(await c.asientos.countDocuments()).toBe(32);
 
     const d = leer([["P-2", "Cali", "Dos", null, "2000000002", "Luis Dos", "2000000003", "Sara Tres"]]);
-    expect((await previaProyectos(d.proyectos, d.errores)).errores[0]?.mensaje).toMatch(/ya tiene hora en Cartagena/);
+    expect((await previaProyectos(d)).errores[0]?.mensaje).toMatch(/ya tiene hora en Cartagena/);
   });
 
   it("el índice único impide dos asientos para un proyecto", async () => {
     const c = await db.collections();
     const p2 = await c.proyectos.findOne({ codigo: "P-2" });
     await expect(c.asientos.updateOne({ proyectoId: null }, { $set: { proyectoId: p2!._id } })).rejects.toThrow(/duplicate key/);
+  });
+});
+
+describe("monitor por ciudad y ciudad sin días", () => {
+  it("un monitor en la ciudad se asigna; varios quedan por asignar; ciudad sin días es error", async () => {
+    const { users, proyectos } = await db.collections();
+    const u = (usuario: string, ciudades: string[]) => ({ _id: new ObjectId(), usuario, nombre: `Monitor ${usuario}`, passwordHash: "x", rol: "monitor" as const, ciudades, activo: true, creadoEn: new Date() });
+    await users.insertMany([u("mon.cali1", ["Cali"]), u("mon.cali2", ["Cali"]), u("mon.ctg", ["Cartagena"])]);
+    const l = leerLibroProyectos(libro({ Proyectos: [
+      ["Ciudad", "Proyecto", "Nombre 1", "Documento 1", "Monitor"],
+      ["Cartagena", "Mon 1", "Ana Uno", "6000000001", null],
+      ["Cali", "Mon 2", "Luis Dos", "6000000002", null],
+      ["Cali", "Mon 3", "Sara Tres", "6000000003", "Monitor mon.cali2"],
+      ["Cali", "Mon 4", "Eva Cuatro", "6000000004", "Nadie"],
+      ["Medellín", "Mon 5", "Juan Cinco", "6000000005", null],
+    ] }));
+    const previa = await previaProyectos(l);
+    expect(previa.errores.map((e) => [e.fila, e.mensaje])).toEqual([[6, "Medellín no tiene días habilitados en la hoja Cupos."]]);
+    expect(previa.avisos.map((e) => e.mensaje).join()).toMatch(/No hay un monitor "Nadie"/);
+    expect(previa.monitores).toEqual({ asignados: 2, porAsignar: [
+      { ciudad: "Cali", proyectos: 2, motivo: "varios monitores en la ciudad" },
+      { ciudad: "Medellín", proyectos: 1, motivo: "la ciudad no tiene monitor" },
+    ] });
+
+    const sinMedellin = { ...l, proyectos: l.proyectos.filter((p) => p.ciudad !== "Medellín") };
+    const p2 = await previaProyectos(sinMedellin);
+    await aplicarProyectos(sinMedellin.proyectos, p2.asignaciones, actor);
+    expect((await proyectos.find({ codigo: { $in: ["P-6000000001", "P-6000000002", "P-6000000003"] } }).sort({ codigo: 1 }).toArray()).map((p) => p.monitor))
+      .toEqual(["mon.ctg", null, "mon.cali2"]);
   });
 });

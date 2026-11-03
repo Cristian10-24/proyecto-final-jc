@@ -2,11 +2,19 @@ import ExcelJS from "exceljs";
 import { COLUMNAS_CUPOS, HOJAS_MENTORES } from "./mentores";
 import { COLUMNAS_PROYECTOS, HOJA_PROYECTOS } from "./proyectos";
 
+type Fila = (string | number | null)[];
+
+/** Filas de ejemplo INVENTADAS, en el orden de COLUMNAS_PROYECTOS. */
+export const EJEMPLO_PROYECTOS: Fila[] = [
+  ["Cali", "Individual", "App de reciclaje escolar", "Mapa de puntos de reciclaje para el colegio.", "Ana Ejemplo Pérez", "1000000001", "+57 300 000 0001", "ana.ejemplo@ejemplo.org", null, null, null, null, "Grupo 1", null],
+  ["Cartagena", "En pareja", "Guía turística accesible", "Recorridos narrados por audio.", "Luis Ejemplo Gómez", "1000000002", "300 000 0002", "luis.ejemplo@ejemplo.org", "Sara Ejemplo Ruiz", "1000000003", "0057 300 000 0003", "sara.ejemplo@ejemplo.org", "Grupo 3", null],
+];
+
 // Plantillas vacías (con filas de ejemplo INVENTADAS) que el admin descarga desde "Importar".
 
 export type TipoPlantilla = "proyectos" | "mentores";
 
-function hojaCon(wb: ExcelJS.Workbook, nombre: string, columnas: readonly string[], filas: (string | number | null)[][], anchos?: number[]) {
+function hojaCon(wb: ExcelJS.Workbook, nombre: string, columnas: readonly string[], filas: Fila[], anchos?: number[]) {
   const ws = wb.addWorksheet(nombre);
   ws.addRow([...columnas]).font = { bold: true };
   filas.forEach((f) => ws.addRow(f));
@@ -25,19 +33,20 @@ function instrucciones(wb: ExcelJS.Workbook, lineas: string[]) {
 export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   if (tipo === "proyectos") {
-    const ws = hojaCon(wb, HOJA_PROYECTOS, COLUMNAS_PROYECTOS, [
-      ["P-001", "Cali", "App de reciclaje escolar", "Grupo 1", "1000000001", "Ana Ejemplo Pérez", null, null],
-      ["P-002", "Cartagena", "Guía turística accesible", "Grupo 3", "1000000002", "Luis Ejemplo Gómez", "1000000003", "Sara Ejemplo Ruiz"],
-    ], [10, 14, 34, 12, 16, 28, 16, 28]);
-    // Documentos como texto: Excel no les quita ceros ni los pasa a notación científica.
-    for (const c of [5, 7]) ws.getColumn(c).numFmt = "@";
+    const ws = hojaCon(wb, HOJA_PROYECTOS, COLUMNAS_PROYECTOS, EJEMPLO_PROYECTOS, [12, 12, 30, 40, 26, 16, 18, 28, 26, 16, 18, 28, 10, 18]);
+    // Documentos y celulares como texto: Excel no les quita ceros ni los pasa a notación científica.
+    for (const c of [6, 7, 10, 11]) ws.getColumn(c).numFmt = "@";
     instrucciones(wb, [
-      "Plantilla de proyectos · Proyecto final JC 2026",
+      "Plantilla de inscritos · Proyecto final JC 2026",
       "Una fila por proyecto. Borra las filas de ejemplo antes de importar.",
-      "Código: único por proyecto (p. ej. P-001). Ciudad: una de las ciudades de la edición.",
-      "Documento 1 y Nombre 1: obligatorios. Documento 2 y Nombre 2: solo si el proyecto es en pareja (los dos o ninguno).",
-      "Los documentos van sin puntos ni espacios. Un documento no puede estar en dos proyectos.",
-      "Volver a importar actualiza los proyectos por código; los que no estén en el archivo no se borran.",
+      "Los encabezados pueden variar: se reconocen por sinónimos (documento / identificación / cédula / CC; celular / teléfono / WhatsApp;",
+      "nombre del proyecto / proyecto / título). Si falta uno obligatorio, en la vista previa eliges qué columna es.",
+      "Obligatorios: Ciudad, Nombre del proyecto, Nombre 1 y Documento 1. Modalidad: Individual o En pareja.",
+      "Integrante 2: solo si es en pareja, con nombre y documento. Un documento no puede estar en dos proyectos.",
+      "Documentos sin puntos ni espacios, como texto (no decimales). Celular con o sin indicativo: +57 300 123 4567 o 3001234567.",
+      "Monitor (opcional): si no viene, se asigna el monitor de la ciudad; si la ciudad tiene varios, queda por asignar.",
+      "El estudiante ve su documento, celular y correo enmascarados (•••• 4567, an•••@gmail.com).",
+      "Volver a importar actualiza cada proyecto (por el documento del integrante 1); los que no estén en el archivo no se borran.",
     ]);
   } else {
     hojaCon(wb, HOJAS_MENTORES.mentores, ["N°", "Nombre del mentor", "Correo", "Celular"], [

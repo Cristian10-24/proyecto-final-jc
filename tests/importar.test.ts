@@ -1,9 +1,10 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { resumenPorDia } from "@/lib/agenda";
 import { leerDia, leerFechaHora, leerHora, leerLibro } from "@/lib/importar/excel";
 import { leerLibroMentores } from "@/lib/importar/mentores";
 import { plantilla } from "@/lib/importar/plantillas";
-import { leerDocumento, leerLibroProyectos } from "@/lib/importar/proyectos";
+import { detectarCampo, leerCelular, leerDocumento, leerLibroProyectos } from "@/lib/importar/proyectos";
 import { ENC_CUPOS, ENC_PROYECTOS, horarios, libro } from "./helpers/libros";
 
 describe("lectura de celdas", () => {
@@ -47,7 +48,8 @@ describe("plantillas", () => {
   it("la plantilla de proyectos se lee sin errores", async () => {
     const r = leerLibroProyectos(await leerLibro(await plantilla("proyectos")));
     expect(r.errores).toEqual([]);
-    expect(r.proyectos.map((p) => [p.codigo, p.ciudad, p.integrantes.length])).toEqual([["P-001", "Cali", 1], ["P-002", "Cartagena", 2]]);
+    expect(r.proyectos.map((p) => [p.codigo, p.ciudad, p.integrantes.length])).toEqual([["P-1000000001", "Cali", 1], ["P-1000000002", "Cartagena", 2]]);
+    expect(r.proyectos[1]!.integrantes.map((i) => i.celular)).toEqual(["+573000000002", "+573000000003"]);
   });
 
   it("la plantilla de mentores genera asientos por ciudad, con sobrante y Todas", async () => {
@@ -85,16 +87,59 @@ describe("libro de proyectos con errores típicos", () => {
   it("reporta cada error con su fila", () => {
     const por = (fila: number) => r.errores.filter((e) => e.fila === fila).map((e) => e.mensaje).join(" ");
     expect(por(3)).toMatch(/código P-1 ya está en la fila 2/);
-    expect(por(4)).toMatch(/documento 1000000001 ya está en la fila 2/);
-    expect(por(5)).toMatch(/Integrante 2: falta el nombre/);
-    expect(por(6)).toMatch(/Integrante 2: falta el documento/);
+    expect(por(4)).toMatch(/Documento repetido: 1000000001 ya está en la fila 2/);
+    expect(por(5)).toMatch(/Pareja incompleta: falta el nombre del integrante 2/);
+    expect(por(6)).toMatch(/Pareja incompleta: falta el documento del integrante 2/);
     expect(por(7)).toMatch(/Ciudad desconocida/);
     expect(por(8)).toMatch(/mismo documento/);
     expect(r.errores.some((e) => e.fila === 9)).toBe(false); // fila vacía
   });
 
-  it("sin la hoja Proyectos, un solo error claro", () => {
-    expect(leerLibroProyectos(libro({ Hoja1: [["x"]] })).errores[0]!.mensaje).toMatch(/Falta la hoja Proyectos/);
+  it("sin hoja Proyectos usa la primera hoja; sin columnas reconocibles pide elegirlas", () => {
+    const l = leerLibroProyectos(libro({ Hoja1: [["x", "y"], ["1", "2"]] }));
+    expect(l.faltan).toEqual(["ciudad", "proyecto", "nombre1", "documento1"]);
+    expect(l.errores[0]!.mensaje).toMatch(/Elige abajo/);
+    expect(l.columnas.map((c) => c.encabezado)).toEqual(["x", "y"]);
+  });
+});
+
+describe("importador flexible", () => {
+  it("reconoce encabezados por sinónimos, sin tildes ni mayúsculas", () => {
+    const enc = ["SEDE", "Tipo de proyecto", "Título", "¿De qué trata?", "Nombre del estudiante", "Tipo de documento", "Cédula", "WhatsApp", "E-mail",
+      "Nombre compañero(a)", "Identificación pareja", "Teléfono pareja", "Correo pareja", "Monitor"];
+    expect(enc.map(detectarCampo)).toEqual(["ciudad", "modalidad", "proyecto", "descripcion", "nombre1", null, "documento1", "celular1", "correo1",
+      "nombre2", "documento2", "celular2", "correo2", "monitor"]);
+    expect(["CC", "Nombre del proyecto", "Proyecto", "Teléfono 2", "Documento integrante 1"].map(detectarCampo)).toEqual(["documento1", "proyecto", "proyecto", "celular2", "documento1"]);
+  });
+
+  it("mapa manual: el admin elige la columna que no se reconoció", () => {
+    const filas = [["Lugar", "Título", "Estudiante", "Cédula"], ["Cali", "Uno", "Ana Pérez", "1000000001"]];
+    expect(leerLibroProyectos(libro({ Inscritos: filas })).faltan).toEqual(["ciudad"]);
+    const r = leerLibroProyectos(libro({ Inscritos: filas }), { ciudad: "Lugar" });
+    expect(r.errores).toEqual([]);
+    expect(r.proyectos[0]).toMatchObject({ ciudad: "Cali", nombre: "Uno", codigo: "P-1000000001" });
+  });
+
+  it("modalidad, decimales y celulares con prefijos mezclados", () => {
+    const r = leerLibroProyectos(libro({ Proyectos: [
+      ["Ciudad", "Modalidad", "Proyecto", "Nombre 1", "Documento 1", "Celular 1", "Nombre 2", "Documento 2", "Celular 2"],
+      ["Cali", "En pareja", "Uno", "Ana Pérez", "1000000001", "+57 300-000-0001", null, null, null], // pareja sin integrante 2
+      ["Cali", "Individual", "Dos", "Luis Gómez", "1000000002", "57 300 000 0002", "Sara Ruiz", "1000000003", null], // individual con 2
+      ["Cali", null, "Tres", "Eva Sol", 1000000004.5, "0057 3000000004", null, null, null], // documento decimal
+      ["Cali", null, "Cuatro", "Tomás Ríos", "1000000005", "300 12", null, null, null], // celular incompleto
+      ["Paysandú", null, "Cinco", "Juan Díaz", "1000000006", "+598 99 123 456", null, null, "+57 3001234567"], // celular sin integrante 2
+      ["Cali", "pareja", "Seis", "Ana Ruiz", "1000000007", "3000000007", "Luis Paz", "1000000008", "573000000008"],
+    ] }));
+    const por = (fila: number) => r.errores.filter((e) => e.fila === fila).map((e) => e.mensaje).join(" ");
+    expect(por(2)).toMatch(/modalidad dice en pareja, pero falta el integrante 2/);
+    expect(por(3)).toMatch(/modalidad dice individual/);
+    expect(por(4)).toMatch(/Documento 1 está guardado como decimal/);
+    expect(por(5)).toMatch(/Celular 1: "300 12" no parece un celular/);
+    expect(por(6)).toMatch(/Pareja incompleta: hay celular o correo del integrante 2/);
+    expect(r.proyectos.map((p) => p.integrantes.map((i) => i.celular))).toEqual([["+573000000007", "+573000000008"]]);
+    expect(leerCelular("+57 300-000-0001")).toEqual({ celular: "+573000000001" });
+    expect(leerCelular("0057 3000000004")).toEqual({ celular: "+573000000004" });
+    expect(leerCelular("+598 99 123 456")).toEqual({ celular: "+59899123456" });
   });
 });
 
@@ -159,5 +204,24 @@ describe("libro de mentores", () => {
 
   it("faltan hojas", () => {
     expect(leerLibroMentores(libro({ Horarios: horas12 })).errores[0]!.mensaje).toMatch(/Falta la hoja Cupos/);
+  });
+});
+
+describe("Excel de ejemplo (docs/plantillas)", () => {
+  const leerArchivo = async (n: string) => leerLibroProyectos(await leerLibro(await readFile(`docs/plantillas/${n}`)));
+
+  it("inscritos-ejemplo.xlsx: formato sugerido, sin errores", async () => {
+    const r = await leerArchivo("inscritos-ejemplo.xlsx");
+    expect(r.errores).toEqual([]);
+    expect(r.proyectos).toHaveLength(7);
+    expect(r.proyectos.filter((p) => p.integrantes.length === 2)).toHaveLength(3);
+  });
+
+  it("inscritos-con-errores.xlsx: sinónimos reconocidos y un error por fila", async () => {
+    const r = await leerArchivo("inscritos-con-errores.xlsx");
+    expect(r.faltan).toEqual([]);
+    expect(r.proyectos.map((p) => p.nombre)).toEqual(["Fila buena"]);
+    const filas = [...new Set(r.errores.map((e) => e.fila))];
+    expect(filas).toEqual([3, 4, 5, 6, 7, 8, 9]);
   });
 });

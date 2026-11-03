@@ -26,8 +26,8 @@ Encabezado: logo, "Atrás", "Paso n de 4"; pie "¿Problemas? Escríbele a tu mon
 - **Paso 2 · Día**: "¿Qué día presentas?" · "Estos son los días habilitados para {ciudad}." Tarjetas de día (día de la semana, número, mes). Sin etiquetas de cupo.
 - **Paso 3 · Hora**: "¿A qué hora?" · "{día} · Hora COL · 15 minutos". Bloques agrupados por hora.
 - **Paso 4 · Confirmar**: kicker "Último paso", "Confirma tu hora" · "Revisa antes de confirmar." TU PRESENTACIÓN (día, hora, "15 minutos · Hora COL"), INTEGRANTES. Botones **Confirmar mi hora** (ocupado: "Reservando tu hora…"), **Elegir otra hora**. Nota: "Si necesitas cambiarla, escríbele a tu monitor."
-- **Éxito (boleto)**: kicker "Hora confirmada", "¡Listo! Ya tienes tu hora" · "Presentas ante un mentor por 15 minutos. Conéctate 5 minutos antes." Boleto: día, HORA COL, "15 minutos con tu mentor", PROYECTO, integrantes. Botón **Agregar a mi calendario** (→ "Agregado a tu calendario").
-- **Ya tienes una hora**: kicker "Todo en orden" · "{Tu compañera/compañero} {nombre} ya eligió la hora." o "Ya elegiste tu hora antes." Muestra el boleto.
+- **Éxito (boleto)**: kicker "Hora confirmada", "¡Listo! Ya tienes tu hora" · "Presentas ante un mentor por 15 minutos. Conéctate 5 minutos antes." Boleto: día, HORA COL, "15 minutos con tu mentor", PROYECTO, integrantes. "Tu monitor te enviará el enlace de la sala por WhatsApp." (sin correos). Botón **Agregar a mi calendario** (→ "Agregado a tu calendario").
+- **Ya tienes una hora**: kicker "Todo en orden" · "Tu compañero/a {nombre} ya eligió la hora." o "Ya elegiste tu hora antes." Muestra el boleto.
 - **Esa hora se acaba de ocupar** (aviso sobre el paso 3): "Esa hora se acaba de ocupar, elige otra." · "Alguien la confirmó segundos antes que tú."
 - **Ya no quedan horas en tu día**: "Escríbele a tu monitor para que te ayude."
 - **Aún cerradas**: "Todavía no puedes elegir tu hora" · "Las inscripciones abren pronto. Guarda la fecha." + fecha y hora de apertura.
@@ -46,7 +46,7 @@ Encabezado: logo, "Atrás", "Paso n de 4"; pie "¿Problemas? Escríbele a tu mon
 ## 5 · Administrador (además de lo de coordinación)
 - **Tablero** (hora COL): franjas con sus proyectos y columna "Sin hora". Detalle de tarjeta: HORA, MENTOR, MONITOR, INTEGRANTES, HISTORIAL DE CAMBIOS; acciones liberar y cambiar hora. Avisos: franja llena (rojo, "No cabe.") y ciudad sin ese día (amarillo, **Mover de todas formas** / **Cancelar**).
 - **Franjas y mentores** y **Reglas de cupos** (Ciudad, Cupos reservados, Máximo del día, "El sobrante va para"): en Fase 1 se ven, se cargan por Excel (hoja Cupos).
-- **Importar inscritos**: vista previa con filas con error y avisos, "Importar {n} proyectos", "Descargar filas con error". **Usuarios y roles**: ya existen.
+- **Importar inscritos**: vista previa con filas con error y avisos; si no reconoce una columna obligatoria, "Elige qué columna corresponde a cada campo"; monitores por asignar; "Importar {n} proyectos". **Usuarios y roles**: ya existen.
 
 ## 3 · Mentor (fuera de Fase 1)
 Agenda, login con código y "Calificar" (diseño con Sofka). No se construye en esta fase.

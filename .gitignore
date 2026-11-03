@@ -13,5 +13,7 @@ exports/
 
 # Datos personales: NUNCA al repositorio (las plantillas vacías se generan con un script)
 *.xlsx
+# Excepción: ejemplos con datos INVENTADOS (npm run plantillas:ejemplo)
+!docs/plantillas/*.xlsx
 *.csv
 *.zip

@@ -21,6 +21,9 @@ Liberar es vaciar el asiento (sin contadores). Si una ciudad no usa sus cupos, e
 Solo el cambio de hora hecho por el admin usa una transacción (libera el asiento viejo y toma el nuevo).
 Alternativa descartada (diseño a: colección `cuotas` + contadores) y otras decisiones: `docs/DECISIONES.md`.
 
+## Preguntas para la Fase 2
+- ¿Cómo se entrega el enlace de la sala al estudiante? (En Fase 1, el monitor lo envía por WhatsApp.)
+
 ## Infraestructura
 - Repositorio y proyecto de Vercel: `proyecto-final-jc`. Base de Atlas: `proyecto_final_jc`, usuario readWrite solo sobre ella.
 - Vercel en `iad1` (`vercel.json`) y Atlas en AWS us-east-1: misma región.
@@ -32,7 +35,7 @@ Alternativa descartada (diseño a: colección `cuotas` + contadores) y otras dec
 - [x] 2. Funciones puras de agenda: días por ciudad, horas disponibles y reparto proporcional por hora. Pruebas con el caso 80 Cali / 40 Cartagena.
 - [x] 3. Ruta de reserva atómica y prueba de concurrencia con 300 simultáneos (pool de 5, sin doble asignación).
 - [x] 3b. Sistema visual (una sola vez): leer solo los `.dc.html` de `docs/diseno/`; crear `src/app/tokens.css` (colores, Outfit y JetBrains Mono, radios, sombras, espaciados), `docs/DISENO.md` (máx. 80 líneas: pantallas y estados por rol, textos de botones y mensajes, componentes repetidos) y copiar los logos a `public/`. Desde aquí, portal, admin y monitor usan SOLO `docs/DISENO.md` y `tokens.css`; si un prototipo contradice el PLAN, gana el PLAN (anotar en DECISIONES). Móvil primero: estudiante en 390 px, admin en 1280 px.
-- [ ] 4. Portal del estudiante, móvil primero: documento → datos y pareja (solo lectura) → día → hora → confirmar → "tu horario", con todos los estados de error.
-- [ ] 5. Admin: liberar o cambiar la hora de un proyecto y reetiquetar asientos libres de un día; todo con registro en changeLog.
+- [x] 4. Portal del estudiante, móvil primero: documento → datos y pareja (solo lectura) → día → hora → confirmar → "tu horario", con todos los estados de error.
+- [ ] 5. Admin: liberar o cambiar la hora de un proyecto, reetiquetar asientos libres de un día y asignar el monitor de los proyectos "por asignar"; todo con registro en changeLog.
 - [ ] 6. Panel del monitor: quién eligió y quién falta, copiar pendientes para WhatsApp y exportar el cronograma a Excel.
 - [ ] 7. Preparar el despliegue: checklist en `docs/DESPLIEGUE.md` con lo que el usuario debe crear (GitHub, Atlas, Vercel, variables). Sin publicar nada.

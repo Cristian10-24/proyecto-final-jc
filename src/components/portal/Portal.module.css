@@ -1,0 +1,169 @@
+/* Portal del estudiante: móvil primero (390 px); en escritorio, una columna centrada de 440 px. */
+
+.pagina {
+  min-height: 100dvh;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) var(--s-9);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Encabezado ---------- */
+.encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: var(--s-6) 0 var(--s-5);
+}
+.barra {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+}
+.logo { height: 40px; width: auto; display: block; }
+.atras {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  height: 44px;
+  padding: 0 var(--s-5) 0 var(--s-2);
+  margin-left: calc(-1 * var(--s-2));
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink);
+  font: var(--t-label);
+}
+.atras:hover { background: var(--soft); }
+.pasoTexto { font: var(--t-kicker); letter-spacing: var(--kicker-spacing); text-transform: uppercase; color: var(--muted-2); }
+.progreso { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); margin-top: var(--s-3); }
+.segmento, .segmentoOn { height: var(--h-progress); border-radius: var(--r-pill); background: var(--line); }
+.segmentoOn { background: var(--orange); }
+
+/* ---------- Contenido ---------- */
+.contenido { flex: 1; padding-top: var(--s-5); }
+.pantalla { display: flex; flex-direction: column; gap: var(--s-6); }
+.centro { align-items: center; text-align: center; padding-top: 72px; }
+
+.kicker { color: var(--muted-2); }
+.kickerMarca { color: var(--orange-dark); }
+.display { margin: 0; font: var(--t-display); letter-spacing: -.03em; outline: none; }
+.h1 { margin: 0; font: var(--t-h1); letter-spacing: -.02em; outline: none; }
+.texto { margin: calc(-1 * var(--s-2)) 0 0; font: var(--t-body); color: var(--muted); }
+.ayuda { margin: 0; font: var(--t-small); color: var(--muted); text-align: center; }
+.capital::first-letter { text-transform: uppercase; }
+.campo { display: flex; flex-direction: column; margin-top: var(--s-3); }
+.zonaAviso { display: block; }
+.notaTitulo { display: block; font-weight: 700; }
+
+/* ---------- Tarjetas ---------- */
+.tarjeta {
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2xl);
+  padding: var(--s-8);
+  box-shadow: var(--sh-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.nombre { font: var(--t-h2); }
+.numero { font: 700 24px var(--mono); letter-spacing: .04em; overflow-wrap: anywhere; }
+.descripcion { margin: 0; font: var(--t-body); color: var(--muted); }
+.ciudad { font: var(--t-small); color: var(--muted-2); }
+.datos {
+  margin: var(--s-2) 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-2) var(--s-6);
+  font: var(--t-small);
+}
+.datos dt { color: var(--muted); }
+.datos dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; text-align: right; }
+.chip {
+  align-self: flex-start;
+  height: var(--h-chip);
+  padding: 0 var(--s-5);
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--ink-2);
+  font: var(--t-chip);
+  display: inline-flex;
+  align-items: center;
+}
+.horaGrande { font: 800 30px/1.1 var(--font); letter-spacing: -.02em; color: var(--orange-dark); }
+.meta { font: var(--t-small); color: var(--muted); }
+.nombres { margin: 0; padding: 0; list-style: none; font: 600 16px/1.5 var(--font); }
+
+/* ---------- Días ---------- */
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-4); }
+.opcionDia {
+  width: 100%;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-7);
+  padding: var(--s-6) var(--s-7);
+  border: 2px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+}
+.opcionDia:hover:not(:disabled) { border-color: var(--orange); background: var(--orange-tint); }
+.opcionDia:disabled { background: var(--surface-2); border-color: var(--line-2); color: var(--muted-2); }
+.diaNumero { flex: none; width: 48px; font: 800 32px/1 var(--font); letter-spacing: -.03em; text-align: center; }
+.diaTexto { flex: 1; display: flex; flex-direction: column; }
+.diaSemana { font: 700 17px var(--font); }
+.diaSemana::first-letter { text-transform: uppercase; }
+.diaMes { font: var(--t-small); color: var(--muted); }
+.opcionDia:disabled .diaMes { color: var(--muted-2); }
+.diaEstado { flex: none; max-width: 46%; text-align: right; font: 600 13px/1.3 var(--font); color: var(--orange-dark); }
+.opcionDia:disabled .diaEstado { color: var(--muted-2); }
+
+/* ---------- Horas ---------- */
+.grupos { display: flex; flex-direction: column; gap: var(--s-8); }
+.grupos .kicker { margin-bottom: var(--s-3); }
+.bloques { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4); }
+.bloquesUna { display: grid; grid-template-columns: 1fr; gap: var(--s-4); }
+.bloque {
+  min-height: var(--h-button-sm);
+  padding: var(--s-3) var(--s-5);
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+  color: var(--ink);
+  font: 700 16px var(--font);
+}
+.bloque:hover { border-color: var(--orange); background: var(--orange-tint); }
+
+/* ---------- Boleto ---------- */
+.boleto {
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--sh-raised);
+  overflow: hidden;
+}
+.boletoArriba { padding: var(--s-8); background: var(--orange-soft); display: flex; flex-direction: column; gap: var(--s-2); }
+.boletoDia { font: var(--t-h2); }
+.boletoDia::first-letter { text-transform: uppercase; }
+.boletoHora { font: 800 34px/1.1 var(--font); letter-spacing: -.02em; color: var(--orange-dark); }
+.boletoMeta { font: var(--t-small); color: var(--muted); }
+.boletoCorte { border-top: 2px dashed var(--line); }
+.boletoAbajo { padding: var(--s-8); display: flex; flex-direction: column; gap: var(--s-2); }
+.boletoProyecto { font: 700 17px/1.3 var(--font); margin-bottom: var(--s-4); }
+
+/* ---------- Carga ---------- */
+.skeleton { border-radius: var(--r-lg); background: var(--line-2); animation: shimmer 1.2s ease-in-out infinite; }
+
+/* ---------- Pie ---------- */
+.pie { margin-top: var(--s-9); text-align: center; font: var(--t-small); color: var(--muted-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}

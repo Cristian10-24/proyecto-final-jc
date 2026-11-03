@@ -31,7 +31,7 @@ export type ChangeLog = {
   fecha: Date;
 };
 
-export type Integrante = { documento: string; nombre: string };
+export type Integrante = { documento: string; nombre: string; celular?: string; correo?: string };
 
 /** Proyecto importado del Excel. Su hora vive en el asiento (asientos.proyectoId), no aquí. */
 export type Proyecto = {
@@ -39,7 +39,10 @@ export type Proyecto = {
   codigo: string;
   ciudad: string;
   nombre: string;
+  descripcion?: string;
   grupo?: string;
+  /** Usuario del monitor; null = por asignar (la ciudad tiene varios monitores o ninguno). */
+  monitor?: string | null;
   integrantes: Integrante[];
   creadoEn: Date;
   actualizadoEn: Date;
