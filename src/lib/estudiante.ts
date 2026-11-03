@@ -1,4 +1,4 @@
-import { ciudadesDelDia, horasDisponibles, puedeElegir } from "./agenda";
+import { ciudadesDelDia, ciudadesExplicitas, horasDisponibles, puedeElegir } from "./agenda";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
 import type { Asiento, Integrante, Proyecto } from "./types";
@@ -84,18 +84,20 @@ export async function agenda(documento: string, dia: string | undefined, ahora =
   const { dias, asientos } = await collections();
 
   if (dia) {
-    const cfg = await dias.findOne({ _id: dia });
-    if (!puedeElegir(cfg ?? undefined, p.ciudad, ahora)) return { error: "dia_no_disponible" };
+    const todos = await dias.find({}).toArray();
+    if (!puedeElegir(todos.find((d) => d._id === dia), p.ciudad, ahora, ciudadesExplicitas(todos))) return { error: "dia_no_disponible" };
     const libres = await asientos.find({ dia, ciudades: p.ciudad, proyectoId: null }, { projection: { inicio: 1, ciudades: 1, proyectoId: 1 } }).toArray();
     return { dia, bloques: horasDisponibles(libres, p.ciudad, ahora).map((d) => d.toISOString()) };
   }
 
   const hoy = diaCOL(ahora);
-  const configs = (await dias.find({ _id: { $gte: hoy } }).sort({ _id: 1 }).toArray()).filter((d) => ciudadesDelDia(d.ciudades, d._id).has(p.ciudad));
+  const todos = await dias.find({}).sort({ _id: 1 }).toArray();
+  const explicitas = ciudadesExplicitas(todos);
+  const configs = todos.filter((d) => d._id >= hoy && ciudadesDelDia(d.ciudades, d._id, explicitas).has(p.ciudad));
   const conLibres = new Set(await asientos.distinct("dia", { ciudades: p.ciudad, proyectoId: null, inicio: { $gt: ahora } }));
   return {
     dias: configs.map((d): DiaVista => {
-      const abre = ciudadesDelDia(d.ciudades, d._id).get(p.ciudad);
+      const abre = ciudadesDelDia(d.ciudades, d._id, explicitas).get(p.ciudad);
       if (abre && abre > ahora) return { dia: d._id, estado: "aun_no_abre", abre: abre.toISOString() };
       return { dia: d._id, estado: conLibres.has(d._id) ? "disponible" : "sin_horas" };
     }),

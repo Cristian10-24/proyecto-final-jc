@@ -77,7 +77,7 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
       "Cupos: una fila por día y ciudad que presenta ese día.",
       "  Cupos = asientos exactos de esa ciudad (máximo). En la ciudad marcada como Sobrante es un mínimo: recibe además todo lo que sobre.",
       "  Sobrante: marca con x una sola ciudad por día. Si ningún día la tiene, lo que sobre queda sin ciudad y se reetiqueta después.",
-      "  Todas: el sobrante queda libre para cualquier ciudad que no haya tenido su clausura ese día (p. ej. del martes 17 en adelante).",
+      "  Todas: el sobrante queda libre para las ciudades SIN días asignados en esta hoja (y antes de su clausura). Una ciudad con filas propias solo ve esos días.",
       "  Una ciudad no puede presentar el día de su clausura ni después.",
       "  Abre: fecha y hora de Colombia desde la que esa ciudad puede elegir ese día (vacío = desde que se abre el portal).",
       "Los cupos se reparten en proporción en cada hora del día, para que todas las ciudades tengan opciones en todas las horas.",

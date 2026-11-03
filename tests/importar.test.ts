@@ -58,7 +58,7 @@ describe("plantillas", () => {
     expect(resumenPorDia(r.asientos)).toEqual([
       { dia: "2026-11-12", asientos: 20, porCiudad: { Cali: 12, Cartagena: 8 } },
       { dia: "2026-11-13", asientos: 12, porCiudad: { Cartagena: 6, Barranquilla: 6 } },
-      { dia: "2026-11-17", asientos: 8, porCiudad: { Barranquilla: 4, "Cartagena + Barranquilla + Medellín + Guayaquil + Quito + Bogotá D.C. + Colonia + Paysandú + Panamá": 4 } },
+      { dia: "2026-11-17", asientos: 8, porCiudad: { Barranquilla: 4, "Medellín + Guayaquil + Quito + Bogotá D.C. + Colonia + Paysandú + Panamá": 4 } },
     ]);
     expect(r.cupos.get("2026-11-13")?.find((c) => c.ciudad === "Barranquilla")?.abre?.toISOString()).toBe("2026-11-13T19:00:00.000Z");
   });

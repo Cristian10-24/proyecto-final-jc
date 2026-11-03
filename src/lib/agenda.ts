@@ -2,11 +2,21 @@ import { BLOQUES_POR_HORA, horaCOL, inicioUTC, MINUTOS_BLOQUE } from "./edicion"
 import { NOMBRES_CIUDADES, presentaAntesDeClausura } from "./ciudades";
 import type { Asiento, CupoCiudad, DiaConfig } from "./types";
 
-/** En la hoja Cupos, "Todas" = cualquier ciudad que aún no haya tenido su clausura ese día. */
+/**
+ * En la hoja Cupos, "Todas" = las ciudades SIN días asignados explícitamente en ninguna fila de Cupos,
+ * y solo antes de su clausura. Una ciudad con filas propias ve únicamente esos días.
+ */
 export const TODAS = "Todas";
 
-export function expandirCiudades(ciudad: string, dia: string): string[] {
-  return ciudad === TODAS ? NOMBRES_CIUDADES.filter((c) => presentaAntesDeClausura(c, dia)) : [ciudad];
+/** Ciudades con al menos una fila propia (no "Todas") en la configuración de días. */
+export function ciudadesExplicitas(dias: Iterable<{ ciudades: CupoCiudad[] }>): Set<string> {
+  const out = new Set<string>();
+  for (const d of dias) for (const c of d.ciudades) if (c.ciudad !== TODAS) out.add(c.ciudad);
+  return out;
+}
+
+export function expandirCiudades(ciudad: string, dia: string, explicitas: Set<string>): string[] {
+  return ciudad === TODAS ? NOMBRES_CIUDADES.filter((c) => !explicitas.has(c) && presentaAntesDeClausura(c, dia)) : [ciudad];
 }
 
 // Funciones puras de agenda: no tocan la base. El importador y las rutas las usan.
@@ -48,7 +58,7 @@ export function repartoProporcional(total: number, cuotas: number[]): number[] {
  * sus cupos (mínimo) más todo lo que quede. Sin ciudad de sobrante, lo que quede va a un grupo
  * sin ciudad (el admin lo reetiqueta después). Si la ciudad de sobrante es "Todas", ese resto es libre.
  */
-export function gruposDelDia(cupos: CupoCiudad[], asientosDelDia: number, dia: string): { ciudades: string[]; cuota: number }[] {
+export function gruposDelDia(cupos: CupoCiudad[], asientosDelDia: number, dia: string, explicitas: Set<string>): { ciudades: string[]; cuota: number }[] {
   const sobrantes = cupos.filter((c) => c.sobrante);
   if (sobrantes.length > 1) throw new Error(`Solo una ciudad puede llevar el sobrante (hay ${sobrantes.length})`);
   const fijos = cupos.filter((c) => !c.sobrante);
@@ -57,7 +67,7 @@ export function gruposDelDia(cupos: CupoCiudad[], asientosDelDia: number, dia: s
   const sumaFijos = fijos.reduce((a, c) => a + c.cupos!, 0);
   const minimo = sobrantes[0]?.cupos ?? 0;
   if (sumaFijos + minimo > asientosDelDia) throw new Error(`Los cupos (${sumaFijos + minimo}) superan los asientos del día (${asientosDelDia})`);
-  const resto = { ciudades: sobrantes.flatMap((c) => expandirCiudades(c.ciudad, dia)), cuota: asientosDelDia - sumaFijos };
+  const resto = { ciudades: sobrantes.flatMap((c) => expandirCiudades(c.ciudad, dia, explicitas)), cuota: asientosDelDia - sumaFijos };
   return [...fijos.map((c) => ({ ciudades: [c.ciudad], cuota: c.cupos! })), resto];
 }
 
@@ -72,8 +82,9 @@ export function generarAsientos(horas: HoraMentores[], cuposPorDia: Map<string, 
     porDia.set(h.dia, lista);
   }
   const out: AsientoNuevo[] = [];
+  const explicitas = ciudadesExplicitas([...cuposPorDia.values()].map((ciudades) => ({ ciudades })));
   for (const [dia, lista] of porDia) {
-    const grupos = gruposDelDia(cuposPorDia.get(dia) ?? [], lista.length, dia);
+    const grupos = gruposDelDia(cuposPorDia.get(dia) ?? [], lista.length, dia, explicitas);
     const asignacion = repartoProporcional(lista.length, grupos.map((g) => g.cuota));
     lista.forEach((a, i) => out.push({ ...a, ciudades: grupos[asignacion[i]!]!.ciudades }));
   }
@@ -93,23 +104,27 @@ export function resumenPorDia(asientos: { dia: string; ciudades: string[] }[]) {
   return [...dias.values()].sort((a, b) => a.dia.localeCompare(b.dia));
 }
 
-/** Ciudades que presentan un día, con su apertura. Una fila explícita gana a "Todas". */
-export function ciudadesDelDia(cupos: CupoCiudad[], dia: string): Map<string, Date | null> {
+/**
+ * Ciudades que presentan un día, con su apertura: las de sus filas propias y, por "Todas", las que no
+ * tienen días asignados en ninguna parte (`explicitas`, de toda la configuración).
+ */
+export function ciudadesDelDia(cupos: CupoCiudad[], dia: string, explicitas: Set<string>): Map<string, Date | null> {
   const out = new Map<string, Date | null>();
   for (const c of cupos) if (c.ciudad !== TODAS) out.set(c.ciudad, c.abre);
-  for (const c of cupos) if (c.ciudad === TODAS) for (const x of expandirCiudades(TODAS, dia)) if (!out.has(x)) out.set(x, c.abre);
+  for (const c of cupos) if (c.ciudad === TODAS) for (const x of expandirCiudades(TODAS, dia, explicitas)) out.set(x, c.abre);
   return out;
 }
 
 /** Días en los que presenta una ciudad, en orden. */
 export function diasPorCiudad(dias: DiaConfig[], ciudad: string): string[] {
-  return dias.filter((d) => ciudadesDelDia(d.ciudades, d._id).has(ciudad)).map((d) => d._id).sort();
+  const explicitas = ciudadesExplicitas(dias);
+  return dias.filter((d) => ciudadesDelDia(d.ciudades, d._id, explicitas).has(ciudad)).map((d) => d._id).sort();
 }
 
-/** true si la ciudad presenta ese día y su apertura ya pasó (o no tiene). */
-export function puedeElegir(dia: DiaConfig | undefined, ciudad: string, ahora: Date): boolean {
+/** true si la ciudad presenta ese día y su apertura ya pasó (o no tiene). `explicitas`: de toda la configuración. */
+export function puedeElegir(dia: DiaConfig | undefined, ciudad: string, ahora: Date, explicitas: Set<string>): boolean {
   if (!dia) return false;
-  const c = ciudadesDelDia(dia.ciudades, dia._id);
+  const c = ciudadesDelDia(dia.ciudades, dia._id, explicitas);
   if (!c.has(ciudad)) return false;
   const abre = c.get(ciudad);
   return !abre || abre.getTime() <= ahora.getTime();

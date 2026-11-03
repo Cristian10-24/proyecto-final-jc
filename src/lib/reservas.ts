@@ -1,5 +1,5 @@
 import { MongoServerError, type ObjectId } from "mongodb";
-import { puedeElegir } from "./agenda";
+import { ciudadesExplicitas, puedeElegir } from "./agenda";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
 
@@ -36,10 +36,12 @@ export async function reservar(documento: string, inicio: Date, ahora = new Date
   if (inicio.getTime() <= ahora.getTime()) return { ok: false, error: "bloque_pasado" };
 
   const dia = diaCOL(inicio);
-  const cfg = await dias.findOne({ _id: dia });
-  if (!cfg || !puedeElegir({ ...cfg, ciudades: cfg.ciudades.map((c) => ({ ...c, abre: null })) }, proyecto.ciudad, ahora))
+  const configs = await dias.find({}).toArray();
+  const explicitas = ciudadesExplicitas(configs);
+  const cfg = configs.find((d) => d._id === dia);
+  if (!cfg || !puedeElegir({ ...cfg, ciudades: cfg.ciudades.map((c) => ({ ...c, abre: null })) }, proyecto.ciudad, ahora, explicitas))
     return { ok: false, error: "dia_no_disponible" };
-  if (!puedeElegir(cfg, proyecto.ciudad, ahora)) return { ok: false, error: "aun_no_abre" };
+  if (!puedeElegir(cfg, proyecto.ciudad, ahora, explicitas)) return { ok: false, error: "aun_no_abre" };
 
   let tomado;
   try {

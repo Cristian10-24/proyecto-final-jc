@@ -1,5 +1,5 @@
 import type ExcelJS from "exceljs";
-import { generarAsientos, gruposDelDia, TODAS, type AsientoNuevo, type HoraMentores } from "../agenda";
+import { ciudadesExplicitas, generarAsientos, gruposDelDia, TODAS, type AsientoNuevo, type HoraMentores } from "../agenda";
 import { BLOQUES_POR_HORA } from "../edicion";
 import { NOMBRES_CIUDADES, presentaAntesDeClausura } from "../ciudades";
 import type { CupoCiudad, Mentor } from "../types";
@@ -156,7 +156,7 @@ export function leerLibroMentores(wb: ExcelJS.Workbook): LibroMentores {
     const total = porDia.get(dia);
     if (!total) { errores.push({ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `El ${dia} tiene cupos pero ningún mentor en Horarios.` }); continue; }
     try {
-      const grupos = gruposDelDia(lista, total, dia);
+      const grupos = gruposDelDia(lista, total, dia, ciudadesExplicitas([...cupos.values()].map((ciudades) => ({ ciudades }))));
       const resto = grupos[grupos.length - 1]!;
       if (resto.cuota > 0 && resto.ciudades.length === 0)
         avisos.push({ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `El ${dia} sobran ${resto.cuota} asientos sin ciudad (ninguna ciudad está marcada como Sobrante). Se pueden reetiquetar después.` });
