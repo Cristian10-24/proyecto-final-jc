@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { horaCO } from "@/lib/ciudades";
 import { diaDe, diaLargo, fechaHora, grupoHora, hora, paisDe, partesDia } from "./formato";
 import { BotonCalendario, Boleto, Kicker, Nota, Skeleton, Titulo, ZonaAviso } from "./Piezas";
 import type { Aviso, Consulta, DiaAgenda, EstadoInicial } from "./tipos";
@@ -286,7 +287,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
                 <label className="label" htmlFor="documento">Número de documento</label>
                 <input
                   id="documento"
-                  className={`input ${errorDoc ? "is-error" : ""}`}
+                  className={`input ${s.docGrande} ${errorDoc ? "is-error" : ""}`}
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
@@ -384,7 +385,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
                         onClick={() => elegirDia(d.dia)}
                         aria-label={`${diaLargo(d.dia)}${libre ? "" : d.estado === "aun_no_abre" ? ", aún no abre" : ", sin horas"}`}
                       >
-                        <span className={s.diaNumero}>{p.numero}</span>
+                        <span className={s.diaTile} aria-hidden="true"><span>{p.semana.slice(0, 3)}</span><b>{p.numero}</b></span>
                         <span className={s.diaTexto}>
                           <span className={s.diaSemana}>{p.semana}</span>
                           <span className={s.diaMes}>{p.mes}</span>
@@ -505,14 +506,8 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
             <Titulo enfocar={false}>Todavía no puedes elegir tu hora</Titulo>
             <p className={s.texto}>Las inscripciones abren pronto. Guarda la fecha.</p>
           </>}>
-            {abre && (
-              <div className={s.tarjeta}>
-                <Kicker>Abren el</Kicker>
-                <div className={`${s.nombre} ${s.capital}`} suppressHydrationWarning>{fechaHora(abre)}</div>
-                <div className={s.meta}>Hora COL</div>
-              </div>
-            )}
-            <div className={`note note-warn ${s.soloWeb}`}>Cuando abran, entra aquí con tu número de documento.</div>
+            {abre && <FechaClave iso={abre} titulo="Abrimos el" />}
+            <div className="note note-warn">Cuando abra, entra con tu documento. Las horas se asignan por orden de llegada.</div>
           </Pantalla>
         )}
 
@@ -532,6 +527,20 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
       </main>
 
       <footer className={s.pie}>¿Problemas? Escríbele a tu monitor</footer>
+    </div>
+  );
+}
+
+/** Recuadro de una fecha clave (apertura o cierre), como el prototipo: día en un cuadro de color y la hora COL. */
+function FechaClave({ iso, titulo, cerrada = false }: { iso: string; titulo: string; cerrada?: boolean }) {
+  const d = partesDia(diaDe(iso));
+  return (
+    <div className={s.fechaClave} suppressHydrationWarning>
+      <span className={`${s.diaTile} ${cerrada ? s.diaTileCerrado : ""}`} aria-hidden="true"><span>{d.semana.slice(0, 3)}</span><b>{d.numero}</b></span>
+      <span>
+        <span className={s.fechaClaveT}>{titulo} {d.numero} de {d.mes}</span>
+        <span className={s.meta}>{horaCO(new Date(iso))} · Hora COL</span>
+      </span>
     </div>
   );
 }

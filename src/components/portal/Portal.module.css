@@ -229,3 +229,16 @@
   .bloque { white-space: nowrap; font-size: 15px; padding: var(--s-3) var(--s-2); }
   .pie { display: none; }
 }
+
+/* ---------- Del prototipo (ajuste 16c): recuadro de color de la fecha, campo de documento grande ---------- */
+.diaTile { flex: none; width: 64px; height: 68px; border-radius: 18px; background: var(--orange-soft); color: var(--orange-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.diaTile span { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.diaTile b { font: 800 28px/1 var(--font); }
+.opcionDia:disabled .diaTile { background: var(--line-2); color: var(--muted-2); }
+.diaTileCerrado { background: var(--soft); color: var(--muted); }
+.fechaClave { display: flex; gap: 16px; align-items: center; padding: 20px; border-radius: 22px; background: var(--card); border: 1px solid var(--line-2); }
+.fechaClave > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.fechaClaveT { font: 800 19px/1.25 var(--font); }
+.docGrande { height: 62px !important; border-radius: 18px !important; padding: 0 20px !important; font: 700 22px var(--font) !important; letter-spacing: .04em; }
+.docGrande::placeholder { font-weight: 500; font-size: 17px; letter-spacing: 0; }
+@media (min-width: 900px) { .accion .fechaClave { background: var(--bg); } }
