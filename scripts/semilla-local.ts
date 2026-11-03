@@ -5,15 +5,17 @@
 // También crea días, mentores de prueba, asientos y dos usuarios de prueba (clave abajo):
 //   admin.prueba   → administración.
 //   monitor.prueba → monitor de Cali y Cartagena (asignado a esos dos proyectos; Barranquilla queda "por asignar").
-// Solo corre contra 127.0.0.1/localhost: si MONGODB_URI apunta a otro host (Atlas), se niega.
+// Base: la local (127.0.0.1/localhost) o, con `npm run semilla:atlas`, SOLO proyecto_final_jc_pruebas en Atlas.
 // Uso: npm run semilla:local            (falla si ya hay proyectos o asientos)
-//      npm run semilla:local -- --reset (borra proyectos, asientos, días, mentores y changeLog de la base local)
+//      npm run semilla:local -- --reset (borra proyectos, asientos, días, mentores y changeLog de esa base)
+//      npm run semilla:atlas -- --reset --si-atlas-pruebas  (en Atlas, --reset exige la confirmación)
+// Para limpiar solo se borran documentos de las colecciones propias: nunca dropDatabase ni otra base.
 import { ObjectId } from "mongodb";
 import { generarAsientos, type HoraMentores } from "@/lib/agenda";
 import type { CupoCiudad } from "@/lib/types";
 
 const URI_LOCAL = "mongodb://127.0.0.1:27018/?replicaSet=rs0";
-// Usuarios de prueba, solo base local. Misma clave para los dos.
+// Usuarios de prueba (base local o de pruebas, nunca producción). Misma clave para los dos.
 const CLAVE_PRUEBA = "prueba-local-2026";
 const USUARIOS_PRUEBA = [
   { usuario: "admin.prueba", nombre: "Admin Prueba Local", rol: "admin" as const, ciudades: [] as string[] },
@@ -21,19 +23,24 @@ const USUARIOS_PRUEBA = [
 ];
 
 async function main() {
-  process.env.MONGODB_URI ||= URI_LOCAL;
-  const host = process.env.MONGODB_URI.replace(/^mongodb(\+srv)?:\/\/([^@]*@)?/, "").split(/[/?]/)[0] ?? "";
-  if (/mongodb\.net|\+srv/i.test(process.env.MONGODB_URI) || !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host))
-    throw new Error(`La semilla solo corre contra una base local; MONGODB_URI apunta a "${host}".`);
+  const atlas = process.env.PFJC_MODO === "atlas"; // solo lo pone scripts/con-atlas.mjs
+  if (!atlas) process.env.MONGODB_URI ||= URI_LOCAL;
+  const { BASE_ATLAS_PRUEBAS, closeDb, collections, dbHost, dbName, esUriLocal } = await import("@/lib/db");
+  if (atlas) {
+    if (dbName() !== BASE_ATLAS_PRUEBAS) throw new Error(`Modo Atlas: solo ${BASE_ATLAS_PRUEBAS}.`);
+    if (process.argv.includes("--reset") && !process.argv.includes("--si-atlas-pruebas"))
+      throw new Error("En Atlas, --reset borra los datos de proyecto_final_jc_pruebas: confirma agregando --si-atlas-pruebas.");
+  } else if (!esUriLocal(process.env.MONGODB_URI!)) {
+    throw new Error(`semilla:local solo corre contra una base local; MONGODB_URI apunta a "${dbHost()}". Para Atlas usa npm run semilla:atlas.`);
+  }
 
-  const { closeDb, collections, dbName } = await import("@/lib/db");
   const { reservar } = await import("@/lib/reservas");
   const { hashClave } = await import("@/lib/usuarios");
   const c = await collections();
-  console.log(`Base local: ${host} / ${dbName()}`);
+  console.log(atlas ? `Base: ${dbName()} (Atlas de pruebas)` : `Base local: ${dbHost()} / ${dbName()}`);
 
   const hay = (await c.proyectos.countDocuments()) + (await c.asientos.countDocuments());
-  if (hay && !process.argv.includes("--reset")) throw new Error("La base local ya tiene proyectos o asientos. Usa --reset para reemplazarlos.");
+  if (hay && !process.argv.includes("--reset")) throw new Error("La base ya tiene proyectos o asientos. Usa --reset para reemplazarlos.");
   if (process.argv.includes("--reset"))
     await Promise.all([c.proyectos.deleteMany({}), c.asientos.deleteMany({}), c.dias.deleteMany({}), c.mentores.deleteMany({}), c.changeLog.deleteMany({}), c.rateLimits.deleteMany({})]);
 

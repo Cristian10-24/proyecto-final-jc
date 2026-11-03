@@ -1,7 +1,7 @@
 import { ObjectId, type AnyBulkWriteOperation, type ClientSession } from "mongodb";
 import { diasPorCiudad, resumenPorDia } from "../agenda";
 import { horaCO } from "../ciudades";
-import { collections, getClient } from "../db";
+import { collections, transaccion } from "../db";
 import type { Actor, Asiento } from "../types";
 import { clave, type ErrorFila } from "./excel";
 import { HOJAS_MENTORES, type LibroMentores } from "./mentores";
@@ -177,9 +177,8 @@ export async function previaMentores(libro: LibroMentores): Promise<PreviaMentor
  */
 export async function aplicarMentores(libro: LibroMentores, actor: Actor) {
   const c = await collections();
-  const client = await getClient();
   const now = new Date();
-  await client.withSession((s) => s.withTransaction(async () => {
+  await transaccion(async (s) => {
     if ((await conflictos(libro, s)).length) throw new Error("conflictos");
     const actuales = new Map((await c.asientos.find({}, { session: s, projection: { inicio: 1, mentorId: 1, proyectoId: 1 } }).toArray()).map((a) => [claveAsiento(a), a]));
     const nuevas = new Set(libro.asientos.map(claveAsiento));
@@ -197,5 +196,5 @@ export async function aplicarMentores(libro: LibroMentores, actor: Actor) {
     if (libro.mentores.length) await c.mentores.insertMany(libro.mentores, { session: s });
     if (libro.cupos.size) await c.dias.insertMany([...libro.cupos].map(([dia, ciudades]) => ({ _id: dia, ciudades })), { session: s });
     await c.changeLog.insertOne({ accion: "importar", nuevo: `mentores: ${libro.mentores.length}, asientos: ${libro.asientos.length}`, actor, fecha: now }, { session: s });
-  }));
+  });
 }

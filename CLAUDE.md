@@ -21,8 +21,9 @@ Next.js 16 (App Router) + TypeScript, driver `mongodb`, Zod, exceljs, Vitest. Ve
 ## Reglas
 - Trabajar solo dentro de esta carpeta. No tocar `C:\ROFÉ\PAGINAS\MIGRACION` ni validation-jc.
 - Node 22 (`.node-version`, `engines`). Nunca `nvm use`, nunca cambiar el Node del sistema ni instalar global.
-- Mongo local en 27018. Nunca conectarse a Atlas en local (ni para desarrollar ni para probar).
-  Las pruebas con base pasan por `tests/helpers/base-local.ts`.
+- Por defecto todo usa el Mongo local (27018); pruebas siempre locales (`tests/helpers/base-local.ts`).
+  Atlas solo con `dev:atlas` / `semilla:atlas`, solo sobre `proyecto_final_jc_pruebas`: nunca otra base
+  del cluster, nunca dropDatabase/admin/listDatabases, nunca leer ni mostrar `.env.atlas.local`.
 - Nunca leer ni subir `.env*`, Excel, CSV ni datos reales. Sin push ni deploy sin autorización.
 - Sin bloqueos en memoria: toda reserva es una operación atómica de MongoDB con índices únicos.
 - Toda ruta: Zod `.strict()`, `exigir(permiso)` si usa sesión, `sameOrigin` si usa la cookie y cambia datos.

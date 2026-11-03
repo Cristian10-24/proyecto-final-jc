@@ -1,7 +1,7 @@
 import { MongoServerError, ObjectId, type Filter } from "mongodb";
 import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
-import { collections, getClient } from "./db";
+import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
 import type { Actor, Asiento, Proyecto } from "./types";
 
@@ -62,13 +62,12 @@ export type ResultadoAdmin = { ok: true; inicio?: string } | { ok: false; error:
 /** Libera la hora y registra el cambio en la misma transacción: nunca queda un asiento liberado sin registro. */
 export async function liberar(proyectoId: ObjectId, motivo: string, actor: Actor): Promise<ResultadoAdmin> {
   const { asientos, changeLog } = await collections();
-  const client = await getClient();
   let liberado = false;
-  await client.withSession((s) => s.withTransaction(async () => {
+  await transaccion(async (s) => {
     const a = await asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
     liberado = !!a;
     if (a) await changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(a.inicio), motivo, actor, fecha: new Date() }, { session: s });
-  }));
+  });
   return liberado ? { ok: true } : { ok: false, error: "sin_hora", mensaje: "Ese proyecto no tiene hora." };
 }
 
@@ -80,10 +79,9 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
   const c = await collections();
   const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!proyecto) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
-  const client = await getClient();
   let resultado: ResultadoAdmin = { ok: false, error: "sin_cupo", mensaje: "Ese bloque ya no tiene asientos libres para esta ciudad." };
   try {
-    await client.withSession((s) => s.withTransaction(async () => {
+    await transaccion(async (s) => {
       const viejo = await c.asientos.findOneAndUpdate({ proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
       if (viejo && viejo.inicio.getTime() === inicio.getTime()) throw new Error("misma_hora");
       // Primero un asiento de su ciudad; si no hay y el admin lo aceptó, uno de otra ciudad.
@@ -98,7 +96,7 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
         motivo: opciones.motivo, actor, fecha: new Date(),
       }, { session: s });
       resultado = { ok: true, inicio: nuevo.inicio.toISOString() };
-    }));
+    });
   } catch (e) {
     if (e instanceof Error && e.message === "misma_hora") return { ok: false, error: "misma_hora", mensaje: "El proyecto ya tiene esa hora." };
     if (e instanceof Error && e.message === "sin_cupo") return resultado;

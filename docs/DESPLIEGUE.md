@@ -16,7 +16,8 @@ Marca cada casilla al terminar. Los secretos nunca van al repositorio, a un chat
 
 ## 2. MongoDB Atlas
 - [ ] Cluster en **AWS us-east-1 (N. Virginia)**, la misma región que Vercel (`iad1`).
-- [ ] Base `proyecto_final_jc`. Usuario de base de datos **solo con readWrite sobre `proyecto_final_jc`** (no `readWriteAnyDatabase`, no admin) y clave larga generada.
+- [ ] Base `proyecto_final_jc`. Usuario de base de datos **nuevo, solo para producción, con readWrite únicamente sobre `proyecto_final_jc`** (no `readWriteAnyDatabase`, no admin) y clave larga generada. **Nunca tu usuario personal**: tiene acceso a otras bases del cluster que usan otras apps.
+- [ ] El usuario de pruebas (`.env.atlas.local`, base `proyecto_final_jc_pruebas`) tampoco va a Vercel.
 - [ ] Network Access: permitir el acceso de Vercel (con plan M0 suele ser `0.0.0.0/0`; la protección es el usuario de mínimo privilegio y la clave).
 - [ ] Copia la cadena de conexión `mongodb+srv://…` solo para pegarla en Vercel (paso 3).
 - [ ] Nunca uses esta cadena en tu computador: en local siempre es la base de `npm run db:local`.
@@ -28,10 +29,11 @@ Marca cada casilla al terminar. Los secretos nunca van al repositorio, a un chat
 
 | Variable | Valor | Obligatoria |
 | --- | --- | --- |
-| `MONGODB_URI` | La cadena `mongodb+srv://…` de Atlas | Sí |
+| `MONGODB_URI` | La cadena `mongodb+srv://…` de Atlas con el usuario de producción | Sí |
 | `MONGODB_DB` | `proyecto_final_jc` | Sí |
 | `SESSION_SECRET` | Texto aleatorio de 32+ caracteres (p. ej. `openssl rand -hex 32`) | Sí |
 | `MONGODB_MAX_POOL` | `5` (por defecto) | No |
+| `PFJC_MODO` | **No la definas en Vercel** (es solo para el modo Atlas de pruebas en local) | — |
 | `STUDENT_PORTAL_OPENS_AT` | Apertura en UTC, p. ej. `2026-11-09T13:00:00Z` (8:00 a. m. COL) | No |
 | `STUDENT_PORTAL_CLOSES_AT` | Cierre en UTC, p. ej. `2026-11-12T04:59:00Z` (11:59 p. m. COL del 11) | No |
 | `STUDENT_PORTAL_ENABLED` | `false` solo para cerrar el portal de emergencia | No |

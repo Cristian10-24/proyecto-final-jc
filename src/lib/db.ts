@@ -1,4 +1,4 @@
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient, type ClientSession, type Db } from "mongodb";
 import type { Asiento, ChangeLog, DiaConfig, Mentor, Proyecto, RateLimit, User } from "./types";
 
 declare global {
@@ -6,6 +6,16 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
   var _indexesReady: Promise<void> | undefined;
 }
+
+// Acceso a la base: SOLO por getDb()/collections()/transaccion(). Nadie más llama client.db().
+//
+// Modo Atlas de pruebas (npm run dev:atlas / semilla:atlas, o cualquier URI no local fuera de producción):
+// el usuario de Atlas puede tener acceso a OTRAS bases del cluster (apps en producción), así que el código
+// garantiza que solo se toca BASE_ATLAS_PRUEBAS: el nombre es fijo y, en toda conexión no local,
+// client.db() con otro nombre, dropDatabase, admin() y command() lanzan error.
+
+export const BASE_ATLAS_PRUEBAS = "proyecto_final_jc_pruebas";
+const BASES_PERMITIDAS = new Set(["proyecto_final_jc", BASE_ATLAS_PRUEBAS]);
 
 /**
  * Conexiones por instancia. Bajo a propósito: en Vercel cada instancia caliente abre su propio pool
@@ -15,23 +25,57 @@ export function maxPoolSize(): number {
   return Math.min(Math.max(Number(process.env.MONGODB_MAX_POOL) || 5, 1), 20);
 }
 
+/** Host sin credenciales, para mostrar en los scripts. */
+export function dbHost(uri = process.env.MONGODB_URI ?? ""): string {
+  return uri.replace(/^mongodb(\+srv)?:\/\/([^@]*@)?/, "").split(/[/?,]/)[0] ?? "";
+}
+
+export function esUriLocal(uri: string): boolean {
+  return !/\+srv|mongodb\.net/i.test(uri) && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(dbHost(uri));
+}
+
+/** Modo Atlas de pruebas: pedido explícitamente, o cualquier URI no local fuera de producción. */
+export function modoAtlas(): boolean {
+  const uri = process.env.MONGODB_URI;
+  return process.env.PFJC_MODO === "atlas" || (!!uri && !esUriLocal(uri) && process.env.NODE_ENV !== "production");
+}
+
+/** Única base que usa la app. En modo Atlas es siempre BASE_ATLAS_PRUEBAS. */
+export function dbName(): string {
+  if (modoAtlas()) {
+    if (process.env.MONGODB_DB !== BASE_ATLAS_PRUEBAS)
+      throw new Error(`Modo Atlas: MONGODB_DB debe ser exactamente "${BASE_ATLAS_PRUEBAS}". No se conecta.`);
+    return BASE_ATLAS_PRUEBAS;
+  }
+  const nombre = process.env.MONGODB_DB || "proyecto_final_jc";
+  if (!BASES_PERMITIDAS.has(nombre)) throw new Error(`Base no permitida: "${nombre}". Solo ${[...BASES_PERMITIDAS].join(" o ")}.`);
+  return nombre;
+}
+
+const prohibido = (que: string) => () => { throw new Error(`Operación prohibida en una base no local: ${que}.`); };
+
+/** En una conexión no local: solo la base permitida y sin operaciones de administración ni borrado de bases. */
+export function blindar(client: MongoClient, permitida: string): MongoClient {
+  const abrir = client.db.bind(client);
+  client.db = ((nombre?: string) => {
+    if (nombre !== permitida) throw new Error(`Solo se permite la base "${permitida}".`);
+    const db = abrir(nombre);
+    Object.assign(db, { dropDatabase: prohibido("dropDatabase"), admin: prohibido("admin()"), command: prohibido("command()") });
+    return db;
+  }) as MongoClient["db"];
+  return client;
+}
+
 function clientPromise(): Promise<MongoClient> {
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("Falta la variable de entorno MONGODB_URI");
-  globalThis._mongoClientPromise ??= new MongoClient(uri, { maxPoolSize: maxPoolSize() }).connect();
+  const nombre = dbName(); // valida el nombre antes de conectar
+  globalThis._mongoClientPromise ??= new MongoClient(uri, { maxPoolSize: maxPoolSize() }).connect()
+    .then((c) => (esUriLocal(uri) ? c : blindar(c, nombre)));
   return globalThis._mongoClientPromise;
 }
 
-/** Única base que usa la app. El cluster puede tener otras bases: nunca se tocan. */
-export function dbName(): string {
-  return process.env.MONGODB_DB || "proyecto_final_jc";
-}
-
-/** Host sin credenciales, para mostrar en los scripts. */
-export function dbHost(): string {
-  return (process.env.MONGODB_URI ?? "").replace(/^mongodb(\+srv)?:\/\/([^@]*@)?/, "").split(/[/?]/)[0];
-}
-
+/** Solo para las pruebas de la conexión (pool, caché). El código de la app usa getDb() o transaccion(). */
 export async function getClient(): Promise<MongoClient> {
   return clientPromise();
 }
@@ -42,6 +86,13 @@ export async function getDb(): Promise<Db> {
   globalThis._indexesReady ??= ensureIndexes(db);
   await globalThis._indexesReady;
   return db;
+}
+
+/** Ejecuta `fn` en una transacción (sesión propia). Es la única forma de usar transacciones en la app. */
+export async function transaccion(fn: (s: ClientSession) => Promise<void>): Promise<void> {
+  await getDb();
+  const client = await clientPromise();
+  await client.withSession((s) => s.withTransaction(() => fn(s)));
 }
 
 export async function collections() {

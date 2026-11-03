@@ -18,7 +18,9 @@
     "verificar:franjas": "tsx scripts/verificar-franjas.ts",
     "plantillas:ejemplo": "tsx scripts/plantillas-ejemplo.ts",
     "semilla:local": "tsx --env-file-if-exists=.env.local scripts/semilla-local.ts",
-    "dev:red": "node scripts/dev-red.mjs"
+    "dev:red": "node scripts/dev-red.mjs",
+    "dev:atlas": "node scripts/dev-atlas.mjs",
+    "semilla:atlas": "node scripts/con-atlas.mjs scripts/semilla-local.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

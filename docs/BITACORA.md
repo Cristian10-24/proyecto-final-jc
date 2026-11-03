@@ -66,3 +66,9 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Verificar: `docs/DESPLIEGUE.md` (GitHub, Atlas, Vercel, variables, datos, prueba y apertura), `docs/PENDIENTES.md`; semilla con `monitor.prueba` (Cali y Cartagena).
 - No se publicó nada. La skill security-review necesita remoto: se usó revisor-seguridad; revisor-pruebas no se pudo lanzar (permiso denegado) y las pruebas se corrieron directo.
 - Pendiente: `npm run semilla:local -- --reset` para tener el monitor de prueba (borra las reservas locales); Paso 8.
+
+## Ajustes · permisos de revisor-pruebas y modo Atlas de pruebas
+- Commit: `chore: permisos de pruebas y modo Atlas solo sobre proyecto_final_jc_pruebas`. 85 unitarias (11 nuevas de seguridad de base) y 51 con base; typecheck y build pasan.
+- Verificar: `npx vitest run tests/seguridad-base.test.ts`; `npm run dev:atlas` muestra solo base y host enmascarado y se niega si MONGODB_DB no es la de pruebas.
+- revisor-pruebas sigue sin poder lanzarse en esta sesión (modo automático); no corrí nada contra Atlas (lo prueba el usuario).
+- Pendiente: usuario de Atlas solo para `proyecto_final_jc_pruebas` (PENDIENTES); Paso 8.
