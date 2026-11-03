@@ -3,15 +3,16 @@ import { NextResponse } from "next/server";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
+import { revisionNombres } from "@/lib/usuariosExcel";
 import { generarClave, hashClave, errorMentor, mensajeZod, mentorIdDe, NuevoUsuario, vistaUsuario } from "@/lib/usuarios";
 
-/** Lista de usuarios + ciudades disponibles (solo administración). */
+/** Lista de usuarios, ciudades disponibles y revisión de nombres (solo administración). */
 export async function GET() {
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
   const { users } = await collections();
   const todos = await users.find({}, { projection: { passwordHash: 0 } }).sort({ rol: 1, usuario: 1 }).toArray();
-  return NextResponse.json({ usuarios: todos.map(vistaUsuario), ciudades: [...NOMBRES_CIUDADES].sort((a, b) => a.localeCompare(b, "es")) });
+  return NextResponse.json({ usuarios: todos.map(vistaUsuario), ciudades: [...NOMBRES_CIUDADES].sort((a, b) => a.localeCompare(b, "es")), revision: await revisionNombres() });
 }
 
 /** Crear usuario. Si no se da clave, se genera una. La clave se devuelve una sola vez. */
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
 
   const parsed = NuevoUsuario.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos", mensaje: mensajeZod(parsed.error) }, { status: 400 });
-  const { usuario, nombre, rol, ciudades, clave: claveDada } = parsed.data;
+  const { usuario, nombre, rol, ciudades, correo, clave: claveDada } = parsed.data;
 
   const { users } = await collections();
   if (await users.findOne({ usuario })) return NextResponse.json({ error: "duplicado", mensaje: `Ya existe el usuario "${usuario}".` }, { status: 409 });
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
   const clave = claveDada ?? generarClave();
   const now = new Date();
   const doc = {
-    _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [], ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}),
+    _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [], ...(correo ? { correo } : {}), ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}),
     activo: true, passwordHash: await hashClave(clave), tokenVersion: 0, creadoEn: now, actualizadoEn: now,
   };
   await users.insertOne(doc);

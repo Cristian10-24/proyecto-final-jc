@@ -20,3 +20,7 @@ exports/
 
 # Prototipo de evaluación: no se versiona hasta revisar en el Paso 8 que no trae datos reales
 docs/diseno/evaluacion/
+
+# Caché del control de diseño (impeccable)
+.impeccable/hook.cache.json
+.impeccable/config.local.json

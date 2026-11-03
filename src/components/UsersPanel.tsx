@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { ROL_TXT, ROLES, type RolUsuario } from "@/lib/permisos";
 import type { VistaUsuario } from "@/lib/usuarios";
+import type { ClaveNueva, PreviaUsuarios, RevisionNombres } from "@/lib/usuariosExcel";
 import AppShell from "./AppShell";
 import s from "./UsersPanel.module.css";
 
 const ROL_DESC: Record<RolUsuario, string> = {
   mentor: "Evalúa solo los proyectos que tiene asignados. El nombre debe escribirse igual que en la hoja Horarios.",
-  monitor: "Solo sus ciudades: ve quién ya eligió hora y copia los pendientes para WhatsApp.",
+  monitor: "Inscripción: sus ciudades (quién ya eligió hora y pendientes para WhatsApp). Presentaciones: solo sus salas. Sin ciudades, solo sus salas.",
   coordinador: "Todas las ciudades: lo mismo que un monitor, resumen y Excel del cronograma.",
   admin: "Todo: además importa los Excel, gestiona usuarios y libera o cambia horas.",
 };
@@ -19,6 +20,7 @@ type Form = {
   id?: string;
   usuario: string;
   nombre: string;
+  correo: string;
   rol: RolUsuario;
   ciudades: string[];
   activo: boolean;
@@ -27,6 +29,7 @@ type Form = {
   saving: boolean;
   error: string;
 };
+type Carga = { archivo: File; previa?: PreviaUsuarios; error?: string; enviando: boolean };
 type Clave = { id: string; usuario: string; claveModo: "generar" | "asignar"; clave: string; saving: boolean; error: string; resultado?: string };
 
 export default function UsersPanel({ user }: { user: SessionUser }) {
@@ -38,6 +41,9 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
   const [clave, setClave] = useState<Clave | null>(null);
   const [nuevaClave, setNuevaClave] = useState<{ usuario: string; clave: string } | null>(null);
   const [toast, setToast] = useState("");
+  const [revision, setRevision] = useState<RevisionNombres | null>(null);
+  const [carga, setCarga] = useState<Carga | null>(null);
+  const [claves, setClaves] = useState<ClaveNueva[] | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   async function cargar() {
@@ -49,6 +55,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       const d = await res.json();
       setUsuarios(d.usuarios);
       setCiudadesDisp(d.ciudades);
+      setRevision(d.revision ?? null);
     } catch {
       setLoadErr(true);
     }
@@ -72,10 +79,10 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
   }
 
   function nuevo() {
-    setForm({ modo: "crear", usuario: "", nombre: "", rol: "monitor", ciudades: [], activo: true, claveModo: "generar", clave: "", saving: false, error: "" });
+    setForm({ modo: "crear", usuario: "", nombre: "", correo: "", rol: "monitor", ciudades: [], activo: true, claveModo: "generar", clave: "", saving: false, error: "" });
   }
   function editar(u: VistaUsuario) {
-    setForm({ modo: "editar", id: u.id, usuario: u.usuario, nombre: u.nombre, rol: u.rol, ciudades: u.ciudades, activo: u.activo, claveModo: "generar", clave: "", saving: false, error: "" });
+    setForm({ modo: "editar", id: u.id, usuario: u.usuario, nombre: u.nombre, correo: u.correo, rol: u.rol, ciudades: u.ciudades, activo: u.activo, claveModo: "generar", clave: "", saving: false, error: "" });
   }
 
   async function guardar() {
@@ -84,14 +91,14 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
     try {
       if (form.modo === "crear") {
         const d = await pedir("/api/admin/usuarios", "POST", {
-          usuario: form.usuario, nombre: form.nombre, rol: form.rol, ciudades: form.ciudades,
+          usuario: form.usuario, nombre: form.nombre, rol: form.rol, ciudades: form.ciudades, ...(form.correo.trim() ? { correo: form.correo } : {}),
           ...(form.claveModo === "asignar" ? { clave: form.clave } : {}),
         });
         setUsuarios((us) => [...(us ?? []), d.usuario]);
         setForm(null);
         setNuevaClave({ usuario: d.usuario.usuario, clave: d.clave });
       } else {
-        const d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { nombre: form.nombre, rol: form.rol, ciudades: form.ciudades, activo: form.activo });
+        const d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { nombre: form.nombre, correo: form.correo, rol: form.rol, ciudades: form.ciudades, activo: form.activo });
         reemplazar(d.usuario);
         setForm(null);
         aviso("Usuario actualizado ✓");
@@ -122,8 +129,30 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
     }
   }
 
-  async function copiar(t: string) {
-    try { await navigator.clipboard.writeText(t); aviso("Clave copiada"); } catch { /* el usuario puede copiarla a mano */ }
+  async function copiar(t: string, que = "Clave copiada") {
+    try { await navigator.clipboard.writeText(t); aviso(que); } catch { /* el usuario puede copiarla a mano */ }
+  }
+
+  // Carga por Excel: el mismo archivo va dos veces (vista previa y confirmar).
+  async function enviarCarga(archivo: File, modo: "previa" | "confirmar") {
+    setCarga({ archivo, enviando: true });
+    const fd = new FormData();
+    fd.set("archivo", archivo);
+    fd.set("modo", modo);
+    try {
+      const res = await fetch("/api/admin/usuarios/importar", { method: "POST", body: fd });
+      if (res.status === 401) return window.location.assign("/login");
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) return setCarga({ archivo, enviando: false, error: d.mensaje ?? "No se pudo leer el archivo." });
+      if (d.aplicado) {
+        setCarga(null);
+        await cargar();
+        if (d.claves?.length) setClaves(d.claves);
+        else aviso(`${d.previa.totales.actualizar} usuarios actualizados ✓`);
+      } else setCarga({ archivo, enviando: false, previa: d.previa });
+    } catch {
+      setCarga({ archivo, enviando: false, error: "No se pudo enviar el archivo. Revisa tu conexión." });
+    }
   }
 
   const lista = (usuarios ?? [])
@@ -149,6 +178,25 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
         ))}
       </div>
 
+      <div className={s.tools}>
+        <section className={s.box} aria-labelledby="rev-t">
+          <h2 id="rev-t" className={s.boxTitle}>Revisión de nombres</h2>
+          {!revision ? <p className={s.boxSub}>Cargando…</p> : <Revision r={revision} />}
+        </section>
+        <section className={s.box} aria-labelledby="carga-t">
+          <h2 id="carga-t" className={s.boxTitle}>Cargar varias personas desde Excel</h2>
+          <p className={s.boxSub}>Columnas: <b>Nombre · Correo · Rol</b> (Mentor, Monitor o Coordinación); Usuario y Ciudades son opcionales. Si alguien ya existe, se actualiza y su clave no cambia. Primero ves qué va a pasar; nada se guarda hasta confirmar.</p>
+          <div className={s.cargaActs}>
+            <label className={s.fileBtn}>
+              Subir archivo de Excel
+              <input type="file" accept=".xlsx" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void enviarCarga(f, "previa"); }} />
+            </label>
+            <a className={s.linkBtn} href="/api/admin/plantillas/usuarios">Descargar plantilla</a>
+          </div>
+          {carga && <Previa carga={carga} onConfirmar={() => void enviarCarga(carga.archivo, "confirmar")} onCancelar={() => setCarga(null)} />}
+        </section>
+      </div>
+
       <div className={s.tHead}><span>Usuario</span><span>Rol</span><span>Ciudades</span><span>Estado</span><span /></div>
       {loadErr && <div className={s.errBox}>No pudimos cargar los usuarios. <button type="button" className="btn-link" onClick={cargar}>Intentar de nuevo</button></div>}
       {!usuarios && !loadErr && <div className={s.skeleton}>{Array.from({ length: 6 }, (_, i) => <i key={i} />)}</div>}
@@ -158,9 +206,10 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
           <div className={s.who}>
             <div className={s.name}>{u.nombre}{esYo(u.id) && <span className={s.me}>Tú</span>}</div>
             <div className={s.user}>{u.usuario}</div>
+            {u.correo && <div className={s.correo}>{u.correo}</div>}
           </div>
           <span className={`${s.rol} ${s[`rol_${u.rol}`]}`}>{ROL_TXT[u.rol]}</span>
-          <div className={s.cities}>{u.rol === "monitor" ? u.ciudades.join(", ") : u.rol === "mentor" ? "Sus proyectos asignados" : "Todas las ciudades"}</div>
+          <div className={s.cities}>{u.rol === "monitor" ? u.ciudades.join(", ") || "Solo sus salas" : u.rol === "mentor" ? "Sus proyectos asignados" : "Todas las ciudades"}</div>
           <div className={s.state}><i className={s.dot} style={{ background: u.activo ? "var(--green)" : "var(--muted-2)" }} />{u.activo ? "Activo" : "Inactivo"}</div>
           <div className={s.acts}>
             <button type="button" className={s.act} onClick={() => editar(u)}>Editar</button>
@@ -186,6 +235,11 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             <div>
               <label className="label" htmlFor="u-nombre">Nombre completo</label>
               <input id="u-nombre" className="input" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+            </div>
+            <div>
+              <label className="label" htmlFor="u-correo">Correo (opcional)</label>
+              <input id="u-correo" className="input" type="email" inputMode="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} autoCapitalize="none" autoCorrect="off" />
+              <div className={s.hint}>No se usa para entrar: sirve para reconocer a la persona al cargar el Excel.</div>
             </div>
             <div>
               <span className="label">Rol</span>
@@ -277,7 +331,87 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
         </div>
       )}
 
+      {claves && (
+        <div className={s.overlay}>
+          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="k-title">
+            <div id="k-title" className={s.modalTitle}>{claves.length === 1 ? "1 usuario nuevo" : `${claves.length} usuarios nuevos`}</div>
+            <div className={s.claves}>
+              {claves.map((k) => (
+                <div key={k.usuario} className={s.claveFila}>
+                  <span>{k.nombre}<br /><span className={s.user}>{k.usuario} · {ROL_TXT[k.rol]}</span></span>
+                  <code>{k.clave}</code>
+                </div>
+              ))}
+            </div>
+            <div className={s.once}>Entrégalas ahora: no se volverán a mostrar. Si una se pierde, genera otra con «Clave».</div>
+            <div className={s.modalActions}>
+              <button type="button" className={s.cancel} onClick={() => void copiar(claves.map((k) => `${k.nombre} · usuario: ${k.usuario} · clave: ${k.clave}`).join("\n"), "Claves copiadas")}>Copiar todas</button>
+              <button type="button" className={s.save} onClick={() => setClaves(null)}>Listo, ya las guardé</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && <div className={s.toast} role="status">{toast}</div>}
     </AppShell>
+  );
+}
+
+/** Revisión de nombres (como el prototipo): verde si está bien, amarillo con los nombres si falta algo. */
+function Revision({ r }: { r: RevisionNombres }) {
+  const linea = (ok: boolean, texto: string, nombres?: string[], key?: string) => (
+    <p key={key} className={`${s.revLine} ${ok ? s.revOk : s.revWarn}`}>{ok ? "✔ " : "⚠ "}{texto}{nombres?.length ? <b> {nombres.join(", ")}</b> : null}</p>
+  );
+  return (
+    <>
+      {!r.horariosImportados ? linea(false, "Todavía no se ha importado la hoja Horarios, así que no puedo comparar los nombres de los mentores.") : (
+        <>
+          {linea(!r.mentoresSinUsuario.length, r.mentoresSinUsuario.length ? (r.mentoresSinUsuario.length === 1 ? "1 mentor de Horarios no tiene usuario:" : `${r.mentoresSinUsuario.length} mentores de Horarios no tienen usuario:`) : "Todos los mentores de Horarios tienen usuario.", r.mentoresSinUsuario)}
+          {r.usuariosSinMentor.map((u) => linea(false, `El usuario ${u.usuario} (${u.nombre}) no coincide con ningún mentor de Horarios.${u.sugerencias.length ? ` ¿Quisiste decir ${u.sugerencias.join(", ")}?` : ""} Corrige el nombre con «Editar».`, undefined, u.usuario))}
+        </>
+      )}
+      {r.planSalas && (
+        <>
+          {linea(!r.salasSinMonitor, r.salasSinMonitor ? `${r.salasSinMonitor === 1 ? "1 sala (hora y mentor) no tiene" : `${r.salasSinMonitor} salas (hora y mentor) no tienen`} monitor. Asígnalo en Salas.` : "Todas las salas tienen monitor.")}
+          {r.monitoresSinSalas.length > 0 && linea(false, r.monitoresSinSalas.length === 1 ? "1 monitor activo no tiene salas en las presentaciones:" : `${r.monitoresSinSalas.length} monitores activos no tienen salas en las presentaciones:`, r.monitoresSinSalas)}
+        </>
+      )}
+    </>
+  );
+}
+
+const TXT_ACCION = { crear: "Nuevo", actualizar: "Se actualiza", igual: "Sin cambios" } as const;
+
+function Previa({ carga, onConfirmar, onCancelar }: { carga: Carga; onConfirmar: () => void; onCancelar: () => void }) {
+  if (carga.enviando) return <p className={s.boxSub} style={{ marginTop: 12 }}>Leyendo {carga.archivo.name}…</p>;
+  if (carga.error) return <div className={`note-error ${s.cargaError}`}>{carga.error}</div>;
+  const p = carga.previa!;
+  const aplicables = p.totales.crear + p.totales.actualizar;
+  return (
+    <div className={s.previa}>
+      <div className={s.totales}>{carga.archivo.name}: {p.totales.crear} nuevos · {p.totales.actualizar} se actualizan · {p.totales.igual} sin cambios{p.errores.length ? ` · ${p.errores.length} con error` : ""}</div>
+      {p.errores.length > 0 && (
+        <ul className={s.errores}>
+          {p.errores.map((e, i) => <li key={i}>{e.fila ? `Fila ${e.fila}: ` : ""}{e.mensaje}</li>)}
+        </ul>
+      )}
+      {p.acciones.length > 0 && (
+        <div className={s.acciones}>
+          {p.acciones.map((a) => (
+            <div key={a.fila} className={s.accion}>
+              <span><b>{a.nombre}</b> · {ROL_TXT[a.rol]}</span>
+              <span className={`${s.tag} ${s[`tag_${a.accion}`]}`}>{TXT_ACCION[a.accion]}</span>
+              <span className={s.accionDet}>usuario {a.usuario}{a.correo ? ` · ${a.correo}` : ""}{a.rol === "monitor" ? ` · ${a.ciudades.join(", ") || "solo sus salas"}` : ""}{a.cambios.length ? ` · ${a.cambios.join(" · ")}` : ""}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className={s.cargaActs}>
+        <button type="button" className={`${s.fileBtn} ${s.confirmar}`} disabled={!!p.errores.length || !aplicables} onClick={onConfirmar}>
+          {p.errores.length ? "Corrige los errores y vuelve a subirlo" : aplicables ? `Confirmar carga (${aplicables})` : "No hay nada que cambiar"}
+        </button>
+        <button type="button" className={s.linkBtn} onClick={onCancelar}>Cancelar</button>
+      </div>
+    </div>
   );
 }

@@ -12,6 +12,8 @@ export type User = {
   nombre: string;
   passwordHash: string;
   rol: RolUsuario;
+  /** Opcional (no se usa para entrar): sirve para reconocer a la persona al cargar usuarios por Excel. */
+  correo?: string;
   ciudades: string[];
   /** Solo rol mentor: su id en Horarios (idMentor de su nombre). */
   mentorId?: string;

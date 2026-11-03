@@ -45,6 +45,7 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["cambiar el monitor de una sala", async () => (await import("@/app/api/admin/salas/route")).POST(json("POST", { accion: "monitor", id: "2026-11-12|8|1", monitor: null }))],
   ["recalcular el plan de salas", async () => (await import("@/app/api/admin/salas/route")).POST(json("POST", { accion: "recalcular" }))],
   ["descargar el plan de salas", async () => (await import("@/app/api/admin/salas/excel/route")).GET()],
+  ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
 ];
 
 // Escribir una evaluación: solo el mentor (coordinación y admin solo leen).
@@ -113,6 +114,14 @@ describe("Mis salas: POST desde otro origen", () => {
     await como("monitor");
     const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "anotar", i: 0, asistencia: "si", motivo: null, observacion: "" }) });
     const res = await (await import("@/app/api/evaluacion/salas/[id]/route")).POST(req, ctx);
+    expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
+  });
+});
+
+describe("Usuarios por Excel: POST desde otro origen", () => {
+  it("403 aunque sea admin", async () => {
+    await como("admin");
+    const res = await (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", headers: { Origin: "https://otro.test", Host: "localhost" }, body: new FormData() }));
     expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
   });
 });

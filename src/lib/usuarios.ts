@@ -23,32 +23,27 @@ export function generarClave(): string {
 const ciudadesSchema = z.array(z.string().max(80)).max(20).transform((cs) => [...new Set(cs.map(normalizeCity).filter(Boolean))]);
 export const claveSchema = z.string().min(8, "La clave debe tener al menos 8 caracteres.").max(100);
 
-/** El monitor necesita al menos una ciudad; coordinación y administración ven todas. */
-function conCiudades<T extends { rol?: string; ciudades?: string[] }>(v: T, ctx: z.RefinementCtx) {
-  if (v.rol === "monitor" && v.ciudades !== undefined && v.ciudades.length === 0)
-    ctx.addIssue({ code: "custom", path: ["ciudades"], message: "Un monitor necesita al menos una ciudad." });
-}
-
 export const NuevoUsuario = z
   .object({
     usuario: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/, "Usuario: 3 a 40 caracteres, solo letras, números, punto, guion o guion bajo."),
     nombre: z.string().transform(cleanSpaces).pipe(z.string().min(3, "Escribe el nombre completo.").max(80)),
     rol: z.enum(ROLES),
     ciudades: ciudadesSchema.default([]),
+    correo: z.string().trim().toLowerCase().max(120).regex(/^([^\s@]+@[^\s@]+\.[^\s@]+)?$/, "El correo no es válido.").optional(),
     clave: claveSchema.optional(),
   })
-  .strict()
-  .superRefine(conCiudades);
+  .strict();
 
+// Un monitor sin ciudades es válido: solo acompaña sus salas en las presentaciones (Fase 2); en la inscripción no ve a nadie.
 export const EdicionUsuario = z
   .object({
     nombre: z.string().transform(cleanSpaces).pipe(z.string().min(3, "Escribe el nombre completo.").max(80)).optional(),
     rol: z.enum(ROLES).optional(),
     ciudades: ciudadesSchema.optional(),
     activo: z.boolean().optional(),
+    correo: z.string().trim().toLowerCase().max(120).regex(/^([^\s@]+@[^\s@]+\.[^\s@]+)?$/, "El correo no es válido.").optional(),
   })
-  .strict()
-  .superRefine(conCiudades);
+  .strict();
 
 /** El mentor se reconoce por su nombre, escrito igual que en la hoja Horarios. */
 export const mentorIdDe = (rol: RolUsuario, nombre: string) => (rol === "mentor" ? idMentor(nombre) : undefined);
@@ -93,7 +88,7 @@ export async function errorMentor(mentorId: string | undefined, excepto?: Object
 /** Lo que se muestra de un usuario (nunca el hash). */
 export function vistaUsuario(u: User) {
   return {
-    id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol,
+    id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol, correo: u.correo ?? "",
     ciudades: u.rol === "monitor" ? u.ciudades : [], activo: u.activo,
   };
 }

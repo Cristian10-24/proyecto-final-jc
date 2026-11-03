@@ -26,8 +26,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const rol = cambios.rol ?? actual.rol;
   const ciudades = rol === "monitor" ? (cambios.ciudades ?? actual.ciudades) : [];
-  if (rol === "monitor" && ciudades.length === 0)
-    return NextResponse.json({ error: "datos_invalidos", mensaje: "Un monitor necesita al menos una ciudad." }, { status: 400 });
 
   const mentorId = mentorIdDe(rol, cambios.nombre ?? actual.nombre);
   const errM = mentorId !== actual.mentorId ? await errorMentor(mentorId, actual._id, cambios.nombre ?? actual.nombre) : null;
@@ -35,10 +33,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const set = {
     ...(cambios.nombre !== undefined ? { nombre: cambios.nombre } : {}),
     ...(cambios.activo !== undefined ? { activo: cambios.activo } : {}),
+    ...(cambios.correo ? { correo: cambios.correo } : {}),
     rol, ciudades, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}),
   };
   // Desactivar también invalida las sesiones abiertas (por si luego se reactiva).
-  await users.updateOne({ _id: actual._id }, { $set: set, ...(mentorId ? {} : { $unset: { mentorId: "" } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) });
+  await users.updateOne({ _id: actual._id }, { $set: set, ...(mentorId && cambios.correo !== "" ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) });
   const u = await users.findOne({ _id: actual._id });
   return NextResponse.json({ usuario: vistaUsuario(u!) });
 }
