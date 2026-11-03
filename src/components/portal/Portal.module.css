@@ -24,7 +24,7 @@
   justify-content: space-between;
   gap: var(--s-5);
 }
-.logo { height: 40px; width: auto; display: block; }
+.logo { height: 48px; width: auto; display: block; }
 .atras {
   display: inline-flex;
   align-items: center;
@@ -55,6 +55,7 @@
 .h1 { margin: 0; font: var(--t-h1); letter-spacing: -.02em; outline: none; }
 .texto { margin: calc(-1 * var(--s-2)) 0 0; font: var(--t-body); color: var(--muted); }
 .ayuda { margin: 0; font: var(--t-small); color: var(--muted); text-align: center; }
+.capital { display: inline-block; }
 .capital::first-letter { text-transform: uppercase; }
 .campo { display: flex; flex-direction: column; margin-top: var(--s-3); }
 .zonaAviso { display: block; }
@@ -166,4 +167,65 @@
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
+}
+
+/* ---------- Pantalla: en el celular, intro y acción fluyen juntas (sin cajas extra) ---------- */
+.intro, .accion, .accionForm { display: contents; }
+.navWeb, .deco, .marcaWeb, .soloWeb { display: none; }
+.logoSoloWeb { display: none; }
+.primero { order: -1; }
+
+/* Formas decorativas (prototipo web): aro durazno, punto amarillo, cuadro azul y círculo durazno. */
+.deco i { position: absolute; display: block; }
+.decoAro { left: -110px; bottom: -150px; width: 360px; height: 360px; border-radius: 50%; border: 60px solid var(--orange-ring); }
+.decoPunto { left: 300px; bottom: 70px; width: 22px; height: 22px; border-radius: 50%; background: var(--sun); }
+.decoCuadro { left: 120px; top: 250px; width: 16px; height: 16px; border-radius: 4px; background: var(--blue); transform: rotate(20deg); }
+.decoCirculo { right: -60px; top: 70px; width: 180px; height: 180px; border-radius: 50%; background: var(--orange-soft); }
+
+/* Tarjeta de "Tu proyecto" / "Tu presentación" con el aro naranja del prototipo. */
+.tarjetaProyecto { position: relative; overflow: hidden; }
+.aro { display: none; }
+
+/* ---------- Versión web (desde 900 px): dos columnas como el prototipo de 1280 px ---------- */
+@media (min-width: 900px) {
+  .pagina { max-width: none; padding: 0; position: relative; overflow-x: hidden; }
+  .deco { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .encabezado { position: relative; z-index: 1; background: transparent; padding: 0 clamp(24px, 4.4vw, 56px); }
+  .barra { min-height: 96px; }
+  .logo, .logoSoloWeb { display: block; height: 64px; width: auto; }
+  .atras, .pasoTexto, .progreso { display: none; }
+  .marcaWeb { display: flex; align-items: center; gap: 20px; font: 600 14px var(--font); color: var(--muted); }
+  .marcaWeb i { width: 1px; height: 18px; background: var(--line); }
+  .contenido { position: relative; z-index: 1; display: flex; align-items: center; width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 clamp(24px, 7.5vw, 96px) 56px; }
+  .pantalla { display: grid; grid-template-columns: minmax(0, 1fr) clamp(380px, 40vw, 500px); gap: clamp(32px, 6.25vw, 80px); align-items: center; width: 100%; }
+  .centro { padding-top: 0; text-align: left; }
+  .intro { display: flex; flex-direction: column; align-items: flex-start; }
+  .intro .kicker { font-size: 13px; margin-bottom: 10px; }
+  .intro .display, .intro .h1 { font: 800 clamp(40px, 4.1vw, 52px)/1.04 var(--font); letter-spacing: -.03em; max-width: 560px; text-wrap: balance; }
+  .intro .texto { margin: 12px 0 0; font: 500 19px/1.5 var(--font); max-width: 470px; }
+  .navWeb { display: flex; flex-direction: column; align-items: flex-start; }
+  .atrasWeb { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; margin-bottom: 28px; border: 0; border-radius: 12px; background: var(--soft); color: var(--ink); font: 600 15px var(--font); cursor: pointer; }
+  .atrasWeb:hover { background: var(--line-2); }
+  .avanceWeb { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font: 600 13px var(--mono); color: var(--muted); }
+  .segmentosWeb { display: flex; gap: 6px; width: 160px; }
+  .segmentosWeb i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+  .segmentosWeb .segOnWeb { background: var(--orange); }
+  .accion { display: flex; flex-direction: column; gap: var(--s-6); background: var(--card); border: 1px solid var(--line-2); border-radius: 28px; padding: 32px; box-shadow: 0 30px 60px -30px rgba(120, 40, 10, .28); max-height: min(612px, calc(100dvh - 180px)); overflow: auto; }
+  .accion:empty { display: none; }
+  .accion > *, .accionForm > * { flex-shrink: 0; }
+  .accionForm { display: flex; flex-direction: column; gap: var(--s-6); }
+  .accionForm .campo { margin-top: 0; }
+  .soloWeb { display: block; }
+  .primero { order: 0; align-self: center; margin: 40px 0; }
+  /* Dentro de la tarjeta, las tarjetas internas pasan a paneles (como el prototipo). */
+  .accion .tarjeta { background: var(--bg); box-shadow: none; }
+  .tarjetaProyecto { background: var(--orange-soft) !important; border-color: transparent; }
+  .aro { display: block; position: absolute; right: -34px; top: -34px; width: 104px; height: 104px; border-radius: 50%; border: 18px solid var(--orange); opacity: .9; }
+  .tarjetaProyecto .nombre { padding-right: 60px; }
+  .accion .boleto { box-shadow: none; }
+  .accion .boletoAbajo { background: var(--bg); }
+  /* Diferencia: 3 columnas (no 4) porque aquí la hora dice "8:00 a. m. COL" y no solo "8:00". */
+  .bloques { grid-template-columns: repeat(3, 1fr); }
+  .bloque { white-space: nowrap; font-size: 15px; padding: var(--s-3) var(--s-2); }
+  .pie { display: none; }
 }

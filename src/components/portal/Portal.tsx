@@ -243,8 +243,12 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
   const tu = datos?.integrantes.find((i) => i.tu);
   const pareja = datos?.integrantes.find((i) => !i.tu);
 
+  const nav = paso ? { paso, atras } : null;
+
   return (
     <div className={s.pagina}>
+      {/* Formas decorativas del prototipo web (solo en pantalla ancha). */}
+      <div className={s.deco} aria-hidden="true"><i className={s.decoAro} /><i className={s.decoPunto} /><i className={s.decoCuadro} /><i className={s.decoCirculo} /></div>
       <header className={s.encabezado}>
         <div className={s.barra}>
           {paso ? (
@@ -254,11 +258,12 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
               </svg>
               Atrás
             </button>
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/logo-jc.png" alt="Jóvenes creaTIvos" className={s.logo} />
-          )}
+          ) : null}
+          {/* En el celular el logo va solo en el ingreso (en los pasos, "Atrás"); en pantalla ancha, siempre. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-jc.png" alt="Jóvenes creaTIvos" width={713} height={634} className={`${s.logo} ${paso ? s.logoSoloWeb : ""}`} />
           {paso && <span className={s.pasoTexto}>Paso {paso} de 4</span>}
+          <div className={s.marcaWeb}><span>Fundación ROFÉ</span><i aria-hidden="true" /><span>¿Problemas? Escríbele a tu monitor</span></div>
         </div>
         {paso && (
           <div className={s.progreso} role="progressbar" aria-label="Avance" aria-valuemin={1} aria-valuemax={4} aria-valuenow={paso}>
@@ -271,61 +276,67 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
 
       <main className={s.contenido}>
         {vista === "ingreso" && (
-          <form className={s.pantalla} onSubmit={buscar} noValidate>
+          <Pantalla nav={nav} intro={<>
             <Kicker marca>Proyecto final · 2026</Kicker>
             <Titulo grande enfocar={false}>Elige la hora de tu presentación</Titulo>
             <p className={s.texto}>Presentas tu proyecto ante un mentor durante 15 minutos. Te toma menos de un minuto.</p>
-            <div className={s.campo}>
-              <label className="label" htmlFor="documento">Número de documento</label>
-              <input
-                id="documento"
-                className={`input ${errorDoc ? "is-error" : ""}`}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="Sin puntos ni espacios"
-                maxLength={30}
-                autoFocus
-                value={valor}
-                aria-invalid={!!errorDoc}
-                aria-describedby={errorDoc ? "documento-error documento-ayuda" : "documento-ayuda"}
-                onChange={(e) => {
-                  setValor(e.target.value);
-                  if (errorDoc) setErrorDoc(null);
-                }}
-              />
-              <div id="documento-error" role="alert" className={errorDoc ? "msg-error" : undefined}>{errorDoc}</div>
-            </div>
-            <button type="submit" className="btn btn-primary">Buscar mi proyecto</button>
-            <p id="documento-ayuda" className={s.ayuda}>Sirve el documento de cualquiera de los integrantes.</p>
-            <ZonaAviso aviso={aviso} />
-          </form>
+          </>}>
+            <form className={s.accionForm} onSubmit={buscar} noValidate>
+              <div className={s.campo}>
+                <label className="label" htmlFor="documento">Número de documento</label>
+                <input
+                  id="documento"
+                  className={`input ${errorDoc ? "is-error" : ""}`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="Sin puntos ni espacios"
+                  maxLength={30}
+                  autoFocus
+                  value={valor}
+                  aria-invalid={!!errorDoc}
+                  aria-describedby={errorDoc ? "documento-error documento-ayuda" : "documento-ayuda"}
+                  onChange={(e) => {
+                    setValor(e.target.value);
+                    if (errorDoc) setErrorDoc(null);
+                  }}
+                />
+                <div id="documento-error" role="alert" className={errorDoc ? "msg-error" : undefined}>{errorDoc}</div>
+              </div>
+              <button type="submit" className="btn btn-primary">Buscar mi proyecto</button>
+              <p id="documento-ayuda" className={s.ayuda}>Sirve el documento de cualquiera de los integrantes.</p>
+              <ZonaAviso aviso={aviso} />
+            </form>
+          </Pantalla>
         )}
 
         {vista === "buscando" && (
-          <div className={`${s.pantalla} ${s.centro}`} role="status">
-            <div className="spinner" aria-hidden="true" />
+          <Pantalla nav={nav} centro estado intro={<>
             <Kicker>Un momento</Kicker>
             <Titulo>Buscando tu proyecto…</Titulo>
-          </div>
+          </>}>
+            <div className={`spinner ${s.primero}`} aria-hidden="true" />
+          </Pantalla>
         )}
 
         {vista === "no_encontrado" && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Titulo>Tu documento no aparece</Titulo>
             <p className={s.texto}>Revisa que el número esté bien escrito. Si sigue sin aparecer, escríbele a tu monitor.</p>
+          </>}>
             <div className={s.tarjeta}>
               <Kicker>Número que escribiste</Kicker>
               <div className={s.numero}>{documento}</div>
             </div>
             <button type="button" className="btn btn-primary" onClick={reiniciar}>Intentar con otro número</button>
-          </div>
+          </Pantalla>
         )}
 
         {vista === "datos" && datos && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Titulo>Hola, {tu?.nombre.split(" ")[0] ?? "estudiante"}</Titulo>
             <p className={s.texto}>Revisa que todo esté bien. Aquí no se puede editar.</p>
+          </>}>
             <ZonaAviso aviso={aviso} />
             {datos.integrantes.map((i) => (
               <section key={i.documento + i.nombre} className={s.tarjeta} aria-label={i.tu ? "Tú" : "Tu pareja"}>
@@ -339,7 +350,8 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
               </section>
             ))}
             {!pareja && <div className={s.chip}>Proyecto individual</div>}
-            <section className={s.tarjeta} aria-label="Tu proyecto">
+            <section className={`${s.tarjeta} ${s.tarjetaProyecto}`} aria-label="Tu proyecto">
+              <i className={s.aro} aria-hidden="true" />
               <Kicker>Tu proyecto</Kicker>
               <div className={s.nombre}>{datos.proyecto.nombre}</div>
               {datos.proyecto.descripcion && <p className={s.descripcion}>{datos.proyecto.descripcion}</p>}
@@ -347,13 +359,14 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
             </section>
             <button type="button" className="btn btn-primary" onClick={() => cargarDias()}>Mis datos están bien, elegir hora</button>
             <p className={s.ayuda}>¿Algo está mal? Escríbele a tu monitor.</p>
-          </div>
+          </Pantalla>
         )}
 
         {vista === "dia" && datos && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Titulo>¿Qué día presentas?</Titulo>
             <p className={s.texto}>Estos son los días habilitados para {datos.proyecto.ciudad}.</p>
+          </>}>
             <ZonaAviso aviso={aviso} />
             {dias === null ? (
               <Skeleton filas={3} alto={84} />
@@ -393,31 +406,34 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
                 })}
               </ul>
             )}
-          </div>
+          </Pantalla>
         )}
 
         {vista === "hora" && dia && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Titulo>¿A qué hora?</Titulo>
             <p className={s.texto}>
               <span className={s.capital}>{diaLargo(dia)}</span> · Hora COL · 15 minutos
             </p>
+          </>}>
             <ZonaAviso aviso={aviso} />
             {bloques === null ? (
               <Skeleton filas={4} alto={56} />
             ) : (
               <Bloques bloques={bloques} pais={pais} onElegir={elegirHora} />
             )}
-          </div>
+          </Pantalla>
         )}
 
         {vista === "confirmar" && datos && inicio && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Kicker marca>Último paso</Kicker>
             <Titulo>Confirma tu hora</Titulo>
             <p className={s.texto}>Revisa antes de confirmar.</p>
+          </>}>
             <ZonaAviso aviso={aviso} />
-            <section className={s.tarjeta} aria-label="Tu presentación">
+            <section className={`${s.tarjeta} ${s.tarjetaProyecto}`} aria-label="Tu presentación">
+              <i className={s.aro} aria-hidden="true" />
               <Kicker>Tu presentación</Kicker>
               <div className={`${s.nombre} ${s.capital}`}>{diaLargo(dia ?? diaDe(inicio))}</div>
               <div className={s.horaGrande}>{hora(inicio, pais)}</div>
@@ -434,23 +450,24 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => ir("hora")} disabled={ocupado}>Elegir otra hora</button>
             <Nota aviso={{ tipo: "info", titulo: "Si necesitas cambiarla, escríbele a tu monitor." }} />
-          </div>
+          </Pantalla>
         )}
 
         {vista === "exito" && datos && confirmada && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Kicker marca>Hora confirmada</Kicker>
             <Titulo>¡Listo! Ya tienes tu hora</Titulo>
             <p className={s.texto}>Presentas ante un mentor por 15 minutos. Conéctate 5 minutos antes.</p>
+          </>}>
             <Boleto inicio={confirmada} pais={pais} proyecto={datos.proyecto.nombre} integrantes={datos.integrantes} />
             <BotonCalendario inicio={confirmada} proyecto={datos.proyecto.nombre} />
             <Nota aviso={{ tipo: "info", titulo: "Tu monitor te enviará el enlace de la sala por WhatsApp." }} />
             <button type="button" className="btn btn-soft" onClick={reiniciar}>Salir</button>
-          </div>
+          </Pantalla>
         )}
 
         {vista === "ya_tiene" && datos?.hora && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Kicker marca>Todo en orden</Kicker>
             <Titulo>Ya tienes una hora</Titulo>
             <p className={s.texto}>
@@ -462,29 +479,32 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
                   ? "Ya elegiste tu hora antes."
                   : "Coordinación te asignó esta hora."}
             </p>
+          </>}>
             <Boleto inicio={datos.hora.inicio} pais={pais} proyecto={datos.proyecto.nombre} integrantes={datos.integrantes} />
             <BotonCalendario inicio={datos.hora.inicio} proyecto={datos.proyecto.nombre} />
             <Nota aviso={{ tipo: "info", titulo: "Tu monitor te enviará el enlace de la sala por WhatsApp.", texto: "Si necesitas cambiarla, escríbele a tu monitor." }} />
             <ZonaAviso aviso={aviso} />
             <button type="button" className="btn btn-soft" onClick={reiniciar}>Salir</button>
-          </div>
+          </Pantalla>
         )}
 
         {vista === "sin_horas" && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Titulo>Ya no quedan horas en tu día</Titulo>
             <p className={s.texto}>Escríbele a tu monitor para que te ayude.</p>
+          </>}>
             <ZonaAviso aviso={aviso} />
             <button type="button" className="btn btn-ghost" onClick={() => cargarDias()}>Volver a revisar los días</button>
             <button type="button" className="btn btn-soft" onClick={reiniciar}>Salir</button>
-          </div>
+          </Pantalla>
         )}
 
         {vista === "antes" && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Kicker marca>Proyecto final · 2026</Kicker>
             <Titulo enfocar={false}>Todavía no puedes elegir tu hora</Titulo>
             <p className={s.texto}>Las inscripciones abren pronto. Guarda la fecha.</p>
+          </>}>
             {abre && (
               <div className={s.tarjeta}>
                 <Kicker>Abren el</Kicker>
@@ -492,19 +512,55 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
                 <div className={s.meta}>Hora COL</div>
               </div>
             )}
-          </div>
+            <div className={`note note-warn ${s.soloWeb}`}>Cuando abran, entra aquí con tu número de documento.</div>
+          </Pantalla>
         )}
 
         {vista === "cerrado" && (
-          <div className={s.pantalla}>
+          <Pantalla nav={nav} intro={<>
             <Kicker marca>Proyecto final · 2026</Kicker>
             <Titulo enfocar={false}>Las inscripciones ya cerraron</Titulo>
             <p className={s.texto}>Si aún no tienes hora, escríbele a tu monitor.</p>
-          </div>
+          </>}>
+            <div className={`${s.tarjeta} ${s.soloWeb}`}>
+              <Kicker>Inscripciones cerradas</Kicker>
+              <div className={s.nombre}>Ya no se pueden elegir horas</div>
+              <div className={s.meta}>Tu monitor te ayuda por WhatsApp.</div>
+            </div>
+          </Pantalla>
         )}
       </main>
 
       <footer className={s.pie}>¿Problemas? Escríbele a tu monitor</footer>
+    </div>
+  );
+}
+
+/**
+ * Una pantalla del portal. En el celular, `intro` y la acción fluyen en una sola columna (como siempre); desde 900 px,
+ * dos columnas como el prototipo web: a la izquierda qué hacer (con "Atrás" y el avance) y a la derecha una tarjeta.
+ */
+function Pantalla({ nav, intro, children, centro = false, estado = false }: {
+  nav: { paso: number; atras: () => void } | null; intro: React.ReactNode; children: React.ReactNode; centro?: boolean; estado?: boolean;
+}) {
+  return (
+    <div className={`${s.pantalla} ${centro ? s.centro : ""}`} {...(estado ? { role: "status" } : {})}>
+      <div className={s.intro}>
+        {nav && (
+          <div className={s.navWeb}>
+            <button type="button" className={s.atrasWeb} onClick={nav.atras}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true"><path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Atrás
+            </button>
+            <div className={s.avanceWeb} aria-hidden="true">
+              <span className={s.segmentosWeb}>{[1, 2, 3, 4].map((n) => <i key={n} className={n <= nav.paso ? s.segOnWeb : undefined} />)}</span>
+              Paso {nav.paso} de 4
+            </div>
+          </div>
+        )}
+        {intro}
+      </div>
+      <div className={s.accion}>{children}</div>
     </div>
   );
 }
