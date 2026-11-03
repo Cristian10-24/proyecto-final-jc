@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { diaCOL } from "@/lib/edicion";
-import { primerNombre } from "@/lib/evaluacion/criterios";
+import { estadoFila, primerNombre } from "@/lib/evaluacion/criterios";
 import type { FilaEvaluacion } from "@/lib/evaluacion/datos";
 import { puede } from "@/lib/permisos";
 import EvalShell from "./EvalShell";
@@ -158,13 +158,15 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
   );
 }
 
+const FONDO = { presente: s.filaPresente, ausente: s.filaAusente, pendiente: "" } as const;
+
 /** `mentor`: su nombre cuando la lista mezcla mentores (ahí cada fila dice también su sala). */
 function Item({ f, mentor, onAbrir }: { f: FilaEvaluacion; mentor: string | null; onAbrir: () => void }) {
   const pareja = f.integrantes.length > 1;
   const quien = (x: { nombre: string }) => (pareja ? `${primerNombre(x.nombre)}: ` : "");
   const sub = [f.proyecto, f.ruta ? `Ruta ${f.ruta.toLowerCase()}` : null, f.ciudad, pareja ? "En pareja" : null, mentor, mentor !== null ? (f.sala ? `Sala ${f.sala}` : "Sala por asignar") : null].filter(Boolean).join(" · ");
   return (
-    <button type="button" className={s.item} onClick={onAbrir}>
+    <button type="button" className={`${s.item} ${FONDO[estadoFila(f.integrantes)]}`} onClick={onAbrir}>
       <span className={s.hora}>{horaTxt(f.inicio, "")}</span>
       <span>
         <div className={s.nombre}>{f.integrantes.map((x) => x.nombre).join(" y ")}</div>

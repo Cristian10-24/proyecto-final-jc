@@ -37,6 +37,18 @@ function escribirLocal(id: string, usuario: string, f: Formulario | null) {
   try { if (f) localStorage.setItem(claveLocal(id), JSON.stringify({ usuario, en: Date.now(), datos: f } satisfies Local)); else localStorage.removeItem(claveLocal(id)); } catch { /* sin almacenamiento */ }
 }
 
+type Reloj = { inicio: number | null; pausa: number | null };
+const claveReloj = (id: string) => `pfjc-reloj-${id}`;
+function leerReloj(id: string): Reloj {
+  try {
+    const v = JSON.parse(localStorage.getItem(claveReloj(id)) ?? "null") as Reloj | null;
+    return v && (v.inicio === null || typeof v.inicio === "number") ? { inicio: v.inicio, pausa: typeof v.pausa === "number" ? v.pausa : null } : { inicio: null, pausa: null };
+  } catch { return { inicio: null, pausa: null }; }
+}
+function escribirReloj(id: string, r: Reloj) {
+  try { if (r.inicio === null) localStorage.removeItem(claveReloj(id)); else localStorage.setItem(claveReloj(id), JSON.stringify(r)); } catch { /* sin almacenamiento */ }
+}
+
 function Seg<T extends string | number>({ opciones, valor, onPick, nivel, disabled, etiqueta }: {
   opciones: readonly (readonly [T, string])[]; valor: T | undefined; onPick: (v: T | undefined) => void; nivel?: boolean; disabled?: boolean; etiqueta: string;
 }) {
@@ -127,8 +139,11 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
   }, [cerrar, confirmar]);
 
   // ---- cronómetro (no bloquea nada) ----
-  const [reloj, setReloj] = useState<{ inicio: number | null; pausa: number | null }>({ inicio: null, pausa: null });
-  const [ahora, setAhora] = useState(0);
+  // Uno por proyecto, guardado en este navegador como hora de inicio (no como conteo): sigue corriendo al volver
+  // a la lista, abrir otro proyecto o recargar. Solo se detiene con "Pausar".
+  const [reloj, setRelojEstado] = useState<Reloj>(() => leerReloj(id));
+  const [ahora, setAhora] = useState(() => Date.now());
+  const setReloj = (r: Reloj) => { setRelojEstado(r); escribirReloj(id, r); };
   const corriendo = reloj.inicio !== null && reloj.pausa === null;
   useEffect(() => {
     if (!corriendo) return;
@@ -146,6 +161,9 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
     if (reloj.inicio === null) setReloj({ inicio: t, pausa: null });
     else if (reloj.pausa === null) setReloj({ ...reloj, pausa: t });
     else setReloj({ inicio: reloj.inicio + (t - reloj.pausa), pausa: null });
+  }
+  async function reiniciarReloj() {
+    if (await preguntar("¿Reiniciar el cronómetro de este proyecto? Vuelve a 15:00 sin iniciar.", "Reiniciar")) setReloj({ inicio: null, pausa: null });
   }
 
   // ---- edición ----
@@ -229,6 +247,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
               </div>
               <div className={s.fase}><b>{fase}</b>{faseTxt}</div>
               <button type="button" className="ev-btn" onClick={botonReloj}>{reloj.inicio === null ? "Iniciar" : corriendo ? "Pausar" : "Reanudar"}</button>
+              {reloj.inicio !== null && <button type="button" className={`ev-btn ${s.reiniciar}`} onClick={() => void reiniciarReloj()}>Reiniciar</button>}
             </div>
           )}
         </div>

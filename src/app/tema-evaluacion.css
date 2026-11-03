@@ -28,6 +28,9 @@
   --ev-idle: #5e5e5e;
   --ev-idle-bg: #e6e6e6;
   --ev-overlay: rgba(0, 0, 0, .5);
+  /* Fondo de las filas por estado: ~7 % del verde y ~6 % del rojo del prototipo sobre la superficie. */
+  --ev-fila-presente: color-mix(in srgb, var(--ev-ok) 7%, var(--ev-surface));
+  --ev-fila-ausente: color-mix(in srgb, var(--ev-bad) 6%, var(--ev-surface));
   --ev-radius: 14px;
   --ev-radius-s: 9px;
   --ev-font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

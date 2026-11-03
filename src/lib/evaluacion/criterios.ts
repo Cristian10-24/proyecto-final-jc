@@ -73,6 +73,17 @@ export function faltantes(a: PartesA, integrantes: { nombre: string; b: PartesB;
   return out;
 }
 
+/**
+ * Estado de una fila de la lista (mentor y monitor) para su fondo:
+ * "presente" si al menos un integrante se presentó (evaluación guardada o, desde el Paso 12, marcado presente por el
+ * monitor), "ausente" si todos están como No se presentó y "pendiente" en otro caso. Pareja mixta = "presente".
+ */
+export function estadoFila(integrantes: { res: Resultado; presente?: boolean }[]): "presente" | "ausente" | "pendiente" {
+  if (integrantes.some((x) => x.presente || x.res === "Excelente" || x.res === "Aprobado")) return "presente";
+  if (integrantes.length && integrantes.every((x) => x.res === "No se presentó")) return "ausente";
+  return "pendiente";
+}
+
 export const primerNombre = (nombre: string) => nombre.trim().split(/\s+/)[0] ?? "";
 
 // ---- Validación de lo que manda el navegador ----

@@ -95,3 +95,15 @@ describe("nombres parecidos de mentor", () => {
     expect(parecidos("Pedro Castillo", horarios)).toEqual([]);
   });
 });
+
+describe("fondo de la fila por estado", () => {
+  it("presente, ausente, pendiente y pareja mixta", async () => {
+    const { estadoFila } = await import("@/lib/evaluacion/criterios");
+    expect(estadoFila([{ res: "Excelente" }])).toBe("presente");
+    expect(estadoFila([{ res: "Aprobado" }, { res: "No se presentó" }])).toBe("presente"); // pareja mixta
+    expect(estadoFila([{ res: "No se presentó" }, { res: "No se presentó" }])).toBe("ausente");
+    expect(estadoFila([{ res: "Pendiente" }])).toBe("pendiente"); // también con borrador
+    expect(estadoFila([{ res: "Incompleto" }])).toBe("pendiente"); // tras Deshacer, sin B todavía
+    expect(estadoFila([{ res: "Pendiente", presente: true }])).toBe("presente"); // marcado por el monitor (Paso 12)
+  });
+});
