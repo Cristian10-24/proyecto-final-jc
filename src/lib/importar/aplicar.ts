@@ -2,6 +2,7 @@ import { ObjectId, type AnyBulkWriteOperation, type ClientSession } from "mongod
 import { diasPorCiudad, resumenPorDia } from "../agenda";
 import { horaCO } from "../ciudades";
 import { collections, transaccion } from "../db";
+import { franjasEditadas } from "../franjas";
 import { diasEditados } from "../reglasCupos";
 import type { Actor, Asiento } from "../types";
 import { clave, type ErrorFila } from "./excel";
@@ -166,8 +167,12 @@ export async function previaMentores(libro: LibroMentores): Promise<PreviaMentor
   for (const h of libro.horas) for (const m of h.mentores) horas.set(m, (horas.get(m) ?? 0) + 1);
   const nombre = new Map(libro.mentores.map((m) => [m._id, m.nombre]));
   // Reglas editadas en pantalla (Paso 17): mandan hasta esta importación, que las reemplaza con la hoja Cupos.
-  const editados = await diasEditados();
-  const avisos = editados.length ? [...libro.avisos, { hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `Hay reglas de cupos editadas en pantalla para ${editados.join(", ")}: al importar, la hoja Cupos las reemplaza.` }] : libro.avisos;
+  const [editados, franjas] = await Promise.all([diasEditados(), franjasEditadas()]);
+  const avisos = [
+    ...libro.avisos,
+    ...(editados.length ? [{ hoja: HOJAS_MENTORES.cupos, fila: 0, mensaje: `Hay reglas de cupos editadas en pantalla para ${editados.join(", ")}: al importar, la hoja Cupos las reemplaza.` }] : []),
+    ...(franjas ? [{ hoja: HOJAS_MENTORES.horarios, fila: 0, mensaje: `Hay ${franjas} cambio${franjas === 1 ? "" : "s"} de mentores hecho${franjas === 1 ? "" : "s"} en Franjas y mentores: al importar, la hoja Horarios los reemplaza.` }] : []),
+  ];
   return {
     mentores: libro.mentores.length, avisos, errores, dias: resumenPorDia(libro.asientos),
     horasPorMentor: [...horas].map(([id, n]) => ({ nombre: nombre.get(id) ?? id, horas: n })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
@@ -198,6 +203,7 @@ export async function aplicarMentores(libro: LibroMentores, actor: Actor) {
     if (ops.length) await c.asientos.bulkWrite(ops, { session: s, ordered: false });
     await c.mentores.deleteMany({}, { session: s });
     await c.dias.deleteMany({}, { session: s });
+    await c.franjasEditadas.deleteMany({}, { session: s }); // Horarios vuelve a mandar
     if (libro.mentores.length) await c.mentores.insertMany(libro.mentores, { session: s });
     if (libro.cupos.size) await c.dias.insertMany([...libro.cupos].map(([dia, ciudades]) => ({ _id: dia, ciudades })), { session: s });
     await c.changeLog.insertOne({ accion: "importar", nuevo: `mentores: ${libro.mentores.length}, asientos: ${libro.asientos.length}`, actor, fecha: now }, { session: s });

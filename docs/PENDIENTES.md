@@ -27,7 +27,6 @@ Lo que queda abierto. Cada línea dice quién lo hace. Al resolver una, se borra
 - Pasos 16 a 18 y cierre técnico, antes de las presentaciones del 12; el despliegue va después.
 
 ## Pendiente de construir (pedido por el usuario)
-- Pantalla 5b "Franjas y mentores" (/admin/franjas), como el prototipo Admin.dc.html: selector de días; por hora, mentores como chips con "×" y "+ Agregar mentor", número de mentores y capacidad (1 mentor = 4 por hora; 0 mentores = no se ofrece); en la misma tabla, ocupados y libres ("10 de 16 · 6 libres") y libres por ciudad; en el encabezado del día, total, ocupados y libres; refresco periódico. Agregar un mentor crea sus asientos con las reglas del día (reutilizar el reetiquetado de `src/lib/reglasCupos.ts`) y recalcula el plan de salas; quitar solo si sus asientos de esa hora están libres (si no, mostrar los proyectos a mover); sin duplicados; changeLog; lo editado manda hasta la próxima importación de Horarios, con aviso. Solo admin edita; coordinación lee; lista en el celular. Se pospuso para publicar primero.
 
 ## Más adelante
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".

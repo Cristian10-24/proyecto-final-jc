@@ -1,6 +1,7 @@
 import { MongoClient, type ClientSession, type Db } from "mongodb";
 import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./evaluacion/datos";
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
+import type { FranjaEditada } from "./franjas";
 import type { PlanSala } from "./salas";
 import type { Asiento, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
@@ -109,6 +110,7 @@ export async function collections() {
     asientos: db.collection<Asiento>("asientos"),
     dias: db.collection<DiaConfig>("dias"),
     inscripciones: db.collection<InscripcionesConfig>("inscripciones"),
+    franjasEditadas: db.collection<FranjaEditada>("franjas_editadas"),
     salasConfig: db.collection<SalasConfig>("salasConfig"),
     planSalas: db.collection<PlanSala>("planSalas"),
     evalResultados: db.collection<EvalResultado>("evaluacion_resultados"),

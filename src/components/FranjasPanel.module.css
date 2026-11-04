@@ -1,0 +1,45 @@
+/* Administración · Franjas y mentores (Paso 17b, prototipo 5b). Mismo lenguaje del panel (tokens.css). */
+.kicker { font: 600 11.5px var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.title { margin: 2px 0 0; font: 800 26px/1.15 var(--font); letter-spacing: -.025em; }
+.lead { margin: var(--s-3) 0 var(--s-6); font: var(--t-body); color: var(--muted); max-width: 760px; }
+.dias { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.dia { min-width: 92px; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--line-2); background: var(--surface-2); font: 800 14px var(--font); color: var(--ink); cursor: pointer; }
+.diaOn { border-color: var(--ink); background: var(--card); }
+.card { background: var(--card); border: 1px solid var(--line-2); border-radius: var(--r-2xl); box-shadow: var(--sh-card); padding: var(--s-8); display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+.card :global(.note) { padding: 10px 12px; border-radius: 12px; font: 500 14px/1.45 var(--font); }
+.cardHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cardT { margin: 0; font: 800 18px var(--font); }
+.totales { display: flex; gap: 14px; flex-wrap: wrap; font: 500 14px var(--font); color: var(--muted); }
+.totales b { color: var(--ink); font-weight: 800; }
+.sub { margin: 0; font: 500 13.5px/1.45 var(--font); color: var(--muted); }
+.totales .libre, .libre { color: var(--green-dark); }
+.lleno { color: var(--red-dark); }
+.mover { margin: 6px 0 0; padding-left: 18px; }
+.lista { display: flex; flex-direction: column; }
+.fila { display: grid; grid-template-columns: 130px minmax(0, 1fr) 110px 150px minmax(0, 220px); gap: 12px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line-2); }
+.cabeza { font: 600 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding-top: 0; }
+.vacia { color: var(--muted); }
+.vacia .capa { font-style: italic; }
+.hora { font: 700 14.5px var(--mono); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-2); font: 600 13px var(--font); color: var(--ink); }
+.chipX { padding-right: 4px; }
+.chip em { font: 600 11px var(--mono); font-style: normal; color: var(--muted); }
+.chip button { width: 24px; height: 24px; border: 0; border-radius: 50%; background: transparent; font: 700 15px var(--font); color: var(--muted); cursor: pointer; }
+.chip button:hover:not(:disabled) { background: var(--line-2); color: var(--red-dark); }
+.agregar { height: 32px; padding: 0 8px; border: 1.5px dashed var(--line); border-radius: 999px; background: transparent; font: 600 13px var(--font); color: var(--ink); cursor: pointer; max-width: 100%; }
+.capa { font: 600 13px var(--mono); }
+.ocup { font: 500 13.5px var(--font); }
+.ciudades { display: flex; flex-wrap: wrap; gap: 4px; }
+.ciudad { font: 500 12px var(--font); padding: 2px 8px; border-radius: 999px; background: var(--surface-2); }
+.skel { height: 300px; border-radius: 20px; background: var(--surface-2); }
+
+/* Celular: cada hora es una tarjeta apilada. */
+@media (max-width: 760px) {
+  .card { padding: var(--s-5); }
+  .cabeza { display: none; }
+  .fila { grid-template-columns: 1fr auto; gap: 8px; padding: 12px 0; }
+  .hora { grid-column: 1; }
+  .capa { grid-column: 2; grid-row: 1; justify-self: end; }
+  .chips, .ocup, .ciudades { grid-column: 1 / -1; }
+}

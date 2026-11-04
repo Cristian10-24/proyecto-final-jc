@@ -117,7 +117,26 @@ export async function previaReglas(dia: string, cupos: CupoCiudad[]): Promise<Pl
   return plan;
 }
 
-class CambioReglas extends Error {}
+export class CambioReglas extends Error {}
+
+/**
+ * Dentro de una transacción: calcula el plan del día con `cupos` y reetiqueta solo los asientos libres que cambian.
+ * Si alguien reservó uno de ellos mientras tanto, lanza CambioReglas (la transacción se aborta). Lo usan el editor de
+ * reglas y Franjas y mentores (al agregar o quitar un mentor).
+ */
+export async function reetiquetar(s: ClientSession, dia: string, cupos: CupoCiudad[]): Promise<Plan> {
+  const c = await collections();
+  const plan = await planDia(dia, cupos, s);
+  if (plan.errores.length) return plan;
+  const ops: AnyBulkWriteOperation<Asiento>[] = plan.asignacion
+    .filter((x) => etiquetaGrupo(x.ciudades) !== etiquetaGrupo(x.asiento.ciudades))
+    .map((x) => ({ updateOne: { filter: { _id: x.asiento._id, proyectoId: null }, update: { $set: { ciudades: x.ciudades } } } }));
+  if (ops.length) {
+    const r = await c.asientos.bulkWrite(ops, { session: s, ordered: false });
+    if (r.matchedCount !== ops.length) throw new CambioReglas(); // alguien reservó uno de esos asientos
+  }
+  return plan;
+}
 
 /**
  * Aplica las reglas de un día en una transacción: reetiqueta solo asientos libres (si alguien reserva mientras
@@ -128,15 +147,8 @@ export async function aplicarReglas(dia: string, cupos: CupoCiudad[], actor: Act
   let plan: Plan | null = null;
   try {
     await transaccion(async (s) => {
-      plan = await planDia(dia, cupos, s);
+      plan = await reetiquetar(s, dia, cupos);
       if (plan.errores.length) return;
-      const ops: AnyBulkWriteOperation<Asiento>[] = plan.asignacion
-        .filter((x) => etiquetaGrupo(x.ciudades) !== etiquetaGrupo(x.asiento.ciudades))
-        .map((x) => ({ updateOne: { filter: { _id: x.asiento._id, proyectoId: null }, update: { $set: { ciudades: x.ciudades } } } }));
-      if (ops.length) {
-        const r = await c.asientos.bulkWrite(ops, { session: s, ordered: false });
-        if (r.matchedCount !== ops.length) throw new CambioReglas(); // alguien reservó uno de esos asientos
-      }
       const ahora = new Date();
       await c.dias.replaceOne({ _id: dia }, { ciudades: cupos, editadoEn: ahora, editadoPor: actor.usuario ?? actor.rol } satisfies Omit<DiaConfig, "_id">, { upsert: true, session: s });
       await c.changeLog.insertOne({
