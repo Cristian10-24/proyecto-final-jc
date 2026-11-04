@@ -31,3 +31,5 @@ main().catch((e) => {
   console.error(e instanceof Error ? e.message : e);
   process.exit(1);
 });
+
+export {}; // módulo propio: su main() no choca con el de otros scripts

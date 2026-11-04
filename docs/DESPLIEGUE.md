@@ -74,6 +74,7 @@ Mientras se prueba, **Production apunta temporalmente a `proyecto_final_jc_prueb
   - La clave de los usuarios `*.demo` (admin.demo, coordinacion.demo, mentor.demo, monitor.demo…) se genera al azar (no es `demo-2026`) y se muestra **una sola vez** en la terminal: guárdala en un lugar seguro. Para otra clave, vuelve a correr la semilla (borra y recarga la demo).
 - [ ] Prueba en la URL de Production con esas cuentas: portal, monitor, mentor, tablero, reglas, franjas, en claro y oscuro, también en el celular.
 - [ ] Nunca corras la semilla demo contra `proyecto_final_jc`.
+- [ ] Para empezar de cero en la base de pruebas (por ejemplo, para cargar datos reales ahí): `npm run vaciar:atlas-pruebas -- --usuario=<tu.usuario> --si-atlas-pruebas` (opcional `"--nombre=Tu Nombre"`). Borra todos los datos de la app en `proyecto_final_jc_pruebas` (proyectos, horas y reservas, evaluaciones, salas, sugerencias, reglas, usuarios e historial), deja un único admin y muestra su clave **una sola vez**. Se niega sin `--si-atlas-pruebas` y con cualquier otra base. Luego carga los datos en el orden de la sección 4.
 
 ## 3c. Paso a producción real (checklist)
 - [ ] En Vercel → Production, cambia las **3 variables**:
