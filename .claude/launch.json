@@ -4,19 +4,39 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:red"],
+      "runtimeArgs": [
+        "run",
+        "dev:red"
+      ],
       "port": 3000
     },
     {
       "name": "start-pruebas",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "start", "-p", "3001"],
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "start",
+        "-p",
+        "3001"
+      ],
       "env": {
         "MONGODB_URI": "mongodb://127.0.0.1:27018/?replicaSet=rs0",
         "MONGODB_DB": "proyecto_final_jc_pruebas",
         "SESSION_SECRET": "solo-para-ver-en-local-0123456789"
       },
       "port": 3001
+    },
+    {
+      "name": "demo-pruebas",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/demo.mjs"
+      ],
+      "env": {
+        "MONGODB_DB": "proyecto_final_jc_pruebas",
+        "PORT": "3005"
+      },
+      "port": 3005
     }
   ]
 }

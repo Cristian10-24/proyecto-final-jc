@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./tokens.css";
 import "./globals.css";
+import ScriptEnLinea from "@/components/ScriptEnLinea";
 import { SCRIPT_TEMA } from "@/lib/tema";
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // data-theme lo pone el script antes de pintar (modo oscuro): por eso React no debe quejarse de la diferencia.
     <html lang="es" suppressHydrationWarning>
       <head>
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+        <ScriptEnLinea html={SCRIPT_TEMA} nonce={nonce} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
