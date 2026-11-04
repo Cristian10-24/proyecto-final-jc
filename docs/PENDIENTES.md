@@ -8,9 +8,8 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Excel original: "Martes 16" → "Martes 17" (Hoja 1, A5) y "Stiven Posada" en Mentores!B15 (con correo y celular si los hay).
 - Archivo real de inscritos: importarlo y revisar en la vista previa columnas reconocidas, monitores por asignar y errores por fila.
 - Atlas: dos usuarios de base de datos, cada uno con `readWrite` solo sobre su base (`proyecto_final_jc` para Production, `proyecto_final_jc_pruebas` para Preview y `.env.atlas.local`). Nunca el usuario personal. Ver DESPLIEGUE §2.
-- GitHub y Vercel (DESPLIEGUE §1 y §3): repositorio privado, variables separadas por ambiente, protección de los Preview.
+- Vercel (DESPLIEGUE §3): variables separadas por ambiente y protección de los Preview. (GitHub ya está: Fundacion-ROFE/proyecto-final-jc.)
 - Preview con la demo (`npm run semilla:demo:atlas -- --reset --si-atlas-pruebas --hoy=2026-11-12`) y prueba en un celular real por datos móviles.
-- Con el repositorio en GitHub: correr la skill `security-review` (necesita `origin/HEAD`).
 
 ## Técnicos (bajos, conscientes)
 - `npm run test:db` usa la misma base local que la demo del navegador (`proyecto_final_jc_pruebas`) y la borra: después de correr las pruebas, recargar la demo con `MONGODB_DB=proyecto_final_jc_pruebas npm run semilla:demo -- --reset --hoy=…`.
@@ -27,6 +26,7 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Formato de fechas repetido en cinco componentes (ImportPanel, HorariosPanel, portal, SeguimientoPanel, ResumenPanel): unificar en un módulo de `src/lib`.
 - `reservar` lee la colección `dias` completa en cada intento (menos de 10 documentos): se puede precalcular si la carga lo pide.
 - `sameOrigin` acepta peticiones sin cabecera Origin (lo cubre SameSite=Lax de la cookie).
+- Cerrar sesión solo borra la cookie (no sube `tokenVersion`): una cookie robada sirve hasta que vence (7 días) salvo que el admin restablezca la clave o desactive al usuario.
 - `agenda` no cuenta para el límite por documento: permite saber si un documento existe (sin datos personales), con el tope de fallos por IP.
 - En la red local (`dev:red`) la IP del límite se puede falsificar con x-forwarded-for; en Vercel no.
 - Límites: revisar y luego contar (`bloqueado` + `contar`) permite que una ráfaga en paralelo pase un poco del tope por IP (login y portal).
