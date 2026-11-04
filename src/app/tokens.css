@@ -27,9 +27,12 @@
   --soft: #f5f2ef;            /* botón suave, chip neutro */
   --bg: #fbf8f5;              /* fondo de página */
   --card: #ffffff;
+  --on-ink: #ffffff;          /* texto sobre --ink (botón oscuro, chip activo, toast): se invierte en modo oscuro */
+  --night: #1c1a24;           /* panel de marca del login: oscuro en los dos modos */
+  --overlay: rgba(28, 26, 36, .45);
 
   /* Estados */
-  --green: #1f9d6b;  --green-dark: #17734f;  --green-soft: #e3f5ec;   /* eligió / listo */
+  --green: #1f9d6b;  --green-dark: #17734f;  --green-soft: #e3f5ec;  --green-busy: #9fd3bd;  /* eligió / listo */
   --yellow: #f2b630; --yellow-soft: #fff7dc; --yellow-ink: #5a4300; --yellow-text: #8a5a00; /* aviso / pendiente */
   --red: #d64553;    --red-ink: #c2303d;     --red-dark: #9e2430;    --red-soft: #fce6e8;    /* error */
 
@@ -82,4 +85,45 @@
   --h-progress: 6px;    /* barra de avance */
   --w-student: 390px;   /* ancho de diseño del portal (móvil primero) */
   --w-admin: 1280px;    /* ancho de diseño del admin */
+  color-scheme: light;
+}
+
+/*
+ * Modo oscuro (Paso 18). El script del <head> (src/lib/tema.ts) pone data-theme en <html> antes de pintar: la
+ * elección guardada con el botón de tema o, si no hay, la del sistema. Solo se redefinen colores; los fondos de
+ * color (naranja, verde, rojo) se mantienen para que el texto blanco encima conserve el contraste.
+ */
+:root[data-theme="dark"] {
+  --orange-dark: #ff8a5f;
+  --orange-darker: #ffb597;
+  --orange-soft: #33201a;
+  --orange-tint: #3a2219;
+  --orange-ring: #6b3017;
+  --orange-chip: #4a2617;
+  --orange-busy: #a3442a;
+
+  --ink: #f3f0f6;
+  --ink-2: #d8d2e0;
+  --muted: #aca5b8;
+  --muted-2: #918a9e;
+  --line: #3d3947;
+  --line-2: #2e2b36;
+  --surface: #1c1a22;
+  --surface-2: #24222b;
+  --soft: #2b2833;
+  --bg: #131118;
+  --card: #1b1921;
+  --on-ink: #1c1a24;
+  --night: #0c0b10;
+  --overlay: rgba(0, 0, 0, .6);
+
+  --green-dark: #63d6a6;  --green-soft: #153429;  --green-busy: #2d5e4a;
+  --yellow-soft: #392d10; --yellow-ink: #ffe3a1;  --yellow-text: #f2c766;
+  --red-ink: #ff7f8b;     --red-dark: #ff9da7;    --red-soft: #3b1a1f;
+
+  --sh-card: 0 2px 6px -4px rgba(0, 0, 0, .6);
+  --sh-raised: 0 24px 60px -24px rgba(0, 0, 0, .7);
+  --sh-toast: 0 10px 30px -10px rgba(0, 0, 0, .8);
+  --sh-modal: 0 30px 60px -20px rgba(0, 0, 0, .8);
+  color-scheme: dark;
 }

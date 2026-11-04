@@ -9,7 +9,7 @@
 .dia i { position: absolute; top: 4px; right: 8px; font-style: normal; color: var(--orange); font-size: 10px; }
 .diaOn { border-color: var(--ink); background: var(--card); }
 .card { background: var(--card); border: 1px solid var(--line-2); border-radius: var(--r-2xl); box-shadow: var(--sh-card); padding: var(--s-8); display: flex; flex-direction: column; gap: var(--s-5); margin-bottom: 16px; min-width: 0; }
-.card :global(.input) { height: 40px; padding: 0 10px; border: 2px solid var(--line); border-radius: 10px; background: #fff; font: 500 14.5px var(--font); color: var(--ink); }
+.card :global(.input) { height: 40px; padding: 0 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--card); font: 500 14.5px var(--font); color: var(--ink); }
 .card :global(.btn) { width: auto; height: 42px; padding: 0 16px; border-radius: 12px; }
 .card :global(.note) { padding: 10px 12px; border-radius: 12px; font: 500 14px/1.45 var(--font); }
 .cardHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -31,7 +31,7 @@
 .horas { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 600 14px var(--font); }
 .horas .num { width: 90px; }
 .skel { height: 300px; border-radius: 20px; background: var(--surface-2); }
-.overlay { position: fixed; inset: 0; z-index: 40; background: rgba(28, 26, 36, .45); display: grid; place-items: center; padding: 16px; }
+.overlay { position: fixed; inset: 0; z-index: 40; background: var(--overlay); display: grid; place-items: center; padding: 16px; }
 .modal { width: min(460px, 100%); background: var(--card); border-radius: 22px; padding: 22px; box-shadow: var(--sh-modal); display: flex; flex-direction: column; gap: 12px; }
 .modal :global(.btn) { width: auto; height: 42px; padding: 0 16px; border-radius: 12px; }
 .modalT { font: 800 19px/1.3 var(--font); }

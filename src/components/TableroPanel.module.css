@@ -23,7 +23,7 @@
 
 .sinHora { width: 248px; flex: none; border-radius: 20px; background: var(--surface-2); border: 2px dashed var(--line-2); display: flex; flex-direction: column; min-height: 0; }
 .sinHoraHead { display: flex; justify-content: space-between; align-items: center; padding: 12px 12px 4px; font: 800 16px var(--font); }
-.cuenta { font: 800 13px var(--font); background: var(--ink); color: #fff; border-radius: 999px; padding: 3px 9px; }
+.cuenta { font: 800 13px var(--font); background: var(--ink); color: var(--on-ink); border-radius: 999px; padding: 3px 9px; }
 .filtroCiudades { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 12px 8px; }
 .fc { height: 26px; padding: 0 9px; border-radius: 999px; border: 1.5px solid var(--line-2); background: var(--card); font: 700 11.5px var(--font); color: var(--ink); display: flex; align-items: center; gap: 5px; cursor: pointer; }
 .fcOn { border-color: var(--ink); }
@@ -73,11 +73,11 @@
 .skel { height: 420px; border-radius: 20px; background: var(--surface-2); }
 .skelFila { height: 40px; border-radius: 12px; background: var(--surface-2); }
 
-.overlay { position: fixed; inset: 0; z-index: 40; background: rgba(28, 26, 36, .45); display: grid; place-items: center; padding: 16px; }
+.overlay { position: fixed; inset: 0; z-index: 40; background: var(--overlay); display: grid; place-items: center; padding: 16px; }
 .modal { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--card); border-radius: 22px; padding: 22px; box-shadow: var(--sh-modal); display: flex; flex-direction: column; gap: 12px; }
 .modal :global(.note) { padding: 10px 12px; border-radius: 12px; font: 500 14px/1.45 var(--font); }
 .modal :global(.btn) { width: auto; height: 42px; padding: 0 16px; border-radius: 12px; }
-.modal :global(.input) { width: 100%; height: 42px; padding: 0 12px; border: 2px solid var(--line); border-radius: 12px; background: #fff; font: 500 15px var(--font); }
+.modal :global(.input) { width: 100%; height: 42px; padding: 0 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); font: 500 15px var(--font); }
 .modalT { font: 800 20px/1.25 var(--font); }
 .datos { display: grid; gap: 8px; }
 .datos > div { background: var(--surface-2); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
@@ -92,5 +92,5 @@
 .hist span { display: block; color: var(--muted); font-size: 12px; }
 
 .alerta { position: fixed; left: 50%; top: 84px; transform: translateX(-50%); z-index: 50; display: flex; gap: 12px; align-items: center; padding: 12px 14px 12px 16px; border-radius: 16px; background: var(--red-soft); border: 1.5px solid #F3B8BF; color: var(--red-dark); font: 600 14.5px/1.4 var(--font); box-shadow: 0 14px 30px -16px rgba(158, 34, 48, .5); max-width: calc(100% - 32px); }
-.alerta button { border: 0; background: #fff; border-radius: 9px; height: 30px; padding: 0 10px; font: 700 13px var(--font); color: var(--red-dark); flex: none; cursor: pointer; }
+.alerta button { border: 0; background: #fff; /* sobre rojo, en los dos modos */ border-radius: 9px; height: 30px; padding: 0 10px; font: 700 13px var(--font); color: #9e2430; flex: none; cursor: pointer; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; background: var(--green); color: #fff; border-radius: 16px; padding: 12px 16px; font: 600 14.5px var(--font); max-width: calc(100% - 32px); }

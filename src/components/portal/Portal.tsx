@@ -5,6 +5,7 @@ import { horaCO } from "@/lib/ciudades";
 import { diaDe, diaLargo, fechaHora, grupoHora, hora, paisDe, partesDia } from "./formato";
 import { BotonCalendario, Boleto, Kicker, Nota, Skeleton, Titulo, ZonaAviso } from "./Piezas";
 import type { Aviso, Consulta, DiaAgenda, EstadoInicial } from "./tipos";
+import BotonTema from "../BotonTema";
 import s from "./Portal.module.css";
 
 // Portal del estudiante (sin sesión): documento → datos → día → hora → confirmar → boleto.
@@ -266,8 +267,11 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
           {/* En el celular el logo va solo en el ingreso (en los pasos, "Atrás"); en pantalla ancha, siempre. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-jc.png" alt="Jóvenes creaTIvos" width={713} height={634} className={`${s.logo} ${paso ? s.logoSoloWeb : ""}`} />
-          {paso && <span className={s.pasoTexto}>Paso {paso} de 4</span>}
-          <div className={s.marcaWeb}><span>Fundación ROFÉ</span><i aria-hidden="true" /><span>¿Problemas? Escríbele a tu monitor</span></div>
+          <div className={s.barraFin}>
+            {paso && <span className={s.pasoTexto}>Paso {paso} de 4</span>}
+            <div className={s.marcaWeb}><span>Fundación ROFÉ</span><i aria-hidden="true" /><span>¿Problemas? Escríbele a tu monitor</span></div>
+            <BotonTema />
+          </div>
         </div>
         {paso && (
           <div className={s.progreso} role="progressbar" aria-label="Avance" aria-valuemin={1} aria-valuemax={4} aria-valuenow={paso}>

@@ -1,8 +1,7 @@
 /* Tema del módulo de evaluación (vista del mentor, del monitor en salas y seguimiento), tomado del prototipo
    aprobado docs/diseno/evaluacion/index.html. Solo aplica dentro de .tema-evaluacion (lo pone EvalShell):
    el portal del estudiante y la inscripción siguen con tokens.css, que no se toca.
-   Todos los colores son variables --ev-*: el modo oscuro (pendiente, ver docs/PENDIENTES.md) solo tendrá que
-   redefinirlas, igual que el prototipo en su @media (prefers-color-scheme: dark). */
+   Todos los colores son variables --ev-*: el modo oscuro (Paso 18) las redefine con la paleta oscura del prototipo. */
 
 .tema-evaluacion {
   --ev-navy: #121212;
@@ -75,3 +74,14 @@
 .tema-evaluacion .ev-c-mail { background: var(--ev-surface-2); color: var(--ev-muted); }
 
 @keyframes ev-shimmer { 0% { opacity: .55; } 50% { opacity: 1; } 100% { opacity: .55; } }
+
+/* Modo oscuro (Paso 18): paleta oscura del prototipo; el encabezado sigue oscuro y la hora y lo activo pasan a naranja. */
+:root[data-theme="dark"] .tema-evaluacion {
+  --ev-navy: #1e1e1e; --ev-orange: #f28a2e; --ev-orange-ink: #f7a25a;
+  --ev-bg: #0e0e0e; --ev-surface: #181818; --ev-surface-2: #232323; --ev-line: #303030;
+  --ev-ink: #f2f2f2; --ev-muted: #a8a8a8;
+  --ev-ok: #7ddb94; --ev-ok-bg: #16351f; --ev-mid: #f2c766; --ev-mid-bg: #3a2e10; --ev-bad: #ff9a8f; --ev-bad-bg: #3d1916;
+  --ev-info: #9dbbf5; --ev-info-bg: #1a2436; --ev-idle: #a8a8a8; --ev-idle-bg: #2a2a2a;
+  --ev-parcial: #e0a43a; --ev-overlay: rgba(0, 0, 0, .7);
+  color-scheme: dark;
+}

@@ -50,3 +50,4 @@ Encabezado: logo, "Atrás", "Paso n de 4"; pie "¿Problemas? Escríbele a tu mon
 
 ## 3 · Mentor (fuera de Fase 1)
 Agenda, login con código y "Calificar" (diseño con Sofka). No se construye en esta fase.
+- **Modo oscuro**: solo tokens. Texto sobre `--ink` usa `--on-ink` (se invierte); fondos blancos usan `--card`; velos `--overlay`; el panel de marca del login `--night`. Nada de `#fff` como fondo en componentes nuevos.

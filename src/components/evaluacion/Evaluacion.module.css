@@ -103,9 +103,9 @@
 .seg { display: inline-flex; border: 1px solid var(--ev-line); border-radius: 999px; padding: 3px; background: var(--ev-surface-2); gap: 2px; }
 .seg button { appearance: none; border: 0; background: transparent; padding: 7px 13px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ev-muted); min-width: 40px; }
 .seg button:disabled { cursor: default; }
-.seg button[aria-pressed="true"][data-v="si"] { background: var(--ev-ok); color: #fff; }
-.seg button[aria-pressed="true"][data-v="parcial"] { background: var(--ev-parcial); color: #fff; }
-.seg button[aria-pressed="true"][data-v="no"] { background: var(--ev-bad); color: #fff; }
+.seg button[aria-pressed="true"][data-v="si"] { background: var(--ev-ok); color: var(--ev-surface); }
+.seg button[aria-pressed="true"][data-v="parcial"] { background: var(--ev-parcial); color: var(--ev-surface); }
+.seg button[aria-pressed="true"][data-v="no"] { background: var(--ev-bad); color: var(--ev-surface); }
 .segNivel button[aria-pressed="true"] { background: var(--ev-navy); color: #fff; }
 .campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .campo:last-child { margin-bottom: 0; }
@@ -194,3 +194,11 @@
 .tabla th, .tabla td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--ev-line); vertical-align: top; }
 .tabla th { font-weight: 600; color: var(--ev-muted); font-size: 13px; }
 .tabla .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Modo oscuro (Paso 18), como el prototipo: la hora, el nivel elegido y las barras pasan a naranja. */
+:global(:root[data-theme="dark"]) .hora { color: var(--ev-orange-ink); }
+:global(:root[data-theme="dark"]) .segNivel button[aria-pressed="true"] { background: var(--ev-orange); color: var(--ev-on-orange); }
+:global(:root[data-theme="dark"]) .relleno { background: var(--ev-orange); }
+:global(:root[data-theme="dark"]) .kpiHl { border-color: var(--ev-line); }
+.temaTop { width: 32px; height: 32px; border-color: rgba(255, 255, 255, .35); color: var(--ev-on-navy); }
+.temaTop:hover { background: rgba(255, 255, 255, .1); }

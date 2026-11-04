@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { puede, ROL_TXT, type Permiso } from "@/lib/permisos";
+import BotonTema from "./BotonTema";
 import s from "./AppShell.module.css";
 
 export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "segGeneral" | "tablero" | "franjas" | "reglas" | "horarios" | "salas" | "importar" | "usuarios";
@@ -79,6 +80,7 @@ export default function AppShell({ user, active, children }: { user: SessionUser
           <div className={s.me}>
             <div className={s.avatar} title={user.nombre}>{iniciales(user.nombre)}</div>
             <span className={s.meName}>{user.nombre}</span>
+            <BotonTema />
             <button type="button" className={s.logout} onClick={salir}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 17l-5-5 5-5" /><path d="M5 12h11" /></svg>
               Cerrar sesión

@@ -28,15 +28,15 @@ input:focus { outline: none; }
 .btn-primary { background: var(--orange); color: #fff; }
 .btn-primary:disabled { background: var(--orange-busy); }
 .btn-green { background: var(--green); color: #fff; }
-.btn-green:disabled { background: #9fd3bd; }
-.btn-ghost { background: #fff; color: var(--ink); border: 2px solid var(--line); }
-.btn-soft { background: #f5f2ef; color: var(--ink); }
-.btn-dark { background: var(--ink); color: #fff; }
+.btn-green:disabled { background: var(--green-busy); }
+.btn-ghost { background: var(--card); color: var(--ink); border: 2px solid var(--line); }
+.btn-soft { background: var(--soft); color: var(--ink); }
+.btn-dark { background: var(--ink); color: var(--on-ink); }
 
 .label { display: block; font: 700 15px var(--font); margin-bottom: 8px; }
 .input {
   height: 56px; width: 100%; border: 2px solid var(--line); border-radius: 16px;
-  padding: 0 16px; font: 600 18px var(--font); color: var(--ink); background: #fff;
+  padding: 0 16px; font: 600 18px var(--font); color: var(--ink); background: var(--card);
 }
 .input:focus { border-color: var(--orange); box-shadow: 0 0 0 4px var(--orange-chip); }
 .input.is-error { border-color: var(--red); }
@@ -56,7 +56,7 @@ input:focus { outline: none; }
 
 .spinner {
   width: 52px; height: 52px; border-radius: 50%;
-  border: 5px solid #ffe6dc; border-top-color: var(--orange);
+  border: 5px solid var(--orange-ring); border-top-color: var(--orange);
   animation: spin .8s linear infinite;
 }
 .spinner-sm {
@@ -71,8 +71,8 @@ input:focus { outline: none; }
   padding: 13px 14px; font: 600 15px/1.4 var(--font); color: var(--ink);
 }
 .check-box {
-  flex: none; width: 26px; height: 26px; border-radius: 8px; border: 2px solid #cfc8c1;
-  background: #fff; color: #fff; display: flex; align-items: center; justify-content: center;
+  flex: none; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--muted-2);
+  background: var(--card); color: #fff; display: flex; align-items: center; justify-content: center;
   font: 800 15px var(--font);
 }
 .check.is-on { border-color: var(--orange); background: var(--orange-tint); }

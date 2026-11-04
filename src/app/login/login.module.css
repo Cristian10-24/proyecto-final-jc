@@ -1,6 +1,6 @@
-.shell { min-height: 100dvh; display: grid; background: #fff; }
+.shell { min-height: 100dvh; display: grid; background: var(--card); }
 .brand { display: none; }
-.formSide { display: flex; flex-direction: column; padding: 22px; }
+.formSide { position: relative; display: flex; flex-direction: column; padding: 22px; }
 .logoMobile { height: 46px; width: auto; align-self: flex-start; margin-bottom: 36px; }
 .form { width: 100%; max-width: 400px; display: flex; flex-direction: column; flex: 1; }
 .title { margin: 0 0 8px; font: 800 30px/1.1 var(--font); letter-spacing: -.03em; }
@@ -19,7 +19,7 @@
 @media (min-width: 960px) {
   .shell { grid-template-columns: 1fr 1fr; }
   .brand {
-    display: flex; flex-direction: column; background: var(--ink); color: #fff; padding: 56px;
+    display: flex; flex-direction: column; background: var(--night); color: #fff; padding: 56px;
     position: relative; overflow: hidden;
   }
   .ring { position: absolute; right: -120px; bottom: -140px; width: 420px; height: 420px; border-radius: 50%; border: 70px solid var(--orange); }
@@ -35,3 +35,4 @@
   .title { font-size: 34px; }
   .grow { flex: none; min-height: 26px; }
 }
+.tema { position: absolute; top: 16px; right: 16px; color: var(--ink); }

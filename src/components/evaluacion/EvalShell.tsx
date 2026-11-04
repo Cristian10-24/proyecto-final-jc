@@ -3,6 +3,7 @@
 import "@/app/tema-evaluacion.css";
 import type { SessionUser } from "@/lib/auth";
 import { inicioPorRol, puede, type Permiso } from "@/lib/permisos";
+import BotonTema from "../BotonTema";
 import s from "./Evaluacion.module.css";
 
 // Marco del módulo de evaluación igual al prototipo aprobado: barra superior oscura con el logo de Jóvenes
@@ -46,7 +47,7 @@ export default function EvalShell({ user, active, children }: { user: SessionUse
           <nav className={s.tabs} aria-label="Secciones">
             {tabs.map((t) => <a key={t.key} className={s.tab} href={t.href} aria-current={t.key === active ? "page" : undefined}>{t.label}</a>)}
             {panel && <a className={s.tab} href={panel}>Panel</a>}
-            <div className={s.yo}><span>{user.nombre}</span><button type="button" className={s.salir} onClick={salir}>Salir</button></div>
+            <div className={s.yo}><BotonTema className={s.temaTop} /><span>{user.nombre}</span><button type="button" className={s.salir} onClick={salir}>Salir</button></div>
           </nav>
         </div>
       </header>

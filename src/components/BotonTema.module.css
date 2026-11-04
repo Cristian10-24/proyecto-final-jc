@@ -1,0 +1,4 @@
+/* Botón de tema (Paso 18): redondo, hereda el color del texto de donde se pone. */
+.boton { flex: none; width: 38px; height: 38px; display: inline-grid; place-items: center; border-radius: 999px; border: 1.5px solid var(--line); background: transparent; color: inherit; cursor: pointer; }
+.boton:hover { background: var(--soft); }
+.boton:focus-visible { outline: 3px solid var(--orange-ring); outline-offset: 2px; }

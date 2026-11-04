@@ -12,6 +12,7 @@ Lo que queda abierto. Cada línea dice quién lo hace. Al resolver una, se borra
 - Atlas: crear un usuario de base de datos con readWrite SOLO sobre `proyecto_final_jc_pruebas` y ponerlo en `.env.atlas.local` en lugar del usuario personal (que tiene acceso a otras bases del cluster).
 
 ## Técnicos (bajos, conscientes)
+- Sin Content-Security-Policy (bajo, de antes; revisión del Paso 18). Si se agrega con `script-src` estricto, permitir el script de tema del `<head>` por su hash sha256 (es constante) o con nonce. Para el cierre técnico.
 - Formato de fechas repetido en cinco componentes (ImportPanel, HorariosPanel, portal, SeguimientoPanel, ResumenPanel): unificar en un módulo de `src/lib`. Hoy hay diferencias menores ("Jue 12 de nov" / "jue 12 nov").
 - `reservar` lee la colección `dias` completa en cada intento (menos de 10 documentos): se puede precalcular al importar si la carga lo pide.
 - `sameOrigin` acepta peticiones sin cabecera Origin (lo cubre SameSite=Lax de la cookie).

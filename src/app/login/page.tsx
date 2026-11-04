@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { inicioPorRol } from "@/lib/permisos";
+import BotonTema from "@/components/BotonTema";
 import LoginForm from "./LoginForm";
 import s from "./login.module.css";
 
@@ -23,6 +24,7 @@ export default async function LoginPage() {
         <div style={{ flex: 1.2 }} />
       </aside>
       <div className={s.formSide}>
+        <div className={s.tema}><BotonTema /></div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-jc.png" alt="Jóvenes creaTIvos" className={s.logoMobile} />
         <LoginForm />

@@ -242,3 +242,6 @@
 .docGrande { height: 62px !important; border-radius: 18px !important; padding: 0 20px !important; font: 700 22px var(--font) !important; letter-spacing: .04em; }
 .docGrande::placeholder { font-weight: 500; font-size: 17px; letter-spacing: 0; }
 @media (min-width: 900px) { .accion .fechaClave { background: var(--bg); } }
+
+/* Modo oscuro (Paso 18): el botón de tema va al final de la barra, junto al paso o a la marca. */
+.barraFin { display: flex; align-items: center; gap: var(--s-5); margin-left: auto; }
