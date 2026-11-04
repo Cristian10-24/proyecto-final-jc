@@ -54,8 +54,8 @@
 .modalActions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 4px; }
 .modalActions button { height: 50px; border-radius: 16px; font: 700 15px var(--font); border: 0; }
 .cancel { background: var(--card) !important; border: 1.5px solid var(--line) !important; color: var(--ink); }
-.save { background: var(--orange); color: #fff; }
-.save:disabled { background: var(--orange-busy); }
+.modalActions .save { background: var(--orange); color: #fff; font-size: 19px; } /* texto grande: blanco sobre naranja */
+.modalActions .save:disabled { background: var(--orange-busy); }
 
 .secret { border-radius: 16px; background: var(--surface-2); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .secretVal { font: 700 22px var(--mono); letter-spacing: .04em; word-break: break-all; }
@@ -91,7 +91,7 @@
 .cargaActs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .fileBtn { height: 42px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--ink); color: var(--on-ink); font: 700 14px var(--font); display: inline-flex; align-items: center; cursor: pointer; }
 .fileBtn:focus-within { outline: 3px solid var(--orange-ring); outline-offset: 2px; }
-.confirmar { background: var(--orange); }
+.confirmar { background: var(--orange); color: #fff; font-size: 19px; } /* texto grande: blanco sobre naranja */
 .confirmar:disabled { background: var(--muted-2); cursor: not-allowed; }
 .linkBtn { height: 42px; padding: 0 16px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font: 700 14px var(--font); display: inline-flex; align-items: center; text-decoration: none; }
 .previa { margin-top: 14px; display: grid; gap: 10px; }

@@ -37,6 +37,11 @@ export async function POST(req: Request) {
     _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [], ...(correo ? { correo } : {}), ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}),
     activo: true, passwordHash: await hashClave(clave), tokenVersion: 0, creadoEn: now, actualizadoEn: now,
   };
-  await users.insertOne(doc);
+  // Dos admins a la vez con el mismo usuario o mentor: el índice único lo frena; 409 en vez de 500.
+  try { await users.insertOne(doc); } catch (e) {
+  if (e instanceof Error && "code" in e && (e as { code?: number }).code === 11000)
+    return NextResponse.json({ error: "duplicado", mensaje: "Ese usuario o ese mentor ya existe (alguien lo guardó al mismo tiempo). Recarga la lista." }, { status: 409 });
+  throw e;
+  }
   return NextResponse.json({ usuario: vistaUsuario(doc), clave }, { status: 201 });
 }

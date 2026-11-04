@@ -50,7 +50,12 @@ export default function ReglasPanel({ user }: { user: SessionUser }) {
 
   const actual = d?.dias.find((x) => x.dia === dia);
   useEffect(() => { if (d && !dia && d.dias[0]) setDia(d.dias[0].dia); }, [d, dia]);
-  useEffect(() => { setReglas(actual?.ciudades.map((x) => ({ ...x })) ?? []); setPlan(null); setMsg(null); }, [actual]);
+  // Solo al cambiar de día (o al llegar los datos): recargar tras «Aplicar» o «Guardar cierre» no borra lo que se está
+  // editando ni el mensaje y la vista previa.
+  const diaCargado = actual?.dia;
+  useEffect(() => {
+    setReglas(actual?.ciudades.map((x) => ({ ...x })) ?? []); setPlan(null); setMsg(null);
+  }, [diaCargado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const suma = reglas.reduce((a, r) => a + (r.minimo ?? 0), 0);
   const exceso = actual ? suma - actual.capacidad : 0;

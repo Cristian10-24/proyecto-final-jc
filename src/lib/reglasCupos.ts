@@ -43,6 +43,16 @@ async function planDia(dia: string, cupos: CupoCiudad[], session?: ClientSession
   }
   // Las ciudades explícitas se calculan con este día ya cambiado (para expandir "Todas").
   const explicitas = ciudadesExplicitas([...todos.filter((d) => d._id !== dia), { _id: dia, ciudades: cupos }]);
+  // "Todas" son las ciudades sin días propios en NINGÚN día: si este cambio le da o le quita días propios a una ciudad,
+  // cambiaría en silencio los otros días con "Todas" (sus asientos quedarían con etiquetas que ya no aplican). Se pide
+  // hacerlo explícito en esos días o desde la hoja Cupos.
+  const antes = ciudadesExplicitas(todos);
+  const cambian = [...new Set([...antes, ...explicitas])].filter((k) => antes.has(k) !== explicitas.has(k));
+  for (const k of cambian) {
+    const afectados = todos.filter((d) => d._id !== dia && d.ciudades.some((x) => x.ciudad === TODAS) && presentaAntesDeClausura(k, d._id)).map((d) => d._id);
+    if (afectados.length)
+      errores.push(`${explicitas.has(k) ? `Agregar ${k} aquí la saca` : `Quitar a ${k} de aquí la vuelve a meter`} de «Todas» en ${afectados.join(", ")}. Hazlo por su nombre en esos días también, o cámbialo en la hoja Cupos e impórtala.`);
+  }
   let grupos: { ciudades: string[]; cuota: number }[] = [];
   try { grupos = gruposDelDia(cupos, asientos.length, dia, explicitas); } catch (e) { errores.push(`${(e as Error).message}.`); }
   if (errores.length) return vacio;

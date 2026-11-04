@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { diaCOL } from "@/lib/edicion";
 import { estadoFila, primerNombre } from "@/lib/evaluacion/criterios";
@@ -33,12 +33,17 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
   const [estado, setEstado] = useState<Estado>("");
   const [abierto, setAbierto] = useState<string | null>(null);
 
+  // Respuestas desordenadas: solo vale la del último mentor pedido.
+  const pedido = useRef("");
   const cargar = useCallback(async () => {
+    pedido.current = mentor;
     try {
       const res = await fetch(`/api/evaluacion/proyectos${mentor ? `?mentor=${encodeURIComponent(mentor)}` : ""}`, { cache: "no-store" });
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
-      setDatos(await res.json());
+      const data = await res.json();
+      if (pedido.current !== mentor) return;
+      setDatos(data);
       setCarga("listo");
     } catch {
       setCarga((c) => (c === "listo" ? c : "error"));

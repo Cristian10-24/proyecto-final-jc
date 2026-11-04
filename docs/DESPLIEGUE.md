@@ -15,10 +15,16 @@ Marca cada casilla al terminar. Los secretos nunca van al repositorio, a un chat
 - [ ] Revisa en GitHub que NO estén: `.env*`, `.mongo-data/`, Excel reales (solo `docs/plantillas/*.xlsx` con datos inventados) ni `docs/diseno/evaluacion/`.
 - [ ] Ya con remoto, corre la skill `security-review` (antes no se podía, ver PENDIENTES).
 
-## 2. MongoDB Atlas
+## 2. MongoDB Atlas: dos bases, dos usuarios
 - [ ] Cluster en **AWS us-east-1 (N. Virginia)**, la misma región que Vercel (`iad1`).
-- [ ] Base `proyecto_final_jc`. Usuario de base de datos **nuevo, solo para producción, con readWrite únicamente sobre `proyecto_final_jc`** (no `readWriteAnyDatabase`, no admin) y clave larga generada. **Nunca tu usuario personal**: tiene acceso a otras bases del cluster que usan otras apps.
-- [ ] El usuario de pruebas (`.env.atlas.local`, base `proyecto_final_jc_pruebas`) tampoco va a Vercel.
+- [ ] Un usuario de base de datos **distinto para cada base**, cada uno con `readWrite` **solo sobre la suya** (no `readWriteAnyDatabase`, no admin) y clave larga generada. **Nunca tu usuario personal**: tiene acceso a otras bases del cluster que usan otras apps.
+
+| Base | Usuario de Atlas | Permiso | Dónde se usa |
+| --- | --- | --- | --- |
+| `proyecto_final_jc` | p. ej. `pfjc-produccion` | `readWrite@proyecto_final_jc` | Solo en el ambiente **Production** de Vercel |
+| `proyecto_final_jc_pruebas` | p. ej. `pfjc-pruebas` | `readWrite@proyecto_final_jc_pruebas` | Solo en el ambiente **Preview** de Vercel y en tu `.env.atlas.local` |
+
+- [ ] Así, si una clave se filtra, solo expone su base: la de pruebas nunca puede tocar la de producción, ni al revés.
 - [ ] Network Access: permitir el acceso de Vercel (con plan M0 suele ser `0.0.0.0/0`; la protección es el usuario de mínimo privilegio y la clave).
 - [ ] Copia la cadena de conexión `mongodb+srv://…` solo para pegarla en Vercel (paso 3).
 - [ ] Nunca uses esta cadena en tu computador: en local siempre es la base de `npm run db:local`.
@@ -26,12 +32,15 @@ Marca cada casilla al terminar. Los secretos nunca van al repositorio, a un chat
 ## 3. Vercel
 - [ ] Importa el repositorio de GitHub como proyecto `proyecto-final-jc` (framework Next.js; la región sale de `vercel.json`: `iad1`).
 - [ ] Node.js 22 en Project Settings → General (coincide con `.node-version`).
-- [ ] Variables de entorno (Production; en Preview solo si vas a usar despliegues de prueba con OTRA base):
+- [ ] Variables de entorno, **separadas por ambiente** (Project Settings → Environment Variables, marcando solo el ambiente indicado):
+  - **Production**: `MONGODB_URI` con el usuario `pfjc-produccion`, `MONGODB_DB=proyecto_final_jc` y su propio `SESSION_SECRET`.
+  - **Preview**: `MONGODB_URI` con el usuario `pfjc-pruebas`, `MONGODB_DB=proyecto_final_jc_pruebas` y **otro** `SESSION_SECRET` (así una sesión de pruebas no sirve en producción).
+  - Ninguna variable de base de datos en "All Environments" ni en Development.
 
 | Variable | Valor | Obligatoria |
 | --- | --- | --- |
-| `MONGODB_URI` | La cadena `mongodb+srv://…` de Atlas con el usuario de producción | Sí |
-| `MONGODB_DB` | `proyecto_final_jc` | Sí |
+| `MONGODB_URI` | La cadena `mongodb+srv://…` con el usuario de ESE ambiente | Sí |
+| `MONGODB_DB` | `proyecto_final_jc` (Production) · `proyecto_final_jc_pruebas` (Preview) | Sí |
 | `SESSION_SECRET` | Texto aleatorio de 32+ caracteres (p. ej. `openssl rand -hex 32`) | Sí |
 | `MONGODB_MAX_POOL` | `5` (por defecto) | No |
 | `PFJC_MODO` | **No la definas en Vercel** (es solo para el modo Atlas de pruebas en local) | — |
@@ -40,8 +49,14 @@ Marca cada casilla al terminar. Los secretos nunca van al repositorio, a un chat
 | `STUDENT_PORTAL_ENABLED` | `false` solo para cerrar el portal de emergencia | No |
 | `RATE_LIMIT_DOC_MAX` / `RATE_LIMIT_IP_MAX` | `15` / `300` por defecto | No |
 
-- [ ] Despliega y abre `/login`: debe responder 200.
+- [ ] Deployment Protection: deja activa la protección de Vercel para los despliegues **Preview** (solo personas del equipo los abren).
+- [ ] Despliega y abre `/login`: debe responder 200 y traer el encabezado `Content-Security-Policy` (en las DevTools, sin errores de CSP en la consola).
 - [ ] Revisa en los logs de Vercel que no aparezcan errores de conexión a Mongo.
+
+## 3b. Preview con la demo (antes de producción)
+- [ ] Con tu `.env.atlas.local` (usuario `pfjc-pruebas`, `MONGODB_DB=proyecto_final_jc_pruebas`): `npm run semilla:demo:atlas -- --reset --si-atlas-pruebas --hoy=2026-11-12`. Se niega sin `--si-atlas-pruebas` y con cualquier otra base. La clave de los usuarios `*.demo` se genera al azar (no es `demo-2026`) y se muestra **una sola vez** en la terminal: guárdala.
+- [ ] Haz un despliegue Preview (una rama distinta de `main`) y prueba con esas cuentas: portal, monitor, mentor, tablero, reglas, franjas, en claro y oscuro.
+- [ ] Nunca corras la semilla demo contra `proyecto_final_jc`.
 
 ## 4. Datos y usuarios (en producción), en este orden
 - [ ] Primer admin: desde tu computador, con `MONGODB_URI` de Atlas solo en esa terminal y por esa vez, `npm run usuario:add -- <usuario> "Nombre" --rol=admin --atlas`. Sin `--atlas` el script se niega a escribir fuera de la base local. Cierra esa terminal al terminar.

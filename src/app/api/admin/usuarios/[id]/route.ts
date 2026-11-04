@@ -1,8 +1,11 @@
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { collections } from "@/lib/db";
 import { EdicionUsuario, errorMentor, mensajeZod, mentorIdDe, vistaUsuario } from "@/lib/usuarios";
+
+const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
 
 /** Editar nombre, rol, ciudades o activo (solo administración). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,8 +13,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
 
-  const { id } = await params;
-  if (!ObjectId.isValid(id)) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
+  const p = Params.safeParse(await params);
+  if (!p.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
+  const { id } = p.data;
   const parsed = EdicionUsuario.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos", mensaje: mensajeZod(parsed.error) }, { status: 400 });
   const cambios = parsed.data;
@@ -37,7 +41,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     rol, ciudades, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}),
   };
   // Desactivar también invalida las sesiones abiertas (por si luego se reactiva).
-  await users.updateOne({ _id: actual._id }, { $set: set, ...(mentorId && cambios.correo !== "" ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) });
+  try { await users.updateOne({ _id: actual._id }, { $set: set, ...(mentorId && cambios.correo !== "" ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) }); } catch (e) {
+  if (e instanceof Error && "code" in e && (e as { code?: number }).code === 11000)
+    return NextResponse.json({ error: "duplicado", mensaje: "Ese usuario o ese mentor ya existe (alguien lo guardó al mismo tiempo). Recarga la lista." }, { status: 409 });
+  throw e;
+  }
   const u = await users.findOne({ _id: actual._id });
   return NextResponse.json({ usuario: vistaUsuario(u!) });
 }

@@ -198,3 +198,40 @@ describe("sala y enlace", () => {
     expect(await ev.mentoresConProyectos()).toEqual([{ id: "mentor-prueba-1", nombre: "Mentor Prueba 1" }]); // solo los que están en Horarios
   });
 });
+
+describe("No se presentó, Deshacer y borrador (cierre técnico)", () => {
+  it("Deshacer sin evaluación borra el registro (el proyecto no queda como evaluado) y el borrador sigue ofreciéndose", async () => {
+    await proyecto("D1", 1, 2, ["Dana Prueba"]);
+    const c = await db.collections();
+    expect(await ev.guardarBorrador(m1, ids.D1!, { a: { a1: "si" }, fortaleza: "Buena idea" })).toEqual({ ok: true });
+    expect(await ev.marcarAsistencia(m1, ids.D1!, 0, true)).toMatchObject({ ok: true });
+    expect(await ev.marcarAsistencia(m1, ids.D1!, 0, false)).toMatchObject({ ok: true });
+    expect(await c.evalResultados.countDocuments({ proyectoId: new ObjectId(ids.D1!) })).toBe(0);
+    const d = await ev.detalleEvaluacion(m1, ids.D1!);
+    expect("error" in d ? null : d.borrador).toEqual({ a: { a1: "si" }, fortaleza: "Buena idea" });
+    // Deshacer otra vez no hace nada ni deja changeLog.
+    const logs = await c.changeLog.countDocuments({ proyectoId: new ObjectId(ids.D1!) });
+    await ev.marcarAsistencia(m1, ids.D1!, 0, false);
+    expect(await c.changeLog.countDocuments({ proyectoId: new ObjectId(ids.D1!) })).toBe(logs);
+  });
+
+  it("el borrador de otro usuario (un mentor anterior) no se ofrece", async () => {
+    const c = await db.collections();
+    await c.evalBorradores.replaceOne({ _id: ids.D1! }, { usuario: "mentor.anterior", datos: { fortaleza: "ajeno" }, actualizadoEn: new Date() }, { upsert: true });
+    const d = await ev.detalleEvaluacion(m1, ids.D1!);
+    expect("error" in d ? "error" : d.borrador).toBeNull();
+  });
+});
+
+describe("Deshacer con evaluación guardada (cierre técnico)", () => {
+  it("conserva el registro (Parte A y cierre) y lo deja presente", async () => {
+    await proyecto("D2", 1, 4, ["Eva Prueba"]);
+    const c = await db.collections();
+    expect(await ev.guardarEvaluacion(m1, ids.D2!, form({ b: [{ b1: 2, b2: 2 }] }))).toMatchObject({ ok: true });
+    await ev.marcarAsistencia(m1, ids.D2!, 0, true);
+    await ev.marcarAsistencia(m1, ids.D2!, 0, false);
+    const e = await c.evalResultados.findOne({ proyectoId: new ObjectId(ids.D2!) });
+    expect(e).toMatchObject({ noPresento: false, a: A_SI, fortaleza: "Muy bien" });
+    expect(e?.evaluadoEn).toBeInstanceOf(Date);
+  });
+});

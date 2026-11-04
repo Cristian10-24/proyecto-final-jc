@@ -5,6 +5,8 @@ import { BorradorSchema, FormularioSchema } from "@/lib/evaluacion/criterios";
 import { detalleEvaluacion, guardarBorrador, guardarEvaluacion, marcarAsistencia } from "@/lib/evaluacion/datos";
 
 type Ctx = { params: Promise<{ id: string }> };
+const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
+const invalido = () => NextResponse.json({ error: "datos_invalidos", mensaje: "Datos inválidos." }, { status: 400 });
 
 const Accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("guardar"), formulario: FormularioSchema }).strict(),
@@ -19,7 +21,9 @@ const ESTADO: Record<string, number> = { no_existe: 404, sin_hora: 404, otro_men
 export async function GET(_req: Request, { params }: Ctx) {
   const g = await exigir(["evaluar", "ver_evaluaciones"]);
   if (g.error) return g.error;
-  const r = await detalleEvaluacion(g.user, (await params).id);
+  const p = Params.safeParse(await params);
+  if (!p.success) return invalido();
+  const r = await detalleEvaluacion(g.user, p.data.id);
   return NextResponse.json(r, { status: "error" in r ? ESTADO[r.error] ?? 400 : 200 });
 }
 
@@ -28,9 +32,9 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("evaluar");
   if (g.error) return g.error;
-  const parsed = Accion.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "datos_invalidos", mensaje: "Datos inválidos." }, { status: 400 });
-  const { id } = await params, a = parsed.data;
+  const parsed = Accion.safeParse(await req.json().catch(() => null)), p = Params.safeParse(await params);
+  if (!parsed.success || !p.success) return invalido();
+  const { id } = p.data, a = parsed.data;
   const r = a.accion === "guardar" ? await guardarEvaluacion(g.user, id, a.formulario)
     : a.accion === "borrador" ? await guardarBorrador(g.user, id, a.formulario)
     : await marcarAsistencia(g.user, id, a.i, a.accion === "no_presento");

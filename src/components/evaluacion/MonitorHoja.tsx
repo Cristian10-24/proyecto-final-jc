@@ -39,6 +39,7 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
   const [notas, setNotas] = useState<Nota[]>([]);
   const [guardadas, setGuardadas] = useState<Nota[]>([]);
   const [cupos, setCupos] = useState<CupoLibre[] | null>(null);
+  const [cuposFallo, setCuposFallo] = useState(false);
   const [diaCupo, setDiaCupo] = useState("");
   const [cupo, setCupo] = useState("");
   const [motivoCambio, setMotivoCambio] = useState("");
@@ -60,7 +61,10 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
   const cargarCupos = useCallback(async () => {
     const res = await fetch(`/api/evaluacion/salas/${id}/cupos`, { cache: "no-store" }).catch(() => null);
     const data = res?.ok ? ((await res.json()) as { cupos: CupoLibre[] }) : null;
-    const lista = data?.cupos ?? [];
+    // Si falla la red, no es lo mismo que "no hay cupos": se ofrece reintentar en vez de empujar a sugerir un cambio.
+    setCuposFallo(!data);
+    if (!data) return;
+    const lista = data.cupos;
     setCupos(lista);
     const primero = lista[0] ? diaCOL(new Date(lista[0].inicio)) : "";
     setDiaCupo(primero);
@@ -211,6 +215,7 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
               <h3>Reprogramar</h3>
               <p className={s.pista}>Elige un cupo libre de {d.ciudad} en sus días habilitados. {pareja ? "Los estudiantes quedan" : "El estudiante queda"} con el mentor de ese cupo, que {pareja ? "los" : "lo"} verá en su lista, y el cupo anterior queda libre. Si estaba marcado «No se presentó», vuelve a quedar pendiente. El cambio queda registrado con tu nombre.</p>
               {d.evaluado ? <div className="ev-aviso">{MENSAJE.ya_evaluado}</div>
+                : cuposFallo ? <div className="ev-aviso ev-aviso-error">No se pudieron cargar los cupos libres. <button type="button" className="btn-link" onClick={() => void cargarCupos()}>Reintentar</button></div>
                 : cupos === null ? <div className="ev-aviso">Buscando cupos libres…</div>
                 : !cupos.length ? <div className="ev-aviso ev-aviso-warn">No hay cupos libres de {d.ciudad} en sus días habilitados. Si hace falta otro día u otra ciudad, sugiere el cambio aquí abajo.</div>
                 : (

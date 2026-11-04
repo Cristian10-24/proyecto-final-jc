@@ -19,6 +19,7 @@
     "plantillas:ejemplo": "tsx scripts/plantillas-ejemplo.ts",
     "semilla:local": "tsx --env-file-if-exists=.env.local scripts/semilla-local.ts",
     "semilla:demo": "tsx --env-file-if-exists=.env.local scripts/semilla-demo.ts",
+    "semilla:demo:atlas": "node scripts/con-atlas.mjs scripts/semilla-demo.ts",
     "dev:red": "node scripts/dev-red.mjs",
     "dev:atlas": "node scripts/dev-atlas.mjs",
     "semilla:atlas": "node scripts/con-atlas.mjs scripts/semilla-local.ts"

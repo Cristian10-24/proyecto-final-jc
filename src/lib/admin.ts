@@ -69,7 +69,11 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
 export async function historial(proyectoId: ObjectId) {
   const { changeLog } = await collections();
   return (await changeLog.find({ proyectoId }).sort({ fecha: -1 }).limit(50).toArray())
-    .map((c) => ({ accion: c.accion, anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, actor: c.actor, fecha: c.fecha.toISOString() }));
+    // Coordinación también ve el historial: el documento del estudiante que reservó va enmascarado.
+    .map((c) => ({
+      accion: c.accion, anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, fecha: c.fecha.toISOString(),
+      actor: c.actor.rol === "estudiante" && c.actor.usuario ? { ...c.actor, usuario: enmascararNumero(c.actor.usuario) } : c.actor,
+    }));
 }
 
 export type ResultadoAdmin = { ok: true; inicio?: string } | { ok: false; error: string; mensaje: string };

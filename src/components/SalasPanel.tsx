@@ -39,7 +39,7 @@ export default function SalasPanel({ user }: { user: SessionUser }) {
       setVista(await res.json());
       setCarga("listo");
     } catch {
-      setCarga("error");
+      setCarga((c) => (c === "listo" ? c : "error")); // un refresco fallido no borra la tabla
     }
   }, []);
   useEffect(() => { void cargar(); }, [cargar]);

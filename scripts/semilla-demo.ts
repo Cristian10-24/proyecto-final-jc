@@ -4,12 +4,14 @@
 //   npm run semilla:demo -- --reset --hoy=2026-11-03   (mueve las presentaciones para que el día "en vivo" sea esa fecha)
 //
 // Pasa por los MISMOS importadores que los Excel reales (Mentores/Horarios/Cupos, Proyectos y Salas y monitores):
-// los libros se arman en memoria con las reglas reales de Cupos. Solo base LOCAL (127.0.0.1/localhost): se niega
-// con Atlas o con cualquier otra. Las claves son fáciles y SOLO para esta base local.
+// los libros se arman en memoria con las reglas reales de Cupos. Base LOCAL (127.0.0.1/localhost) o, con
+// `npm run semilla:demo:atlas -- --reset --si-atlas-pruebas`, SOLO proyecto_final_jc_pruebas en Atlas (para el Preview);
+// se niega con cualquier otra. La clave fácil es SOLO local; en Atlas se genera una al azar.
 //
 // Día "en vivo": hoy si hoy cae entre el 12 y el 21 de noviembre; si no, el jueves 12. Con --hoy=AAAA-MM-DD
 // (hasta el 21 de noviembre): si la fecha cae en esos días, ese es el día en vivo; si es antes del 12, todo el
 // calendario se corre para que el jueves 12 caiga en esa fecha (las clausuras de las ciudades se siguen cumpliendo).
+import { randomBytes } from "node:crypto";
 import ExcelJS from "exceljs";
 import { ObjectId } from "mongodb";
 import type { SessionUser } from "@/lib/auth";
@@ -87,11 +89,17 @@ function libro(hojas: Record<string, (string | number | null)[][]>): ExcelJS.Wor
 const ampm = (h: number) => `${String(h % 12 || 12).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
 
 async function main() {
-  // ---- solo base local ----
-  if (process.env.PFJC_MODO === "atlas") throw new Error("semilla:demo nunca corre en modo Atlas.");
-  process.env.MONGODB_URI ||= URI_LOCAL;
-  const { closeDb, collections, dbHost, dbName, esUriLocal } = await import("@/lib/db");
-  if (!esUriLocal(process.env.MONGODB_URI)) throw new Error(`semilla:demo solo corre contra la base local; MONGODB_URI apunta a "${dbHost()}".`);
+  // ---- base local o, con `npm run semilla:demo:atlas`, SOLO proyecto_final_jc_pruebas en Atlas ----
+  const atlas = process.env.PFJC_MODO === "atlas"; // solo lo pone scripts/con-atlas.mjs
+  if (!atlas) process.env.MONGODB_URI ||= URI_LOCAL;
+  const { BASE_ATLAS_PRUEBAS, closeDb, collections, dbHost, dbName, esUriLocal } = await import("@/lib/db");
+  if (atlas) {
+    if (dbName() !== BASE_ATLAS_PRUEBAS) throw new Error(`semilla:demo en Atlas: solo ${BASE_ATLAS_PRUEBAS}, nunca otra base.`);
+    if (!process.argv.includes("--si-atlas-pruebas"))
+      throw new Error(`semilla:demo borra los datos de ${BASE_ATLAS_PRUEBAS} en Atlas: confirma agregando --si-atlas-pruebas.`);
+  } else if (!esUriLocal(process.env.MONGODB_URI ?? "")) throw new Error(`semilla:demo solo corre contra la base local; MONGODB_URI apunta a "${dbHost()}".`);
+  // En Atlas (el Preview se abre por internet) la clave no es la fácil: una al azar, que se muestra una sola vez.
+  const clave = atlas ? randomBytes(12).toString("base64url") : CLAVE;
   const { desfase, vivoReal } = opciones();
   const mover = (dia: string) => sumarDias(dia, desfase);
   const vivo = mover(vivoReal);
@@ -109,14 +117,14 @@ async function main() {
   const mon = await import("@/lib/evaluacion/monitor");
 
   const c = await collections();
-  console.log(`Base local: ${dbHost()} / ${dbName()}${desfase ? ` · calendario movido ${desfase} días` : ""} · día en vivo: ${vivo}`);
+  console.log(`${atlas ? "Atlas de PRUEBAS" : "Base local"}: ${dbHost()} / ${dbName()}${desfase ? ` · calendario movido ${desfase} días` : ""} · día en vivo: ${vivo}`);
   const hay = (await c.proyectos.countDocuments()) + (await c.asientos.countDocuments());
   if (hay && !process.argv.includes("--reset")) throw new Error("La base ya tiene proyectos o asientos. Usa --reset para reemplazarlos por la demo.");
   await Promise.all([c.proyectos, c.asientos, c.dias, c.mentores, c.changeLog, c.rateLimits, c.planSalas, c.salasConfig, c.evalResultados, c.evalBorradores, c.evalConfig, c.evalMonitor, c.cambiosSugeridos, c.evalAnuladas, c.inscripciones]
     .map((col) => (col as { deleteMany: (f: object) => Promise<unknown> }).deleteMany({})));
 
   // ---- usuarios (uno por rol + monitores para la asignación automática) ----
-  const hash = await hashClave(CLAVE), ahora = new Date();
+  const hash = await hashClave(clave), ahora = new Date();
   await c.users.deleteMany({ usuario: { $in: USUARIOS.map((u) => u.usuario) } });
   await c.users.deleteMany({ mentorId: mentorIdDe("mentor", MENTORES[0]!) }); // otro usuario con el mismo mentor
   await c.users.insertMany(USUARIOS.map((u) => ({
@@ -249,7 +257,7 @@ async function main() {
   console.log(`\nListo: ${MENTORES.length} mentores, ${await c.asientos.countDocuments()} asientos en ${DIAS_REALES.length} días, ${total} proyectos (${reservadosN} con hora), 7 salas.`);
   console.log(`Día en vivo ${vivo}: ${deMentorDemo.length} proyectos de mentor.demo (${[...new Set(deMentorDemo.map((p) => p.ciudad))].join(", ")}); monitor.demo en sus salas a las ${horasDemo.sort((a, b) => a - b).join(", ")} h.`);
   console.log(`Evaluaciones: ${hechas.join(" · ")}.`);
-  console.log(`\nUsuarios (clave para todos: ${CLAVE}, SOLO base local):`);
+  console.log(atlas ? `\nUsuarios (clave para todos: ${clave} · guárdala ahora, no se vuelve a mostrar):` : `\nUsuarios (clave para todos: ${CLAVE}, SOLO base local):`);
   console.table(USUARIOS.map((u) => ({ usuario: u.usuario, rol: u.rol, nombre: u.nombre, ciudades: u.rol === "mentor" ? "sus proyectos" : u.ciudades.join(", ") || "todas" })));
   const docs = (p: (typeof proyectos)[number]) => p.integrantes.map((x) => x.documento).join(" / ");
   console.log("Portal del estudiante (documentos):");

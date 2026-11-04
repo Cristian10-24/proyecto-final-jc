@@ -19,7 +19,7 @@
   --ink: #1c1a24;             /* texto principal, botón oscuro, toast */
   --ink-2: #3f3a4a;
   --muted: #615c6e;           /* texto secundario */
-  --muted-2: #8a8496;         /* etiquetas mono, texto terciario */
+  --muted-2: #6f6a7c;         /* etiquetas mono, texto terciario */
   --line: #e7e2dd;            /* bordes de campos */
   --line-2: #f0ebe6;          /* bordes de tarjetas, separadores */
   --surface: #fbf9f7;
@@ -105,7 +105,7 @@
   --ink: #f3f0f6;
   --ink-2: #d8d2e0;
   --muted: #aca5b8;
-  --muted-2: #918a9e;
+  --muted-2: #9b94a8;
   --line: #3d3947;
   --line-2: #2e2b36;
   --surface: #1c1a22;

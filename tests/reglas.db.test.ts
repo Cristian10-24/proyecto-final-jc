@@ -148,3 +148,31 @@ describe("más casos", () => {
     expect(p.avisos.map((a) => a.mensaje).join(" ")).toMatch(new RegExp(`editadas en pantalla para ${D}`));
   });
 });
+
+describe("«Todas» en los otros días (cierre técnico)", () => {
+  it("dar o quitar días propios a una ciudad cambiaría «Todas» en otro día: se pide hacerlo explícito", async () => {
+    const c = await db.collections();
+    await c.dias.insertOne({ _id: "2026-11-13", ciudades: [cupo("Todas", null, null, true)] });
+    const p = await rg.previaReglas(D, [cupo("Cali", 8, null, true), cupo("Cartagena", 4), cupo("Medellín", 0)]);
+    expect(p.errores.join(" ")).toMatch(/Agregar Medellín aquí la saca de «Todas» en 2026-11-13/);
+    // Sin cambiar qué ciudades tienen días propios, no hay error.
+    expect((await rg.previaReglas(D, [cupo("Cali", 8, null, true), cupo("Cartagena", 4)])).errores).toEqual([]);
+    await c.dias.deleteOne({ _id: "2026-11-13" });
+  });
+});
+
+describe("«Todas»: quitar y clausura (cierre técnico)", () => {
+  it("quitarle a una ciudad su único día propio la vuelve a meter en «Todas» de otro día: error", async () => {
+    const c = await db.collections();
+    await c.dias.insertOne({ _id: "2026-11-13", ciudades: [cupo("Todas", null, null, true)] });
+    const p = await rg.previaReglas(D, [cupo("Cartagena", 4, null, true)]);
+    expect(p.errores.join(" ")).toMatch(/Quitar a Cali de aquí la vuelve a meter de «Todas» en 2026-11-13/);
+    await c.dias.deleteOne({ _id: "2026-11-13" });
+  });
+  it("si en ese otro día la ciudad ya pasó su clausura, no hay error", async () => {
+    const c = await db.collections();
+    await c.dias.insertOne({ _id: "2026-11-14", ciudades: [cupo("Todas", null, null, true)] }); // Cali clausura el 14
+    expect((await rg.previaReglas(D, [cupo("Cartagena", 4, null, true)])).errores.join(" ")).not.toMatch(/Cali/);
+    await c.dias.deleteOne({ _id: "2026-11-14" });
+  });
+});

@@ -30,6 +30,8 @@ export type EvalResultado = {
   percepcion: string;
   noPresento: boolean;
   noPresentoEn?: Date;
+  /** Último "Guardar evaluación" (la asistencia no lo toca): contra esto se compara el borrador. */
+  evaluadoEn?: Date;
   actualizadoEn: Date;
   actualizadoPor: string;
 };
@@ -42,13 +44,15 @@ export const idEval = (proyectoId: ObjectId, documento: string) => `${proyectoId
 const actorDe = (u: SessionUser): Actor => ({ rol: u.rol, usuario: u.usuario });
 
 /**
- * Si el proyecto cambió de mentor mientras se guardaba, se aborta la transacción. Escribe en el asiento (no solo lo
- * lee) para chocar con una reprogramación simultánea del monitor, que libera ese mismo asiento.
+ * Si el proyecto ya no está en el asiento que se leyó (cambió de mentor o de hora, aunque sea con el mismo mentor),
+ * se aborta la transacción. Escribe en el asiento (no solo lo lee) para chocar con una reprogramación simultánea del
+ * monitor, que libera ese mismo asiento.
  */
 class CambioMentor extends Error {}
-async function sigueSiendoSuyo(proyectoId: ObjectId, mentorId: string, session: ClientSession) {
+async function sigueSiendoSuyo(asiento: { _id: ObjectId; proyectoId: ObjectId | null; mentorId: string }, session: ClientSession) {
   const { asientos } = await collections();
-  if (!(await asientos.findOneAndUpdate({ proyectoId, mentorId }, { $inc: { rev: 1 } }, { session, projection: { _id: 1 } }))) throw new CambioMentor();
+  const f = { _id: asiento._id, proyectoId: asiento.proyectoId, mentorId: asiento.mentorId };
+  if (!(await asientos.findOneAndUpdate(f, { $inc: { rev: 1 } }, { session, projection: { _id: 1 } }))) throw new CambioMentor();
 }
 async function enTransaccion(fn: (s: ClientSession) => Promise<void>): Promise<boolean> {
   try { await transaccion(fn); return true; } catch (e) { if (e instanceof CambioMentor) return false; throw e; }
@@ -115,7 +119,8 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
     proyectos.find({ _id: { $in: ids } }).toArray(),
     evalResultados.find({ proyectoId: { $in: ids } }).toArray(),
     evalMonitor.find({ proyectoId: { $in: ids } }).toArray(),
-    evalBorradores.find({ _id: { $in: ids.map((x) => x.toHexString()) } }, { projection: { _id: 1 } }).toArray(),
+    // El mentor solo ve la marca de SUS borradores (no la de un mentor anterior del proyecto).
+    evalBorradores.find({ _id: { $in: ids.map((x) => x.toHexString()) }, ...(user.rol === "mentor" ? { usuario: user.usuario } : {}) }, { projection: { _id: 1 } }).toArray(),
     criterios(), salasDe(asis),
   ]);
   const porId = new Map(lista.map((p) => [String(p._id), p]));
@@ -145,6 +150,7 @@ export type DetalleEvaluacion = {
   /** Lo guardado, armado como formulario (A y cierre de quien ya los tenga, como el prototipo). */
   guardado: Formulario;
   borrador: Borrador | null;
+  borradorEn: string | null;
   /** Última vez que se guardó (para descartar copias locales más viejas). */
   guardadoEn: string | null;
   criterios: Criterios;
@@ -182,8 +188,11 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
   const propios = p.integrantes.map((x) => ev.get(idEval(p._id, x.documento)));
   const conA = propios.find((e) => e && Object.keys(e.a).length);
   const conCierre = propios.find((e) => e && (e.fortaleza || e.mejora || e.percepcion));
-  // El borrador solo se ofrece si es más nuevo que lo guardado.
-  const ultimo = Math.max(0, ...propios.map((e) => e?.actualizadoEn.getTime() ?? 0));
+  // El borrador solo se ofrece si es más nuevo que el último "Guardar evaluación". Marcar o deshacer "No se presentó"
+  // no cuenta: si no, el borrador con la Parte A y el cierre se perdería.
+  const evaluadoEn = (e: EvalResultado | undefined) => e?.evaluadoEn?.getTime() ?? (e && Object.keys(e.a).length ? e.actualizadoEn.getTime() : 0);
+  const ultimo = Math.max(0, ...propios.map(evaluadoEn));
+  const borradorVale = borrador && borrador.usuario === user.usuario && borrador.actualizadoEn.getTime() > ultimo ? borrador : null;
   return {
     id: String(p._id), codigo: p.codigo, proyecto: p.nombre, ...(p.descripcion ? { descripcion: p.descripcion } : {}),
     ciudad: p.ciudad, ...(p.ruta ? { ruta: p.ruta } : {}),
@@ -198,7 +207,8 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
       destacado: propios.some((e) => e?.destacado),
       fortaleza: conCierre?.fortaleza ?? "", mejora: conCierre?.mejora ?? "", percepcion: conCierre?.percepcion ?? "",
     },
-    borrador: borrador && borrador.actualizadoEn.getTime() > ultimo ? borrador.datos : null,
+    // Solo el borrador de quien califica (no el de un mentor anterior del proyecto).
+    borrador: borradorVale?.datos ?? null, borradorEn: borradorVale?.actualizadoEn.toISOString() ?? null,
     guardadoEn: ultimo ? new Date(ultimo).toISOString() : null,
     criterios: crit,
   };
@@ -230,10 +240,10 @@ export async function guardarEvaluacion(user: SessionUser, proyectoId: string, f
   const nuevos: EvalResultado[] = p.integrantes.flatMap((x, i) => omitir[i] ? [] : [{
     _id: idEval(p._id, x.documento), proyectoId: p._id, documento: x.documento, mentorId: asiento.mentorId,
     a: f.a, b: f.b[i]!, destacado: f.destacado, fortaleza: f.fortaleza, mejora: f.mejora, percepcion: f.percepcion,
-    noPresento: false, actualizadoEn: ahora, actualizadoPor: user.usuario,
+    noPresento: false, evaluadoEn: ahora, actualizadoEn: ahora, actualizadoPor: user.usuario,
   }]);
   const ok = await enTransaccion(async (s) => {
-    await sigueSiendoSuyo(p._id, asiento.mentorId, s);
+    await sigueSiendoSuyo(asiento, s);
     for (const e of nuevos) await c.evalResultados.replaceOne({ _id: e._id }, e, { upsert: true, session: s });
     await c.evalBorradores.deleteOne({ _id: String(p._id) }, { session: s });
     await c.changeLog.insertOne({
@@ -251,9 +261,16 @@ export async function guardarBorrador(user: SessionUser, proyectoId: string, dat
   const r = await cargarEditable(user, proyectoId);
   if ("error" in r) return r;
   if (datos.b && datos.b.length !== r.p.integrantes.length) return { error: "integrantes" };
-  const { evalBorradores } = await collections();
-  await evalBorradores.replaceOne({ _id: String(r.p._id) }, { usuario: user.usuario, datos, actualizadoEn: new Date() }, { upsert: true });
-  return { ok: true };
+  const { evalBorradores, evalResultados } = await collections();
+  const desde = new Date();
+  // En la misma transacción que el asiento: si el proyecto cambió de asiento, o se guardó la evaluación mientras este
+  // borrador iba en camino, no se escribe (un borrador tardío no reaparece como "más nuevo" que lo guardado).
+  const ok = await enTransaccion(async (s) => {
+    await sigueSiendoSuyo(r.asiento, s);
+    if (await evalResultados.findOne({ proyectoId: r.p._id, evaluadoEn: { $gte: desde } }, { session: s, projection: { _id: 1 } })) return;
+    await evalBorradores.replaceOne({ _id: String(r.p._id) }, { usuario: user.usuario, datos, actualizadoEn: desde }, { upsert: true, session: s });
+  });
+  return ok ? { ok: true } : { error: "otro_mentor" };
 }
 
 /**
@@ -269,14 +286,21 @@ export async function marcarAsistencia(user: SessionUser, proyectoId: string, i:
   const c = await collections();
   const _id = idEval(p._id, x.documento), ahora = new Date();
   const ok = await enTransaccion(async (s) => {
-    await sigueSiendoSuyo(p._id, asiento.mentorId, s);
+    await sigueSiendoSuyo(asiento, s);
     if (noPresento)
       await c.evalResultados.updateOne({ _id }, {
         $set: { b: {}, noPresento: true, noPresentoEn: ahora, mentorId: asiento.mentorId, actualizadoEn: ahora, actualizadoPor: user.usuario },
         $setOnInsert: { proyectoId: p._id, documento: x.documento, a: {}, destacado: false, fortaleza: "", mejora: "", percepcion: "" },
       }, { upsert: true, session: s });
-    else
-      await c.evalResultados.updateOne({ _id }, { $set: { noPresento: false, actualizadoEn: ahora, actualizadoPor: user.usuario }, $unset: { noPresentoEn: "" } }, { session: s });
+    else {
+      const previo = await c.evalResultados.findOne({ _id }, { session: s });
+      if (!previo?.noPresento) return; // nada que deshacer (ni changeLog)
+      // Si solo existía por el "No se presentó" (sin Parte A, B ni cierre), se borra: si no, el proyecto contaría como
+      // evaluado (no se podría mover) sin tener evaluación.
+      const vacio = !Object.keys(previo.a).length && !Object.keys(previo.b).length && !previo.destacado && !previo.fortaleza && !previo.mejora && !previo.percepcion;
+      if (vacio) await c.evalResultados.deleteOne({ _id }, { session: s });
+      else await c.evalResultados.updateOne({ _id }, { $set: { noPresento: false, actualizadoEn: ahora, actualizadoPor: user.usuario }, $unset: { noPresentoEn: "" } }, { session: s });
+    }
     await c.changeLog.insertOne({ proyectoId: p._id, accion: noPresento ? "no_presento" : "presente", nuevo: x.nombre, actor: actorDe(user), fecha: ahora }, { session: s });
   });
   if (!ok) return { error: "otro_mentor" };

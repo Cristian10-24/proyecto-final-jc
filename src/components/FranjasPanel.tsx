@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import type { DatosFranjas, HoraFranja } from "@/lib/franjas";
 import AppShell from "./AppShell";
@@ -29,8 +29,12 @@ export default function FranjasPanel({ user, puedeEditar }: { user: SessionUser;
   const [ocupado, setOcupado] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "error"; texto: string; proyectos?: Resultado["proyectos"] } | null>(null);
 
+  // Respuestas desordenadas: solo vale la del último día pedido.
+  const pedido = useRef("");
   const cargar = useCallback(async (dd: string) => {
+    pedido.current = dd;
     const r = await api<DatosFranjas>(`/api/admin/franjas${dd ? `?dia=${encodeURIComponent(dd)}` : ""}`).catch(() => null);
+    if (pedido.current !== dd) return;
     if (!r?.ok || !r.data) return setError(true);
     setD(r.data);
     setError(false);

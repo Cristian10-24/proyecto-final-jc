@@ -42,4 +42,4 @@
 }
 
 /* Contador de cambios sugeridos pendientes (Paso 14) */
-.badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--orange); color: #fff; font: 700 12px/1 var(--font); vertical-align: 1px; }
+.badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--orange); color: #1c1a24; font: 700 12px/1 var(--font); vertical-align: 1px; }

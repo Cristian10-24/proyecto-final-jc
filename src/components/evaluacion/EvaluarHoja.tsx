@@ -27,10 +27,10 @@ async function post(id: string, body: unknown): Promise<{ status: number; data: 
 
 type Local = { usuario: string; en: number; datos: Borrador };
 /** Copia local, solo si es de este usuario y más nueva que lo guardado en el servidor. */
-function leerLocal(id: string, usuario: string, guardadoEn: string | null): Borrador | null {
+function leerLocal(id: string, usuario: string, guardadoEn: string | null): Local | null {
   try {
     const v = JSON.parse(localStorage.getItem(claveLocal(id)) ?? "null") as Local | null;
-    return v && v.usuario === usuario && v.en > (guardadoEn ? Date.parse(guardadoEn) : 0) ? v.datos : null;
+    return v && v.usuario === usuario && v.en > (guardadoEn ? Date.parse(guardadoEn) : 0) ? v : null;
   } catch { return null; }
 }
 function escribirLocal(id: string, usuario: string, f: Formulario | null) {
@@ -92,7 +92,8 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
       const n = data.integrantes.length;
       const base = { ...data.guardado, b: Array.from({ length: n }, (_, i) => data.guardado.b[i] ?? {}) };
       const local = data.editable ? leerLocal(id, usuario, data.guardadoEn) : null;
-      const borr = data.borrador ?? local;
+      // La copia local (lo escrito sin conexión) gana si es más nueva que el borrador del servidor.
+      const borr = local && (!data.borradorEn || local.en > Date.parse(data.borradorEn)) ? local.datos : data.borrador;
       setD(data);
       setNs(data.integrantes.map((x) => x.noPresento));
       setF(borr ? { ...base, ...borr, b: borr.b?.length === n ? borr.b : base.b } : base);

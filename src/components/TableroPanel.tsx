@@ -61,12 +61,16 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
   const [abierta, setAbierta] = useState<Tarjeta | null>(null);
   const toastT = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Respuestas desordenadas: solo vale la del último día pedido.
+  const pedido = useRef("");
   const cargar = useCallback(async () => {
+    pedido.current = dia;
     try {
       const res = await fetch(`/api/admin/tablero${dia ? `?dia=${dia}` : ""}`, { cache: "no-store" });
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
       const data = (await res.json()) as DatosTablero;
+      if (pedido.current !== dia) return;
       setD(data);
       setError(false);
       if (!dia && data.dia) setDia(data.dia);

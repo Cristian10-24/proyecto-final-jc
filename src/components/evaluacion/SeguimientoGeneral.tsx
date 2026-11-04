@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { diaCOL } from "@/lib/edicion";
 import type { Resultado } from "@/lib/evaluacion/criterios";
@@ -28,12 +28,17 @@ export default function SeguimientoGeneral({ user }: { user: SessionUser }) {
   const [ciudad, setCiudad] = useState("");
   const filtro = new URLSearchParams({ ...(dia ? { dia } : {}), ...(ciudad ? { ciudad } : {}) }).toString();
 
+  // Respuestas desordenadas: solo vale la del último filtro pedido.
+  const pedido = useRef("");
   const cargar = useCallback(async () => {
+    pedido.current = filtro;
     try {
       const res = await fetch(`/api/evaluacion/seguimiento${filtro ? `?${filtro}` : ""}`, { cache: "no-store" });
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
-      setD(await res.json());
+      const data = await res.json();
+      if (pedido.current !== filtro) return;
+      setD(data);
       setCarga("listo");
     } catch {
       setCarga((c) => (c === "listo" ? c : "error"));

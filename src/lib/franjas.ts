@@ -98,7 +98,7 @@ export async function agregarMentor(dia: string, hora: number, mentorId: string,
     c.asientos.distinct("mentorId", { dia, inicio: { $gte: inicioUTC(dia, hora), $lt: inicioUTC(dia, hora + 1) } }),
     c.asientos.findOne({ dia }, { projection: { _id: 1 } }),
   ]);
-  if (!mentor || !existeDia) return { ok: false, error: "no_existe", mensaje: "Ese mentor o ese día no existen." };
+  if (!mentor || !existeDia || !(await c.dias.findOne({ _id: dia }, { projection: { _id: 1 } }))) return { ok: false, error: "no_existe", mensaje: "Ese mentor o ese día no existen." };
   if (enHora.includes(mentorId)) return { ok: false, error: "duplicado", mensaje: `${mentor.nombre} ya está a esa hora.` };
   if (cfgSalas && enHora.length + 1 > cfgSalas.salas.length)
     return { ok: false, error: "sin_salas", mensaje: `A esa hora ya hay ${enHora.length} mentores y solo ${cfgSalas.salas.length} salas.` };

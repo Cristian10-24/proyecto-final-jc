@@ -25,7 +25,9 @@ input:focus { outline: none; }
   font: 700 18px var(--font);
   display: flex; align-items: center; justify-content: center; gap: 10px;
 }
-.btn-primary { background: var(--orange); color: #fff; }
+/* Blanco sobre el naranja de marca da 3,3:1: solo vale como texto grande en negrita (≥ 18,66 px). Por eso el tamaño
+   y el peso mandan sobre los ajustes de cada pantalla. */
+.btn-primary { background: var(--orange); color: #fff; font-size: 19px !important; font-weight: 700 !important; }
 .btn-primary:disabled { background: var(--orange-busy); }
 .btn-green { background: var(--green); color: #fff; }
 .btn-green:disabled { background: var(--green-busy); }
