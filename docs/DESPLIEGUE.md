@@ -83,13 +83,15 @@ Mientras se prueba, **Production apunta temporalmente a `proyecto_final_jc_prueb
   - `SESSION_SECRET` → uno **nuevo** (así todas las sesiones de la etapa de pruebas quedan cerradas).
 - [ ] **Redeploy** de Production (las variables se leen al arrancar).
 - [ ] Verifica que la base es la real y está vacía: en Atlas → Browse Collections, `proyecto_final_jc` sin documentos en `proyectos`, `asientos` ni `users`; y en la app, `/login` no deja entrar con las cuentas `*.demo`.
-- [ ] Crea el primer admin desde tu computador, en una terminal nueva y solo por esa vez:
-  `NODE_ENV=production MONGODB_URI="<cadena pfjc_produccion>" MONGODB_DB=proyecto_final_jc npm run usuario:add -- <usuario> "Nombre" --rol=admin --atlas`
-  (`NODE_ENV=production` hace falta porque fuera de producción `src/lib/db.ts` solo deja usar la base de pruebas con Atlas). Cierra la terminal al terminar.
+- [ ] Crea el primer admin desde tu computador:
+  1. En la carpeta del proyecto, crea `.env.produccion.local` (ya está en `.gitignore` por la regla `.env*`; nunca lo subas ni lo compartas) con solo dos variables: `MONGODB_URI` (la cadena `mongodb+srv://…` del usuario **`pfjc_produccion`**) y `MONGODB_DB` (exactamente `proyecto_final_jc`).
+  2. `npm run admin:produccion -- --usuario=<usuario> "--nombre=Nombre Apellido"`. Las variables y `NODE_ENV=production` van solo a ese proceso: la terminal queda igual. Se niega si `MONGODB_DB` no es `proyecto_final_jc` o si la base ya tiene usuarios. La clave sale **una sola vez**: guárdala.
+  3. Comprueba: `npm run admin:produccion -- --verificar` (solo lee: base, usuarios sin claves y cuántos datos hay; debe salir 1 usuario y 0 proyectos) y entra a la app de Production con ese usuario.
+  4. La base de pruebas no se toca: el usuario `pfjc_produccion` solo tiene permiso sobre `proyecto_final_jc` y la app abre una sola base por conexión. Si quieres verlo, en Atlas → Browse Collections, `proyecto_final_jc_pruebas` → `users` sigue igual.
 - [ ] Carga los datos reales **en el orden de la sección 4**.
 
 ## 4. Datos y usuarios (en producción), en este orden
-- [ ] Primer admin: ver §3c (sin `--atlas` el script se niega a escribir fuera de la base local).
+- [ ] Primer admin: `npm run admin:produccion` (ver §3c).
 - [ ] Importar → Mentores y disponibilidad (Excel corregido: Horarios, Cupos y Mentores) → revisa la vista previa (horas por mentor, cupos por día) → confirma.
 - [ ] Usuarios → «Cargar varias personas desde Excel» (Nombre · Correo · Rol): mentores con el nombre igual que en Horarios, monitores (Ciudades opcional) y coordinación. Entrega las claves temporales que se muestran una sola vez. Revisa la «Revisión de nombres».
 - [ ] Importar → Salas y monitores (Salas con sus 7 enlaces, Monitores o Disponibilidad monitores) → confirma → Salas: revisa salas sin monitor.

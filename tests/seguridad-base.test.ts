@@ -48,6 +48,10 @@ describe("operaciones prohibidas en el código (src y scripts)", () => {
     expect(codigo.filter((p) => leer(p).includes(".env.atlas.local") && p !== "scripts/atlas.mjs")).toEqual([]);
   });
 
+  it(".env.produccion.local solo lo lee scripts/con-produccion.mjs", () => {
+    expect(codigo.filter((p) => leer(p).includes(".env.produccion.local") && p !== "scripts/con-produccion.mjs")).toEqual([]);
+  });
+
   it("las pruebas que borran la base usan antes la barrera de base local", () => {
     const pruebas = archivos("tests").filter((p) => /dropDatabase/.test(leer(p)) && p !== "tests/seguridad-base.test.ts");
     for (const p of pruebas) expect(leer(p), p).toMatch(/usarBaseLocal\(/);

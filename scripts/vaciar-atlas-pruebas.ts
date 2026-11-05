@@ -1,7 +1,7 @@
 // Vacía la base de PRUEBAS en Atlas (proyecto_final_jc_pruebas) para cargar datos reales desde cero, y deja un único
 // admin con clave al azar (se muestra una sola vez).
 //   npm run vaciar:atlas-pruebas -- --usuario=<usuario> --si-atlas-pruebas ["--nombre=Nombre del admin"]
-// - Solo corre por scripts/con-atlas.mjs (modo Atlas, que carga .env.atlas.local sin mostrarlo y exige
+// - Solo corre por scripts/con-atlas.mjs (modo Atlas: carga las variables de pruebas sin mostrarlas y exige
 //   MONGODB_DB=proyecto_final_jc_pruebas); src/lib/db.ts además bloquea cualquier otra base y dropDatabase.
 // - Se niega sin --si-atlas-pruebas. Borra los documentos de TODAS las colecciones de la app (no borra la base ni
 //   los índices). Nunca toca proyecto_final_jc.

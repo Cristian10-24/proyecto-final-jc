@@ -21,6 +21,7 @@
     "semilla:demo": "tsx --env-file-if-exists=.env.local scripts/semilla-demo.ts",
     "semilla:demo:atlas": "node scripts/con-atlas.mjs scripts/semilla-demo.ts",
     "vaciar:atlas-pruebas": "node scripts/con-atlas.mjs scripts/vaciar-atlas-pruebas.ts",
+    "admin:produccion": "node scripts/con-produccion.mjs",
     "dev:red": "node scripts/dev-red.mjs",
     "demo": "node scripts/demo.mjs",
     "dev:atlas": "node scripts/dev-atlas.mjs",
