@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import h from "./HorariosPanel.module.css";
+import { useVentana } from "./useVentana";
 import s from "./GestionProyecto.module.css";
 
 // Gestión manual de proyectos (solo admin): crear, editar, separar pareja y agregar integrante. Lo abren Horarios
@@ -42,38 +43,34 @@ export default function GestionProyecto({ abierto, ciudades: ciudadesDadas, moni
     void api<Datos>(`/api/admin/proyectos/${id}/gestion`).then((r) => (r.ok && r.data ? setD(r.data) : setCargaError("No se pudo abrir el proyecto. Cierra y recarga la lista.")))
       .catch(() => setCargaError("Sin conexión. Revisa tu internet e inténtalo otra vez."));
   }, [id]);
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onCerrar]);
+  const v = useVentana(onCerrar);
 
   const titulo = { crear: "Nuevo proyecto", editar: "Editar proyecto", separar: "Separar pareja", agregar: "Agregar integrante" }[abierto.modo];
   return (
-    <div className={h.overlay} onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
-      <div className={h.modal} role="dialog" aria-modal="true" aria-labelledby="gp-titulo">
+    <div className={h.overlay}>
+      <div className={h.modal} role="dialog" aria-modal="true" aria-labelledby="gp-titulo" {...v.dialogo}>
         <div className={h.asa} aria-hidden />
         <div className={h.modalHead}>
           <div>
             {d && <div className={h.kicker}>{d.ciudad} · {d.codigo}</div>}
             <h2 id="gp-titulo" className={h.modalTitle}>{titulo}{d ? `: ${d.nombre}` : ""}</h2>
           </div>
-          <button type="button" className={h.cerrar} onClick={onCerrar} aria-label="Cerrar">
+          <button type="button" className={h.cerrar} onClick={v.cerrar} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
         {cargaError && <div className="note note-error">{cargaError}</div>}
-        {abierto.modo === "crear" && <Formulario ciudades={ciudades} monitores={monitores} onCerrar={onCerrar} onHecho={onHecho} />}
-        {abierto.modo === "editar" && d && <Formulario datos={d} ciudades={ciudades} monitores={monitores} onCerrar={onCerrar} onHecho={onHecho} />}
-        {abierto.modo === "separar" && d && <Separar d={d} onCerrar={onCerrar} onHecho={onHecho} />}
-        {abierto.modo === "agregar" && d && <Agregar d={d} onCerrar={onCerrar} onHecho={onHecho} />}
+        {abierto.modo === "crear" && <Formulario ciudades={ciudades} monitores={monitores} onCerrar={v.cerrar} onHecho={onHecho} />}
+        {abierto.modo === "editar" && d && <Formulario datos={d} ciudades={ciudades} monitores={monitores} onCerrar={v.cerrar} onHecho={onHecho} />}
+        {abierto.modo === "separar" && d && <Separar d={d} onCerrar={v.cerrar} onHecho={onHecho} />}
+        {abierto.modo === "agregar" && d && <Agregar d={d} onCerrar={v.cerrar} onHecho={onHecho} />}
         {id && !d && !cargaError && <div className={s.cargando}>Cargando…</div>}
       </div>
     </div>
   );
 }
 
-function CamposIntegrante({ n, v, onCambio }: { n: number; v: Integrante; onCambio: (x: Integrante) => void }) {
+function CamposIntegrante({ n, v, onCambio, soloLecturaDocumento }: { n: number; v: Integrante; onCambio: (x: Integrante) => void; soloLecturaDocumento?: boolean }) {
   const campo = (k: keyof Integrante, etq: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <label className={h.campo}><span className="label">{etq}</span>
       <input className="input" value={v[k]} onChange={(e) => onCambio({ ...v, [k]: e.target.value })} {...extra} /></label>
@@ -83,7 +80,7 @@ function CamposIntegrante({ n, v, onCambio }: { n: number; v: Integrante; onCamb
       <legend className={h.seccionK}>Integrante {n}</legend>
       <div className={s.rejilla}>
         {campo("nombre", "Nombre completo", { autoComplete: "off", maxLength: 120 })}
-        {campo("documento", "Documento (sin puntos)", { inputMode: "text", autoComplete: "off", maxLength: 30 })}
+        {campo("documento", "Documento (sin puntos)", { inputMode: "text", autoComplete: "off", maxLength: 30, readOnly: soloLecturaDocumento })}
         {campo("celular", "Celular (opcional)", { inputMode: "tel", autoComplete: "off", maxLength: 30 })}
         {campo("correo", "Correo (opcional)", { type: "email", autoComplete: "off", maxLength: 120 })}
       </div>
@@ -211,45 +208,100 @@ function Separar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onH
   );
 }
 
+type Busqueda =
+  | { estado: "nuevo"; documento: string }
+  | { estado: "mismo" }
+  | { estado: "existe"; documento: string; otraCiudad: boolean; horaEste: string | null; accion: "unir" | "separar_primero" | "anular_primero";
+    otro: { id: string; codigo: string; nombre: string; ciudad: string; integrante: string; pareja: boolean; hora: string | null; evaluado: boolean } };
+
+// Primero el documento: si ya está en otro proyecto, se muestra ese registro (sin volver a escribir sus datos) y se
+// une con la misma transacción de siempre; si no existe, se piden los datos del integrante nuevo.
 function Agregar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onHecho: (msg: string) => void | Promise<void> }) {
+  const [documento, setDocumento] = useState("");
+  const [b, setB] = useState<Busqueda | null>(null);
   const [v, setV] = useState<Integrante>(vacio());
-  const [union, setUnion] = useState<Respuesta | null>(null);
   const [conservar, setConservar] = useState<"este" | "otro">("este");
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   if (d.integrantes.length !== 1) return <div className="note note-info">Este proyecto ya es en pareja.</div>;
-  const listo = v.nombre.trim() && v.documento.trim();
-  async function agregar(unir = false) {
-    setOcupado(true); setError("");
-    const integrante = { nombre: v.nombre, documento: v.documento, ...(v.celular.trim() ? { celular: v.celular } : {}), ...(v.correo.trim() ? { correo: v.correo } : {}) };
-    const r = await api<Respuesta>(`/api/admin/proyectos/${d.id}/gestion`, { accion: "agregar", integrante, version: d.version, ...(unir ? { unir: true, ...(union?.otro?.hora ? { conservar } : {}) } : {}) }).catch(() => null);
+
+  async function buscar() {
+    if (!documento.trim() || ocupado) return;
+    setOcupado(true); setError(""); setB(null);
+    const r = await api<Busqueda & { mensaje?: string }>(`/api/admin/proyectos/${d.id}/gestion?${new URLSearchParams({ documento: documento.trim() })}`).catch(() => null);
     setOcupado(false);
     if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
-    if (r.data.ok) return void onHecho(unir ? "Proyectos unidos" : "Integrante agregado: ahora es en pareja");
-    if (r.data.error === "confirmar_union") { setUnion(r.data); setConservar(r.data.otro?.hora && !r.data.hora ? "otro" : "este"); return; }
-    setError(r.data.mensaje ?? "No se pudo agregar.");
+    if (!r.ok) return setError(r.data.mensaje ?? "Revisa el documento.");
+    setB(r.data);
+    if (r.data.estado === "nuevo") setV({ ...vacio(), documento: r.data.documento });
+    if (r.data.estado === "existe") setConservar(r.data.otro.hora && !r.data.horaEste ? "otro" : "este");
   }
+
+  async function guardar() {
+    if (!b || b.estado === "mismo") return;
+    setOcupado(true); setError("");
+    const unir = b.estado === "existe";
+    const integrante = unir ? { documento: b.documento }
+      : { nombre: v.nombre, documento: b.documento, ...(v.celular.trim() ? { celular: v.celular } : {}), ...(v.correo.trim() ? { correo: v.correo } : {}) };
+    const r = await api<Respuesta>(`/api/admin/proyectos/${d.id}/gestion`, { accion: "agregar", integrante, version: d.version, ...(unir ? { unir: true, ...(b.otro.hora ? { conservar } : {}) } : {}) }).catch(() => null);
+    setOcupado(false);
+    if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
+    if (r.data.ok) return void onHecho(unir ? `Proyectos unidos: ${b.otro.codigo} se eliminó` : "Integrante agregado: ahora es en pareja");
+    setError(r.data.mensaje ?? "No se pudo guardar.");
+  }
+
+  const fichaDe = (o: { id: string; codigo: string }) => `/admin/horarios?${new URLSearchParams({ q: o.codigo, abrir: o.id })}`;
   return (
     <div className={s.form}>
-      {!union && <CamposIntegrante n={2} v={v} onCambio={setV} />}
-      {union?.otro && (
-        <div className="note note-warn">
-          <div>{union.mensaje}</div>
-          <div className={s.otro}><b>{union.otro.codigo}</b> · {union.otro.nombre} · {union.otro.ciudad} · {union.otro.integrante}</div>
-          {union.otro.hora && (
-            <div className={s.opciones}>
-              <label className={`${s.opcion} ${conservar === "este" ? s.opcionOn : ""}`}><input type="radio" name="conservar" checked={conservar === "este"} onChange={() => setConservar("este")} /> Conservar la de este proyecto: {union.hora ?? "sin hora"}</label>
-              <label className={`${s.opcion} ${conservar === "otro" ? s.opcionOn : ""}`}><input type="radio" name="conservar" checked={conservar === "otro"} onChange={() => setConservar("otro")} /> Conservar la de {union.otro.codigo}: {union.otro.hora}</label>
-            </div>
+      <form className={s.buscar} onSubmit={(e) => { e.preventDefault(); void buscar(); }}>
+        <label className={h.campo}><span className="label">Documento del integrante 2 (sin puntos)</span>
+          <input className="input" value={documento} onChange={(e) => { setDocumento(e.target.value); setB(null); }} autoComplete="off" maxLength={30} autoFocus /></label>
+        <button type="submit" className="btn btn-dark" disabled={!documento.trim() || ocupado}>{ocupado && !b ? "Buscando…" : "Buscar"}</button>
+      </form>
+
+      {b?.estado === "mismo" && <div className="note note-info">Ese documento ya es del integrante de este proyecto.</div>}
+
+      {b?.estado === "existe" && (
+        <div className={s.ficha}>
+          <div className={h.seccionK}>Ya está en otro proyecto</div>
+          <dl className={s.datos}>
+            <div><dt>Nombre</dt><dd>{b.otro.integrante}</dd></div>
+            <div><dt>Ciudad</dt><dd>{b.otro.ciudad}</dd></div>
+            <div><dt>Proyecto</dt><dd>{b.otro.codigo} · {b.otro.nombre}</dd></div>
+            <div><dt>Modalidad</dt><dd>{b.otro.pareja ? "En pareja" : "Individual"}</dd></div>
+            <div><dt>Hora</dt><dd>{b.otro.hora ?? "Sin hora"}</dd></div>
+            <div><dt>Evaluación</dt><dd>{b.otro.evaluado ? "Guardada" : "No"}</dd></div>
+          </dl>
+          {b.accion === "separar_primero" && <div className="note note-warn">Primero separa esa pareja. <a href={fichaDe(b.otro)}>Abrir la ficha de {b.otro.codigo}</a></div>}
+          {b.accion === "anular_primero" && <div className="note note-warn">Primero anula la evaluación{b.otro.evaluado ? <> de {b.otro.codigo}. <a href={fichaDe(b.otro)}>Abrir su ficha</a></> : " de este proyecto."}</div>}
+          {b.accion === "unir" && (
+            <>
+              {b.otraCiudad && <div className="note note-warn">Es de {b.otro.ciudad} y este proyecto es de {d.ciudad}: al unirlos, queda en {d.ciudad}.</div>}
+              {b.otro.hora ? (
+                <div className={h.campo}><span className="label">¿Qué hora se conserva? La otra se libera.</span>
+                  <div className={s.opciones}>
+                    <label className={`${s.opcion} ${conservar === "este" ? s.opcionOn : ""}`}><input type="radio" name="conservar" checked={conservar === "este"} onChange={() => setConservar("este")} /> La de este proyecto: {b.horaEste ?? "sin hora"}</label>
+                    <label className={`${s.opcion} ${conservar === "otro" ? s.opcionOn : ""}`}><input type="radio" name="conservar" checked={conservar === "otro"} onChange={() => setConservar("otro")} /> La de {b.otro.codigo}: {b.otro.hora}</label>
+                  </div></div>
+              ) : b.horaEste && <div className="note note-info">Se conserva la hora de este proyecto ({b.horaEste}).</div>}
+              <div className="note note-info">Al unir, {b.otro.integrante} pasa a este proyecto con sus datos y {b.otro.codigo} se elimina.</div>
+            </>
           )}
         </div>
       )}
+
+      {b?.estado === "nuevo" && (
+        <>
+          <div className="note note-info">Ese documento no está en ningún proyecto: completa los datos del integrante nuevo.</div>
+          <CamposIntegrante n={2} v={v} onCambio={(x) => setV({ ...x, documento: b.documento })} soloLecturaDocumento />
+        </>
+      )}
+
       {error && <div className="note note-error">{error}</div>}
       <div className={h.acts}>
-        <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={union ? () => setUnion(null) : onCerrar}>{union ? "Volver" : "Cancelar"}</button>
-        {union
-          ? <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => void agregar(true)}>{ocupado ? "Uniendo…" : `Unir y eliminar ${union.otro?.codigo ?? "el otro"}`}</button>
-          : <button type="button" className="btn btn-primary" disabled={!listo || ocupado} onClick={() => void agregar()}>{ocupado ? "Guardando…" : "Agregar integrante"}</button>}
+        <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={onCerrar}>Cancelar</button>
+        {b?.estado === "existe" && b.accion === "unir" && <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => void guardar()}>{ocupado ? "Uniendo…" : "Unir a este proyecto"}</button>}
+        {b?.estado === "nuevo" && <button type="button" className="btn btn-primary" disabled={!v.nombre.trim() || ocupado} onClick={() => void guardar()}>{ocupado ? "Guardando…" : "Agregar integrante"}</button>}
       </div>
     </div>
   );

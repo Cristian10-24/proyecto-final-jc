@@ -244,3 +244,58 @@ describe("6. como producción: sin acciones del admin, nada cambia", () => {
     expect(sinEse(despues)).toEqual(sinEse(antes));
   });
 });
+
+describe("7. agregar integrante: buscar el documento primero", () => {
+  const evaluar = async (pid: ObjectId, doc: string) => (await db.collections()).evalResultados.insertOne({ _id: `${pid.toHexString()}|${doc}`, proyectoId: pid, documento: doc, mentorId: "m1", a: {}, b: {}, destacado: false, fortaleza: "", mejora: "", percepcion: "", noPresento: false, actualizadoEn: new Date(), actualizadoPor: "m" });
+
+  it("no existe: pide los datos del integrante nuevo (sin nombre no se guarda)", async () => {
+    const pid = await proyecto("P-83000001", "Cali", ["83000001"]);
+    expect(await g.buscarDocumento(pid, "83000002")).toEqual({ estado: "nuevo", documento: "83000002" });
+    expect(await g.buscarDocumento(pid, "83000001")).toEqual({ estado: "mismo" });
+    expect(await g.buscarDocumento(pid, "8300.0002")).toMatchObject({ ok: false, error: "datos" });
+    expect(await g.agregarIntegrante(pid, { documento: "83000002" }, {}, actor)).toMatchObject({ ok: false, error: "datos" });
+    expect(await g.agregarIntegrante(pid, { documento: "83000002", nombre: "Persona Nueva" }, {}, actor)).toEqual({ ok: true });
+  });
+
+  it("existe individual sin hora: se une con los datos del registro existente, sin volver a escribirlos", async () => {
+    const pid = await proyecto("P-84000001", "Cali", ["84000001"]);
+    const otro = await proyecto("P-84000002", "Cali", ["84000002"]);
+    const b = await g.buscarDocumento(pid, "84000002");
+    expect(b).toMatchObject({ estado: "existe", accion: "unir", otraCiudad: false, horaEste: null, otro: { codigo: "P-84000002", integrante: "Persona P-84000002 1", pareja: false, hora: null, evaluado: false } });
+    expect(await g.agregarIntegrante(pid, { documento: "84000002" }, { unir: true }, actor)).toEqual({ ok: true });
+    const c = await db.collections();
+    expect((await c.proyectos.findOne({ _id: pid }))?.integrantes[1]).toEqual({ documento: "84000002", nombre: "Persona P-84000002 1", celular: "+573000000000" });
+    expect(await c.proyectos.findOne({ _id: otro })).toBeNull();
+  });
+
+  it("existe individual con hora: muestra día y hora, y se elige cuál conservar", async () => {
+    const pid = await proyecto("P-85000001", "Cali", ["85000001"]);
+    await proyecto("P-85000002", "Cali", ["85000002"]);
+    expect(await reservar("85000002", H(9, 45), AHORA)).toMatchObject({ ok: true });
+    const b = await g.buscarDocumento(pid, "85000002");
+    expect(b).toMatchObject({ estado: "existe", accion: "unir", otro: { hora: `${D} 9:45 a. m.` } });
+    expect(await g.agregarIntegrante(pid, { documento: "85000002" }, { unir: true, conservar: "otro" }, actor)).toEqual({ ok: true });
+    expect((await consultar("85000001"))?.hora?.inicio).toEqual(H(9, 45).toISOString());
+  });
+
+  it("existe en pareja: «Primero separa esa pareja»; con evaluación: «Primero anula la evaluación»", async () => {
+    const pid = await proyecto("P-86000001", "Cali", ["86000001"]);
+    await proyecto("P-86000002", "Cali", ["86000002", "86000003"]);
+    expect(await g.buscarDocumento(pid, "86000003")).toMatchObject({ estado: "existe", accion: "separar_primero", otro: { pareja: true } });
+    const ev = await proyecto("P-86000004", "Cali", ["86000004"]);
+    await evaluar(ev, "86000004");
+    expect(await g.buscarDocumento(pid, "86000004")).toMatchObject({ estado: "existe", accion: "anular_primero", otro: { evaluado: true } });
+    expect(await g.agregarIntegrante(pid, { documento: "86000004" }, { unir: true }, actor)).toMatchObject({ ok: false, error: "evaluado" });
+  });
+
+  it("otra ciudad: avisa; y no conserva una hora que no es para la ciudad de este proyecto", async () => {
+    const pid = await proyecto("P-87000001", "Cali", ["87000001"]);
+    await proyecto("P-87000002", "Cartagena", ["87000002"]);
+    expect(await reservar("87000002", H(9, 0), AHORA)).toMatchObject({ ok: true }); // asiento de Cartagena (m3)
+    expect(await g.buscarDocumento(pid, "87000002")).toMatchObject({ estado: "existe", accion: "unir", otraCiudad: true, otro: { ciudad: "Cartagena" } });
+    expect(await g.agregarIntegrante(pid, { documento: "87000002" }, { unir: true, conservar: "otro" }, actor)).toMatchObject({ ok: false, error: "datos" });
+    expect(await g.agregarIntegrante(pid, { documento: "87000002" }, { unir: true, conservar: "este" }, actor)).toEqual({ ok: true });
+    expect((await (await db.collections()).proyectos.findOne({ _id: pid }))?.ciudad).toBe("Cali");
+  });
+});
+

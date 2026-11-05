@@ -29,15 +29,21 @@ const falla = (error: string, mensaje: string): Falla => ({ ok: false, error, me
 const mask = (doc: string) => enmascararNumero(doc);
 const quien = (i: Pick<Integrante, "nombre" | "documento">) => `${i.nombre} (${mask(i.documento)})`;
 
+/** Documento como en el importador; en el formulario, sin puntos ni comas (aquí se escribe a mano). */
+function documentoValido(documento: string | undefined, n: number): { doc: string } | Falla {
+  if (/[.,]/.test(documento ?? "")) return falla("datos", `Integrante ${n}: escribe el documento sin puntos ni comas.`);
+  const d = leerDocumento(documento ?? "");
+  if (!d) return falla("datos", `Integrante ${n}: falta el documento.`);
+  if ("error" in d) return falla("datos", `Integrante ${n}: el documento ${d.error}.`);
+  return d;
+}
+
 /** Integrante validado como en el importador; error con el número de integrante. */
 function integranteValido(x: IntegranteEntrada, n: number): Integrante | Falla {
   const nombre = toProperName(cleanSpaces(x.nombre ?? ""));
   if (nombre.length < 3) return falla("datos", `Integrante ${n}: escribe el nombre.`);
-  // En el formulario, sin puntos ni comas (el importador los quita de los números de Excel; aquí se escriben a mano).
-  if (/[.,]/.test(x.documento ?? "")) return falla("datos", `Integrante ${n}: escribe el documento sin puntos ni comas.`);
-  const d = leerDocumento(x.documento ?? "");
-  if (!d) return falla("datos", `Integrante ${n}: falta el documento.`);
-  if ("error" in d) return falla("datos", `Integrante ${n}: el documento ${d.error}.`);
+  const d = documentoValido(x.documento, n);
+  if ("ok" in d) return d;
   const cel = x.celular?.trim() ? leerCelular(x.celular) : null;
   if (cel && "error" in cel) return falla("datos", `Integrante ${n}: el celular ${cel.error}.`);
   const cor = x.correo?.trim() ? leerCorreo(x.correo) : null;
@@ -251,9 +257,10 @@ export async function separarPareja(pid: ObjectId, opciones: { queda: 0 | 1; nom
 export type OpcionesAgregar = { version?: string; unir?: boolean; conservar?: "este" | "otro" };
 export type AvisoUnion = Falla & { otro: { codigo: string; nombre: string; ciudad: string; integrante: string; hora: string | null }; hora: string | null };
 
-export async function agregarIntegrante(pid: ObjectId, entrada: IntegranteEntrada, opciones: OpcionesAgregar, actor: Actor): Promise<Resultado | AvisoUnion> {
-  const nuevoV = integranteValido(entrada, 2);
-  if ("ok" in nuevoV) return nuevoV;
+export async function agregarIntegrante(pid: ObjectId, entrada: Partial<IntegranteEntrada> & { documento: string }, opciones: OpcionesAgregar, actor: Actor): Promise<Resultado | AvisoUnion> {
+  const dv = documentoValido(entrada.documento, 2);
+  if ("ok" in dv) return dv;
+  const doc = dv.doc;
   const c = await collections();
   let aviso: AvisoUnion | null = null, unido: ObjectId | null = null;
   try {
@@ -263,10 +270,13 @@ export async function agregarIntegrante(pid: ObjectId, entrada: IntegranteEntrad
       if (!p) throw new Corte(falla("no_existe", "Ese proyecto ya no existe."));
       if (opciones.version && p.actualizadoEn.toISOString() !== opciones.version) throw new Corte(falla("cambio", "Alguien cambió este proyecto. Ábrelo otra vez."));
       if (p.integrantes.length !== 1) throw new Corte(falla("datos", "Solo se agrega un integrante a un proyecto individual."));
-      if (p.integrantes[0]!.documento === nuevoV.documento) throw new Corte(falla("datos", "Ese documento ya es del integrante 1."));
-      const o = await c.proyectos.findOne({ "integrantes.documento": nuevoV.documento }, { session: s });
+      if (p.integrantes[0]!.documento === doc) throw new Corte(falla("datos", "Ese documento ya es del integrante 1."));
+      const o = await c.proyectos.findOne({ "integrantes.documento": doc }, { session: s });
       const ahora = new Date();
       if (!o) {
+        // Alguien nuevo: aquí sí se piden y validan sus datos.
+        const nuevoV = integranteValido({ nombre: "", ...entrada }, 2);
+        if ("ok" in nuevoV) throw new Corte(nuevoV);
         const r = await c.proyectos.updateOne({ _id: pid, integrantes: { $size: 1 }, actualizadoEn: p.actualizadoEn }, { $push: { integrantes: nuevoV }, $set: { actualizadoEn: ahora } }, { session: s });
         if (!r.matchedCount) throw new Corte(falla("cambio", "Alguien cambió este proyecto. Ábrelo otra vez."));
         await c.changeLog.insertOne({ proyectoId: pid, accion: "agregar_integrante", anterior: quien(p.integrantes[0]!), nuevo: `${quien(p.integrantes[0]!)} y ${quien(nuevoV)}`, actor, fecha: ahora }, { session: s });
@@ -296,10 +306,10 @@ export async function agregarIntegrante(pid: ObjectId, entrada: IntegranteEntrad
           throw new Corte(falla("cambio", "La hora del otro proyecto cambió. Ábrelo otra vez."));
         horaFinal = hora(aO);
       } else if (aO && !(await sale(aO))) throw new Corte(falla("cambio", "La hora del otro proyecto cambió. Ábrelo otra vez."));
-      const r1 = await c.proyectos.deleteOne({ _id: o._id, "integrantes.documento": nuevoV.documento, integrantes: { $size: 1 } }, { session: s });
+      const r1 = await c.proyectos.deleteOne({ _id: o._id, "integrantes.documento": doc, integrantes: { $size: 1 } }, { session: s });
       if (!r1.deletedCount) throw new Corte(falla("cambio", "El otro proyecto cambió. Ábrelo otra vez."));
       const deO = o.integrantes[0]!;
-      const integrante: Integrante = { ...deO, ...nuevoV, ...(nuevoV.celular ? {} : deO.celular ? { celular: deO.celular } : {}), ...(nuevoV.correo ? {} : deO.correo ? { correo: deO.correo } : {}) };
+      const integrante: Integrante = deO; // los datos del registro existente, tal cual
       const r2 = await c.proyectos.updateOne({ _id: pid, integrantes: { $size: 1 }, actualizadoEn: p.actualizadoEn }, { $push: { integrantes: integrante }, $set: { actualizadoEn: ahora } }, { session: s });
       if (!r2.matchedCount) throw new Corte(falla("cambio", "Alguien cambió este proyecto. Ábrelo otra vez."));
       // Lo que colgaba del proyecto eliminado.
@@ -335,4 +345,34 @@ export async function agregarIntegrante(pid: ObjectId, entrada: IntegranteEntrad
     }
   }
   return aviso ?? { ok: true };
+}
+
+// ---------- Agregar integrante: búsqueda por documento (solo lectura) ----------
+export type Busqueda =
+  | { estado: "nuevo"; documento: string }
+  | { estado: "mismo" }
+  | {
+    estado: "existe"; documento: string; otraCiudad: boolean; horaEste: string | null;
+    otro: { id: string; codigo: string; nombre: string; ciudad: string; integrante: string; pareja: boolean; hora: string | null; evaluado: boolean };
+    /** Qué se puede hacer: unir (individual sin evaluación) o el aviso que lo impide. */
+    accion: "unir" | "separar_primero" | "anular_primero";
+  };
+
+export async function buscarDocumento(pid: ObjectId, documento: string): Promise<Busqueda | Falla> {
+  const dv = documentoValido(documento, 2);
+  if ("ok" in dv) return dv;
+  const c = await collections();
+  const p = await c.proyectos.findOne({ _id: pid }, { projection: { ciudad: 1, integrantes: 1 } });
+  if (!p) return falla("no_existe", "Ese proyecto ya no existe.");
+  if (p.integrantes.some((i) => i.documento === dv.doc)) return { estado: "mismo" };
+  const o = await c.proyectos.findOne({ "integrantes.documento": dv.doc });
+  if (!o) return { estado: "nuevo", documento: dv.doc };
+  const [aO, aP, evO, evP] = await Promise.all([c.asientos.findOne({ proyectoId: o._id }), c.asientos.findOne({ proyectoId: pid }), evaluado(o._id), evaluado(pid)]);
+  const hora = (a: Asiento | null) => (a ? `${a.dia} ${horaCO(a.inicio)}` : null);
+  const integrante = o.integrantes.find((i) => i.documento === dv.doc)!;
+  return {
+    estado: "existe", documento: dv.doc, otraCiudad: o.ciudad !== p.ciudad, horaEste: hora(aP),
+    otro: { id: String(o._id), codigo: o.codigo, nombre: o.nombre, ciudad: o.ciudad, integrante: integrante.nombre, pareja: o.integrantes.length > 1, hora: hora(aO), evaluado: evO },
+    accion: o.integrantes.length > 1 ? "separar_primero" : evO || evP ? "anular_primero" : "unir",
+  };
 }

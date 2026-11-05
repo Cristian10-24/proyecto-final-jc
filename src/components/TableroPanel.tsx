@@ -8,6 +8,7 @@ import { puede } from "@/lib/permisos";
 import type { BloqueTablero, DatosTablero, Tarjeta } from "@/lib/tableroHorarios";
 import AppShell from "./AppShell";
 import GestionProyecto from "./GestionProyecto";
+import { useVentana } from "./useVentana";
 import s from "./TableroPanel.module.css";
 
 // Tablero de horarios (Paso 16), como el del prototipo del admin: columnas por hora con sus 4 bloques de 15 min,
@@ -319,17 +320,13 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
     fetch(`/api/admin/proyectos/${t.id}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { historial: [] })).then((x) => vivo && setHist(x.historial)).catch(() => vivo && setHist([]));
     return () => { vivo = false; };
   }, [t.id]);
-  useEffect(() => {
-    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
-    document.addEventListener("keydown", fn);
-    return () => document.removeEventListener("keydown", fn);
-  }, [onCerrar]);
+  const v = useVentana(onCerrar, { bloqueado: ocupado });
   const bloque = d.horas.flatMap((h) => h.bloques).find((b) => b.inicio === t.inicio);
   const otros = bloque?.asientosLibres ?? [];
   const elegido = otros.find((x) => x.id === asiento);
   return (
-    <div className={s.overlay} onClick={(e) => e.target === e.currentTarget && onCerrar()}>
-      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="f-t">
+    <div className={s.overlay}>
+      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="f-t" {...v.dialogo}>
         <div className={s.cCiudad}><i style={{ background: colorDe(t.ciudad) }} />{t.ciudad}{t.ruta && <span className={s.cRuta}>Ruta {t.ruta.toLowerCase()}</span>}</div>
         <div id="f-t" className={s.modalT}>{t.proyecto}</div>
         <div className={s.datos}>
@@ -373,7 +370,7 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
             ))}
           </ol>
         )}
-        <div className={s.acts}><a className="btn btn-ghost" href="/admin/horarios">Abrir en Horarios</a><button type="button" className="btn btn-dark" onClick={onCerrar}>Cerrar</button></div>
+        <div className={s.acts}><a className="btn btn-ghost" href="/admin/horarios">Abrir en Horarios</a><button type="button" className="btn btn-dark" onClick={v.cerrar}>Cerrar</button></div>
       </div>
     </div>
   );

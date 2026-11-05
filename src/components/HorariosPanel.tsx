@@ -7,6 +7,7 @@ import { diaCOL } from "@/lib/edicion";
 import type { FilaSugerencia } from "@/lib/sugerencias";
 import AppShell from "./AppShell";
 import GestionProyecto, { type ModoGestion } from "./GestionProyecto";
+import { useVentana } from "./useVentana";
 import s from "./HorariosPanel.module.css";
 
 // Administración · Horarios (Paso 5). Diseño: docs/DISENO.md (5 · Administrador). Horas siempre en hora COL.
@@ -79,6 +80,15 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
 
   useEffect(() => { const t = setTimeout(() => setQFinal(q.trim()), 300); return () => clearTimeout(t); }, [q]);
 
+  // Enlace directo a una ficha (desde «Agregar integrante»): /admin/horarios?q=<código>&abrir=<id>.
+  const abrir = useRef<string | null>(null);
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search);
+    const q0 = u.get("q");
+    if (q0) { setQ(q0); setQFinal(q0.trim()); }
+    abrir.current = u.get("abrir");
+  }, []);
+
   const cargar = useCallback(async () => {
     const n = ++pedido.current;
     setCarga("cargando");
@@ -88,6 +98,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
       if (n !== pedido.current) return;
       if (!r.ok || !r.data) return setCarga("error");
       setProyectos(r.data.proyectos);
+      if (abrir.current) { const f = r.data.proyectos.find((x) => x.id === abrir.current); if (f) { setSel(f); abrir.current = null; } }
       setMonitores(r.data.monitores);
       setCiudades(r.data.ciudades);
       setCarga("listo");
@@ -236,18 +247,14 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
 
   useEffect(() => { void cargarHist(); }, [cargarHist, version]);
 
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onCerrar]);
+  const v = useVentana(onCerrar, { bloqueado: ocupado });
 
   async function enviar(body: Record<string, unknown>, msg: string): Promise<{ error?: string } | null> {
     setOcupado(true); setError("");
     try {
       const r = await api<{ ok: boolean; error?: string; mensaje?: string }>(`/api/admin/proyectos/${p.id}`, body);
       setOcupado(false);
-      if (r.ok) { setModo("ver"); setMotivo(""); await onHecho(msg); return null; }
+      if (r.ok) { setModo("ver"); setMotivo(""); v.limpiar(); await onHecho(msg); return null; }
       if (r.status === 404) setError("Este proyecto ya no existe. Cierra y recarga la lista.");
       else setError(r.data?.mensaje ?? "No se pudo guardar. Inténtalo otra vez.");
       return { error: r.data?.error };
@@ -264,15 +271,15 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
   }, [monitores, p.ciudad]);
 
   return (
-    <div className={s.overlay} onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
-      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="det-titulo">
+    <div className={s.overlay}>
+      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="det-titulo" {...v.dialogo}>
         <div className={s.asa} aria-hidden />
         <div className={s.modalHead}>
           <div>
             <div className={s.kicker}>{p.ciudad}{p.grupo ? ` · ${p.grupo}` : ""} · {p.codigo}</div>
             <h2 id="det-titulo" className={s.modalTitle}>{p.nombre}</h2>
           </div>
-          <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar">
+          <button type="button" className={s.cerrar} onClick={v.cerrar} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>

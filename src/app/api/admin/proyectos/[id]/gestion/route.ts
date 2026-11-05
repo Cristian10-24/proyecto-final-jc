@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
-import { agregarIntegrante, datosProyecto, editarProyecto, separarPareja } from "@/lib/gestionProyectos";
+import { agregarIntegrante, buscarDocumento, datosProyecto, editarProyecto, separarPareja } from "@/lib/gestionProyectos";
 import { IdParams } from "@/lib/validation/id";
 import { IntegranteEntrada, ProyectoEntrada, Version } from "@/lib/validation/proyectoEntrada";
 
@@ -10,17 +10,26 @@ import { IntegranteEntrada, ProyectoEntrada, Version } from "@/lib/validation/pr
 const Accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("editar"), proyecto: ProyectoEntrada, version: Version, confirmarCiudad: z.boolean().optional() }).strict(),
   z.object({ accion: z.literal("separar"), queda: z.union([z.literal(0), z.literal(1)]), nombreNuevo: z.string().trim().max(160).optional(), version: Version }).strict(),
-  z.object({ accion: z.literal("agregar"), integrante: IntegranteEntrada, version: Version, unir: z.boolean().optional(), conservar: z.enum(["este", "otro"]).optional() }).strict(),
+  // Al unir con un proyecto existente, los datos salen de ese registro: el nombre solo hace falta si es alguien nuevo.
+  z.object({ accion: z.literal("agregar"), integrante: IntegranteEntrada.partial({ nombre: true }), version: Version, unir: z.boolean().optional(), conservar: z.enum(["este", "otro"]).optional() }).strict(),
 ]);
 const ESTADO: Record<string, number> = { no_existe: 404, datos: 400, documento: 409, evaluado: 409, cambio: 409, confirmar_ciudad: 409, confirmar_union: 409 };
 
 const id = async (params: Promise<{ id: string }>) => { const r = IdParams.safeParse(await params); return r.success ? r.data.id : null; };
 
+const Consulta = z.object({ documento: z.string().trim().min(1).max(30).optional() }).strict();
+
+/** Datos completos para editar; con ?documento=, busca ese documento para «Agregar integrante» (solo lee). */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
   const pid = await id(params);
-  if (!pid || new URL(req.url).searchParams.size) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
+  const q = Consulta.safeParse(Object.fromEntries(new URL(req.url).searchParams));
+  if (!pid || !q.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
+  if (q.data.documento !== undefined) {
+    const b = await buscarDocumento(pid, q.data.documento);
+    return NextResponse.json(b, { status: "ok" in b ? ESTADO[b.error] ?? 400 : 200 });
+  }
   const d = await datosProyecto(pid);
   return d ? NextResponse.json(d) : NextResponse.json({ error: "no_existe" }, { status: 404 });
 }
