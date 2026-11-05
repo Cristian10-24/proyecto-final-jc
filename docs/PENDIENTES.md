@@ -12,6 +12,9 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Preview con la demo (`npm run semilla:demo:atlas -- --reset --si-atlas-pruebas --hoy=2026-11-12`) y prueba en un celular real por datos móviles.
 
 ## Técnicos (bajos, conscientes)
+- Gestión manual de proyectos: después de crear, separar o unir proyectos a mano, **no reimportes el Excel de inscritos** sin revisar la vista previa: el importador empareja por código y documento, y podría volver a juntar una pareja separada (o chocar con el documento ya movido).
+- Al unir proyectos, si el estudiante del proyecto eliminado reserva en ese mismo instante, su asiento se repara justo después de la transacción (pasa al proyecto unido o se libera). Si el proceso se cayera entre las dos cosas, ese asiento quedaría con un proyecto que ya no existe (se ve en Horarios → asientos ocupados sin proyecto).
+- `respaldo:produccion` es de solo lectura por código, pero usa el usuario `pfjc_produccion` (que puede escribir): para garantía total, un usuario de Atlas con rol `read`.
 - `npm run test:db` usa la misma base local que la demo del navegador (`proyecto_final_jc_pruebas`) y la borra: después de correr las pruebas, recargar la demo con `MONGODB_DB=proyecto_final_jc_pruebas npm run semilla:demo -- --reset --hoy=…`.
 - `style-src` de la CSP lleva `'unsafe-inline'`: React escribe atributos `style="…"` al renderizar en el servidor y un nonce no los cubre. Solo afecta estilos (no ejecuta código); los scripts van solo con nonce.
 - Cierre automático de inscripciones: "24 h antes del primer bloque del día" usa el primer bloque de ese día de cualquier ciudad, no el de la ciudad (si una ciudad empieza más tarde, cierra unas horas antes). Se puede fijar a mano por ciudad.

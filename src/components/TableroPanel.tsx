@@ -7,6 +7,8 @@ import { horaCO } from "@/lib/ciudades";
 import { puede } from "@/lib/permisos";
 import type { BloqueTablero, DatosTablero, Tarjeta } from "@/lib/tableroHorarios";
 import AppShell from "./AppShell";
+import GestionProyecto from "./GestionProyecto";
+import { useVentana } from "./useVentana";
 import s from "./TableroPanel.module.css";
 
 // Tablero de horarios (Paso 16), como el del prototipo del admin: columnas por hora con sus 4 bloques de 15 min,
@@ -59,6 +61,7 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
   const [toast, setToast] = useState("");
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<Tarjeta | null>(null);
+  const [nuevo, setNuevo] = useState(false);
   const toastT = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Respuestas desordenadas: solo vale la del último día pedido.
@@ -179,7 +182,7 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setArrastrando(null)}
           accessibility={{ screenReaderInstructions: { draggable: "Para mover la tarjeta, presiona espacio o Enter, usa las flechas y vuelve a presionar espacio o Enter para soltar. Escape cancela. La letra O abre la ficha." }, announcements: ANUNCIOS }}>
           <div className={s.tablero}>
-            <ColumnaSinHora tarjetas={sinHora} total={d.sinHora.length} ciudades={ciudades} filtro={fSinHora} setFiltro={setFSinHora} mueve={mueve} ocupado={ocupado} onAbrir={setAbierta} />
+            <ColumnaSinHora tarjetas={sinHora} total={d.sinHora.length} ciudades={ciudades} filtro={fSinHora} setFiltro={setFSinHora} mueve={mueve} ocupado={ocupado} onAbrir={setAbierta} onNuevo={() => setNuevo(true)} />
             <div className={s.horas}>
               {!d.horas.length && <div className={s.vacio}>Este día no tiene horas con mentores.</div>}
               {d.horas.map((h) => (
@@ -232,18 +235,20 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
       {alerta && (
         <div className={s.alerta} role="alert"><span><b>No se movió.</b> {alerta}</span><button type="button" onClick={() => setAlerta("")}>Entendido</button></div>
       )}
+      {nuevo && <GestionProyecto abierto={{ modo: "crear" }} onCerrar={() => setNuevo(false)} onHecho={(msg) => { setNuevo(false); avisar(msg); void cargar(); }} />}
       {toast && <div className={s.toast} role="status">{toast}</div>}
     </AppShell>
   );
 }
 
-function ColumnaSinHora({ tarjetas, total, ciudades, filtro, setFiltro, mueve, ocupado, onAbrir }: {
-  tarjetas: Tarjeta[]; total: number; ciudades: string[]; filtro: string; setFiltro: (c: string) => void; mueve: boolean; ocupado: string | null; onAbrir: (t: Tarjeta) => void;
+function ColumnaSinHora({ tarjetas, total, ciudades, filtro, setFiltro, mueve, ocupado, onAbrir, onNuevo }: {
+  tarjetas: Tarjeta[]; total: number; ciudades: string[]; filtro: string; setFiltro: (c: string) => void; mueve: boolean; ocupado: string | null; onAbrir: (t: Tarjeta) => void; onNuevo: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: SIN_HORA, disabled: !mueve });
   return (
     <section ref={setNodeRef} className={`${s.sinHora} ${isOver ? s.encima : ""}`} aria-label="Sin hora">
       <div className={s.sinHoraHead}><b>Sin hora</b><span className={s.cuenta}>{total}</span></div>
+      {mueve && <button type="button" className={s.nuevoProyecto} onClick={onNuevo}>+ Nuevo proyecto</button>}
       <div className={s.filtroCiudades}>
         <button type="button" className={`${s.fc} ${!filtro ? s.fcOn : ""}`} onClick={() => setFiltro("")}>Todas</button>
         {ciudades.map((c) => <button key={c} type="button" className={`${s.fc} ${filtro === c ? s.fcOn : ""}`} onClick={() => setFiltro(filtro === c ? "" : c)}><i style={{ background: colorDe(c) }} />{c}</button>)}
@@ -315,17 +320,14 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
     fetch(`/api/admin/proyectos/${t.id}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { historial: [] })).then((x) => vivo && setHist(x.historial)).catch(() => vivo && setHist([]));
     return () => { vivo = false; };
   }, [t.id]);
-  useEffect(() => {
-    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
-    document.addEventListener("keydown", fn);
-    return () => document.removeEventListener("keydown", fn);
-  }, [onCerrar]);
+  const v = useVentana(onCerrar, { bloqueado: ocupado });
   const bloque = d.horas.flatMap((h) => h.bloques).find((b) => b.inicio === t.inicio);
   const otros = bloque?.asientosLibres ?? [];
   const elegido = otros.find((x) => x.id === asiento);
   return (
-    <div className={s.overlay} onClick={(e) => e.target === e.currentTarget && onCerrar()}>
-      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="f-t">
+    <div className={s.overlay}>
+      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="f-t" {...v.dialogo}>
+        {v.confirmacion}
         <div className={s.cCiudad}><i style={{ background: colorDe(t.ciudad) }} />{t.ciudad}{t.ruta && <span className={s.cRuta}>Ruta {t.ruta.toLowerCase()}</span>}</div>
         <div id="f-t" className={s.modalT}>{t.proyecto}</div>
         <div className={s.datos}>
@@ -369,7 +371,7 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
             ))}
           </ol>
         )}
-        <div className={s.acts}><a className="btn btn-ghost" href="/admin/horarios">Abrir en Horarios</a><button type="button" className="btn btn-dark" onClick={onCerrar}>Cerrar</button></div>
+        <div className={s.acts}><a className="btn btn-ghost" href="/admin/horarios">Abrir en Horarios</a><button type="button" className="btn btn-dark" onClick={v.cerrar}>Cerrar</button></div>
       </div>
     </div>
   );

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { listarProyectos } from "@/lib/admin";
-import { exigir } from "@/lib/auth";
+import { exigir, sameOrigin } from "@/lib/auth";
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
+import { crearProyecto } from "@/lib/gestionProyectos";
+import { ProyectoEntrada } from "@/lib/validation/proyectoEntrada";
 
 const Query = z
   .object({
@@ -26,4 +28,15 @@ export async function GET(req: Request) {
     monitores: monitores.map((m) => ({ usuario: m.usuario, nombre: m.nombre, ciudades: m.ciudades })),
     ciudades: [...NOMBRES_CIUDADES].sort((a, b) => a.localeCompare(b, "es")),
   });
+}
+
+/** Nuevo proyecto (solo admin): queda sin hora; el estudiante entra al portal y elige. */
+export async function POST(req: Request) {
+  if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
+  const g = await exigir("cambiar_horario");
+  if (g.error) return g.error;
+  const parsed = ProyectoEntrada.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "datos_invalidos", mensaje: "Revisa los datos del formulario." }, { status: 400 });
+  const r = await crearProyecto(parsed.data, { rol: g.user.rol, usuario: g.user.usuario });
+  return NextResponse.json(r, { status: r.ok ? 201 : r.error === "datos" ? 400 : 409 });
 }

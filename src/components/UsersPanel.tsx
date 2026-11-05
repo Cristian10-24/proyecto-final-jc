@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { ROL_TXT, ROLES, type RolUsuario } from "@/lib/permisos";
 import type { VistaUsuario } from "@/lib/usuarios";
 import type { ClaveNueva, PreviaUsuarios, RevisionNombres } from "@/lib/usuariosExcel";
 import AppShell from "./AppShell";
 import s from "./UsersPanel.module.css";
+import { useVentana } from "./useVentana";
 
 const ROL_DESC: Record<RolUsuario, string> = {
   mentor: "Evalúa solo los proyectos que tiene asignados. El nombre debe escribirse igual que en la hoja Horarios.",
@@ -39,6 +40,9 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
   const [filtro, setFiltro] = useState<"todos" | RolUsuario>("todos");
   const [form, setForm] = useState<Form | null>(null);
   const [clave, setClave] = useState<Clave | null>(null);
+  // Ventanas: un clic fuera no cierra; Esc, X o Cancelar, y si hay algo escrito pregunta antes de descartar.
+  const vForm = useVentana(useCallback(() => setForm(null), []), { activo: !!form, bloqueado: !!form?.saving });
+  const vClave = useVentana(useCallback(() => setClave(null), []), { activo: !!clave, bloqueado: !!clave?.saving });
   const [nuevaClave, setNuevaClave] = useState<{ usuario: string; clave: string } | null>(null);
   const [toast, setToast] = useState("");
   const [revision, setRevision] = useState<RevisionNombres | null>(null);
@@ -222,8 +226,9 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       ))}
 
       {form && (
-        <div className={s.overlay} onClick={(e) => e.target === e.currentTarget && !form.saving && setForm(null)}>
-          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="u-title">
+        <div className={s.overlay}>
+          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="u-title" {...vForm.dialogo}>
+        {vForm.confirmacion}
             <div id="u-title" className={s.modalTitle}>{form.modo === "crear" ? "Nuevo usuario" : `Editar ${form.usuario}`}</div>
             {form.modo === "crear" && (
               <div>
@@ -238,7 +243,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             </div>
             <div>
               <label className="label" htmlFor="u-correo">Correo (opcional)</label>
-              <input id="u-correo" className="input" type="email" inputMode="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} autoCapitalize="none" autoCorrect="off" />
+              <input id="u-correo" className="input" type="text" inputMode="email" autoComplete="off" spellCheck={false} value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} autoCapitalize="none" autoCorrect="off" />
               <div className={s.hint}>No se usa para entrar: sirve para reconocer a la persona al cargar el Excel.</div>
             </div>
             <div>
@@ -288,7 +293,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             )}
             {form.error && <div className="msg-error">{form.error}</div>}
             <div className={s.modalActions}>
-              <button type="button" className={s.cancel} onClick={() => setForm(null)} disabled={form.saving}>Cancelar</button>
+              <button type="button" className={s.cancel} onClick={vForm.cerrar} disabled={form.saving}>Cancelar</button>
               <button type="button" className={s.save} onClick={guardar} disabled={form.saving}>{form.saving ? "Guardando…" : form.modo === "crear" ? "Crear usuario" : "Guardar cambios"}</button>
             </div>
           </div>
@@ -296,8 +301,9 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       )}
 
       {clave && (
-        <div className={s.overlay} onClick={(e) => e.target === e.currentTarget && !clave.saving && setClave(null)}>
-          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="c-title">
+        <div className={s.overlay}>
+          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="c-title" {...vClave.dialogo}>
+        {vClave.confirmacion}
             <div id="c-title" className={s.modalTitle}>Restablecer clave de {clave.usuario}</div>
             <div className={s.modalSub}>La clave anterior deja de funcionar y se cierran las sesiones abiertas de este usuario.</div>
             <div className={s.claveOpts}>
@@ -308,7 +314,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             {clave.claveModo === "asignar" && <input className="input" value={clave.clave} onChange={(e) => setClave({ ...clave, clave: e.target.value })} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />}
             {clave.error && <div className="msg-error">{clave.error}</div>}
             <div className={s.modalActions}>
-              <button type="button" className={s.cancel} onClick={() => setClave(null)} disabled={clave.saving}>Cancelar</button>
+              <button type="button" className={s.cancel} onClick={vClave.cerrar} disabled={clave.saving}>Cancelar</button>
               <button type="button" className={s.save} onClick={guardarClave} disabled={clave.saving}>{clave.saving ? "Guardando…" : "Guardar clave"}</button>
             </div>
           </div>

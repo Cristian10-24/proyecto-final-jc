@@ -84,12 +84,22 @@ export async function getClient(): Promise<MongoClient> {
   return clientPromise();
 }
 
-export async function getDb(): Promise<Db> {
+/** La única base de la app (un solo client.db, siempre con dbName()). */
+async function baseUnica(): Promise<Db> {
   const client = await clientPromise();
-  const db = client.db(dbName());
+  return client.db(dbName());
+}
+
+export async function getDb(): Promise<Db> {
+  const db = await baseUnica();
   globalThis._indexesReady ??= ensureIndexes(db);
   await globalThis._indexesReady;
   return db;
+}
+
+/** Solo lectura (respaldo): la misma base, sin ensureIndexes, para no mandar ni un createIndex. */
+export async function getDbLectura(): Promise<Db> {
+  return baseUnica();
 }
 
 /** Ejecuta `fn` en una transacción (sesión propia). Es la única forma de usar transacciones en la app. */

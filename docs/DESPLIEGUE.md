@@ -113,3 +113,12 @@ Mientras se prueba, **Production apunta temporalmente a `proyecto_final_jc_prueb
 - [ ] Comparte el enlace con los monitores ("Copiar enlace de inscripción").
 - [ ] Si algo falla: `STUDENT_PORTAL_ENABLED=false` cierra el portal sin tocar los datos.
 - [ ] Respaldo: activa los backups de Atlas (o exporta las colecciones `proyectos`, `asientos`, `dias` y `changeLog` antes de abrir y al cerrar).
+
+## 7. Cambios con la app en producción (ramas, Preview y respaldo)
+- [ ] **Respaldo antes de subir a main**: `npm run respaldo:produccion` (mismo `.env.produccion.local` y envoltorio que `admin:produccion`). Solo lee: exporta todas las colecciones de `proyecto_final_jc` a `respaldos/proyecto_final_jc-<fecha COL>/` (Extended JSON, conserva ObjectId y fechas). La carpeta está en `.gitignore`; guárdala fuera del proyecto: tiene datos personales y los hashes de las claves. Mejor aún: un usuario de Atlas con rol `read` solo para respaldos.
+- [ ] **Probar una rama en Preview contra la base de pruebas**:
+  1. Sube la rama (por ejemplo `feature/gestion-proyectos`) a `origin`: llega a la organización y al fork, y Vercel crea un despliegue **Preview** de esa rama.
+  2. En Vercel → Settings → Environment Variables, solo para **Preview** (si quieres, solo para esa rama): `MONGODB_URI` con el usuario `pfjc_pruebas`, `MONGODB_DB=proyecto_final_jc_pruebas` y un `SESSION_SECRET` propio de Preview. Production no se toca.
+  3. Datos para probar en `proyecto_final_jc_pruebas`: `npm run semilla:demo:atlas -- --reset --si-atlas-pruebas` (demo) o `npm run vaciar:atlas-pruebas -- --usuario=… --si-atlas-pruebas` (vacía con un admin).
+  4. Redeploy del Preview si cambiaste variables, y prueba en su URL.
+- [ ] **Unir la rama a main** (cuando esté lista): respaldo de producción → `git switch main` → `git merge --no-ff feature/gestion-proyectos` → subir `main` a `origin` → Vercel redespliega Production. No hay migraciones: los documentos existentes no cambian.

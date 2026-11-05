@@ -12,7 +12,7 @@ async function main() {
   const opt = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3) ?? npm(k);
   const bandera = (k: string) => args.includes(`--${k}`) || npm(k) === "true";
 
-  if (process.env.PFJC_PRIMER_ADMIN !== "1" || process.env.NODE_ENV !== "production" || process.env.PFJC_MODO)
+  if (process.env.PFJC_PRODUCCION !== "1" || process.env.NODE_ENV !== "production" || process.env.PFJC_MODO)
     throw new Error("Usa `npm run admin:produccion` (carga las variables de producción solo para este proceso).");
   const { closeDb, collections, dbHost, dbName } = await import("@/lib/db");
   if (dbName() !== BASE) throw new Error(`La base debe ser exactamente ${BASE}; es "${dbName()}".`);

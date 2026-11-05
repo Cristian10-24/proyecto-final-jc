@@ -6,6 +6,8 @@ import { horaCO } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
 import type { FilaSugerencia } from "@/lib/sugerencias";
 import AppShell from "./AppShell";
+import GestionProyecto, { type ModoGestion } from "./GestionProyecto";
+import { useVentana } from "./useVentana";
 import s from "./HorariosPanel.module.css";
 
 // Administración · Horarios (Paso 5). Diseño: docs/DISENO.md (5 · Administrador). Horas siempre en hora COL.
@@ -28,6 +30,7 @@ const ACCION: Record<string, string> = {
   reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada",
   asignar_monitor: "Monitor asignado", importar: "Importación", reetiquetar: "Asientos reetiquetados", monitor_sala: "Monitor de sala",
   evaluar: "Evaluación", no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada", anular_evaluacion: "Evaluación anulada", restablecer_clave: "Clave restablecida", criterios: "Criterios",
+  crear_proyecto: "Proyecto creado", editar_proyecto: "Proyecto editado", separar_pareja: "Pareja separada", agregar_integrante: "Integrante agregado", unir_proyecto: "Proyectos unidos",
 };
 const ROL: Record<string, string> = { admin: "Admin", coordinador: "Coordinación", monitor: "Monitor", estudiante: "Estudiante", sistema: "Sistema" };
 
@@ -63,6 +66,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
   const [ciudades, setCiudades] = useState<string[]>([]);
   const [dias, setDias] = useState<string[]>([]);
   const [sel, setSel] = useState<Proyecto | null>(null);
+  const [gestion, setGestion] = useState<ModoGestion | null>(null);
   const [version, setVersion] = useState(0);
   const [toast, setToast] = useState("");
   const pedido = useRef(0);
@@ -76,6 +80,15 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
 
   useEffect(() => { const t = setTimeout(() => setQFinal(q.trim()), 300); return () => clearTimeout(t); }, [q]);
 
+  // Enlace directo a una ficha (desde «Agregar integrante»): /admin/horarios?q=<código>&abrir=<id>.
+  const abrir = useRef<string | null>(null);
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search);
+    const q0 = u.get("q");
+    if (q0) { setQ(q0); setQFinal(q0.trim()); }
+    abrir.current = u.get("abrir");
+  }, []);
+
   const cargar = useCallback(async () => {
     const n = ++pedido.current;
     setCarga("cargando");
@@ -85,6 +98,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
       if (n !== pedido.current) return;
       if (!r.ok || !r.data) return setCarga("error");
       setProyectos(r.data.proyectos);
+      if (abrir.current) { const f = r.data.proyectos.find((x) => x.id === abrir.current); if (f) { setSel(f); abrir.current = null; } }
       setMonitores(r.data.monitores);
       setCiudades(r.data.ciudades);
       setCarga("listo");
@@ -125,6 +139,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
       <div className={s.kicker}>Administración</div>
       <h1 className={s.title}>Horarios</h1>
       <p className={s.lead}>Busca un proyecto para ver su historial, liberar o cambiar su hora y asignarle monitor. Todas las horas están en hora COL.</p>
+      <div className={s.acts}><button type="button" className="btn btn-primary" onClick={() => setGestion({ modo: "crear" })}>Nuevo proyecto</button></div>
 
       <Bandeja dias={dias} version={version} onHecho={trasAccion} />
 
@@ -184,7 +199,12 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
 
       {sel && (
         <Detalle key={sel.id} p={sel} version={version} dias={dias} monitores={monitores} nombreMonitor={nombreMonitor}
-          onCerrar={() => setSel(null)} onHecho={trasAccion} />
+          onCerrar={() => setSel(null)} onHecho={trasAccion} onGestion={(modo) => { setGestion({ modo, id: sel.id }); setSel(null); }} />
+      )}
+
+      {gestion && (
+        <GestionProyecto abierto={gestion} ciudades={ciudades} monitores={monitores} onCerrar={() => setGestion(null)}
+          onHecho={(msg) => { setGestion(null); avisar(msg); void cargar(); setVersion((v) => v + 1); }} />
       )}
 
       {toast && <div className={s.toast} role="status">{toast}</div>}
@@ -206,9 +226,10 @@ function Skeleton() {
 
 /* ---------------------------------------------------------------- Detalle */
 
-function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho }: {
+function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho, onGestion }: {
   p: Proyecto; version: number; dias: string[]; monitores: Monitor[];
   nombreMonitor: (u: string | null) => string | null; onCerrar: () => void; onHecho: (msg: string) => Promise<void>;
+  onGestion: (modo: "editar" | "separar" | "agregar") => void;
 }) {
   const [hist, setHist] = useState<{ estado: "cargando" | "error" | "listo"; items: Cambio[] }>({ estado: "cargando", items: [] });
   const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "anular">("ver");
@@ -226,18 +247,14 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
 
   useEffect(() => { void cargarHist(); }, [cargarHist, version]);
 
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onCerrar]);
+  const v = useVentana(onCerrar, { bloqueado: ocupado });
 
   async function enviar(body: Record<string, unknown>, msg: string): Promise<{ error?: string } | null> {
     setOcupado(true); setError("");
     try {
       const r = await api<{ ok: boolean; error?: string; mensaje?: string }>(`/api/admin/proyectos/${p.id}`, body);
       setOcupado(false);
-      if (r.ok) { setModo("ver"); setMotivo(""); await onHecho(msg); return null; }
+      if (r.ok) { setModo("ver"); setMotivo(""); v.limpiar(); await onHecho(msg); return null; }
       if (r.status === 404) setError("Este proyecto ya no existe. Cierra y recarga la lista.");
       else setError(r.data?.mensaje ?? "No se pudo guardar. Inténtalo otra vez.");
       return { error: r.data?.error };
@@ -254,15 +271,16 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
   }, [monitores, p.ciudad]);
 
   return (
-    <div className={s.overlay} onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
-      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="det-titulo">
+    <div className={s.overlay}>
+      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="det-titulo" {...v.dialogo}>
+        {v.confirmacion}
         <div className={s.asa} aria-hidden />
         <div className={s.modalHead}>
           <div>
             <div className={s.kicker}>{p.ciudad}{p.grupo ? ` · ${p.grupo}` : ""} · {p.codigo}</div>
             <h2 id="det-titulo" className={s.modalTitle}>{p.nombre}</h2>
           </div>
-          <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar">
+          <button type="button" className={s.cerrar} onClick={v.cerrar} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
@@ -295,6 +313,14 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
             <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => { setError(""); setModo("cambiar"); }}>{p.hora ? "Cambiar hora" : "Asignar hora"}</button>
             {p.hora && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setModo("liberar"); }}>Liberar hora</button>}
             {p.evaluado && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setMotivo(""); setModo("anular"); }}>Anular evaluación</button>}
+          </div>
+        )}
+        {modo === "ver" && (
+          <div className={s.acts}>
+            <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("editar")}>Editar</button>
+            {p.integrantes.length === 2
+              ? <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("separar")}>Separar pareja</button>
+              : <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("agregar")}>Agregar integrante</button>}
           </div>
         )}
         {modo === "ver" && p.evaluado && <div className="note note-info">Tiene evaluación guardada: no se mueve ni se libera. Si hace falta, anúlala primero.</div>}
