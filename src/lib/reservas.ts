@@ -29,7 +29,7 @@ export async function asientoDe(proyectoId: ObjectId) {
   return asientos.findOne({ proyectoId });
 }
 
-export async function reservar(documento: string, inicio: Date, ahora = new Date()): Promise<ResultadoReserva> {
+export async function reservar(documento: string, inicio: Date, ahora = new Date(), intento = 0): Promise<ResultadoReserva> {
   const { proyectos, asientos, dias, changeLog } = await collections();
   const proyecto = await proyectos.findOne({ "integrantes.documento": documento }, { projection: { ciudad: 1, codigo: 1 } });
   if (!proyecto) return { ok: false, error: "sin_proyecto" };
@@ -65,6 +65,12 @@ export async function reservar(documento: string, inicio: Date, ahora = new Date
     throw e;
   }
   if (!tomado) return { ok: false, error: "sin_cupo" };
+  // Si el admin separó o unió el proyecto mientras tanto, el documento ya no está en él: se suelta ese asiento (solo si
+  // sigue siendo esta reserva) y se intenta otra vez con su proyecto actual. Sin cambios del admin, no hace nada.
+  if (!(await proyectos.findOne({ _id: proyecto._id, "integrantes.documento": documento }, { projection: { _id: 1 } }))) {
+    await asientos.updateOne({ _id: tomado._id, proyectoId: proyecto._id, reservadoEn: ahora }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } });
+    return intento < 2 ? reservar(documento, inicio, ahora, intento + 1) : { ok: false, error: "sin_proyecto" };
+  }
 
   await changeLog.insertOne({ proyectoId: proyecto._id, accion: "reservar", nuevo: `${dia} ${horaCO(inicio)}`, actor: { rol: "estudiante", usuario: documento }, fecha: ahora });
   return { ok: true, inicio: tomado.inicio, dia };

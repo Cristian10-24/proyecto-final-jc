@@ -24,3 +24,5 @@ docs/diseno/evaluacion/
 # Caché del control de diseño (impeccable)
 .impeccable/hook.cache.json
 .impeccable/config.local.json
+# Respaldos de producción (npm run respaldo:produccion): datos reales, nunca al repositorio
+respaldos/

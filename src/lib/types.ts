@@ -28,7 +28,8 @@ export type User = {
 export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
-  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion" | "reglas_cupos" | "cierre_inscripciones" | "franjas";
+  accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion" | "reglas_cupos" | "cierre_inscripciones" | "franjas"
+    | "crear_proyecto" | "editar_proyecto" | "separar_pareja" | "agregar_integrante" | "unir_proyecto";
   anterior?: string;
   nuevo?: string;
   motivo?: string;

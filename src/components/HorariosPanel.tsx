@@ -6,6 +6,7 @@ import { horaCO } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
 import type { FilaSugerencia } from "@/lib/sugerencias";
 import AppShell from "./AppShell";
+import GestionProyecto, { type ModoGestion } from "./GestionProyecto";
 import s from "./HorariosPanel.module.css";
 
 // Administración · Horarios (Paso 5). Diseño: docs/DISENO.md (5 · Administrador). Horas siempre en hora COL.
@@ -28,6 +29,7 @@ const ACCION: Record<string, string> = {
   reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada",
   asignar_monitor: "Monitor asignado", importar: "Importación", reetiquetar: "Asientos reetiquetados", monitor_sala: "Monitor de sala",
   evaluar: "Evaluación", no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada", anular_evaluacion: "Evaluación anulada", restablecer_clave: "Clave restablecida", criterios: "Criterios",
+  crear_proyecto: "Proyecto creado", editar_proyecto: "Proyecto editado", separar_pareja: "Pareja separada", agregar_integrante: "Integrante agregado", unir_proyecto: "Proyectos unidos",
 };
 const ROL: Record<string, string> = { admin: "Admin", coordinador: "Coordinación", monitor: "Monitor", estudiante: "Estudiante", sistema: "Sistema" };
 
@@ -63,6 +65,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
   const [ciudades, setCiudades] = useState<string[]>([]);
   const [dias, setDias] = useState<string[]>([]);
   const [sel, setSel] = useState<Proyecto | null>(null);
+  const [gestion, setGestion] = useState<ModoGestion | null>(null);
   const [version, setVersion] = useState(0);
   const [toast, setToast] = useState("");
   const pedido = useRef(0);
@@ -125,6 +128,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
       <div className={s.kicker}>Administración</div>
       <h1 className={s.title}>Horarios</h1>
       <p className={s.lead}>Busca un proyecto para ver su historial, liberar o cambiar su hora y asignarle monitor. Todas las horas están en hora COL.</p>
+      <div className={s.acts}><button type="button" className="btn btn-primary" onClick={() => setGestion({ modo: "crear" })}>Nuevo proyecto</button></div>
 
       <Bandeja dias={dias} version={version} onHecho={trasAccion} />
 
@@ -184,7 +188,12 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
 
       {sel && (
         <Detalle key={sel.id} p={sel} version={version} dias={dias} monitores={monitores} nombreMonitor={nombreMonitor}
-          onCerrar={() => setSel(null)} onHecho={trasAccion} />
+          onCerrar={() => setSel(null)} onHecho={trasAccion} onGestion={(modo) => { setGestion({ modo, id: sel.id }); setSel(null); }} />
+      )}
+
+      {gestion && (
+        <GestionProyecto abierto={gestion} ciudades={ciudades} monitores={monitores} onCerrar={() => setGestion(null)}
+          onHecho={(msg) => { setGestion(null); avisar(msg); void cargar(); setVersion((v) => v + 1); }} />
       )}
 
       {toast && <div className={s.toast} role="status">{toast}</div>}
@@ -206,9 +215,10 @@ function Skeleton() {
 
 /* ---------------------------------------------------------------- Detalle */
 
-function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho }: {
+function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho, onGestion }: {
   p: Proyecto; version: number; dias: string[]; monitores: Monitor[];
   nombreMonitor: (u: string | null) => string | null; onCerrar: () => void; onHecho: (msg: string) => Promise<void>;
+  onGestion: (modo: "editar" | "separar" | "agregar") => void;
 }) {
   const [hist, setHist] = useState<{ estado: "cargando" | "error" | "listo"; items: Cambio[] }>({ estado: "cargando", items: [] });
   const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "anular">("ver");
@@ -295,6 +305,14 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
             <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => { setError(""); setModo("cambiar"); }}>{p.hora ? "Cambiar hora" : "Asignar hora"}</button>
             {p.hora && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setModo("liberar"); }}>Liberar hora</button>}
             {p.evaluado && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setMotivo(""); setModo("anular"); }}>Anular evaluación</button>}
+          </div>
+        )}
+        {modo === "ver" && (
+          <div className={s.acts}>
+            <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("editar")}>Editar</button>
+            {p.integrantes.length === 2
+              ? <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("separar")}>Separar pareja</button>
+              : <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("agregar")}>Agregar integrante</button>}
           </div>
         )}
         {modo === "ver" && p.evaluado && <div className="note note-info">Tiene evaluación guardada: no se mueve ni se libera. Si hace falta, anúlala primero.</div>}

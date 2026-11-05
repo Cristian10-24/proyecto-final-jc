@@ -1,0 +1,256 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import h from "./HorariosPanel.module.css";
+import s from "./GestionProyecto.module.css";
+
+// Gestión manual de proyectos (solo admin): crear, editar, separar pareja y agregar integrante. Lo abren Horarios
+// (botón "Nuevo proyecto" y la ficha) y el Tablero (columna "Sin hora"). El servidor valida todo (como el importador).
+
+export type ModoGestion = { modo: "crear" } | { modo: "editar" | "separar" | "agregar"; id: string };
+type Monitor = { usuario: string; nombre: string; ciudades: string[] };
+type Integrante = { nombre: string; documento: string; celular: string; correo: string };
+type Datos = {
+  id: string; codigo: string; ciudad: string; nombre: string; descripcion: string; ruta: "Básica" | "Avanzada" | null; monitor: string | null;
+  integrantes: Integrante[]; hora: { inicio: string; dia: string } | null; evaluado: boolean; version: string;
+};
+type Respuesta = { ok: boolean; error?: string; mensaje?: string; codigo?: string; otro?: { codigo: string; nombre: string; ciudad: string; integrante: string; hora: string | null }; hora?: string | null };
+
+const vacio = (): Integrante => ({ nombre: "", documento: "", celular: "", correo: "" });
+const fmtHora = new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
+
+async function api<T>(url: string, body?: unknown): Promise<{ ok: boolean; status: number; data: T | null }> {
+  const res = await fetch(url, body === undefined ? { cache: "no-store" } : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (res.status === 401) window.location.assign("/login");
+  return { ok: res.ok, status: res.status, data: (await res.json().catch(() => null)) as T | null };
+}
+
+export default function GestionProyecto({ abierto, ciudades: ciudadesDadas, monitores: monitoresDados, onCerrar, onHecho }: {
+  abierto: ModoGestion; ciudades?: string[]; monitores?: Monitor[]; onCerrar: () => void; onHecho: (msg: string) => void | Promise<void>;
+}) {
+  const [d, setD] = useState<Datos | null>(null);
+  const [opciones, setOpciones] = useState<{ ciudades: string[]; monitores: Monitor[] } | null>(ciudadesDadas && monitoresDados ? { ciudades: ciudadesDadas, monitores: monitoresDados } : null);
+  useEffect(() => {
+    if (opciones) return;
+    void api<{ ciudades: string[]; monitores: Monitor[] }>("/api/admin/proyectos/opciones").then((r) => r.ok && r.data && setOpciones(r.data)).catch(() => null);
+  }, [opciones]);
+  const ciudades = opciones?.ciudades ?? [], monitores = opciones?.monitores ?? [];
+  const [cargaError, setCargaError] = useState("");
+  const id = abierto.modo === "crear" ? null : abierto.id;
+  useEffect(() => {
+    if (!id) return;
+    void api<Datos>(`/api/admin/proyectos/${id}/gestion`).then((r) => (r.ok && r.data ? setD(r.data) : setCargaError("No se pudo abrir el proyecto. Cierra y recarga la lista.")))
+      .catch(() => setCargaError("Sin conexión. Revisa tu internet e inténtalo otra vez."));
+  }, [id]);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onCerrar]);
+
+  const titulo = { crear: "Nuevo proyecto", editar: "Editar proyecto", separar: "Separar pareja", agregar: "Agregar integrante" }[abierto.modo];
+  return (
+    <div className={h.overlay} onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
+      <div className={h.modal} role="dialog" aria-modal="true" aria-labelledby="gp-titulo">
+        <div className={h.asa} aria-hidden />
+        <div className={h.modalHead}>
+          <div>
+            {d && <div className={h.kicker}>{d.ciudad} · {d.codigo}</div>}
+            <h2 id="gp-titulo" className={h.modalTitle}>{titulo}{d ? `: ${d.nombre}` : ""}</h2>
+          </div>
+          <button type="button" className={h.cerrar} onClick={onCerrar} aria-label="Cerrar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        {cargaError && <div className="note note-error">{cargaError}</div>}
+        {abierto.modo === "crear" && <Formulario ciudades={ciudades} monitores={monitores} onCerrar={onCerrar} onHecho={onHecho} />}
+        {abierto.modo === "editar" && d && <Formulario datos={d} ciudades={ciudades} monitores={monitores} onCerrar={onCerrar} onHecho={onHecho} />}
+        {abierto.modo === "separar" && d && <Separar d={d} onCerrar={onCerrar} onHecho={onHecho} />}
+        {abierto.modo === "agregar" && d && <Agregar d={d} onCerrar={onCerrar} onHecho={onHecho} />}
+        {id && !d && !cargaError && <div className={s.cargando}>Cargando…</div>}
+      </div>
+    </div>
+  );
+}
+
+function CamposIntegrante({ n, v, onCambio }: { n: number; v: Integrante; onCambio: (x: Integrante) => void }) {
+  const campo = (k: keyof Integrante, etq: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+    <label className={h.campo}><span className="label">{etq}</span>
+      <input className="input" value={v[k]} onChange={(e) => onCambio({ ...v, [k]: e.target.value })} {...extra} /></label>
+  );
+  return (
+    <fieldset className={s.grupo}>
+      <legend className={h.seccionK}>Integrante {n}</legend>
+      <div className={s.rejilla}>
+        {campo("nombre", "Nombre completo", { autoComplete: "off", maxLength: 120 })}
+        {campo("documento", "Documento (sin puntos)", { inputMode: "text", autoComplete: "off", maxLength: 30 })}
+        {campo("celular", "Celular (opcional)", { inputMode: "tel", autoComplete: "off", maxLength: 30 })}
+        {campo("correo", "Correo (opcional)", { type: "email", autoComplete: "off", maxLength: 120 })}
+      </div>
+    </fieldset>
+  );
+}
+
+function Formulario({ datos, ciudades, monitores, onCerrar, onHecho }: { datos?: Datos; ciudades: string[]; monitores: Monitor[]; onCerrar: () => void; onHecho: (msg: string) => void | Promise<void> }) {
+  const crear = !datos;
+  const [ciudad, setCiudad] = useState(datos?.ciudad ?? "");
+  const [pareja, setPareja] = useState((datos?.integrantes.length ?? 1) > 1);
+  const [nombre, setNombre] = useState(datos?.nombre ?? "");
+  const [descripcion, setDescripcion] = useState(datos?.descripcion ?? "");
+  const [ruta, setRuta] = useState<string>(datos?.ruta ?? "");
+  // Crear: "" = el monitor de la ciudad (si tiene uno solo). Editar: "" = por asignar.
+  const [monitor, setMonitor] = useState<string>(datos ? datos.monitor ?? "" : "");
+  const [ints, setInts] = useState<Integrante[]>(datos?.integrantes.map((i) => ({ ...i })) ?? [vacio(), vacio()]);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+  const [confirmarCiudad, setConfirmarCiudad] = useState("");
+
+  const lista = (pareja ? ints.slice(0, 2) : ints.slice(0, 1)).map((i) => ({ nombre: i.nombre, documento: i.documento, ...(i.celular.trim() ? { celular: i.celular } : {}), ...(i.correo.trim() ? { correo: i.correo } : {}) }));
+  const listo = ciudad && nombre.trim() && lista.every((i) => i.nombre.trim() && i.documento.trim());
+  const deCiudad = monitores.filter((m) => m.ciudades.includes(ciudad)), otros = monitores.filter((m) => !m.ciudades.includes(ciudad));
+
+  async function guardar(confirmar = false) {
+    setOcupado(true); setError("");
+    const proyecto = {
+      ciudad, nombre, ...(descripcion.trim() ? { descripcion } : {}), ruta: ruta ? ruta : null,
+      ...(crear ? (monitor === "__nadie" ? { monitor: null } : monitor ? { monitor } : {}) : { monitor: monitor || null }),
+      integrantes: lista,
+    };
+    const r = await (crear ? api<Respuesta>("/api/admin/proyectos", proyecto)
+      : api<Respuesta>(`/api/admin/proyectos/${datos!.id}/gestion`, { accion: "editar", proyecto, version: datos!.version, ...(confirmar ? { confirmarCiudad: true } : {}) })).catch(() => null);
+    setOcupado(false);
+    if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
+    if (r.data.ok) return void onHecho(crear ? `Proyecto ${r.data.codigo} creado: queda sin hora` : "Proyecto actualizado");
+    if (r.data.error === "confirmar_ciudad") return setConfirmarCiudad(r.data.mensaje ?? "");
+    setError(r.data.mensaje ?? "No se pudo guardar.");
+  }
+
+  return (
+    <form className={s.form} onSubmit={(e) => { e.preventDefault(); if (listo && !ocupado) void guardar(); }}>
+      {!crear && datos.hora && <div className="note note-info">Tiene hora el {fmtHora.format(new Date(datos.hora.inicio))} COL. Editar no la mueve.</div>}
+      <div className={s.rejilla}>
+        <label className={h.campo}><span className="label">Ciudad</span>
+          <select className="input" value={ciudad} onChange={(e) => { setCiudad(e.target.value); setConfirmarCiudad(""); }} required>
+            <option value="">Elige la ciudad</option>
+            {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select></label>
+        {crear && (
+          <div className={h.campo}><span className="label">Modalidad</span>
+            <div className={s.seg} role="group" aria-label="Modalidad">
+              <button type="button" className={!pareja ? s.segOn : ""} aria-pressed={!pareja} onClick={() => setPareja(false)}>Individual</button>
+              <button type="button" className={pareja ? s.segOn : ""} aria-pressed={pareja} onClick={() => setPareja(true)}>En pareja</button>
+            </div></div>
+        )}
+        <label className={`${h.campo} ${s.ancho}`}><span className="label">Nombre del proyecto</span>
+          <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={160} required /></label>
+        <label className={`${h.campo} ${s.ancho}`}><span className="label">Descripción (opcional)</span>
+          <textarea className={`input ${s.area}`} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} maxLength={1000} rows={3} /></label>
+        <label className={h.campo}><span className="label">Ruta</span>
+          <select className="input" value={ruta} onChange={(e) => setRuta(e.target.value)}>
+            <option value="">Sin ruta</option><option value="Básica">Básica</option><option value="Avanzada">Avanzada</option>
+          </select></label>
+        <label className={h.campo}><span className="label">Monitor de seguimiento</span>
+          <select className="input" value={monitor} onChange={(e) => setMonitor(e.target.value)}>
+            {crear ? <><option value="">El de la ciudad (si tiene uno solo)</option><option value="__nadie">Por asignar</option></> : <option value="">Por asignar</option>}
+            {deCiudad.length > 0 && <optgroup label={`De ${ciudad}`}>{deCiudad.map((m) => <option key={m.usuario} value={m.usuario}>{m.nombre}</option>)}</optgroup>}
+            {otros.length > 0 && <optgroup label="Otras ciudades">{otros.map((m) => <option key={m.usuario} value={m.usuario}>{m.nombre} · {m.ciudades.join(", ")}</option>)}</optgroup>}
+          </select></label>
+      </div>
+      <CamposIntegrante n={1} v={ints[0]!} onCambio={(x) => setInts((a) => [x, a[1] ?? vacio()])} />
+      {pareja && <CamposIntegrante n={2} v={ints[1] ?? vacio()} onCambio={(x) => setInts((a) => [a[0]!, x])} />}
+      {!crear && <p className={s.ayuda}>Para cambiar cuántos integrantes tiene, usa «Separar pareja» o «Agregar integrante» en la ficha.</p>}
+      {error && <div className="note note-error">{error}</div>}
+      {confirmarCiudad && (
+        <div className="note note-warn">{confirmarCiudad}
+          <div className={h.acts}><button type="button" className="btn btn-dark" disabled={ocupado} onClick={() => void guardar(true)}>Cambiar la ciudad igual</button></div>
+        </div>
+      )}
+      <div className={h.acts}>
+        <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={onCerrar}>Cancelar</button>
+        <button type="submit" className="btn btn-primary" disabled={!listo || ocupado}>{ocupado ? "Guardando…" : crear ? "Crear proyecto" : "Guardar cambios"}</button>
+      </div>
+    </form>
+  );
+}
+
+function Separar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onHecho: (msg: string) => void | Promise<void> }) {
+  const [queda, setQueda] = useState<0 | 1>(0);
+  const [nombreNuevo, setNombreNuevo] = useState(d.nombre);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+  if (d.integrantes.length !== 2) return <div className="note note-info">Este proyecto ya es individual.</div>;
+  if (d.evaluado) return <div className="note note-error">Tiene evaluación guardada: anúlala primero (ficha → «Anular evaluación»).</div>;
+  const sale = d.integrantes[1 - queda]!;
+  async function separar() {
+    setOcupado(true); setError("");
+    const r = await api<Respuesta>(`/api/admin/proyectos/${d.id}/gestion`, { accion: "separar", queda, nombreNuevo, version: d.version }).catch(() => null);
+    setOcupado(false);
+    if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
+    if (r.data.ok) return void onHecho(`Pareja separada: ${sale.nombre} queda en ${r.data.codigo ?? "un proyecto nuevo"}, sin hora`);
+    setError(r.data.mensaje ?? "No se pudo separar.");
+  }
+  return (
+    <div className={s.form}>
+      <div className={h.campo}><span className="label">¿Quién se queda con el proyecto{d.hora ? ", su hora y su sala" : ""}?</span>
+        <div className={s.opciones}>
+          {d.integrantes.map((i, k) => (
+            <label key={i.documento} className={`${s.opcion} ${queda === k ? s.opcionOn : ""}`}>
+              <input type="radio" name="queda" checked={queda === k} onChange={() => setQueda(k as 0 | 1)} /> {i.nombre}
+            </label>
+          ))}
+        </div></div>
+      <label className={h.campo}><span className="label">Nombre del proyecto nuevo de {sale.nombre}</span>
+        <input className="input" value={nombreNuevo} onChange={(e) => setNombreNuevo(e.target.value)} maxLength={160} /></label>
+      <div className="note note-info">{sale.nombre} queda en un proyecto individual nuevo, sin hora, con la misma ciudad, ruta y monitor. Entra al portal con su documento y elige su propia hora.{d.hora ? ` La hora del ${fmtHora.format(new Date(d.hora.inicio))} sigue con ${d.integrantes[queda]!.nombre}.` : ""}</div>
+      {error && <div className="note note-error">{error}</div>}
+      <div className={h.acts}>
+        <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={onCerrar}>Cancelar</button>
+        <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => void separar()}>{ocupado ? "Separando…" : "Separar pareja"}</button>
+      </div>
+    </div>
+  );
+}
+
+function Agregar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onHecho: (msg: string) => void | Promise<void> }) {
+  const [v, setV] = useState<Integrante>(vacio());
+  const [union, setUnion] = useState<Respuesta | null>(null);
+  const [conservar, setConservar] = useState<"este" | "otro">("este");
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+  if (d.integrantes.length !== 1) return <div className="note note-info">Este proyecto ya es en pareja.</div>;
+  const listo = v.nombre.trim() && v.documento.trim();
+  async function agregar(unir = false) {
+    setOcupado(true); setError("");
+    const integrante = { nombre: v.nombre, documento: v.documento, ...(v.celular.trim() ? { celular: v.celular } : {}), ...(v.correo.trim() ? { correo: v.correo } : {}) };
+    const r = await api<Respuesta>(`/api/admin/proyectos/${d.id}/gestion`, { accion: "agregar", integrante, version: d.version, ...(unir ? { unir: true, ...(union?.otro?.hora ? { conservar } : {}) } : {}) }).catch(() => null);
+    setOcupado(false);
+    if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
+    if (r.data.ok) return void onHecho(unir ? "Proyectos unidos" : "Integrante agregado: ahora es en pareja");
+    if (r.data.error === "confirmar_union") { setUnion(r.data); setConservar(r.data.otro?.hora && !r.data.hora ? "otro" : "este"); return; }
+    setError(r.data.mensaje ?? "No se pudo agregar.");
+  }
+  return (
+    <div className={s.form}>
+      {!union && <CamposIntegrante n={2} v={v} onCambio={setV} />}
+      {union?.otro && (
+        <div className="note note-warn">
+          <div>{union.mensaje}</div>
+          <div className={s.otro}><b>{union.otro.codigo}</b> · {union.otro.nombre} · {union.otro.ciudad} · {union.otro.integrante}</div>
+          {union.otro.hora && (
+            <div className={s.opciones}>
+              <label className={`${s.opcion} ${conservar === "este" ? s.opcionOn : ""}`}><input type="radio" name="conservar" checked={conservar === "este"} onChange={() => setConservar("este")} /> Conservar la de este proyecto: {union.hora ?? "sin hora"}</label>
+              <label className={`${s.opcion} ${conservar === "otro" ? s.opcionOn : ""}`}><input type="radio" name="conservar" checked={conservar === "otro"} onChange={() => setConservar("otro")} /> Conservar la de {union.otro.codigo}: {union.otro.hora}</label>
+            </div>
+          )}
+        </div>
+      )}
+      {error && <div className="note note-error">{error}</div>}
+      <div className={h.acts}>
+        <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={union ? () => setUnion(null) : onCerrar}>{union ? "Volver" : "Cancelar"}</button>
+        {union
+          ? <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => void agregar(true)}>{ocupado ? "Uniendo…" : `Unir y eliminar ${union.otro?.codigo ?? "el otro"}`}</button>
+          : <button type="button" className="btn btn-primary" disabled={!listo || ocupado} onClick={() => void agregar()}>{ocupado ? "Guardando…" : "Agregar integrante"}</button>}
+      </div>
+    </div>
+  );
+}
