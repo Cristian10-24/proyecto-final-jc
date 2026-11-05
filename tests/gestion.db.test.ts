@@ -299,3 +299,32 @@ describe("7. agregar integrante: buscar el documento primero", () => {
   });
 });
 
+describe("8. correo y celular: el servidor valida solo lo que cambió", () => {
+  it("un correo o celular guardado e inválido que no cambió no impide guardar lo demás", async () => {
+    const c = await db.collections();
+    const pid = await proyecto("P-88000001", "Cali", ["88000001"]);
+    await c.proyectos.updateOne({ _id: pid }, { $set: { "integrantes.0.correo": "sofía.88000001@gmail.org", "integrantes.0.celular": "123" } });
+    const d = await g.datosProyecto(pid);
+    const i = d!.integrantes[0]!;
+    expect(await g.editarProyecto(pid, { ciudad: "Cali", nombre: "Nombre corregido", integrantes: [{ nombre: i.nombre, documento: i.documento, celular: i.celular, correo: i.correo }] }, { version: d!.version }, actor)).toEqual({ ok: true });
+    expect((await c.proyectos.findOne({ _id: pid }))?.integrantes[0]).toMatchObject({ correo: "sofía.88000001@gmail.org", celular: "123" });
+  });
+
+  it("si el correo cambió y tiene tildes, ñ o espacios: mensaje claro y el campo donde mostrarlo", async () => {
+    const pid = await proyecto("P-88000002", "Cali", ["88000002"]);
+    const base = { ciudad: "Cali", nombre: "App", integrantes: [{ nombre: "Persona Dos", documento: "88000002" }] };
+    for (const correo of ["maría@ejemplo.org", "nuñez@ejemplo.org", "ana perez@ejemplo.org"])
+      expect(await g.editarProyecto(pid, { ...base, integrantes: [{ ...base.integrantes[0]!, correo }] }, {}, actor))
+        .toMatchObject({ ok: false, error: "datos", mensaje: "El correo no puede tener tildes ni espacios.", campo: "integrante1.correo" });
+    expect(await g.editarProyecto(pid, { ...base, integrantes: [{ ...base.integrantes[0]!, celular: "12" }] }, {}, actor)).toMatchObject({ ok: false, campo: "integrante1.celular" });
+    expect(await g.editarProyecto(pid, { ...base, integrantes: [{ ...base.integrantes[0]!, correo: "Maria@Ejemplo.org" }] }, {}, actor)).toEqual({ ok: true });
+    expect((await (await db.collections()).proyectos.findOne({ _id: pid }))?.integrantes[0]?.correo).toBe("maria@ejemplo.org");
+  });
+
+  it("al crear también dice el campo: nombre del proyecto, documento y correo del integrante 2", async () => {
+    expect(await g.crearProyecto({ ciudad: "Cali", nombre: " ", integrantes: [{ nombre: "Uno Uno", documento: "88000003" }] }, actor)).toMatchObject({ ok: false, campo: "nombre" });
+    expect(await g.crearProyecto({ ciudad: "Cali", nombre: "App", integrantes: [{ nombre: "Uno Uno", documento: "88000003" }, { nombre: "Dos Dos", documento: "8800.0004" }] }, actor)).toMatchObject({ ok: false, campo: "integrante2.documento" });
+    expect(await g.crearProyecto({ ciudad: "Cali", nombre: "App", integrantes: [{ nombre: "Uno Uno", documento: "88000003" }, { nombre: "Dos Dos", documento: "88000004", correo: "josé@x.org" }] }, actor)).toMatchObject({ ok: false, campo: "integrante2.correo" });
+  });
+});
+

@@ -15,7 +15,7 @@ type Datos = {
   id: string; codigo: string; ciudad: string; nombre: string; descripcion: string; ruta: "Básica" | "Avanzada" | null; monitor: string | null;
   integrantes: Integrante[]; hora: { inicio: string; dia: string } | null; evaluado: boolean; version: string;
 };
-type Respuesta = { ok: boolean; error?: string; mensaje?: string; codigo?: string; otro?: { codigo: string; nombre: string; ciudad: string; integrante: string; hora: string | null }; hora?: string | null };
+type Respuesta = { ok: boolean; error?: string; mensaje?: string; campo?: string; codigo?: string; otro?: { codigo: string; nombre: string; ciudad: string; integrante: string; hora: string | null }; hora?: string | null };
 
 const vacio = (): Integrante => ({ nombre: "", documento: "", celular: "", correo: "" });
 const fmtHora = new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
@@ -49,6 +49,7 @@ export default function GestionProyecto({ abierto, ciudades: ciudadesDadas, moni
   return (
     <div className={h.overlay}>
       <div className={h.modal} role="dialog" aria-modal="true" aria-labelledby="gp-titulo" {...v.dialogo}>
+        {v.confirmacion}
         <div className={h.asa} aria-hidden />
         <div className={h.modalHead}>
           <div>
@@ -70,11 +71,23 @@ export default function GestionProyecto({ abierto, ciudades: ciudadesDadas, moni
   );
 }
 
-function CamposIntegrante({ n, v, onCambio, soloLecturaDocumento }: { n: number; v: Integrante; onCambio: (x: Integrante) => void; soloLecturaDocumento?: boolean }) {
-  const campo = (k: keyof Integrante, etq: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
-    <label className={h.campo}><span className="label">{etq}</span>
-      <input className="input" value={v[k]} onChange={(e) => onCambio({ ...v, [k]: e.target.value })} {...extra} /></label>
-  );
+/** Error del servidor junto a su campo (con el diseño de la app, no la burbuja del navegador). */
+type ErrorCampo = { campo: string; mensaje: string } | null;
+function MensajeCampo({ id, error, campo }: { id: string; error: ErrorCampo; campo: string }) {
+  return error?.campo === campo ? <span id={id} className={s.errorCampo} role="alert">{error.mensaje}</span> : null;
+}
+const conError = (error: ErrorCampo, campo: string, id: string) => (error?.campo === campo ? { "aria-invalid": true, "aria-describedby": id } : {});
+
+function CamposIntegrante({ n, v, onCambio, soloLecturaDocumento, error = null }: { n: number; v: Integrante; onCambio: (x: Integrante) => void; soloLecturaDocumento?: boolean; error?: ErrorCampo }) {
+  // Correo y celular sin validación nativa (type="text"): la hace el servidor, que respeta lo que ya estaba guardado.
+  const campo = (k: keyof Integrante, etq: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => {
+    const c = `integrante${n}.${k}`, id = `err-${c.replace(".", "-")}`;
+    return (
+      <label className={h.campo}><span className="label">{etq}</span>
+        <input className="input" type="text" value={v[k]} onChange={(e) => onCambio({ ...v, [k]: e.target.value })} {...conError(error, c, id)} {...extra} />
+        <MensajeCampo id={id} error={error} campo={c} /></label>
+    );
+  };
   return (
     <fieldset className={s.grupo}>
       <legend className={h.seccionK}>Integrante {n}</legend>
@@ -82,7 +95,7 @@ function CamposIntegrante({ n, v, onCambio, soloLecturaDocumento }: { n: number;
         {campo("nombre", "Nombre completo", { autoComplete: "off", maxLength: 120 })}
         {campo("documento", "Documento (sin puntos)", { inputMode: "text", autoComplete: "off", maxLength: 30, readOnly: soloLecturaDocumento })}
         {campo("celular", "Celular (opcional)", { inputMode: "tel", autoComplete: "off", maxLength: 30 })}
-        {campo("correo", "Correo (opcional)", { type: "email", autoComplete: "off", maxLength: 120 })}
+        {campo("correo", "Correo (opcional)", { inputMode: "email", autoComplete: "off", autoCapitalize: "none", spellCheck: false, maxLength: 120 })}
       </div>
     </fieldset>
   );
@@ -100,6 +113,7 @@ function Formulario({ datos, ciudades, monitores, onCerrar, onHecho }: { datos?:
   const [ints, setInts] = useState<Integrante[]>(datos?.integrantes.map((i) => ({ ...i })) ?? [vacio(), vacio()]);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
+  const [errorCampo, setErrorCampo] = useState<ErrorCampo>(null);
   const [confirmarCiudad, setConfirmarCiudad] = useState("");
 
   const lista = (pareja ? ints.slice(0, 2) : ints.slice(0, 1)).map((i) => ({ nombre: i.nombre, documento: i.documento, ...(i.celular.trim() ? { celular: i.celular } : {}), ...(i.correo.trim() ? { correo: i.correo } : {}) }));
@@ -107,7 +121,7 @@ function Formulario({ datos, ciudades, monitores, onCerrar, onHecho }: { datos?:
   const deCiudad = monitores.filter((m) => m.ciudades.includes(ciudad)), otros = monitores.filter((m) => !m.ciudades.includes(ciudad));
 
   async function guardar(confirmar = false) {
-    setOcupado(true); setError("");
+    setOcupado(true); setError(""); setErrorCampo(null);
     const proyecto = {
       ciudad, nombre, ...(descripcion.trim() ? { descripcion } : {}), ruta: ruta ? ruta : null,
       ...(crear ? (monitor === "__nadie" ? { monitor: null } : monitor ? { monitor } : {}) : { monitor: monitor || null }),
@@ -119,18 +133,20 @@ function Formulario({ datos, ciudades, monitores, onCerrar, onHecho }: { datos?:
     if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
     if (r.data.ok) return void onHecho(crear ? `Proyecto ${r.data.codigo} creado: queda sin hora` : "Proyecto actualizado");
     if (r.data.error === "confirmar_ciudad") return setConfirmarCiudad(r.data.mensaje ?? "");
+    // Lo escrito se conserva; el error va junto a su campo si el servidor dice cuál es.
+    if (r.data.campo) return setErrorCampo({ campo: r.data.campo, mensaje: r.data.mensaje ?? "Revisa este dato." });
     setError(r.data.mensaje ?? "No se pudo guardar.");
   }
 
   return (
-    <form className={s.form} onSubmit={(e) => { e.preventDefault(); if (listo && !ocupado) void guardar(); }}>
+    <form className={s.form} noValidate onSubmit={(e) => { e.preventDefault(); if (listo && !ocupado) void guardar(); }}>
       {!crear && datos.hora && <div className="note note-info">Tiene hora el {fmtHora.format(new Date(datos.hora.inicio))} COL. Editar no la mueve.</div>}
       <div className={s.rejilla}>
         <label className={h.campo}><span className="label">Ciudad</span>
-          <select className="input" value={ciudad} onChange={(e) => { setCiudad(e.target.value); setConfirmarCiudad(""); }} required>
+          <select className="input" value={ciudad} onChange={(e) => { setCiudad(e.target.value); setConfirmarCiudad(""); }} {...conError(errorCampo, "ciudad", "err-ciudad")}>
             <option value="">Elige la ciudad</option>
             {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select></label>
+          </select><MensajeCampo id="err-ciudad" error={errorCampo} campo="ciudad" /></label>
         {crear && (
           <div className={h.campo}><span className="label">Modalidad</span>
             <div className={s.seg} role="group" aria-label="Modalidad">
@@ -139,7 +155,8 @@ function Formulario({ datos, ciudades, monitores, onCerrar, onHecho }: { datos?:
             </div></div>
         )}
         <label className={`${h.campo} ${s.ancho}`}><span className="label">Nombre del proyecto</span>
-          <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={160} required /></label>
+          <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={160} {...conError(errorCampo, "nombre", "err-nombre")} />
+          <MensajeCampo id="err-nombre" error={errorCampo} campo="nombre" /></label>
         <label className={`${h.campo} ${s.ancho}`}><span className="label">Descripción (opcional)</span>
           <textarea className={`input ${s.area}`} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} maxLength={1000} rows={3} /></label>
         <label className={h.campo}><span className="label">Ruta</span>
@@ -151,10 +168,10 @@ function Formulario({ datos, ciudades, monitores, onCerrar, onHecho }: { datos?:
             {crear ? <><option value="">El de la ciudad (si tiene uno solo)</option><option value="__nadie">Por asignar</option></> : <option value="">Por asignar</option>}
             {deCiudad.length > 0 && <optgroup label={`De ${ciudad}`}>{deCiudad.map((m) => <option key={m.usuario} value={m.usuario}>{m.nombre}</option>)}</optgroup>}
             {otros.length > 0 && <optgroup label="Otras ciudades">{otros.map((m) => <option key={m.usuario} value={m.usuario}>{m.nombre} · {m.ciudades.join(", ")}</option>)}</optgroup>}
-          </select></label>
+          </select><MensajeCampo id="err-monitor" error={errorCampo} campo="monitor" /></label>
       </div>
-      <CamposIntegrante n={1} v={ints[0]!} onCambio={(x) => setInts((a) => [x, a[1] ?? vacio()])} />
-      {pareja && <CamposIntegrante n={2} v={ints[1] ?? vacio()} onCambio={(x) => setInts((a) => [a[0]!, x])} />}
+      <CamposIntegrante n={1} v={ints[0]!} onCambio={(x) => setInts((a) => [x, a[1] ?? vacio()])} error={errorCampo} />
+      {pareja && <CamposIntegrante n={2} v={ints[1] ?? vacio()} onCambio={(x) => setInts((a) => [a[0]!, x])} error={errorCampo} />}
       {!crear && <p className={s.ayuda}>Para cambiar cuántos integrantes tiene, usa «Separar pareja» o «Agregar integrante» en la ficha.</p>}
       {error && <div className="note note-error">{error}</div>}
       {confirmarCiudad && (
@@ -223,15 +240,16 @@ function Agregar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onH
   const [conservar, setConservar] = useState<"este" | "otro">("este");
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
+  const [errorCampo, setErrorCampo] = useState<ErrorCampo>(null);
   if (d.integrantes.length !== 1) return <div className="note note-info">Este proyecto ya es en pareja.</div>;
 
   async function buscar() {
     if (!documento.trim() || ocupado) return;
-    setOcupado(true); setError(""); setB(null);
+    setOcupado(true); setError(""); setErrorCampo(null); setB(null);
     const r = await api<Busqueda & { mensaje?: string }>(`/api/admin/proyectos/${d.id}/gestion?${new URLSearchParams({ documento: documento.trim() })}`).catch(() => null);
     setOcupado(false);
     if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
-    if (!r.ok) return setError(r.data.mensaje ?? "Revisa el documento.");
+    if (!r.ok) return setErrorCampo({ campo: "buscar", mensaje: r.data.mensaje ?? "Revisa el documento." });
     setB(r.data);
     if (r.data.estado === "nuevo") setV({ ...vacio(), documento: r.data.documento });
     if (r.data.estado === "existe") setConservar(r.data.otro.hora && !r.data.horaEste ? "otro" : "este");
@@ -239,7 +257,7 @@ function Agregar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onH
 
   async function guardar() {
     if (!b || b.estado === "mismo") return;
-    setOcupado(true); setError("");
+    setOcupado(true); setError(""); setErrorCampo(null);
     const unir = b.estado === "existe";
     const integrante = unir ? { documento: b.documento }
       : { nombre: v.nombre, documento: b.documento, ...(v.celular.trim() ? { celular: v.celular } : {}), ...(v.correo.trim() ? { correo: v.correo } : {}) };
@@ -247,15 +265,17 @@ function Agregar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onH
     setOcupado(false);
     if (!r?.data) return setError("Sin conexión. Revisa tu internet e inténtalo otra vez.");
     if (r.data.ok) return void onHecho(unir ? `Proyectos unidos: ${b.otro.codigo} se eliminó` : "Integrante agregado: ahora es en pareja");
+    if (r.data.campo && !unir) return setErrorCampo({ campo: r.data.campo, mensaje: r.data.mensaje ?? "Revisa este dato." });
     setError(r.data.mensaje ?? "No se pudo guardar.");
   }
 
   const fichaDe = (o: { id: string; codigo: string }) => `/admin/horarios?${new URLSearchParams({ q: o.codigo, abrir: o.id })}`;
   return (
     <div className={s.form}>
-      <form className={s.buscar} onSubmit={(e) => { e.preventDefault(); void buscar(); }}>
+      <form className={s.buscar} noValidate onSubmit={(e) => { e.preventDefault(); void buscar(); }}>
         <label className={h.campo}><span className="label">Documento del integrante 2 (sin puntos)</span>
-          <input className="input" value={documento} onChange={(e) => { setDocumento(e.target.value); setB(null); }} autoComplete="off" maxLength={30} autoFocus /></label>
+          <input className="input" type="text" value={documento} onChange={(e) => { setDocumento(e.target.value); setB(null); }} autoComplete="off" maxLength={30} autoFocus {...conError(errorCampo, "buscar", "err-buscar")} />
+          <MensajeCampo id="err-buscar" error={errorCampo} campo="buscar" /></label>
         <button type="submit" className="btn btn-dark" disabled={!documento.trim() || ocupado}>{ocupado && !b ? "Buscando…" : "Buscar"}</button>
       </form>
 
@@ -293,7 +313,7 @@ function Agregar({ d, onCerrar, onHecho }: { d: Datos; onCerrar: () => void; onH
       {b?.estado === "nuevo" && (
         <>
           <div className="note note-info">Ese documento no está en ningún proyecto: completa los datos del integrante nuevo.</div>
-          <CamposIntegrante n={2} v={v} onCambio={(x) => setV({ ...x, documento: b.documento })} soloLecturaDocumento />
+          <CamposIntegrante n={2} v={v} onCambio={(x) => setV({ ...x, documento: b.documento })} soloLecturaDocumento error={errorCampo} />
         </>
       )}
 

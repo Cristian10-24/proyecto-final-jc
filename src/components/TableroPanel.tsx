@@ -327,6 +327,7 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
   return (
     <div className={s.overlay}>
       <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="f-t" {...v.dialogo}>
+        {v.confirmacion}
         <div className={s.cCiudad}><i style={{ background: colorDe(t.ciudad) }} />{t.ciudad}{t.ruta && <span className={s.cRuta}>Ruta {t.ruta.toLowerCase()}</span>}</div>
         <div id="f-t" className={s.modalT}>{t.proyecto}</div>
         <div className={s.datos}>

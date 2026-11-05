@@ -273,6 +273,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
   return (
     <div className={s.overlay}>
       <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="det-titulo" {...v.dialogo}>
+        {v.confirmacion}
         <div className={s.asa} aria-hidden />
         <div className={s.modalHead}>
           <div>

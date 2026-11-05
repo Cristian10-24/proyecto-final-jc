@@ -228,6 +228,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       {form && (
         <div className={s.overlay}>
           <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="u-title" {...vForm.dialogo}>
+        {vForm.confirmacion}
             <div id="u-title" className={s.modalTitle}>{form.modo === "crear" ? "Nuevo usuario" : `Editar ${form.usuario}`}</div>
             {form.modo === "crear" && (
               <div>
@@ -242,7 +243,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             </div>
             <div>
               <label className="label" htmlFor="u-correo">Correo (opcional)</label>
-              <input id="u-correo" className="input" type="email" inputMode="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} autoCapitalize="none" autoCorrect="off" />
+              <input id="u-correo" className="input" type="text" inputMode="email" autoComplete="off" spellCheck={false} value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} autoCapitalize="none" autoCorrect="off" />
               <div className={s.hint}>No se usa para entrar: sirve para reconocer a la persona al cargar el Excel.</div>
             </div>
             <div>
@@ -302,6 +303,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       {clave && (
         <div className={s.overlay}>
           <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="c-title" {...vClave.dialogo}>
+        {vClave.confirmacion}
             <div id="c-title" className={s.modalTitle}>Restablecer clave de {clave.usuario}</div>
             <div className={s.modalSub}>La clave anterior deja de funcionar y se cierran las sesiones abiertas de este usuario.</div>
             <div className={s.claveOpts}>

@@ -1,0 +1,7 @@
+/* "¿Descartar los cambios?" (useVentana): por encima de cualquier ventana del admin. Solo tokens: claro y oscuro. */
+.fondo { position: fixed; inset: 0; z-index: 80; background: var(--overlay); display: grid; place-items: center; padding: var(--s-7); }
+.caja { width: min(400px, 100%); background: var(--card); color: var(--ink); border: 1px solid var(--line-2); border-radius: var(--r-2xl); box-shadow: var(--sh-modal); padding: var(--s-9); display: flex; flex-direction: column; gap: var(--s-4); }
+.titulo { margin: 0; font: var(--t-h2); letter-spacing: -.01em; }
+.texto { margin: 0; font: var(--t-body); color: var(--muted); }
+.botones { display: flex; gap: var(--s-3); justify-content: flex-end; flex-wrap: wrap; margin-top: var(--s-3); }
+.botones :global(.btn) { width: auto; height: var(--h-button-sm); padding: 0 var(--s-8); border-radius: var(--r-sm); }

@@ -166,7 +166,7 @@ async function main() {
   const reparto: [string, number][] = [["Cali", 14], ["Cartagena", 10], ["Barranquilla", 10], ["Medellín", 6]];
   const filasP: (string | number | null)[][] = [["Ciudad", "Nombre del proyecto", "Descripción", "Nombre 1", "Documento 1", "Celular 1", "Correo 1", "Nombre 2", "Documento 2", "Celular 2", "Correo 2", "Ruta", "Monitor"]];
   let doc = 1_000_200_000, k = 0;
-  const persona = () => { const nombre = `${toma(NOMBRES)} ${toma(APELLIDOS)}`; doc++; return [nombre, String(doc), `3${String(doc).slice(-9)}`, `${nombre.split(" ")[0]!.toLowerCase()}.${doc}@ejemplo.org`]; };
+  const persona = () => { const nombre = `${toma(NOMBRES)} ${toma(APELLIDOS)}`; doc++; return [nombre, String(doc), `3${String(doc).slice(-9)}`, `${nombre.split(" ")[0]!.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()}.${doc}@ejemplo.org`]; };
   for (const [ciudad, n] of reparto)
     for (let i = 0; i < n; i++, k++) {
       const [idea, desc] = IDEAS[k % IDEAS.length]!;

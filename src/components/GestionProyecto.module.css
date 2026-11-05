@@ -15,6 +15,10 @@
 .opcionOn { border-color: var(--orange); background: var(--orange-tint); }
 .otro { margin-top: var(--s-3); font: 500 14px var(--font); }
 
+/* Error del servidor junto a su campo. */
+.errorCampo { font: 600 13px/1.35 var(--font); color: var(--red-dark); }
+.form :global(.input[aria-invalid="true"]) { border-color: var(--red); }
+
 /* Agregar integrante: buscar el documento primero y mostrar el registro que ya existe. */
 .buscar { display: flex; gap: var(--s-3); align-items: flex-end; }
 .buscar > label { flex: 1; min-width: 0; }

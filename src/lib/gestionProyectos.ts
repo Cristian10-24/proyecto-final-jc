@@ -21,50 +21,69 @@ export type ProyectoEntrada = {
   monitor?: string | null;
   integrantes: IntegranteEntrada[];
 };
-export type Falla = { ok: false; error: string; mensaje: string };
+/** `campo`: dónde mostrar el error en el formulario ("nombre", "integrante2.correo"…). */
+export type Falla = { ok: false; error: string; mensaje: string; campo?: string };
 export type Resultado<T = object> = ({ ok: true } & T) | Falla;
 
 class Corte extends Error { constructor(readonly r: Falla) { super(r.error); } }
-const falla = (error: string, mensaje: string): Falla => ({ ok: false, error, mensaje });
+const falla = (error: string, mensaje: string, campo?: string): Falla => ({ ok: false, error, mensaje, ...(campo ? { campo } : {}) });
 const mask = (doc: string) => enmascararNumero(doc);
 const quien = (i: Pick<Integrante, "nombre" | "documento">) => `${i.nombre} (${mask(i.documento)})`;
 
 /** Documento como en el importador; en el formulario, sin puntos ni comas (aquí se escribe a mano). */
 function documentoValido(documento: string | undefined, n: number): { doc: string } | Falla {
-  if (/[.,]/.test(documento ?? "")) return falla("datos", `Integrante ${n}: escribe el documento sin puntos ni comas.`);
+  const campo = `integrante${n}.documento`;
+  if (/[.,]/.test(documento ?? "")) return falla("datos", `Integrante ${n}: escribe el documento sin puntos ni comas.`, campo);
   const d = leerDocumento(documento ?? "");
-  if (!d) return falla("datos", `Integrante ${n}: falta el documento.`);
-  if ("error" in d) return falla("datos", `Integrante ${n}: el documento ${d.error}.`);
+  if (!d) return falla("datos", `Integrante ${n}: falta el documento.`, campo);
+  if ("error" in d) return falla("datos", `Integrante ${n}: el documento ${d.error}.`, campo);
   return d;
 }
 
 /** Integrante validado como en el importador; error con el número de integrante. */
-function integranteValido(x: IntegranteEntrada, n: number): Integrante | Falla {
+/**
+ * Integrante validado como en el importador; error con el número de integrante y el campo.
+ * `previo`: lo guardado (al editar). Un celular o correo que no cambió se conserva tal cual, sin validarlo: un dato
+ * real mal escrito no impide corregir lo demás.
+ */
+function integranteValido(x: IntegranteEntrada, n: number, previo?: Integrante): Integrante | Falla {
   const nombre = toProperName(cleanSpaces(x.nombre ?? ""));
-  if (nombre.length < 3) return falla("datos", `Integrante ${n}: escribe el nombre.`);
+  if (nombre.length < 3) return falla("datos", `Integrante ${n}: escribe el nombre.`, `integrante${n}.nombre`);
   const d = documentoValido(x.documento, n);
   if ("ok" in d) return d;
-  const cel = x.celular?.trim() ? leerCelular(x.celular) : null;
-  if (cel && "error" in cel) return falla("datos", `Integrante ${n}: el celular ${cel.error}.`);
-  const cor = x.correo?.trim() ? leerCorreo(x.correo) : null;
-  if (cor && "error" in cor) return falla("datos", `Integrante ${n}: el correo ${cor.error}.`);
-  return { documento: d.doc, nombre, ...(cel ? { celular: cel.celular } : {}), ...(cor ? { correo: cor.correo } : {}) };
+  const celCrudo = x.celular?.trim() ?? "", corCrudo = x.correo?.trim() ?? "";
+  let celular: string | undefined, correo: string | undefined;
+  if (previo && celCrudo === (previo.celular ?? "")) celular = previo.celular;
+  else if (celCrudo) {
+    const cel = leerCelular(celCrudo);
+    if (cel && "error" in cel) return falla("datos", `Integrante ${n}: el celular ${cel.error}.`, `integrante${n}.celular`);
+    celular = cel?.celular;
+  }
+  if (previo && corCrudo === (previo.correo ?? "")) correo = previo.correo;
+  else if (corCrudo) {
+    // Tildes, ñ o espacios (cualquier cosa fuera del ASCII visible).
+    if (/[^\x21-\x7e]/.test(corCrudo)) return falla("datos", "El correo no puede tener tildes ni espacios.", `integrante${n}.correo`);
+    const cor = leerCorreo(corCrudo);
+    if (cor && "error" in cor) return falla("datos", `Integrante ${n}: el correo ${cor.error}.`, `integrante${n}.correo`);
+    correo = cor?.correo;
+  }
+  return { documento: d.doc, nombre, ...(celular ? { celular } : {}), ...(correo ? { correo } : {}) };
 }
 
 type Valido = { ciudad: string; nombre: string; descripcion?: string; ruta?: Ruta; monitor: string | null; integrantes: Integrante[] };
 
-async function validar(p: ProyectoEntrada, s?: ClientSession): Promise<Valido | Falla> {
-  if (!NOMBRES_CIUDADES.includes(p.ciudad)) return falla("datos", "Ciudad no reconocida.");
+async function validar(p: ProyectoEntrada, s?: ClientSession, previos: Integrante[] = []): Promise<Valido | Falla> {
+  if (!NOMBRES_CIUDADES.includes(p.ciudad)) return falla("datos", "Ciudad no reconocida.", "ciudad");
   const nombre = cleanSpaces(p.nombre ?? "");
-  if (nombre.length < 2) return falla("datos", "Escribe el nombre del proyecto.");
+  if (nombre.length < 2) return falla("datos", "Escribe el nombre del proyecto.", "nombre");
   if (p.integrantes.length < 1 || p.integrantes.length > 2) return falla("datos", "Un proyecto tiene 1 o 2 integrantes.");
   const integrantes: Integrante[] = [];
   for (const [i, x] of p.integrantes.entries()) {
-    const v = integranteValido(x, i + 1);
+    const v = integranteValido(x, i + 1, previos[i]);
     if ("ok" in v) return v;
     integrantes.push(v);
   }
-  if (integrantes[1] && integrantes[0]!.documento === integrantes[1].documento) return falla("datos", "Los dos integrantes tienen el mismo documento.");
+  if (integrantes[1] && integrantes[0]!.documento === integrantes[1].documento) return falla("datos", "Los dos integrantes tienen el mismo documento.", "integrante2.documento");
   const { users } = await collections();
   const monitores = (await users.find({ rol: "monitor", activo: true }, { session: s, projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray())
     .map((m) => ({ usuario: m.usuario, nombre: m.nombre, ciudades: m.ciudades }));
@@ -72,7 +91,7 @@ async function validar(p: ProyectoEntrada, s?: ClientSession): Promise<Valido | 
   if (p.monitor === undefined) monitor = asignarMonitor({ ciudad: p.ciudad, monitorTexto: undefined }, monitores).monitor;
   else if (p.monitor === null) monitor = null;
   else if (monitores.some((m) => m.usuario === p.monitor)) monitor = p.monitor;
-  else return falla("datos", "Ese monitor no existe o está inactivo.");
+  else return falla("datos", "Ese monitor no existe o está inactivo.", "monitor");
   const descripcion = cleanSpaces(p.descripcion ?? "");
   return { ciudad: p.ciudad, nombre, ...(descripcion ? { descripcion } : {}), ...(p.ruta ? { ruta: p.ruta } : {}), monitor, integrantes };
 }
@@ -147,7 +166,7 @@ export async function editarProyecto(pid: ObjectId, entrada: ProyectoEntrada, op
   if (!p) return falla("no_existe", "Ese proyecto ya no existe.");
   if (opciones.version && p.actualizadoEn.toISOString() !== opciones.version) return falla("cambio", "Alguien cambió este proyecto mientras lo editabas. Ábrelo otra vez.");
   if (entrada.integrantes.length !== p.integrantes.length) return falla("datos", "Para cambiar cuántos integrantes tiene, usa «Separar pareja» o «Agregar integrante».");
-  const v = await validar({ ...entrada, monitor: entrada.monitor === undefined ? p.monitor ?? null : entrada.monitor });
+  const v = await validar({ ...entrada, monitor: entrada.monitor === undefined ? p.monitor ?? null : entrada.monitor }, undefined, p.integrantes);
   if ("ok" in v) return v;
 
   const cambiaDoc = v.integrantes.some((i, k) => i.documento !== p.integrantes[k]!.documento);
