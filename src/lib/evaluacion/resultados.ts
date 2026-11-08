@@ -3,6 +3,7 @@ import type { Filter } from "mongodb";
 import { horaCO } from "../ciudades";
 import { collections, transaccion } from "../db";
 import { diaCOL, horaCOL } from "../edicion";
+import { sinProyectoPorCiudad, type SinProyectoCiudad } from "../sinProyecto";
 import type { Actor, Asiento, Proyecto } from "../types";
 import { calc, CRITERIOS_DEFECTO, ITEMS_A, TEMAS_B, type Criterios } from "./criterios";
 import { criterios, idEval } from "./datos";
@@ -20,7 +21,8 @@ export async function filasEstudiantes(filtro: FiltroSeguimiento = {}): Promise<
   const asientosF: Filter<Asiento> = { proyectoId: { $type: "objectId" }, ...(filtro.dia ? { dia: filtro.dia } : {}) };
   const asientos = await c.asientos.find(asientosF).toArray();
   const porProyecto = new Map(asientos.map((a) => [String(a.proyectoId), a]));
-  const proyectosF: Filter<Proyecto> = { ...(filtro.ciudad ? { ciudad: filtro.ciudad } : {}), ...(filtro.dia ? { _id: { $in: asientos.map((a) => a.proyectoId!) } } : {}) };
+  // Paso 21: los proyectos marcados «Sin proyecto» no cuentan (tienen su propio apartado).
+  const proyectosF: Filter<Proyecto> = { sinProyecto: { $exists: false }, ...(filtro.ciudad ? { ciudad: filtro.ciudad } : {}), ...(filtro.dia ? { _id: { $in: asientos.map((a) => a.proyectoId!) } } : {}) };
   const proyectos = await c.proyectos.find(proyectosF).sort({ ciudad: 1, nombre: 1 }).toArray();
   const ids = proyectos.map((p) => p._id);
   const [evals, notas, plan, mentores] = await Promise.all([
@@ -75,15 +77,31 @@ export async function cuposDesdeHoy(filtro: FiltroSeguimiento = {}, ahora = new 
   };
 }
 
-export type Seguimiento = Tablero & { cupos: Cupos; criterios: Criterios; dias: string[]; ciudades: string[] };
+/** Paso 21 · Por ciudad: integrantes con hora que no se presentaron («No se presentó» guardado, o asistencia «No» del
+ *  monitor sin evaluación guardada). */
+export type NoSePresentaronCiudad = { ciudad: string; estudiantes: number };
+export function noSePresentaronPorCiudad(filas: FilaEstudiante[], asistenciaNo: Set<string>): NoSePresentaronCiudad[] {
+  const out = new Map<string, number>();
+  for (const f of filas) {
+    if (!f.dia) continue;
+    if (f.ev ? f.ev.noPresento : asistenciaNo.has(`${f.proyectoId}|${f.documento}`)) out.set(f.ciudad, (out.get(f.ciudad) ?? 0) + 1);
+  }
+  return [...out].map(([ciudad, estudiantes]) => ({ ciudad, estudiantes })).sort((a, b) => a.ciudad.localeCompare(b.ciudad, "es"));
+}
+
+export type Seguimiento = Tablero & { cupos: Cupos; criterios: Criterios; dias: string[]; ciudades: string[]; sinProyecto: SinProyectoCiudad[]; noSePresentaronCiudad: NoSePresentaronCiudad[] };
 
 export async function seguimiento(filtro: FiltroSeguimiento = {}): Promise<Seguimiento> {
   const c = await collections();
-  const [filas, crit, cupos, dias, ciudades] = await Promise.all([
+  const [filas, crit, cupos, dias, ciudades, sinProyecto, asistenciaNo] = await Promise.all([
     filasEstudiantes(filtro), criterios(), cuposDesdeHoy(filtro),
-    c.asientos.distinct("dia"), c.proyectos.distinct("ciudad"),
+    c.asientos.distinct("dia"), c.proyectos.distinct("ciudad"), sinProyectoPorCiudad(filtro.ciudad),
+    c.evalMonitor.find({ asistencia: "no" }, { projection: { _id: 1 } }).toArray(),
   ]);
-  return { ...tablero(filas, crit), cupos, criterios: crit, dias: dias.sort(), ciudades: ciudades.sort((a, b) => a.localeCompare(b, "es")) };
+  return {
+    ...tablero(filas, crit), cupos, criterios: crit, dias: dias.sort(), ciudades: ciudades.sort((a, b) => a.localeCompare(b, "es")),
+    sinProyecto, noSePresentaronCiudad: noSePresentaronPorCiudad(filas, new Set(asistenciaNo.map((n) => n._id))),
+  };
 }
 
 /** Guarda los criterios de Excelente (Parte A mínima y Parte B mínima) con changeLog. */

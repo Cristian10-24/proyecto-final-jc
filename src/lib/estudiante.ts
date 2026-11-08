@@ -46,7 +46,8 @@ export function vistaProyecto(p: Pick<Proyecto, "nombre" | "descripcion" | "ciud
 
 async function proyectoDe(documento: string) {
   const { proyectos } = await collections();
-  return proyectos.findOne({ "integrantes.documento": documento }, { projection: { nombre: 1, descripcion: 1, ciudad: 1, integrantes: 1 } });
+  // Un proyecto marcado «Sin proyecto» (Paso 21) no se muestra: la ruta responde «No tienes un proyecto inscrito».
+  return proyectos.findOne({ "integrantes.documento": documento, sinProyecto: { $exists: false } }, { projection: { nombre: 1, descripcion: 1, ciudad: 1, integrantes: 1 } });
 }
 
 /** Hora del proyecto y quién la eligió (por el registro de la reserva). */

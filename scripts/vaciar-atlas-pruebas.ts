@@ -37,7 +37,7 @@ async function main() {
     evalAnuladas: "Evaluaciones anuladas", evalBorradores: "Borradores de evaluación", evalMonitor: "Notas del monitor",
     evalConfig: "Criterios de evaluación", cambiosSugeridos: "Cambios sugeridos", changeLog: "Historial (changeLog)",
     rateLimits: "Límites de intentos", users: "Usuarios",
-    ajustes: "Ajustes (modo orden de llegada)", candadosCupo: "Candados de cupo por ciudad y día",
+    ajustes: "Ajustes (modo orden de llegada)", candadosCupo: "Candados de cupo por ciudad y día", sinProyecto: "Participantes sin proyecto", comentarios: "Comentarios de seguimiento",
   };
   const resumen: { coleccion: string; borrados: number }[] = [];
   for (const k of Object.keys(nombres) as (keyof typeof c)[]) {

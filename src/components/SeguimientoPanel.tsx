@@ -5,12 +5,15 @@ import type { SessionUser } from "@/lib/auth";
 import { CIUDADES, horaCO, horaParaCiudad } from "@/lib/ciudades";
 import { textoPendientes } from "@/lib/whatsapp";
 import AppShell from "./AppShell";
+import Comentarios from "./Comentarios";
+import { useVentana } from "./useVentana";
 import s from "./SeguimientoPanel.module.css";
 
 // Seguimiento (Paso 6). Diseño: docs/DISENO.md (2 · Monitor). El monitor solo recibe sus ciudades;
 // coordinación y admin, todas. Horas en hora COL (y UY para ciudades de Uruguay).
 
 type Fila = {
+  id: string; comentarios: number;
   codigo: string; nombre: string; ciudad: string; grupo?: string; monitor: string | null;
   integrantes: { nombre: string; documento: string }[]; hora: string | null;
 };
@@ -35,6 +38,9 @@ export default function SeguimientoPanel({ user }: { user: SessionUser }) {
   const [ciudad, setCiudad] = useState("");
   const [toast, setToast] = useState("");
   const [manual, setManual] = useState<string | null>(null);
+  const [notas, setNotas] = useState<Fila | null>(null);
+  // Al agregar o borrar un comentario, el indicador de la fila se actualiza sin recargar la lista.
+  const alCambiar = useCallback((n: number) => setFilas((fs) => fs.map((f) => (f.id === notas?.id ? { ...f, comentarios: n } : f))), [notas?.id]);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const avisar = useCallback((t: string) => {
@@ -224,6 +230,9 @@ export default function SeguimientoPanel({ user }: { user: SessionUser }) {
                       <span className={`${s.chip} ${s.chip_amarillo}`}><i />Sin hora</span>
                     )}
                     {!esMonitor && f.monitor === null && <span className={`${s.chip} ${s.chip_neutro}`}><i />Monitor por asignar</span>}
+                    <button type="button" className="btn-link" onClick={() => setNotas(f)}>
+                      {f.comentarios ? `Con comentarios (${f.comentarios})` : "Comentar"}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -250,7 +259,32 @@ export default function SeguimientoPanel({ user }: { user: SessionUser }) {
         </div>
       )}
 
+      {notas && <VentanaComentarios f={notas} onCerrar={() => setNotas(null)} onCambio={alCambiar} />}
+
       {toast && <div className={s.toast} role="status" aria-live="polite">{toast}</div>}
     </AppShell>
+  );
+}
+
+/** Paso 22 · Comentarios de seguimiento de un proyecto (monitor, coordinación y admin escriben). */
+function VentanaComentarios({ f, onCerrar, onCambio }: { f: Fila; onCerrar: () => void; onCambio: (n: number) => void }) {
+  const v = useVentana(onCerrar);
+  return (
+    <div className={s.overlay}>
+      <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="coment-t" {...v.dialogo}>
+        {v.confirmacion}
+        <div className={s.asa} />
+        <div className={s.modalHead}>
+          <div>
+            <div className={s.kicker}>{f.ciudad} · {f.codigo}</div>
+            <h2 id="coment-t" className={s.modalTitle}>{f.nombre}</h2>
+          </div>
+          <button type="button" className={s.cerrar} onClick={v.cerrar} aria-label="Cerrar">✕</button>
+        </div>
+        <p className={s.desc}>{f.integrantes.map((i) => i.nombre).join(" y ")}</p>
+        {/* Tras cargar o guardar no queda nada pendiente: cerrar no pregunta «¿Descartar?». */}
+        <Comentarios proyectoId={f.id} onCambio={(n) => { v.limpiar(); onCambio(n); }} />
+      </div>
+    </div>
   );
 }

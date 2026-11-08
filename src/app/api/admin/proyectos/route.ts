@@ -11,7 +11,7 @@ const Query = z
   .object({
     q: z.string().trim().max(80).optional(),
     ciudad: z.enum(NOMBRES_CIUDADES as [string, ...string[]]).optional(),
-    estado: z.enum(["con_hora", "sin_hora", "sin_monitor"]).optional(),
+    estado: z.enum(["con_hora", "sin_hora", "sin_monitor", "sin_proyecto"]).optional(),
   })
   .strict();
 

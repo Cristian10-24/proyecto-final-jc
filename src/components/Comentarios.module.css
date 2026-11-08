@@ -1,0 +1,14 @@
+/* Paso 22 · Comentarios de seguimiento (tokens de src/app/tokens.css). */
+.caja { display: flex; flex-direction: column; gap: var(--s-5); }
+.lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-4); }
+.item { display: grid; gap: var(--s-2); padding: var(--s-5) var(--s-6); border-radius: var(--r-md); background: var(--soft); }
+.cabeza { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); font: 600 14px var(--font); }
+.meta { font: 600 12px var(--mono); color: var(--muted-2); }
+.texto { margin: 0; font: var(--t-small); white-space: pre-wrap; overflow-wrap: anywhere; }
+.vacio { margin: 0; font: var(--t-small); color: var(--muted); }
+.form { display: flex; flex-direction: column; gap: var(--s-3); }
+.label { display: flex; flex-direction: column; gap: var(--s-2); }
+.acts { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-3); }
+.contador { margin-right: auto; font: 600 12px var(--mono); color: var(--muted-2); }
+.skel { height: 44px; border-radius: var(--r-sm); background: var(--soft); }
+.rol { padding: 1px var(--s-2); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); }

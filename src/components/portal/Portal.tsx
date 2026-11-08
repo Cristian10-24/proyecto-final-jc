@@ -15,6 +15,7 @@ type Vista =
   | "ingreso"
   | "buscando"
   | "no_encontrado"
+  | "no_inscrito"
   | "datos"
   | "dia"
   | "hora"
@@ -106,6 +107,11 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
     }
     if (r.status === 404) {
       ir("no_encontrado");
+      return true;
+    }
+    // Paso 21: participante sin proyecto o proyecto marcado «Sin proyecto».
+    if (r.data.error === "no_inscrito") {
+      ir("no_inscrito");
       return true;
     }
     if (r.status === 400) return avisar({ tipo: "error", titulo: r.data.mensaje ?? "Revisa el número de documento." });
@@ -337,6 +343,15 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
               <div className={s.numero}>{documento}</div>
             </div>
             <button type="button" className="btn btn-primary" onClick={reiniciar}>Intentar con otro número</button>
+          </Pantalla>
+        )}
+
+        {vista === "no_inscrito" && (
+          <Pantalla nav={nav} intro={<>
+            <Titulo>No tienes un proyecto inscrito</Titulo>
+            <p className={s.texto}>Escríbele a tu monitor.</p>
+          </>}>
+            <button type="button" className="btn btn-primary" onClick={reiniciar}>Volver al inicio</button>
           </Pantalla>
         )}
 

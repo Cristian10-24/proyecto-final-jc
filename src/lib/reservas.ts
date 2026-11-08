@@ -5,6 +5,7 @@ import { collections } from "./db";
 import { estadoCiudad } from "./reglasCupos";
 import { diaCOL } from "./edicion";
 import { conCandado, modoOrdenLlegada, ocupacionCiudad, tocarCandado, topeCiudad } from "./modoCupos";
+import { MENSAJE_NO_INSCRITO, noInscrito } from "./sinProyecto";
 
 // Reserva de un bloque por el estudiante. Sin bloqueos en memoria: un solo findOneAndUpdate atómico
 // toma un asiento libre de la ciudad en ese bloque, y el índice único parcial sobre asientos.proyectoId
@@ -12,7 +13,7 @@ import { conCandado, modoOrdenLlegada, ocupacionCiudad, tocarCandado, topeCiudad
 
 export type ResultadoReserva =
   | { ok: true; inicio: Date; dia: string }
-  | { ok: false; error: "sin_proyecto" | "ya_tiene_hora" | "dia_no_disponible" | "aun_no_abre" | "bloque_pasado" | "sin_cupo" | "cerrado" | "dia_lleno"; inicio?: Date; cierre?: string; abre?: string };
+  | { ok: false; error: "sin_proyecto" | "ya_tiene_hora" | "dia_no_disponible" | "aun_no_abre" | "bloque_pasado" | "sin_cupo" | "cerrado" | "dia_lleno" | "no_inscrito"; inicio?: Date; cierre?: string; abre?: string };
 
 export const MENSAJES_RESERVA: Record<Exclude<ResultadoReserva, { ok: true }>["error"], string> = {
   sin_proyecto: "No encontramos un proyecto con ese documento.",
@@ -23,6 +24,7 @@ export const MENSAJES_RESERVA: Record<Exclude<ResultadoReserva, { ok: true }>["e
   sin_cupo: "Alguien acaba de tomar esa hora. Elige otra.",
   cerrado: "Las inscripciones de tu ciudad ya cerraron.",
   dia_lleno: "Ese día ya no tiene horas para tu ciudad. Elige otro.",
+  no_inscrito: MENSAJE_NO_INSCRITO,
 };
 
 /** Asiento del proyecto, si ya tiene uno. */
@@ -32,9 +34,25 @@ export async function asientoDe(proyectoId: ObjectId) {
 }
 
 export async function reservar(documento: string, inicio: Date, ahora = new Date(), intento = 0): Promise<ResultadoReserva> {
+  const r = await reservarSinRevisar(documento, inicio, ahora, intento);
+  if (!r.ok) return r;
+  // Paso 21 · Si el admin marcó el proyecto «Sin proyecto» en este mismo instante (la marca revisa el asiento después de
+  // escribirse; aquí, al revés), se suelta este asiento: alguno de los dos ve al otro. Sin marca, no hace nada.
+  const { proyectos, asientos, changeLog } = await collections();
+  const p = await proyectos.findOne({ "integrantes.documento": documento }, { projection: { sinProyecto: 1 } });
+  if (p?.sinProyecto) {
+    const suelto = await asientos.findOneAndUpdate({ proyectoId: p._id, inicio: r.inicio, reservadoEn: ahora }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } });
+    if (suelto) await changeLog.insertOne({ proyectoId: p._id, accion: "liberar", anterior: `${r.dia} ${horaCO(r.inicio)}`, motivo: "El proyecto se marcó «Sin proyecto» al mismo tiempo", actor: { rol: "estudiante", usuario: documento }, fecha: new Date() });
+    return { ok: false, error: "no_inscrito" };
+  }
+  return r;
+}
+
+async function reservarSinRevisar(documento: string, inicio: Date, ahora: Date, intento: number): Promise<ResultadoReserva> {
   const { proyectos, asientos, dias, changeLog } = await collections();
-  const proyecto = await proyectos.findOne({ "integrantes.documento": documento }, { projection: { ciudad: 1, codigo: 1 } });
-  if (!proyecto) return { ok: false, error: "sin_proyecto" };
+  const proyecto = await proyectos.findOne({ "integrantes.documento": documento }, { projection: { ciudad: 1, codigo: 1, sinProyecto: 1 } });
+  if (!proyecto) return { ok: false, error: (await noInscrito(documento)) ? "no_inscrito" : "sin_proyecto" };
+  if (proyecto.sinProyecto) return { ok: false, error: "no_inscrito" };
 
   const actual = await asientoDe(proyecto._id);
   if (actual) return { ok: false, error: "ya_tiene_hora", inicio: actual.inicio };
@@ -73,7 +91,7 @@ export async function reservar(documento: string, inicio: Date, ahora = new Date
   // sigue siendo esta reserva) y se intenta otra vez con su proyecto actual. Sin cambios del admin, no hace nada.
   if (!(await proyectos.findOne({ _id: proyecto._id, "integrantes.documento": documento }, { projection: { _id: 1 } }))) {
     await asientos.updateOne({ _id: tomado._id, proyectoId: proyecto._id, reservadoEn: ahora }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } });
-    return intento < 2 ? reservar(documento, inicio, ahora, intento + 1) : { ok: false, error: "sin_proyecto" };
+    return intento < 2 ? reservarSinRevisar(documento, inicio, ahora, intento + 1) : { ok: false, error: "sin_proyecto" };
   }
 
   await changeLog.insertOne({ proyectoId: proyecto._id, accion: "reservar", nuevo: `${dia} ${horaCO(inicio)}`, actor: { rol: "estudiante", usuario: documento }, fecha: ahora });
@@ -116,7 +134,7 @@ async function reservarOrdenLlegada(
       r = { ok: true, inicio: tomado.inicio, dia };
     });
   } catch (e) {
-    if (e instanceof Reintentar) return intento < 2 ? reservar(documento, inicio, ahora, intento + 1) : { ok: false, error: "sin_proyecto" };
+    if (e instanceof Reintentar) return intento < 2 ? reservarSinRevisar(documento, inicio, ahora, intento + 1) : { ok: false, error: "sin_proyecto" };
     // El otro integrante reservó en el mismo instante: el índice único lo frenó.
     if (e instanceof MongoServerError && e.code === 11000) {
       const ya = await asientoDe(proyecto._id);

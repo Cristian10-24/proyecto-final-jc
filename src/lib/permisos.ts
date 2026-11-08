@@ -21,13 +21,15 @@ export type Permiso =
   | "evaluar"
   | "ver_evaluaciones"
   | "monitorear_salas"
-  | "editar_criterios";
+  | "editar_criterios"
+  /** Fase 4 · Paso 22: escribir comentarios de seguimiento (monitor: sus ciudades; coordinación y admin: todas). */
+  | "comentar_proyectos";
 
 const PERMISOS: Record<RolUsuario, readonly Permiso[]> = {
   mentor: ["evaluar"],
-  monitor: ["ver_seguimiento", "monitorear_salas"],
-  coordinador: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "ver_evaluaciones", "editar_criterios"],
-  admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones", "editar_criterios"],
+  monitor: ["ver_seguimiento", "monitorear_salas", "comentar_proyectos"],
+  coordinador: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "ver_evaluaciones", "editar_criterios", "comentar_proyectos"],
+  admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones", "editar_criterios", "comentar_proyectos"],
 };
 
 export function puede(rol: string | undefined, permiso: Permiso): boolean {

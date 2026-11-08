@@ -5,12 +5,15 @@ import { CIUDADES, horaCO, horaUY } from "./ciudades";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
 import { enmascararNumero } from "./estudiante";
+import { conteoComentarios } from "./comentarios";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Proyecto } from "./types";
 
 // Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
 
 export type FilaSeguimiento = {
+  /** Paso 22: para abrir sus comentarios; `comentarios` = cuántos tiene (sin los borrados). */
+  id: string; comentarios: number;
   codigo: string; nombre: string; ciudad: string; grupo?: string; monitor: string | null;
   integrantes: { nombre: string; documento: string }[]; // documento enmascarado
   hora: string | null; // ISO
@@ -18,11 +21,14 @@ export type FilaSeguimiento = {
 
 export async function seguimiento(user: Pick<SessionUser, "rol" | "ciudades">): Promise<FilaSeguimiento[]> {
   const { proyectos, asientos } = await collections();
-  const lista = await proyectos.find(scopeFilter<Proyecto>(user) as Filter<Proyecto>, { projection: { codigo: 1, nombre: 1, ciudad: 1, grupo: 1, monitor: 1, integrantes: 1 } })
+  // Paso 21: los proyectos marcados «Sin proyecto» no cuentan en el seguimiento de inscripción.
+  const lista = await proyectos.find({ ...(scopeFilter<Proyecto>(user) as Filter<Proyecto>), sinProyecto: { $exists: false } }, { projection: { codigo: 1, nombre: 1, ciudad: 1, grupo: 1, monitor: 1, integrantes: 1 } })
     .sort({ ciudad: 1, nombre: 1 }).toArray();
   const horas = new Map((await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }, { projection: { proyectoId: 1, inicio: 1 } }).toArray())
     .map((a) => [String(a.proyectoId), a.inicio.toISOString()]));
+  const nComent = await conteoComentarios(lista.map((p) => p._id));
   return lista.map((p) => ({
+    id: String(p._id), comentarios: nComent.get(String(p._id)) ?? 0,
     codigo: p.codigo, nombre: p.nombre, ciudad: p.ciudad, ...(p.grupo ? { grupo: p.grupo } : {}), monitor: p.monitor ?? null,
     integrantes: p.integrantes.map((i) => ({ nombre: i.nombre, documento: enmascararNumero(i.documento) })),
     hora: horas.get(String(p._id)) ?? null,
@@ -35,7 +41,8 @@ export type ResumenDia = { dia: string; capacidad: number; ocupados: number };
 /** Avance por ciudad (de menor a mayor) y ocupación por día. Coordinación y admin. */
 export async function resumen(): Promise<{ total: number; conHora: number; ciudades: ResumenCiudad[]; dias: ResumenDia[] }> {
   const { proyectos, asientos } = await collections();
-  const porCiudad = await proyectos.aggregate<{ _id: string; n: number }>([{ $group: { _id: "$ciudad", n: { $sum: 1 } } }]).toArray();
+  // Paso 21: los marcados «Sin proyecto» no cuentan (no tienen hora: tampoco suman en "con hora").
+  const porCiudad = await proyectos.aggregate<{ _id: string; n: number }>([{ $match: { sinProyecto: { $exists: false } } }, { $group: { _id: "$ciudad", n: { $sum: 1 } } }]).toArray();
   const conHora = await asientos.aggregate<{ _id: string; n: number }>([
     { $match: { proyectoId: { $type: "objectId" } } },
     { $lookup: { from: "proyectos", localField: "proyectoId", foreignField: "_id", as: "p" } },

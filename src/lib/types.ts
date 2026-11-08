@@ -30,7 +30,7 @@ export type ChangeLog = {
   proyectoId?: ObjectId;
   accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion" | "reglas_cupos" | "cierre_inscripciones" | "franjas"
     | "crear_proyecto" | "editar_proyecto" | "separar_pareja" | "agregar_integrante" | "unir_proyecto"
-    | "modo_cupos";
+    | "modo_cupos" | "sin_proyecto" | "quitar_sin_proyecto";
   anterior?: string;
   nuevo?: string;
   motivo?: string;
@@ -56,6 +56,19 @@ export type Proyecto = {
   integrantes: Integrante[];
   creadoEn: Date;
   actualizadoEn: Date;
+  /** Fase 4 · Marcado a mano como «Sin proyecto» (solo sin hora). Sin el campo = como siempre. */
+  sinProyecto?: { desde: Date; por: string; motivo?: string };
+};
+
+/** Fase 4 · Participante sin proyecto (colección nueva `sin_proyecto`, documento único). Al convertirlo en proyecto
+ *  no se borra: queda con `convertidoEn` y `proyectoId`. */
+export type ParticipanteSinProyecto = {
+  _id: ObjectId;
+  nombre: string; documento: string; ciudad: string; celular?: string; correo?: string;
+  /** Usuario del monitor; null = por asignar. */
+  monitor: string | null;
+  creadoEn: Date; creadoPor: string;
+  convertidoEn?: Date; proyectoId?: ObjectId;
 };
 
 export type Mentor = { _id: string; nombre: string; correo?: string; celular?: string };

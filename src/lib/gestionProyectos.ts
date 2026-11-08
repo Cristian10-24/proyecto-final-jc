@@ -6,6 +6,7 @@ import { enmascararCorreo, enmascararNumero } from "./estudiante";
 import { asignarMonitor } from "./importar/aplicar";
 import { leerCelular, leerCorreo, leerDocumento } from "./importar/proyectos";
 import { conCandado, modoOrdenLlegada, tocarCandado, topeVigente } from "./modoCupos";
+import { enSinProyecto, mensajeEnSinProyecto } from "./sinProyecto";
 import type { Actor, Asiento, Integrante, Proyecto, Ruta } from "./types";
 import { cleanSpaces, toProperName } from "./validation/name";
 
@@ -135,12 +136,27 @@ export async function datosProyecto(pid: ObjectId) {
 }
 
 // ---------- 1. Crear ----------
-export async function crearProyecto(entrada: ProyectoEntrada, actor: Actor): Promise<Resultado<{ id: string; codigo: string }>> {
+/**
+ * `desdeSinProyecto`: el participante de «Sin proyecto» que se convierte (Paso 21): su documento debe ser uno de los
+ * integrantes y el registro queda marcado como convertido (no se borra). Un documento que está en «Sin proyecto» sin
+ * convertir no entra a un proyecto por otra vía.
+ */
+export async function crearProyecto(entrada: ProyectoEntrada, actor: Actor, opciones: { desdeSinProyecto?: ObjectId } = {}): Promise<Resultado<{ id: string; codigo: string }>> {
   const v = await validar(entrada);
   if ("ok" in v) return v;
-  const ocupados = await documentosOcupados(v.integrantes.map((i) => i.documento), null);
+  const docs = v.integrantes.map((i) => i.documento);
+  const ocupados = await documentosOcupados(docs, null);
   if (ocupados.length) return falla("documento", ocupadoMsg(ocupados));
   const c = await collections(), ahora = new Date(), _id = new ObjectId();
+  const desde = opciones.desdeSinProyecto ?? null;
+  if (desde) {
+    const sp = await c.sinProyecto.findOne({ _id: desde });
+    if (!sp || sp.convertidoEn) return falla("cambio", "Ese participante ya se convirtió en proyecto (o ya no está). Recarga la lista.");
+    if (!docs.includes(sp.documento)) return falla("datos", "El participante debe ser uno de los integrantes.");
+  }
+  const pendientes = async () => (await enSinProyecto(docs, desde)).map((x) => x.documento);
+  const antes = await pendientes();
+  if (antes.length) return falla("sin_proyecto", mensajeEnSinProyecto(antes));
   const codigo = await codigoLibre(v.integrantes[0]!.documento);
   try {
     await c.proyectos.insertOne({ _id, codigo, ...v, creadoEn: ahora, actualizadoEn: ahora });
@@ -148,7 +164,14 @@ export async function crearProyecto(entrada: ProyectoEntrada, actor: Actor): Pro
     if (dup(e)) return falla("documento", "Otro proyecto se guardó con ese documento o código al mismo tiempo. Revisa y vuelve a intentar.");
     throw e;
   }
-  await c.changeLog.insertOne({ proyectoId: _id, accion: "crear_proyecto", nuevo: `${codigo} · ${v.nombre} · ${v.ciudad} · ${v.integrantes.map(quien).join(" y ")}`, actor, fecha: ahora });
+  // Alguien cargó ese documento en «Sin proyecto» en este mismo instante: se deshace el proyecto recién creado.
+  const cruce = await pendientes();
+  if (cruce.length) {
+    await c.proyectos.deleteOne({ _id });
+    return falla("sin_proyecto", mensajeEnSinProyecto(cruce));
+  }
+  if (desde) await c.sinProyecto.updateOne({ _id: desde, convertidoEn: { $exists: false } }, { $set: { convertidoEn: ahora, proyectoId: _id } });
+  await c.changeLog.insertOne({ proyectoId: _id, accion: "crear_proyecto", nuevo: `${codigo} · ${v.nombre} · ${v.ciudad} · ${v.integrantes.map(quien).join(" y ")}`, ...(desde ? { motivo: "Desde «Sin proyecto»" } : {}), actor, fecha: ahora });
   return { ok: true, id: String(_id), codigo };
 }
 
@@ -174,6 +197,9 @@ export async function editarProyecto(pid: ObjectId, entrada: ProyectoEntrada, op
   if (cambiaDoc) {
     const ocupados = await documentosOcupados(v.integrantes.map((i) => i.documento), pid);
     if (ocupados.length) return falla("documento", ocupadoMsg(ocupados));
+    const nuevosDocs = v.integrantes.filter((i, k) => i.documento !== p.integrantes[k]!.documento).map((i) => i.documento);
+    const enSP = (await enSinProyecto(nuevosDocs)).map((x) => x.documento);
+    if (enSP.length) return falla("sin_proyecto", mensajeEnSinProyecto(enSP));
     // La evaluación y las notas del monitor van por documento: no se dejan huérfanas.
     const viejos = p.integrantes.filter((i, k) => i.documento !== v.integrantes[k]!.documento).map((i) => i.documento);
     const conDatos = await c.evalResultados.findOne({ proyectoId: pid, documento: { $in: viejos } }, { projection: { _id: 1 } })
@@ -300,6 +326,7 @@ export async function agregarIntegrante(pid: ObjectId, entrada: Partial<Integran
       const o = await c.proyectos.findOne({ "integrantes.documento": doc }, { session: s });
       const ahora = new Date();
       if (!o) {
+        if ((await enSinProyecto([doc], null, s)).length) throw new Corte(falla("sin_proyecto", mensajeEnSinProyecto([doc])));
         // Alguien nuevo: aquí sí se piden y validan sus datos.
         const nuevoV = integranteValido({ nombre: "", ...entrada }, 2);
         if ("ok" in nuevoV) throw new Corte(nuevoV);
@@ -346,6 +373,8 @@ export async function agregarIntegrante(pid: ObjectId, entrada: Partial<Integran
       await c.evalResultados.deleteMany({ proyectoId: o._id }, { session: s });
       await c.evalMonitor.deleteMany({ proyectoId: o._id }, { session: s });
       await c.evalBorradores.deleteOne({ _id: String(o._id) }, { session: s });
+      // Paso 22: sus comentarios de seguimiento pasan al proyecto unido (no se pierden).
+      await c.comentarios.updateMany({ proyectoId: o._id }, { $set: { proyectoId: pid } }, { session: s });
       await c.cambiosSugeridos.updateMany({ proyectoId: o._id, estado: "pendiente" },
         { $set: { estado: "rechazado", resueltoPor: actor.usuario ?? actor.rol, resueltoEn: ahora, respuesta: `El proyecto se unió a ${p.codigo}.` } }, { session: s });
       await c.changeLog.insertMany([
@@ -396,6 +425,7 @@ export async function buscarDocumento(pid: ObjectId, documento: string): Promise
   if (!p) return falla("no_existe", "Ese proyecto ya no existe.");
   if (p.integrantes.some((i) => i.documento === dv.doc)) return { estado: "mismo" };
   const o = await c.proyectos.findOne({ "integrantes.documento": dv.doc });
+  if (!o && (await enSinProyecto([dv.doc])).length) return falla("sin_proyecto", mensajeEnSinProyecto([dv.doc]));
   if (!o) return { estado: "nuevo", documento: dv.doc };
   const [aO, aP, evO, evP] = await Promise.all([c.asientos.findOne({ proyectoId: o._id }), c.asientos.findOne({ proyectoId: pid }), evaluado(o._id), evaluado(pid)]);
   const hora = (a: Asiento | null) => (a ? `${a.dia} ${horaCO(a.inicio)}` : null);
@@ -405,4 +435,19 @@ export async function buscarDocumento(pid: ObjectId, documento: string): Promise
     otro: { id: String(o._id), codigo: o.codigo, nombre: o.nombre, ciudad: o.ciudad, integrante: integrante.nombre, pareja: o.integrantes.length > 1, hora: hora(aO), evaluado: evO },
     accion: o.integrantes.length > 1 ? "separar_primero" : evO || evP ? "anular_primero" : "unir",
   };
+}
+
+// ---------- Paso 21 · Convertir un participante de «Sin proyecto» en proyecto ----------
+/** Crea el proyecto con el participante como integrante 1 (su ciudad, datos y monitor) y lo marca como convertido. */
+export async function convertirEnProyecto(id: ObjectId, datos: { nombre: string; descripcion?: string; ruta?: Ruta | null }, actor: Actor): Promise<Resultado<{ id: string; codigo: string }>> {
+  const c = await collections();
+  const sp = await c.sinProyecto.findOne({ _id: id });
+  if (!sp || sp.convertidoEn) return falla("cambio", "Ese participante ya se convirtió en proyecto (o ya no está). Recarga la lista.");
+  // El monitor guardado solo si sigue activo; si no, el de la ciudad (como al crear).
+  const activo = sp.monitor ? await c.users.findOne({ usuario: sp.monitor, rol: "monitor", activo: true }, { projection: { _id: 1 } }) : null;
+  return crearProyecto({
+    ciudad: sp.ciudad, nombre: datos.nombre, ...(datos.descripcion ? { descripcion: datos.descripcion } : {}), ...(datos.ruta ? { ruta: datos.ruta } : {}),
+    monitor: activo ? sp.monitor : sp.monitor === null ? null : undefined,
+    integrantes: [{ nombre: sp.nombre, documento: sp.documento, ...(sp.celular ? { celular: sp.celular } : {}), ...(sp.correo ? { correo: sp.correo } : {}) }],
+  }, actor, { desdeSinProyecto: id });
 }

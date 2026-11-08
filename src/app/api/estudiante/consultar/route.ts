@@ -3,6 +3,7 @@ import { z } from "zod";
 import { consultar } from "@/lib/estudiante";
 import { intentar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
 import { estadoCiudad } from "@/lib/reglasCupos";
+import { MENSAJE_NO_INSCRITO, noInscrito } from "@/lib/sinProyecto";
 import { cuerpoInvalido, documentoSchema, guardia, MENSAJE_CERRADO, noEncontrado } from "@/lib/rutaEstudiante";
 
 const Body = z.object({ documento: documentoSchema }).strict();
@@ -20,7 +21,11 @@ export async function POST(req: Request) {
   if (await intentar("documento", documento)) return NextResponse.json({ error: "bloqueado", mensaje: MENSAJE_BLOQUEO }, { status: 429 });
 
   const vista = await consultar(documento);
-  if (!vista) return noEncontrado(g.ip);
+  if (!vista) {
+    // Paso 21: participante sin proyecto o proyecto marcado. Ya contó para el límite por documento.
+    if (await noInscrito(documento)) return NextResponse.json({ error: "no_inscrito", mensaje: MENSAJE_NO_INSCRITO }, { status: 403 });
+    return noEncontrado(g.ip);
+  }
   // Quien ya tiene hora la sigue viendo; quien no, ve si las inscripciones de su ciudad cerraron o aún no abren.
   if (!vista.hora) {
     const e = await estadoCiudad(vista.proyecto.ciudad);
