@@ -101,6 +101,9 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
     const r = await post(t.id, body).catch(() => null);
     setOcupado(null);
     if (r?.ok && r.data?.ok) { avisar(hecho); setAbierta(null); }
+    // Modo orden de llegada: su ciudad ya llegó al tope de ese día. El admin puede confirmar y moverlo igual.
+    else if (r?.data?.error === "tope" && body.accion === "cambiar")
+      setConfirmar({ titulo: `¿Pasar el tope de ${t.ciudad}?`, avisos: [r.data.mensaje ?? "Su ciudad ya llegó al tope de ese día.", "Quedará anotado en el historial."], si: "Mover igual", ok: () => void enviar(t, { ...body, confirmarTope: true }, hecho) });
     else if (r?.data?.error === "sin_cupo") setAlerta("Ese bloque se llenó mientras arrastrabas (un estudiante tomó el cupo). La tarjeta volvió a su lugar.");
     else setAlerta(r?.data?.mensaje ?? "No se pudo guardar. Revisa tu conexión e inténtalo otra vez.");
     await cargar();
@@ -123,7 +126,7 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
     const deSuCiudad = b.libres.filter((g) => g.ciudades.includes(t.ciudad)).reduce((a, g) => a + g.n, 0);
     const avisos: string[] = [];
     if (!(d?.diasPorCiudad[t.ciudad] ?? []).includes(d?.dia ?? "")) avisos.push(`${t.ciudad} no presenta este día (no está habilitada o ya pasó su clausura).`);
-    if (!deSuCiudad) avisos.push(`A las ${hora} no quedan asientos de ${t.ciudad}: tomará uno de ${b.libres.map((g) => g.ciudades.join(" + ") || "sin ciudad").join(", ")}.`);
+    if (!deSuCiudad && !d?.ordenLlegada) avisos.push(`A las ${hora} no quedan asientos de ${t.ciudad}: tomará uno de ${b.libres.map((g) => g.ciudades.join(" + ") || "sin ciudad").join(", ")}.`);
     const mover = () => void enviar(t, { accion: "cambiar", inicio: b.inicio, otraCiudad: !deSuCiudad, motivo: "Tablero" }, `Movido a las ${hora}`);
     if (avisos.length) setConfirmar({ titulo: `¿Mover ${t.proyecto} a las ${hora}?`, avisos: [...avisos, "Quedará anotado en el historial."], si: "Mover de todas formas", ok: mover });
     else mover();

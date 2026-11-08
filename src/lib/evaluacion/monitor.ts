@@ -5,6 +5,7 @@ import { horaCO } from "../ciudades";
 import { collections, transaccion } from "../db";
 import { diaCOL, horaCOL, inicioUTC } from "../edicion";
 import { enmascararNumero } from "../estudiante";
+import { conCandado, modoOrdenLlegada, ocupacionCiudad, topeCiudad } from "../modoCupos";
 import { Falla, moverProyecto } from "../mover";
 import { puede } from "../permisos";
 import type { Actor, Asiento, Ruta } from "../types";
@@ -231,22 +232,32 @@ export async function anotar(user: SessionUser, proyectoId: string, i: number, n
 export type CupoLibre = { id: string; inicio: string; mentor: string };
 
 /** Días en que el monitor puede reprogramar directamente: los habilitados para la ciudad del estudiante y ya abiertos. */
-async function diasPermitidos(ciudad: string, ahora: Date): Promise<string[]> {
+/** Días habilitados y abiertos de la ciudad. Modo orden de llegada: sin los días en que su ciudad llegó al tope (salvo
+ *  `diaActual`, el de la hora que ya tiene: moverse dentro del día no cambia lo que lleva). */
+async function diasPermitidos(ciudad: string, ahora: Date, orden = false, diaActual?: string): Promise<string[]> {
   const { dias } = await collections();
   const todos = await dias.find({}).toArray();
   const explicitas = ciudadesExplicitas(todos);
-  return diasPorCiudad(todos, ciudad).filter((d) => puedeElegir(todos.find((x) => x._id === d), ciudad, ahora, explicitas));
+  const abiertos = diasPorCiudad(todos, ciudad).filter((d) => puedeElegir(todos.find((x) => x._id === d), ciudad, ahora, explicitas));
+  if (!orden) return abiertos;
+  const ocupacion = await ocupacionCiudad(ciudad);
+  return abiertos.filter((d) => {
+    const t = topeCiudad(todos.find((x) => x._id === d)!, ciudad);
+    return d === diaActual || t === null || (ocupacion.get(d) ?? 0) < t;
+  });
 }
 
-const filtroLibre = (ciudad: string, dias: string[], ahora: Date): Filter<Asiento> =>
-  ({ proyectoId: null, ciudades: ciudad, dia: { $in: dias }, inicio: { $gt: ahora } });
+/** Libres de su ciudad (modo orden de llegada: cualquier libre, sin mirar la etiqueta) en esos días, aún no empezados. */
+const filtroLibre = (ciudad: string, dias: string[], ahora: Date, orden = false): Filter<Asiento> =>
+  ({ proyectoId: null, ...(orden ? {} : { ciudades: ciudad }), dia: { $in: dias }, inicio: { $gt: ahora } });
 
 /** Cupos libres para reprogramar: de la ciudad del estudiante, en sus días habilitados y aún no empezados. */
 export async function cuposReprogramar(user: SessionUser, proyectoId: string): Promise<{ ciudad: string; cupos: CupoLibre[] } | ErrorSala> {
   const r = await cargar(user, proyectoId);
   if ("error" in r) return r;
   const ahora = new Date(), c = await collections();
-  const libres = await c.asientos.find(filtroLibre(r.p.ciudad, await diasPermitidos(r.p.ciudad, ahora), ahora)).sort({ inicio: 1, mentorId: 1 }).toArray();
+  const orden = await modoOrdenLlegada();
+  const libres = await c.asientos.find(filtroLibre(r.p.ciudad, await diasPermitidos(r.p.ciudad, ahora, orden, r.asiento.dia), ahora, orden)).sort({ inicio: 1, mentorId: 1 }).toArray();
   const nombre = new Map((await c.mentores.find({ _id: { $in: [...new Set(libres.map((a) => a.mentorId))] } }).toArray()).map((m) => [m._id, m.nombre]));
   return {
     ciudad: r.p.ciudad,
@@ -256,17 +267,19 @@ export async function cuposReprogramar(user: SessionUser, proyectoId: string): P
 }
 
 /** Reprograma a un cupo libre (de su ciudad, día habilitado, futuro) en una transacción con changeLog (ver moverProyecto). */
-export async function reprogramar(user: SessionUser, proyectoId: string, asientoId: string, motivo: string): Promise<{ ok: true; inicio: string; mentor: string; sigueEnTusSalas: boolean } | ErrorSala | { error: "sin_cupo" | "ya_evaluado" | "cambio" }> {
+export async function reprogramar(user: SessionUser, proyectoId: string, asientoId: string, motivo: string): Promise<{ ok: true; inicio: string; mentor: string; sigueEnTusSalas: boolean } | ErrorSala | { error: "sin_cupo" | "ya_evaluado" | "cambio" | "tope" }> {
   const r = await cargar(user, proyectoId);
   if ("error" in r) return r;
   if (!ObjectId.isValid(asientoId)) return { error: "sin_cupo" };
   const { p, asiento: viejo } = r;
   const ahora = new Date(), c = await collections();
-  const dias = await diasPermitidos(p.ciudad, ahora);
+  const orden = await modoOrdenLlegada();
+  const dias = await diasPermitidos(p.ciudad, ahora, orden, viejo.dia);
   let nuevo: Asiento | null = null;
   try {
-    await transaccion(async (s) => {
-      nuevo = await moverProyecto(s, p._id, viejo._id, [{ _id: new ObjectId(asientoId), ...filtroLibre(p.ciudad, dias, ahora) }], user.usuario, ahora);
+    // El tope se vuelve a revisar dentro de la transacción (moverProyecto, "respetar"): el monitor no lo pasa.
+    await conCandado(async (s) => {
+      nuevo = await moverProyecto(s, p._id, viejo._id, [{ _id: new ObjectId(asientoId), ...filtroLibre(p.ciudad, dias, ahora, orden) }], user.usuario, ahora, { tope: "respetar" });
       await c.changeLog.insertOne({
         proyectoId: p._id, accion: "cambiar_hora", anterior: `${etiqueta(viejo.inicio)} · ${viejo.mentorId}`,
         nuevo: `${etiqueta(nuevo.inicio)} · ${nuevo.mentorId}`, motivo, actor: actorDe(user), fecha: ahora,

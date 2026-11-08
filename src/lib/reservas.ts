@@ -94,7 +94,7 @@ async function reservarOrdenLlegada(
   const { proyectos, asientos, changeLog, dias } = await collections();
   let r: ResultadoReserva = { ok: false, error: "sin_cupo" };
   try {
-    await conCandado(dia, proyecto.ciudad, async (s) => {
+    await conCandado(async (s) => {
       // El tope se lee dentro de la transacción (si el admin lo cambia a la vez, se usa el vigente).
       const cfg = await dias.findOne({ _id: dia }, { session: s });
       const tope = cfg ? topeCiudad(cfg, proyecto.ciudad) : null;

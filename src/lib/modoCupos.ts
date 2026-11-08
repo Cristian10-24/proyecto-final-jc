@@ -49,23 +49,53 @@ export async function asegurarCandado(dia: string, ciudad: string): Promise<void
   catch (e) { if (!(e instanceof MongoServerError && e.code === 11000)) throw e; }
 }
 
-export class SinCandado extends Error {}
+export class SinCandado extends Error { constructor(readonly dia: string, readonly ciudad: string) { super("sin_candado"); } }
 
 /** Dentro de la transacción: escribe el candado (debe existir; si no, SinCandado para crearlo fuera y repetir). */
 export async function tocarCandado(s: ClientSession, dia: string, ciudad: string): Promise<void> {
   const c = await collections();
   const r = await c.candadosCupo.updateOne({ _id: idCandado(dia, ciudad) }, { $inc: { v: 1 } }, { session: s });
-  if (r.matchedCount === 0) throw new SinCandado();
+  if (r.matchedCount === 0) throw new SinCandado(dia, ciudad);
 }
 
-/** Corre `fn` en una transacción; si faltaba el candado de (dia, ciudad), lo crea y la repite una vez. */
-export async function conCandado(dia: string, ciudad: string, fn: (s: ClientSession) => Promise<void>): Promise<void> {
-  try { await transaccion(fn); }
-  catch (e) {
-    if (!(e instanceof SinCandado)) throw e;
-    await asegurarCandado(dia, ciudad);
-    await transaccion(fn);
+/** Corre `fn` en una transacción; si le faltaba un candado, lo crea fuera y la repite (hasta 3 veces). */
+export async function conCandado(fn: (s: ClientSession) => Promise<void>): Promise<void> {
+  for (let i = 0; ; i++) {
+    try { return await transaccion(fn); }
+    catch (e) {
+      if (!(e instanceof SinCandado) || i >= 2) throw e;
+      await asegurarCandado(e.dia, e.ciudad);
+    }
   }
+}
+
+/** Dentro de la transacción: tope vigente de la ciudad ese día (null si el modo está apagado o no tiene tope). */
+export async function topeVigente(s: ClientSession, dia: string, ciudad: string): Promise<number | null> {
+  if (!(await modoOrdenLlegada(s))) return null;
+  const cfg = await (await collections()).dias.findOne({ _id: dia }, { session: s });
+  return cfg ? topeCiudad(cfg, ciudad) : null;
+}
+
+/**
+ * Dentro de la transacción de mover (después de tomar el asiento nuevo): con el modo encendido, si el proyecto llega a
+ * un día distinto y su ciudad tiene tope, escribe el candado (choca con las reservas simultáneas) y dice si la ciudad
+ * quedó por encima del tope. Con el modo apagado, o en el mismo día, siempre false.
+ */
+export async function quedaSobreTope(s: ClientSession, ciudad: string, diaAnterior: string | null, diaNuevo: string): Promise<boolean> {
+  if (diaAnterior === diaNuevo) return false;
+  const tope = await topeVigente(s, diaNuevo, ciudad);
+  if (tope === null) return false;
+  await tocarCandado(s, diaNuevo, ciudad);
+  return ((await ocupacionCiudad(ciudad, s)).get(diaNuevo) ?? 0) > tope;
+}
+
+/** Para las pantallas (fuera de transacción): tope y ocupación de la ciudad ese día, o null si no aplica. */
+export async function topeDeDia(ciudad: string, dia: string): Promise<{ tope: number; lleva: number } | null> {
+  if (!(await modoOrdenLlegada())) return null;
+  const cfg = await (await collections()).dias.findOne({ _id: dia });
+  const tope = cfg ? topeCiudad(cfg, ciudad) : null;
+  if (tope === null) return null;
+  return { tope, lleva: (await ocupacionCiudad(ciudad)).get(dia) ?? 0 };
 }
 
 // ---- Resumen para la tarjeta de Reglas ----

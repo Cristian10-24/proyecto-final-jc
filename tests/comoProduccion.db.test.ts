@@ -11,6 +11,9 @@ const { agenda, consultar } = await import("@/lib/estudiante");
 const { cambiarModo, estadoModo } = await import("@/lib/modoCupos");
 const { moverProyecto } = await import("@/lib/mover");
 const { separarPareja } = await import("@/lib/gestionProyectos");
+const { bloquesLibres } = await import("@/lib/admin");
+const { datosTablero } = await import("@/lib/tableroHorarios");
+const { resumen } = await import("@/lib/seguimiento");
 
 const ADMIN = { rol: "admin" as const, usuario: "admin.demo" };
 const AHORA = new Date("2026-11-11T15:00:00Z");
@@ -19,6 +22,15 @@ let documentos: string[] = [];
 async function portal() {
   const out: Record<string, unknown> = {};
   for (const d of documentos) out[d] = { consultar: await consultar(d), agenda: await agenda(d, undefined, AHORA) };
+  // Lecturas del admin y de coordinación (Paso 20): bloques para mover, tablero de cada día y resumen.
+  const c = await db.collections();
+  const dias = (await c.dias.find({}).toArray()).map((d) => d._id).sort();
+  const algunos = (await c.proyectos.find({}).sort({ _id: 1 }).limit(15).toArray()).map((p) => p._id);
+  for (const dia of dias) {
+    out[`tablero ${dia}`] = await datosTablero(dia);
+    for (const p of algunos) out[`bloques ${dia} ${p}`] = await bloquesLibres(p, dia);
+  }
+  out.resumen = await resumen();
   return out;
 }
 

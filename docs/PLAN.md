@@ -220,7 +220,7 @@ apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal respon
 
 ### Pasos de la Fase 4
 - [x] 19. Cupos por orden de llegada: interruptor, tope por ciudad y día, reserva atómica con candado, portal, Reglas.
-- [ ] 20. Orden de llegada en admin, monitor, bandeja, tablero y resumen (mover sobre el tope con advertencia).
+- [x] 20. Orden de llegada en admin, monitor, bandeja, tablero y resumen (mover sobre el tope con advertencia).
 - [ ] 21. «Sin proyecto»: colección, carga por Excel y uno por uno, marcar/quitar, portal, estadísticas y apartado.
 - [ ] 22. Comentarios en proyectos (monitor escribe; admin y coordinación ven; indicador «Con comentarios»).
 - [ ] 23. El estudiante edita nombre y descripción (historial y revertir).
