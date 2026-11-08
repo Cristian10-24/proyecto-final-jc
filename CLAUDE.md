@@ -20,6 +20,7 @@ Next.js 16 (App Router) + TypeScript, driver `mongodb`, Zod, exceljs, Vitest. Ve
 - `npm run usuario:add -- admin "Nombre" --rol=admin`
 
 ## Reglas
+- Responder siempre en español: mensajes al usuario, bitácora, documentos y commits.
 - Trabajar solo dentro de esta carpeta. No tocar `C:\ROFÉ\PAGINAS\MIGRACION` ni validation-jc.
 - Node 22 (`.node-version`, `engines`). Nunca `nvm use`, nunca cambiar el Node del sistema ni instalar global.
 - Por defecto todo usa el Mongo local (27018); pruebas siempre locales (`tests/helpers/base-local.ts`).
