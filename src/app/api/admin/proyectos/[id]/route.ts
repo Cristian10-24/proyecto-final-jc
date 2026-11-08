@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { anularEvaluacion, asignarMonitor, cambiarHora, historial, liberar } from "@/lib/admin";
 import { exigir, sameOrigin } from "@/lib/auth";
+import { marcarSinProyecto, quitarMarca } from "@/lib/sinProyecto";
 import { IdParams } from "@/lib/validation/id";
 
 const motivo = z.string().trim().max(300).default("");
@@ -16,6 +17,9 @@ const Accion = z.discriminatedUnion("accion", [
   // Salida de emergencia: anular la evaluación (motivo obligatorio).
   // `version`: el actualizadoEn de la evaluación que vio el admin (si cambió, no se anula).
   z.object({ accion: z.literal("anular"), motivo: z.string().trim().min(3, "Escribe el motivo.").max(300), version: z.iso.datetime().optional() }).strict(),
+  // Paso 21: marcar (solo sin hora) o quitar la marca «Sin proyecto».
+  z.object({ accion: z.literal("sin_proyecto"), motivo }).strict(),
+  z.object({ accion: z.literal("quitar_sin_proyecto") }).strict(),
 ]);
 
 const id = async (params: Promise<{ id: string }>) => { const r = IdParams.safeParse(await params); return r.success ? r.data.id : null; };
@@ -41,7 +45,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const a = parsed.data;
   const r = a.accion === "anular" ? await anularEvaluacion(pid, a.motivo, actor, a.version)
     : a.accion === "liberar" ? await liberar(pid, a.motivo, actor)
+    : a.accion === "sin_proyecto" ? await marcarSinProyecto(pid, a.motivo, actor)
+    : a.accion === "quitar_sin_proyecto" ? await quitarMarca(pid, actor)
     : a.accion === "cambiar" ? await cambiarHora(pid, new Date(a.inicio), { otraCiudad: a.otraCiudad, motivo: a.motivo, confirmarTope: a.confirmarTope, ...(a.asiento ? { asiento: new ObjectId(a.asiento) } : {}) }, actor)
     : await asignarMonitor(pid, a.monitor || null, actor);
-  return NextResponse.json(r, { status: r.ok ? 200 : r.error === "sin_proyecto" ? 404 : 409 });
+  return NextResponse.json(r, { status: r.ok ? 200 : r.error === "sin_proyecto" || r.error === "no_existe" ? 404 : 409 });
 }

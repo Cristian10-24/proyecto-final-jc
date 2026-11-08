@@ -286,7 +286,8 @@ export async function reprogramar(user: SessionUser, proyectoId: string, asiento
       }, { session: s });
     });
   } catch (e) {
-    if (e instanceof Falla) return { error: e.codigo };
+    // El proyecto ya tenía hora: "sin_hora" o "sin_proyecto" (Paso 21) solo pasan si alguien lo cambió mientras tanto.
+    if (e instanceof Falla) return { error: e.codigo === "sin_cupo" || e.codigo === "ya_evaluado" || e.codigo === "tope" ? e.codigo : "cambio" };
     // Un estudiante reservó ese mismo asiento en el mismo instante.
     if (e instanceof MongoServerError && e.code === 11000) return { error: "sin_cupo" };
     throw e;

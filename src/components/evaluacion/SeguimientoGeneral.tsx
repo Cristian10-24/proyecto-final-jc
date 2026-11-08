@@ -137,6 +137,17 @@ export default function SeguimientoGeneral({ user }: { user: SessionUser }) {
           </section>
 
           <section className={`ev-tarjeta ${s.bloque}`}>
+            <h3 className={s.cardT}>Sin proyecto y no se presentaron</h3>
+            <p className={s.cardSub}>«Sin proyecto»: participantes que aún no tienen proyecto y proyectos marcados así (no cuentan en las demás tablas). «No se presentaron»: eligieron hora y quedaron con «No se presentó», o su monitor marcó que no asistieron y aún no hay evaluación guardada.</p>
+            <div className={s.grid2Interno}>
+              <Tabla head={["Ciudad", "Participantes", "Proyectos marcados", "Estudiantes"]} num={[1, 2, 3]} vacio="Nadie está sin proyecto."
+                filas={d.sinProyecto.map((x) => [x.ciudad, x.participantes, x.proyectos, x.estudiantes])} />
+              <Tabla head={["Ciudad", "Eligieron hora y no se presentaron"]} num={[1]} vacio="Todavía no hay inasistencias."
+                filas={d.noSePresentaronCiudad.map((x) => [x.ciudad, x.estudiantes])} />
+            </div>
+          </section>
+
+          <section className={`ev-tarjeta ${s.bloque}`}>
             <h3 className={s.cardT}>Proyectos destacados</h3>
             <Tabla head={["Estudiante", "Emprendimiento", "Mentor", "Resultado", "Lo que hizo muy bien"]} vacio="Todavía no hay proyectos nominados."
               filas={d.destacados.map((x) => [x.nombre, x.proyecto, x.mentor, <span key="r" className={claseResultado(x.res)}>{x.res}</span>, x.fortaleza])} />

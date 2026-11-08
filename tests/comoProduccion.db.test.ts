@@ -13,7 +13,10 @@ const { moverProyecto } = await import("@/lib/mover");
 const { separarPareja } = await import("@/lib/gestionProyectos");
 const { bloquesLibres } = await import("@/lib/admin");
 const { datosTablero } = await import("@/lib/tableroHorarios");
-const { resumen } = await import("@/lib/seguimiento");
+const { resumen, seguimiento: seguimientoInscripcion } = await import("@/lib/seguimiento");
+const { listarSinProyecto, noInscrito } = await import("@/lib/sinProyecto");
+const { seguimiento: seguimientoEval } = await import("@/lib/evaluacion/resultados");
+const { listarProyectos } = await import("@/lib/admin");
 
 const ADMIN = { rol: "admin" as const, usuario: "admin.demo" };
 const AHORA = new Date("2026-11-11T15:00:00Z");
@@ -21,7 +24,7 @@ let documentos: string[] = [];
 
 async function portal() {
   const out: Record<string, unknown> = {};
-  for (const d of documentos) out[d] = { consultar: await consultar(d), agenda: await agenda(d, undefined, AHORA) };
+  for (const d of documentos) out[d] = { consultar: await consultar(d), agenda: await agenda(d, undefined, AHORA), noInscrito: await noInscrito(d) };
   // Lecturas del admin y de coordinación (Paso 20): bloques para mover, tablero de cada día y resumen.
   const c = await db.collections();
   const dias = (await c.dias.find({}).toArray()).map((d) => d._id).sort();
@@ -31,6 +34,11 @@ async function portal() {
     for (const p of algunos) out[`bloques ${dia} ${p}`] = await bloquesLibres(p, dia);
   }
   out.resumen = await resumen();
+  // Paso 21: listas y estadísticas con «Sin proyecto» (sin marcas ni participantes: todo como antes).
+  out.sinProyecto = await listarSinProyecto();
+  out.inscripcion = await seguimientoInscripcion({ rol: "coordinador", ciudades: [] });
+  out.evaluaciones = await seguimientoEval();
+  out.horarios = { todos: await listarProyectos({}), sinHora: await listarProyectos({ estado: "sin_hora" }), marcados: await listarProyectos({ estado: "sin_proyecto" }) };
   return out;
 }
 
@@ -64,6 +72,12 @@ describe("sin acciones de usuario no cambia nada", () => {
     expect(await foto(c)).toEqual(antes);
     expect(await c.ajustes.countDocuments()).toBe(0);
     expect(await c.candadosCupo.countDocuments()).toBe(0);
+    expect(await c.sinProyecto.countDocuments()).toBe(0);
+    expect(await c.proyectos.countDocuments({ sinProyecto: { $exists: true } })).toBe(0);
+    // Ningún documento real queda como «no inscrito» y las listas nuevas están vacías.
+    expect(documentos.filter((d) => (portalDespues[d] as { noInscrito: boolean }).noInscrito)).toEqual([]);
+    expect(portalDespues.sinProyecto).toEqual({ participantes: [], marcados: [] });
+    expect((portalDespues.evaluaciones as { sinProyecto: unknown[] }).sinProyecto).toEqual([]);
   });
 
   it("encender y apagar el modo solo escribe el ajuste, los candados y dos entradas del historial", async () => {

@@ -16,6 +16,8 @@ type Integrante = { nombre: string; documento: string };
 type Proyecto = {
   id: string; codigo: string; nombre: string; ciudad: string; grupo?: string;
   integrantes: Integrante[]; monitor: string | null; hora: null | { inicio: string; mentor: string }; evaluado?: boolean; evaluadoEn?: string;
+  /** Paso 21: marcado «Sin proyecto». */
+  sinProyecto?: { desde: string; motivo?: string };
 };
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
 type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
@@ -23,13 +25,13 @@ type Bloque = { inicio: string; libres: number; deSuCiudad: boolean; otras: stri
 /** Modo orden de llegada: tope de la ciudad ese día y cuántos lleva (sin contar este proyecto si ya está ese día). */
 type Tope = { tope: number; lleva: number };
 type Grupo = { grupo: string; ciudades: string[]; libres: number; ocupados: number };
-type Estado = "" | "con_hora" | "sin_hora" | "sin_monitor";
+type Estado = "" | "con_hora" | "sin_hora" | "sin_monitor" | "sin_proyecto";
 
 const ESTADOS: { v: Estado; t: string }[] = [
-  { v: "", t: "Todos" }, { v: "con_hora", t: "Con hora" }, { v: "sin_hora", t: "Sin hora" }, { v: "sin_monitor", t: "Monitor por asignar" },
+  { v: "", t: "Todos" }, { v: "con_hora", t: "Con hora" }, { v: "sin_hora", t: "Sin hora" }, { v: "sin_monitor", t: "Monitor por asignar" }, { v: "sin_proyecto", t: "Sin proyecto" },
 ];
 const ACCION: Record<string, string> = {
-  reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada",
+  reservar: "Eligió hora", cambiar_hora: "Cambio de hora", liberar: "Hora liberada", sin_proyecto: "Marcado «Sin proyecto»", quitar_sin_proyecto: "Marca «Sin proyecto» quitada",
   asignar_monitor: "Monitor asignado", importar: "Importación", reetiquetar: "Asientos reetiquetados", monitor_sala: "Monitor de sala",
   evaluar: "Evaluación", no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada", anular_evaluacion: "Evaluación anulada", restablecer_clave: "Clave restablecida", criterios: "Criterios",
   crear_proyecto: "Proyecto creado", editar_proyecto: "Proyecto editado", separar_pareja: "Pareja separada", agregar_integrante: "Integrante agregado", unir_proyecto: "Proyectos unidos",
@@ -185,7 +187,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
                       <td><div className={s.pNombre}>{p.nombre}</div><div className={s.codigo}>{p.codigo}</div></td>
                       <td>{p.integrantes.map((i) => <div key={i.documento}>{i.nombre}</div>)}</td>
                       <td>{p.ciudad}{p.grupo && <div className={s.sub}>{p.grupo}</div>}</td>
-                      <td>{p.hora ? <span className={s.nowrap}>{etiquetaHora(p.hora.inicio)}</span> : <Chip tono="amarillo">Sin hora</Chip>}</td>
+                      <td>{p.hora ? <span className={s.nowrap}>{etiquetaHora(p.hora.inicio)}</span> : p.sinProyecto ? <Chip tono="neutro">Sin proyecto</Chip> : <Chip tono="amarillo">Sin hora</Chip>}</td>
                       <td>{p.hora?.mentor ?? <span className={s.sub}>—</span>}</td>
                       <td>{p.monitor ? nombreMonitor(p.monitor) : <Chip tono="neutro">Por asignar</Chip>}</td>
                     </tr>
@@ -234,7 +236,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
   onGestion: (modo: "editar" | "separar" | "agregar") => void;
 }) {
   const [hist, setHist] = useState<{ estado: "cargando" | "error" | "listo"; items: Cambio[] }>({ estado: "cargando", items: [] });
-  const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "anular">("ver");
+  const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "anular" | "sin_proyecto">("ver");
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -288,7 +290,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
         </div>
 
         <div className={s.datos}>
-          <Dato k="Hora">{p.hora ? etiquetaHora(p.hora.inicio) + " COL" : <Chip tono="amarillo">Sin hora</Chip>}</Dato>
+          <Dato k="Hora">{p.hora ? etiquetaHora(p.hora.inicio) + " COL" : p.sinProyecto ? <Chip tono="neutro">Sin proyecto</Chip> : <Chip tono="amarillo">Sin hora</Chip>}</Dato>
           <Dato k="Mentor">{p.hora?.mentor ?? "—"}</Dato>
           <Dato k="Monitor">
             <select className={`input ${s.selectSm}`} value={p.monitor ?? ""} disabled={ocupado} aria-label="Monitor"
@@ -310,7 +312,17 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
 
         {error && <div className="note note-error">{error}</div>}
 
-        {modo === "ver" && (
+        {modo === "ver" && p.sinProyecto && (
+          <div className="note note-info">
+            Marcado «Sin proyecto»{p.sinProyecto.motivo ? `: ${p.sinProyecto.motivo}` : ""}. No recibe hora, no cuenta en el seguimiento y sus integrantes ven «No tienes un proyecto inscrito» en el portal.
+          </div>
+        )}
+        {modo === "ver" && p.sinProyecto && (
+          <div className={s.acts}>
+            <button type="button" className="btn btn-dark" disabled={ocupado} onClick={() => void enviar({ accion: "quitar_sin_proyecto" }, "Marca quitada")}>{ocupado ? "Quitando…" : "Quitar marca «Sin proyecto»"}</button>
+          </div>
+        )}
+        {modo === "ver" && !p.sinProyecto && (
           <div className={s.acts}>
             <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => { setError(""); setModo("cambiar"); }}>{p.hora ? "Cambiar hora" : "Asignar hora"}</button>
             {p.hora && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setModo("liberar"); }}>Liberar hora</button>}
@@ -323,6 +335,20 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
             {p.integrantes.length === 2
               ? <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("separar")}>Separar pareja</button>
               : <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => onGestion("agregar")}>Agregar integrante</button>}
+            {!p.sinProyecto && !p.hora && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setMotivo(""); setModo("sin_proyecto"); }}>Marcar «Sin proyecto»</button>}
+          </div>
+        )}
+        {modo === "sin_proyecto" && (
+          <div className={s.panel}>
+            <div className={s.panelTitulo}>¿Marcar {p.nombre} como «Sin proyecto»?</div>
+            <p className={s.panelTxt}>No recibirá hora y no contará en el seguimiento. En el portal, sus integrantes verán «No tienes un proyecto inscrito. Escríbele a tu monitor.». Puedes quitar la marca cuando quieras.</p>
+            <Motivo valor={motivo} onCambio={setMotivo} opcional />
+            <div className={s.acts}>
+              <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => setModo("ver")}>Cancelar</button>
+              <button type="button" className="btn btn-dark" disabled={ocupado} onClick={() => void enviar({ accion: "sin_proyecto", motivo: motivo.trim() }, "Marcado «Sin proyecto»")}>
+                {ocupado ? "Marcando…" : "Sí, marcar"}
+              </button>
+            </div>
           </div>
         )}
         {modo === "ver" && p.evaluado && <div className="note note-info">Tiene evaluación guardada: no se mueve ni se libera. Si hace falta, anúlala primero.</div>}

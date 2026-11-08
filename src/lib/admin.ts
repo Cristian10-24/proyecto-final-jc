@@ -25,9 +25,11 @@ export type FilaProyecto = {
   evaluado: boolean;
   /** Última vez que se guardó la evaluación: el admin anula esa versión y no otra más nueva. */
   evaluadoEn?: string;
+  /** Paso 21: marcado «Sin proyecto» (no recibe hora ni cuenta en el seguimiento). */
+  sinProyecto?: { desde: string; motivo?: string };
 };
 
-export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" };
+export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" | "sin_proyecto" };
 
 /** Lista para el tablero del admin (máx. 200). El admin sí ve mentor y documento completo. */
 export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[]> {
@@ -35,6 +37,9 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
   const filtro: Filter<Proyecto> = {};
   if (f.ciudad) filtro.ciudad = f.ciudad;
   if (f.estado === "sin_monitor") filtro.monitor = null;
+  // Paso 21: "Sin hora" no muestra los marcados «Sin proyecto» (tienen su propio filtro).
+  if (f.estado === "sin_proyecto") filtro.sinProyecto = { $exists: true };
+  if (f.estado === "sin_hora") filtro.sinProyecto = { $exists: false };
   if (f.q) {
     const re = new RegExp(f.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     filtro.$or = [{ nombre: re }, { codigo: re }, { "integrantes.nombre": re }, { "integrantes.documento": re }];
@@ -63,6 +68,7 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
         monitor: p.monitor ?? null,
         hora: a ? { inicio: a.inicio.toISOString(), mentor: nombres.get(a.mentorId) ?? a.mentorId } : null,
         evaluado: evaluadoEn.has(String(p._id)), ...(evaluadoEn.has(String(p._id)) ? { evaluadoEn: evaluadoEn.get(String(p._id))! } : {}),
+        ...(p.sinProyecto ? { sinProyecto: { desde: p.sinProyecto.desde.toISOString(), ...(p.sinProyecto.motivo ? { motivo: p.sinProyecto.motivo } : {}) } } : {}),
       };
     });
 }
@@ -85,6 +91,7 @@ const MENSAJE: Record<Falla["codigo"], string> = {
   cambio: "La hora del proyecto cambió mientras tanto. Recarga y vuelve a intentarlo.",
   sin_hora: "Ese proyecto no tiene hora.",
   tope: "Su ciudad ya llegó al tope de ese día.",
+  marcado: "Este proyecto está marcado «Sin proyecto»: quita la marca para darle hora.",
 };
 const falla = (e: Falla): ResultadoAdmin => ({ ok: false, error: e.codigo, mensaje: MENSAJE[e.codigo] });
 
@@ -185,6 +192,18 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
     // Un integrante reservó en el mismo instante: el índice único sobre proyectoId lo frenó.
     if (e instanceof MongoServerError && e.code === 11000) return { ok: false, error: "ya_tiene_hora", mensaje: "El proyecto acaba de reservar una hora. Recarga y vuelve a intentarlo." };
     throw e;
+  }
+  // Paso 21 · Si otro admin marcó el proyecto «Sin proyecto» en este mismo instante (la transacción no veía la marca y
+  // la marca no veía este asiento), se suelta la hora recién asignada: la marca escribe y luego revisa el asiento; aquí,
+  // al revés, así que alguno de los dos ve al otro. Sin marca, no hace nada.
+  const hecho = resultado as ResultadoAdmin; // se asigna dentro de la transacción (TS no lo sigue)
+  if (hecho.ok && hecho.inicio) {
+    const p = await c.proyectos.findOne({ _id: proyectoId }, { projection: { sinProyecto: 1 } });
+    if (p?.sinProyecto) {
+      const suelto = await c.asientos.findOneAndUpdate({ proyectoId, inicio: new Date(hecho.inicio) }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } });
+      if (suelto) await c.changeLog.insertOne({ proyectoId, accion: "liberar", anterior: etiqueta(suelto.inicio), motivo: "El proyecto se marcó «Sin proyecto» al mismo tiempo", actor, fecha: new Date() });
+      return { ok: false, error: "marcado", mensaje: MENSAJE.marcado };
+    }
   }
   return resultado;
 }

@@ -18,7 +18,8 @@ export type FilaSeguimiento = {
 
 export async function seguimiento(user: Pick<SessionUser, "rol" | "ciudades">): Promise<FilaSeguimiento[]> {
   const { proyectos, asientos } = await collections();
-  const lista = await proyectos.find(scopeFilter<Proyecto>(user) as Filter<Proyecto>, { projection: { codigo: 1, nombre: 1, ciudad: 1, grupo: 1, monitor: 1, integrantes: 1 } })
+  // Paso 21: los proyectos marcados «Sin proyecto» no cuentan en el seguimiento de inscripción.
+  const lista = await proyectos.find({ ...(scopeFilter<Proyecto>(user) as Filter<Proyecto>), sinProyecto: { $exists: false } }, { projection: { codigo: 1, nombre: 1, ciudad: 1, grupo: 1, monitor: 1, integrantes: 1 } })
     .sort({ ciudad: 1, nombre: 1 }).toArray();
   const horas = new Map((await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }, { projection: { proyectoId: 1, inicio: 1 } }).toArray())
     .map((a) => [String(a.proyectoId), a.inicio.toISOString()]));
@@ -35,7 +36,8 @@ export type ResumenDia = { dia: string; capacidad: number; ocupados: number };
 /** Avance por ciudad (de menor a mayor) y ocupación por día. Coordinación y admin. */
 export async function resumen(): Promise<{ total: number; conHora: number; ciudades: ResumenCiudad[]; dias: ResumenDia[] }> {
   const { proyectos, asientos } = await collections();
-  const porCiudad = await proyectos.aggregate<{ _id: string; n: number }>([{ $group: { _id: "$ciudad", n: { $sum: 1 } } }]).toArray();
+  // Paso 21: los marcados «Sin proyecto» no cuentan (no tienen hora: tampoco suman en "con hora").
+  const porCiudad = await proyectos.aggregate<{ _id: string; n: number }>([{ $match: { sinProyecto: { $exists: false } } }, { $group: { _id: "$ciudad", n: { $sum: 1 } } }]).toArray();
   const conHora = await asientos.aggregate<{ _id: string; n: number }>([
     { $match: { proyectoId: { $type: "objectId" } } },
     { $lookup: { from: "proyectos", localField: "proyectoId", foreignField: "_id", as: "p" } },

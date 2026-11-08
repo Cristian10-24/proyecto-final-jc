@@ -3,7 +3,7 @@ import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./eva
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
 import type { FranjaEditada } from "./franjas";
 import type { PlanSala } from "./salas";
-import type { AjusteModoCupos, Asiento, CandadoCupo, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
+import type { AjusteModoCupos, Asiento, CandadoCupo, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, ParticipanteSinProyecto, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
 declare global {
   // Se reutiliza entre recargas en desarrollo y entre invocaciones en Vercel.
@@ -132,6 +132,8 @@ export async function collections() {
     // Fase 4 (colecciones nuevas; solo usan el índice de _id).
     ajustes: db.collection<AjusteModoCupos>("ajustes"),
     candadosCupo: db.collection<CandadoCupo>("candados_cupo"),
+    // Fase 4 · Paso 21 (colección nueva, con su propio índice único de documento).
+    sinProyecto: db.collection<ParticipanteSinProyecto>("sin_proyecto"),
   };
 }
 
@@ -155,6 +157,8 @@ async function ensureIndexes(db: Db) {
     db.collection("evaluacion_anuladas").createIndex({ proyectoId: 1, anuladoEn: -1 }),
     // Una sola sugerencia pendiente por proyecto (el admin la aprueba o rechaza en el Paso 14).
     db.collection("cambios_sugeridos").createIndex({ proyectoId: 1 }, { unique: true, partialFilterExpression: { estado: "pendiente" } }),
+    // Fase 4 · Paso 21: un documento una sola vez en «Sin proyecto» (colección nueva).
+    db.collection("sin_proyecto").createIndex({ documento: 1 }, { unique: true }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),
   ]);

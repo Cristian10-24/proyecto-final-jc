@@ -13,7 +13,7 @@ const Accion = z.discriminatedUnion("accion", [
   // Al unir con un proyecto existente, los datos salen de ese registro: el nombre solo hace falta si es alguien nuevo.
   z.object({ accion: z.literal("agregar"), integrante: IntegranteEntrada.partial({ nombre: true }), version: Version, unir: z.boolean().optional(), conservar: z.enum(["este", "otro"]).optional() }).strict(),
 ]);
-const ESTADO: Record<string, number> = { no_existe: 404, datos: 400, documento: 409, evaluado: 409, cambio: 409, confirmar_ciudad: 409, confirmar_union: 409 };
+const ESTADO: Record<string, number> = { no_existe: 404, datos: 400, documento: 409, sin_proyecto: 409, evaluado: 409, cambio: 409, confirmar_ciudad: 409, confirmar_union: 409 };
 
 const id = async (params: Promise<{ id: string }>) => { const r = IdParams.safeParse(await params); return r.success ? r.data.id : null; };
 

@@ -60,7 +60,8 @@ export async function datosTablero(diaPedido?: string): Promise<DatosTablero> {
   const idsDia = asientos.map((a) => a.proyectoId).filter((x): x is NonNullable<typeof x> => x !== null);
   const [proyectosDia, sinHoraP] = await Promise.all([
     c.proyectos.find({ _id: { $in: idsDia } }, { projection: CAMPOS }).toArray(),
-    c.proyectos.find({ _id: { $nin: conHora.filter((x): x is NonNullable<typeof x> => x !== null) } }, { projection: CAMPOS }).sort({ ciudad: 1, nombre: 1 }).toArray(),
+    // Paso 21: los marcados «Sin proyecto» no aparecen para asignarles hora.
+    c.proyectos.find({ _id: { $nin: conHora.filter((x): x is NonNullable<typeof x> => x !== null) }, sinProyecto: { $exists: false } }, { projection: CAMPOS }).sort({ ciudad: 1, nombre: 1 }).toArray(),
   ]);
   const ids = [...proyectosDia, ...sinHoraP].map((p) => p._id);
   const [evals, notas, crit, monitores] = await Promise.all([

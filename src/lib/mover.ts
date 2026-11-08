@@ -9,7 +9,7 @@ import type { Asiento } from "./types";
 // - Como el prototipo, quien estaba "No se presentó" vuelve a Pendiente, se borra la asistencia que marcó el monitor
 //   (motivo y observación quedan) y el borrador del mentor anterior.
 
-export class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio" | "sin_hora" | "tope") { super(codigo); } }
+export class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio" | "sin_hora" | "tope" | "marcado") { super(codigo); } }
 
 /**
  * Fase 4 · `tope`: con el modo orden de llegada encendido, "respetar" (por defecto; monitor) rechaza con Falla("tope")
@@ -50,7 +50,9 @@ export async function moverProyecto(s: ClientSession, proyectoId: ObjectId, viej
     if (nuevo) break;
   }
   if (!nuevo) throw new Falla("sin_cupo");
-  const p = await c.proyectos.findOne({ _id: proyectoId }, { session: s, projection: { ciudad: 1 } });
+  const p = await c.proyectos.findOne({ _id: proyectoId }, { session: s, projection: { ciudad: 1, sinProyecto: 1 } });
+  // Paso 21: un proyecto marcado «Sin proyecto» no recibe hora (primero se quita la marca).
+  if (p?.sinProyecto) throw new Falla("marcado");
   const sobreTope = !!p && await quedaSobreTope(s, p.ciudad, diaAnterior, nuevo.dia);
   if (sobreTope && opciones.tope !== "permitir") throw new Falla("tope");
   await limpiar(s, proyectoId, usuario, ahora);

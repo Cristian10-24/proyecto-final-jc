@@ -41,7 +41,7 @@ export function asignarMonitor(p: Pick<ProyectoLeido, "ciudad" | "monitorTexto">
 }
 
 export async function previaProyectos(lectura: LecturaProyectos): Promise<PreviaProyectos & { asignaciones: Map<string, string | null> }> {
-  const { proyectos, asientos, dias, users } = await collections();
+  const { proyectos, asientos, dias, users, sinProyecto } = await collections();
   const { proyectos: leidos, columnas, faltan } = lectura;
   const errs = [...lectura.errores];
   const avisos: ErrorFila[] = [];
@@ -49,6 +49,8 @@ export async function previaProyectos(lectura: LecturaProyectos): Promise<Previa
   const porCodigo = new Map(existentes.map((p) => [p.codigo, p]));
   const duenoDoc = new Map(existentes.flatMap((p) => p.integrantes.map((i) => [i.documento, p.codigo] as const)));
   const conHora = new Set((await asientos.find({ proyectoId: { $type: "objectId" } }, { projection: { proyectoId: 1 } }).toArray()).map((a) => String(a.proyectoId)));
+  // Fase 4 · Paso 21: un documento en «Sin proyecto» (sin convertir) no entra a un proyecto por el importador.
+  const enSinProyecto = new Set((await sinProyecto.find({ convertidoEn: { $exists: false } }, { projection: { documento: 1 } }).toArray()).map((x) => x.documento));
   const configDias = await dias.find({}).toArray();
   if (!configDias.length && leidos.length)
     avisos.push({ hoja: "", fila: 0, mensaje: "Aún no hay mentores ni cupos importados: no se pudo revisar qué ciudades tienen días habilitados." });
@@ -70,6 +72,7 @@ export async function previaProyectos(lectura: LecturaProyectos): Promise<Previa
     for (const i of p.integrantes) {
       const dueno = duenoDoc.get(i.documento);
       if (dueno && dueno !== p.codigo) err(`Documento repetido: ${i.documento} ya es del proyecto ${dueno}.`);
+      else if (!dueno && enSinProyecto.has(i.documento)) err(`El documento ${i.documento} está en «Sin proyecto»: conviértelo en proyecto desde ese apartado (o quítalo de allí) antes de importarlo.`);
     }
     if (actual && actual.ciudad !== p.ciudad && conHora.has(String(actual._id)))
       err(`El proyecto ${p.codigo} ya tiene hora en ${actual.ciudad}: libera su hora antes de cambiarle la ciudad.`);
