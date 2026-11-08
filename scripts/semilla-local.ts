@@ -42,7 +42,7 @@ async function main() {
   const hay = (await c.proyectos.countDocuments()) + (await c.asientos.countDocuments());
   if (hay && !process.argv.includes("--reset")) throw new Error("La base ya tiene proyectos o asientos. Usa --reset para reemplazarlos.");
   if (process.argv.includes("--reset"))
-    await Promise.all([c.proyectos.deleteMany({}), c.asientos.deleteMany({}), c.dias.deleteMany({}), c.mentores.deleteMany({}), c.changeLog.deleteMany({}), c.rateLimits.deleteMany({})]);
+    await Promise.all([c.proyectos.deleteMany({}), c.asientos.deleteMany({}), c.dias.deleteMany({}), c.mentores.deleteMany({}), c.changeLog.deleteMany({}), c.rateLimits.deleteMany({}), c.ajustes.deleteMany({}), c.candadosCupo.deleteMany({})]);
 
   // Disponibilidad: 3 mentores en las horas del Excel real del jueves y el viernes; 2 el martes 17.
   const mentores = ["mentor-prueba-1", "mentor-prueba-2", "mentor-prueba-3"];

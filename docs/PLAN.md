@@ -209,16 +209,17 @@ apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal respon
   probarlos en ese orden. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva, y
   concentra la carga (un mentor puede quedar con 4 en todos los bloques de la hora). Se decide después del reporte.
 
-### Preguntas para aprobar el plan
-1. Tope cuando una ciudad no tiene «Máximo del día»: ¿se usan sus «Cupos reservados» como tope? (propuesta: sí).
-2. Ciudades que presentan por «Todas» (sin filas propias): ¿sin tope, o el máximo de la fila «Todas» para cada una?
-3. Editar nombre y descripción: ¿también después del cierre de inscripciones de su ciudad? (propuesta: sí, hasta que
-   haya evaluación guardada, mientras el portal esté encendido).
-4. Marcar un proyecto «Sin proyecto» con un campo nuevo y opcional en ese proyecto (propuesta), en vez de pasarlo a otra
-   colección (eso sería borrar el proyecto).
+### Respuestas del usuario (plan aprobado)
+1. Sin «Máximo del día», el tope de la ciudad son sus «Cupos reservados».
+2. Las ciudades que presentan por «Todas» no tienen tope: comparten los libres del día por orden de llegada.
+3. El estudiante edita nombre y descripción también después del cierre de su ciudad, mientras no haya evaluación
+   guardada y el portal esté encendido.
+4. «Sin proyecto» con el campo nuevo y opcional en el proyecto.
+5. Agregado al Paso 19: la tarjeta del modo en Reglas muestra, por día y ciudad, el tope, cuántos lleva y cuántos libres
+   quedan, para revisarlo antes de encender.
 
 ### Pasos de la Fase 4
-- [ ] 19. Cupos por orden de llegada: interruptor, tope por ciudad y día, reserva atómica con candado, portal, Reglas.
+- [x] 19. Cupos por orden de llegada: interruptor, tope por ciudad y día, reserva atómica con candado, portal, Reglas.
 - [ ] 20. Orden de llegada en admin, monitor, bandeja, tablero y resumen (mover sobre el tope con advertencia).
 - [ ] 21. «Sin proyecto»: colección, carga por Excel y uno por uno, marcar/quitar, portal, estadísticas y apartado.
 - [ ] 22. Comentarios en proyectos (monitor escribe; admin y coordinación ven; indicador «Con comentarios»).

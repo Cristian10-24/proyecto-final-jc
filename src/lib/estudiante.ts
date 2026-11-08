@@ -1,8 +1,9 @@
 import { ciudadesDelDia, ciudadesExplicitas, horasDisponibles, puedeElegir } from "./agenda";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
+import { modoOrdenLlegada, ocupacionCiudad, topeCiudad } from "./modoCupos";
 import { estadoCiudad } from "./reglasCupos";
-import type { Asiento, Integrante, Proyecto } from "./types";
+import type { Asiento, DiaConfig, Integrante, Proyecto } from "./types";
 
 // Lo que ve el estudiante (DECISIONES): nombres completos, ciudad, nombre y descripción del proyecto
 // y su hora si existe. Documento, celular y correo, enmascarados. Nada más: ni mentores, ni conteos,
@@ -89,19 +90,28 @@ export async function agenda(documento: string, dia: string | undefined, ahora =
   if (e.estado === "cerrado") return { error: "cerrado", cierre: e.cierre };
   if (e.estado === "antes") return { error: "aun_no_abre", abre: e.abre };
   const { dias, asientos } = await collections();
+  // Fase 4 · Modo orden de llegada: cualquier asiento libre del día (sin mirar la etiqueta), y el día deja de estar
+  // disponible para la ciudad cuando llega a su tope. Apagado: exactamente como antes.
+  const orden = await modoOrdenLlegada();
+  const ocupacion = orden ? await ocupacionCiudad(p.ciudad) : null;
+  const lleno = (cfg: DiaConfig) => { const t = topeCiudad(cfg, p.ciudad); return t !== null && (ocupacion?.get(cfg._id) ?? 0) >= t; };
 
   if (dia) {
     const todos = await dias.find({}).toArray();
-    if (!puedeElegir(todos.find((d) => d._id === dia), p.ciudad, ahora, ciudadesExplicitas(todos))) return { error: "dia_no_disponible" };
-    const libres = await asientos.find({ dia, ciudades: p.ciudad, proyectoId: null }, { projection: { inicio: 1, ciudades: 1, proyectoId: 1 } }).toArray();
-    return { dia, bloques: horasDisponibles(libres, p.ciudad, ahora).map((d) => d.toISOString()) };
+    const cfg = todos.find((d) => d._id === dia);
+    if (!puedeElegir(cfg, p.ciudad, ahora, ciudadesExplicitas(todos))) return { error: "dia_no_disponible" };
+    if (orden && lleno(cfg!)) return { error: "dia_no_disponible" };
+    const libres = await asientos.find({ dia, ...(orden ? {} : { ciudades: p.ciudad }), proyectoId: null }, { projection: { inicio: 1, ciudades: 1, proyectoId: 1 } }).toArray();
+    return { dia, bloques: horasDisponibles(libres, orden ? null : p.ciudad, ahora).map((d) => d.toISOString()) };
   }
 
   const hoy = diaCOL(ahora);
   const todos = await dias.find({}).sort({ _id: 1 }).toArray();
   const explicitas = ciudadesExplicitas(todos);
   const configs = todos.filter((d) => d._id >= hoy && ciudadesDelDia(d.ciudades, d._id, explicitas).has(p.ciudad));
-  const conLibres = new Set(await asientos.distinct("dia", { ciudades: p.ciudad, proyectoId: null, inicio: { $gt: ahora } }));
+  const conLibres = new Set(orden
+    ? (await asientos.distinct("dia", { proyectoId: null, inicio: { $gt: ahora } })).filter((d) => { const cfg = todos.find((x) => x._id === d); return !cfg || !lleno(cfg); })
+    : await asientos.distinct("dia", { ciudades: p.ciudad, proyectoId: null, inicio: { $gt: ahora } }));
   return {
     dias: configs.map((d): DiaVista => {
       const abre = ciudadesDelDia(d.ciudades, d._id, explicitas).get(p.ciudad);

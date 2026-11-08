@@ -215,7 +215,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
       return;
     }
     if (err === "ya_tiene_hora") return void mostrarYaTiene();
-    if (err === "dia_no_disponible" || (err === "aun_no_abre" && !r.data.abre)) return void cargarDias(AVISO_DIA);
+    if (err === "dia_no_disponible" || err === "dia_lleno" || (err === "aun_no_abre" && !r.data.abre)) return void cargarDias(AVISO_DIA);
     if (!comun(r)) errorGeneral();
   }
 

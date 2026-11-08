@@ -36,6 +36,8 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Importar: `req.formData()` lee el archivo antes de revisar los 4 MB y exceljs no limita el tamaño descomprimido. Solo el admin importa y Vercel corta en 4,5 MB.
 - Las claves fáciles de prueba (`semilla-local`, `semilla:demo` local) solo existen en la base local; en Atlas la demo genera una al azar.
 
+- Modo orden de llegada (Paso 19): una reserva que empezó justo antes de que el admin encienda el modo va por etiquetas, sin candado, y en ese instante puede dejar a su ciudad 1 por encima del tope. Mientras el Paso 20 no esté listo, mover a mano desde Horarios o el Tablero no toca el candado: un movimiento simultáneo con una reserva puede pasar el tope en 1 (el admin puede pasarlo igual).
+
 ## Más adelante
 - Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).
   Más adelante, un número consecutivo propio que no dependa del documento.

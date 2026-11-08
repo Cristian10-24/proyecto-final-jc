@@ -143,11 +143,12 @@ export function puedeElegir(dia: DiaConfig | undefined, ciudad: string, ahora: D
   return !abre || abre.getTime() <= ahora.getTime();
 }
 
-/** Bloques (inicio) con al menos un asiento libre para la ciudad, futuros y en orden. Sin conteos. */
-export function horasDisponibles(asientos: Pick<Asiento, "inicio" | "ciudades" | "proyectoId">[], ciudad: string, ahora: Date): Date[] {
+/** Bloques (inicio) con al menos un asiento libre para la ciudad, futuros y en orden. Sin conteos.
+ *  `ciudad` null (modo orden de llegada): cualquier asiento libre, sin mirar su etiqueta. */
+export function horasDisponibles(asientos: Pick<Asiento, "inicio" | "ciudades" | "proyectoId">[], ciudad: string | null, ahora: Date): Date[] {
   const vistos = new Map<number, Date>();
   for (const a of asientos)
-    if (!a.proyectoId && a.ciudades.includes(ciudad) && a.inicio.getTime() > ahora.getTime()) vistos.set(a.inicio.getTime(), a.inicio);
+    if (!a.proyectoId && (ciudad === null || a.ciudades.includes(ciudad)) && a.inicio.getTime() > ahora.getTime()) vistos.set(a.inicio.getTime(), a.inicio);
   return [...vistos.keys()].sort((x, y) => x - y).map((t) => vistos.get(t)!);
 }
 
