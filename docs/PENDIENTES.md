@@ -41,6 +41,7 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - «Sin proyecto»: agregar un integrante nuevo o cambiar un documento en Editar revisa «Sin proyecto» dentro de su transacción (o antes), no después; si en ese mismo instante otro admin carga ese documento en «Sin proyecto», puede quedar en los dos (el portal muestra el proyecto). Igual con el importador, que revisa en la vista previa.
 - «Sin proyecto»: convertir crea el proyecto y luego marca el registro como convertido; si alguien quita al participante en ese instante (o el proceso se cae entre los dos pasos), el proyecto queda creado y el registro borrado o pendiente.
 - «Sin proyecto»: el portal revela que un documento está «sin proyecto» (cuenta para el límite por documento, no para el de la IP), sin dar nombre, ciudad ni datos.
+- Comentarios: el texto anterior de un comentario editado se guarda (`anteriores`) pero no se muestra en pantalla; coordinación solo ve la marca «editado».
 
 ## Más adelante
 - Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).

@@ -5,12 +5,15 @@ import { CIUDADES, horaCO, horaUY } from "./ciudades";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
 import { enmascararNumero } from "./estudiante";
+import { conteoComentarios } from "./comentarios";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Proyecto } from "./types";
 
 // Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
 
 export type FilaSeguimiento = {
+  /** Paso 22: para abrir sus comentarios; `comentarios` = cuántos tiene (sin los borrados). */
+  id: string; comentarios: number;
   codigo: string; nombre: string; ciudad: string; grupo?: string; monitor: string | null;
   integrantes: { nombre: string; documento: string }[]; // documento enmascarado
   hora: string | null; // ISO
@@ -23,7 +26,9 @@ export async function seguimiento(user: Pick<SessionUser, "rol" | "ciudades">): 
     .sort({ ciudad: 1, nombre: 1 }).toArray();
   const horas = new Map((await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }, { projection: { proyectoId: 1, inicio: 1 } }).toArray())
     .map((a) => [String(a.proyectoId), a.inicio.toISOString()]));
+  const nComent = await conteoComentarios(lista.map((p) => p._id));
   return lista.map((p) => ({
+    id: String(p._id), comentarios: nComent.get(String(p._id)) ?? 0,
     codigo: p.codigo, nombre: p.nombre, ciudad: p.ciudad, ...(p.grupo ? { grupo: p.grupo } : {}), monitor: p.monitor ?? null,
     integrantes: p.integrantes.map((i) => ({ nombre: i.nombre, documento: enmascararNumero(i.documento) })),
     hora: horas.get(String(p._id)) ?? null,

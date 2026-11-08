@@ -6,6 +6,7 @@ import { horaCO } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
 import type { FilaSugerencia } from "@/lib/sugerencias";
 import AppShell from "./AppShell";
+import Comentarios from "./Comentarios";
 import GestionProyecto, { type ModoGestion } from "./GestionProyecto";
 import { useVentana } from "./useVentana";
 import s from "./HorariosPanel.module.css";
@@ -18,6 +19,8 @@ type Proyecto = {
   integrantes: Integrante[]; monitor: string | null; hora: null | { inicio: string; mentor: string }; evaluado?: boolean; evaluadoEn?: string;
   /** Paso 21: marcado «Sin proyecto». */
   sinProyecto?: { desde: string; motivo?: string };
+  /** Paso 22: comentarios de seguimiento. */
+  comentarios?: number;
 };
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
 type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
@@ -184,7 +187,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
                   {proyectos.map((p) => (
                     <tr key={p.id} className={s.fila} tabIndex={0} onClick={() => setSel(p)}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(p); } }}>
-                      <td><div className={s.pNombre}>{p.nombre}</div><div className={s.codigo}>{p.codigo}</div></td>
+                      <td><div className={s.pNombre}>{p.nombre}</div><div className={s.codigo}>{p.codigo}</div>{!!p.comentarios && <Chip tono="neutro">Con comentarios ({p.comentarios})</Chip>}</td>
                       <td>{p.integrantes.map((i) => <div key={i.documento}>{i.nombre}</div>)}</td>
                       <td>{p.ciudad}{p.grupo && <div className={s.sub}>{p.grupo}</div>}</td>
                       <td>{p.hora ? <span className={s.nowrap}>{etiquetaHora(p.hora.inicio)}</span> : p.sinProyecto ? <Chip tono="neutro">Sin proyecto</Chip> : <Chip tono="amarillo">Sin hora</Chip>}</td>
@@ -386,6 +389,11 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
             onCancelar={() => { setModo("ver"); setError(""); }}
             onEnviar={(inicio, otraCiudad, confirmarTope) => enviar({ accion: "cambiar", inicio, otraCiudad, confirmarTope, motivo: motivo.trim() }, "Hora cambiada")} />
         )}
+
+        <div>
+          <div className={s.seccionK}>Comentarios de seguimiento</div>
+          <Comentarios proyectoId={p.id} />
+        </div>
 
         <div>
           <div className={s.seccionK}>Historial de cambios</div>

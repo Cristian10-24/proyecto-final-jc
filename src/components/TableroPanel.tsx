@@ -8,6 +8,7 @@ import { puede } from "@/lib/permisos";
 import type { BloqueTablero, DatosTablero, Tarjeta } from "@/lib/tableroHorarios";
 import AppShell from "./AppShell";
 import GestionProyecto from "./GestionProyecto";
+import Comentarios from "./Comentarios";
 import { useVentana } from "./useVentana";
 import s from "./TableroPanel.module.css";
 
@@ -299,6 +300,7 @@ function TarjetaVista({ t, flotando, onClick }: { t: Tarjeta; flotando?: boolean
       <div className={s.cProyecto}>{t.proyecto}</div>
       <div className={s.cGente}>{t.integrantes.join(" y ")}</div>
       {t.mentor && <div className={s.cMeta}>↳ {t.mentor}{t.sala ? ` · Sala ${t.sala}` : ""}{t.monitor ? ` · ${t.monitor}` : ""}</div>}
+      {t.comentarios > 0 && <div className={s.cMeta}>Con comentarios ({t.comentarios})</div>}
       <span className={`${s.estado} ${s[`estado_${t.estado}`]}`}>{t.evaluado ? "Evaluado" : ESTADO[t.estado]}</span>
     </>
   );
@@ -366,6 +368,8 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
             </div>
           </div>
         )}
+        <div className={s.histT}>Comentarios de seguimiento</div>
+        <Comentarios proyectoId={t.id} />
         <div className={s.histT}>Historial</div>
         {!hist ? <div className={s.skelFila} /> : !hist.length ? <p className={s.vacioTxt}>Sin cambios registrados.</p> : (
           <ol className={s.hist}>

@@ -3,6 +3,7 @@ import { collections } from "./db";
 import { horaCOL, inicioUTC } from "./edicion";
 import { calc, estadoFila } from "./evaluacion/criterios";
 import { criterios, idEval } from "./evaluacion/datos";
+import { conteoComentarios } from "./comentarios";
 import { modoOrdenLlegada } from "./modoCupos";
 import type { Proyecto, Ruta } from "./types";
 
@@ -17,6 +18,8 @@ export type Tarjeta = {
   /** Tiene evaluación guardada: no se mueve ni se libera. `evaluadoEn`: su última versión (para anular esa). */
   evaluado: boolean;
   evaluadoEn?: string;
+  /** Paso 22: comentarios de seguimiento (sin los borrados). */
+  comentarios: number;
 };
 export type BloqueTablero = {
   inicio: string; total: number; ocupados: number;
@@ -64,11 +67,12 @@ export async function datosTablero(diaPedido?: string): Promise<DatosTablero> {
     c.proyectos.find({ _id: { $nin: conHora.filter((x): x is NonNullable<typeof x> => x !== null) }, sinProyecto: { $exists: false } }, { projection: CAMPOS }).sort({ ciudad: 1, nombre: 1 }).toArray(),
   ]);
   const ids = [...proyectosDia, ...sinHoraP].map((p) => p._id);
-  const [evals, notas, crit, monitores] = await Promise.all([
+  const [evals, notas, crit, monitores, nComent] = await Promise.all([
     c.evalResultados.find({ proyectoId: { $in: ids } }).toArray(),
     c.evalMonitor.find({ proyectoId: { $in: ids } }).toArray(),
     criterios(),
     c.users.find({ usuario: { $in: plan.map((p) => p.monitor).filter((m): m is string => !!m) } }, { projection: { usuario: 1, nombre: 1 } }).toArray(),
+    conteoComentarios(ids),
   ]);
   const ev = new Map(evals.map((e) => [e._id, e])), nota = new Map(notas.map((n) => [n._id, n]));
   const nombreMentor = new Map(mentores.map((m) => [m._id, m.nombre])), nombreMonitor = new Map(monitores.map((u) => [u.usuario, u.nombre]));
@@ -87,6 +91,7 @@ export async function datosTablero(diaPedido?: string): Promise<DatosTablero> {
       ...(a ? { inicio: a.inicio.toISOString(), asientoId: String(a._id), mentor: nombreMentor.get(a.mentorId) ?? a.mentorId } : {}),
       ...(s ? { sala: s.sala, ...(s.monitor ? { monitor: nombreMonitor.get(s.monitor) ?? s.monitor } : {}) } : {}),
       estado: estadoFila(integrantes), evaluado: integrantes.some((x) => x.evaluado), ...(evaluadoEn ? { evaluadoEn } : {}),
+      comentarios: nComent.get(String(p._id)) ?? 0,
     };
   };
 

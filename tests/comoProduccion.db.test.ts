@@ -73,6 +73,7 @@ describe("sin acciones de usuario no cambia nada", () => {
     expect(await c.ajustes.countDocuments()).toBe(0);
     expect(await c.candadosCupo.countDocuments()).toBe(0);
     expect(await c.sinProyecto.countDocuments()).toBe(0);
+    expect(await c.comentarios.countDocuments()).toBe(0);
     expect(await c.proyectos.countDocuments({ sinProyecto: { $exists: true } })).toBe(0);
     // Ningún documento real queda como «no inscrito» y las listas nuevas están vacías.
     expect(documentos.filter((d) => (portalDespues[d] as { noInscrito: boolean }).noInscrito)).toEqual([]);

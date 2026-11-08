@@ -78,6 +78,9 @@ const soloMonitor: [string, () => Promise<Response>][] = [
   ["reprogramar desde la sala", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "reprogramar", asiento: ID, motivo: "Cita médica" }), ctx)],
   ["sugerir un cambio especial", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "sugerir", detalle: "Otro día", motivo: "Viaja" }), ctx)],
   ["ver cupos para reprogramar", async () => (await import("@/app/api/evaluacion/salas/[id]/cupos/route")).GET(new Request("http://localhost/x"), ctx)],
+  // Paso 22: escribir, editar y borrar comentarios de seguimiento (coordinación y admin solo leen).
+  ["escribir un comentario", async () => (await import("@/app/api/monitor/proyectos/[id]/comentarios/route")).POST(json("POST", { accion: "crear", texto: "Hola" }), ctx)],
+  ["borrar un comentario", async () => (await import("@/app/api/monitor/proyectos/[id]/comentarios/route")).POST(json("POST", { accion: "borrar", comentario: ID }), ctx)],
 ];
 
 // Seguimiento general, Excel de resultados y criterios: coordinación y admin.
@@ -101,6 +104,7 @@ describe("matriz de permisos", () => {
     ver_evaluaciones: [false, false, true, true],
     monitorear_salas: [false, true, false, false],
     editar_criterios: [false, false, true, true],
+    comentar_proyectos: [false, true, false, false],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -126,6 +130,25 @@ describe("el mentor recibe 403", () => {
 describe("coordinación y admin no escriben evaluaciones", () => {
   for (const rol of ["coordinador", "admin"] as const)
     for (const [nombre, llamar] of soloMentor) it(`${rol}: 403 al ${nombre}`, async () => { await como(rol); expect((await llamar()).status).toBe(403); });
+});
+
+describe("Comentarios (Paso 22): origen, validación y lectura", () => {
+  const ruta = () => import("@/app/api/monitor/proyectos/[id]/comentarios/route");
+  it("403 desde otro origen aunque sea el monitor; 400 con campos de más, acción desconocida o id inválido", async () => {
+    await como("monitor");
+    const req = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "crear", texto: "Hola" }) });
+    const res = await (await ruta()).POST(req, ctx);
+    expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
+    for (const body of [{ accion: "crear", texto: "Hola", otro: 1 }, { accion: "publicar", texto: "Hola" }, { accion: "borrar", comentario: "abc" }, { accion: "crear", texto: "x".repeat(2001) }])
+      expect((await (await ruta()).POST(json("POST", body), ctx)).status).toBe(400);
+    expect((await (await ruta()).POST(json("POST", { accion: "crear", texto: "Hola" }), { params: Promise.resolve({ id: "no-es-id" }) })).status).toBe(400);
+  });
+  it("leer: el mentor recibe 403 y sin sesión 401", async () => {
+    await como("mentor");
+    expect((await (await ruta()).GET(new Request("http://localhost/x"), ctx)).status).toBe(403);
+    estado.token = ""; estado.usuario = null;
+    expect((await (await ruta()).GET(new Request("http://localhost/x"), ctx)).status).toBe(401);
+  });
 });
 
 describe("Mis salas: POST desde otro origen", () => {

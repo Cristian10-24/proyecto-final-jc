@@ -373,6 +373,8 @@ export async function agregarIntegrante(pid: ObjectId, entrada: Partial<Integran
       await c.evalResultados.deleteMany({ proyectoId: o._id }, { session: s });
       await c.evalMonitor.deleteMany({ proyectoId: o._id }, { session: s });
       await c.evalBorradores.deleteOne({ _id: String(o._id) }, { session: s });
+      // Paso 22: sus comentarios de seguimiento pasan al proyecto unido (no se pierden).
+      await c.comentarios.updateMany({ proyectoId: o._id }, { $set: { proyectoId: pid } }, { session: s });
       await c.cambiosSugeridos.updateMany({ proyectoId: o._id, estado: "pendiente" },
         { $set: { estado: "rechazado", resueltoPor: actor.usuario ?? actor.rol, resueltoEn: ahora, respuesta: `El proyecto se unió a ${p.codigo}.` } }, { session: s });
       await c.changeLog.insertMany([

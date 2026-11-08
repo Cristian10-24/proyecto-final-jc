@@ -1,6 +1,7 @@
 import { MongoServerError, ObjectId, type Filter } from "mongodb";
 import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
+import { conteoComentarios } from "./comentarios";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
 import { calc } from "./evaluacion/criterios";
@@ -27,6 +28,8 @@ export type FilaProyecto = {
   evaluadoEn?: string;
   /** Paso 21: marcado «Sin proyecto» (no recibe hora ni cuenta en el seguimiento). */
   sinProyecto?: { desde: string; motivo?: string };
+  /** Paso 22: comentarios de seguimiento (sin los borrados). */
+  comentarios: number;
 };
 
 export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" | "sin_proyecto" };
@@ -59,6 +62,7 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
     const k = String(e.proyectoId), t = e.actualizadoEn.toISOString();
     if (!evaluadoEn.has(k) || evaluadoEn.get(k)! < t) evaluadoEn.set(k, t);
   }
+  const nComent = await conteoComentarios(lista.map((p) => p._id));
   return lista
     .map((p): FilaProyecto => {
       const a = porProyecto.get(String(p._id));
@@ -68,6 +72,7 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
         monitor: p.monitor ?? null,
         hora: a ? { inicio: a.inicio.toISOString(), mentor: nombres.get(a.mentorId) ?? a.mentorId } : null,
         evaluado: evaluadoEn.has(String(p._id)), ...(evaluadoEn.has(String(p._id)) ? { evaluadoEn: evaluadoEn.get(String(p._id))! } : {}),
+        comentarios: nComent.get(String(p._id)) ?? 0,
         ...(p.sinProyecto ? { sinProyecto: { desde: p.sinProyecto.desde.toISOString(), ...(p.sinProyecto.motivo ? { motivo: p.sinProyecto.motivo } : {}) } } : {}),
       };
     });

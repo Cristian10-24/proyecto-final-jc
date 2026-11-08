@@ -3,6 +3,7 @@ import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./eva
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
 import type { FranjaEditada } from "./franjas";
 import type { PlanSala } from "./salas";
+import type { Comentario } from "./comentarios";
 import type { AjusteModoCupos, Asiento, CandadoCupo, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, ParticipanteSinProyecto, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
 declare global {
@@ -134,6 +135,8 @@ export async function collections() {
     candadosCupo: db.collection<CandadoCupo>("candados_cupo"),
     // Fase 4 · Paso 21 (colección nueva, con su propio índice único de documento).
     sinProyecto: db.collection<ParticipanteSinProyecto>("sin_proyecto"),
+    // Fase 4 · Paso 22 (colección nueva, con su propio índice).
+    comentarios: db.collection<Comentario>("comentarios"),
   };
 }
 
@@ -159,6 +162,8 @@ async function ensureIndexes(db: Db) {
     db.collection("cambios_sugeridos").createIndex({ proyectoId: 1 }, { unique: true, partialFilterExpression: { estado: "pendiente" } }),
     // Fase 4 · Paso 21: un documento una sola vez en «Sin proyecto» (colección nueva).
     db.collection("sin_proyecto").createIndex({ documento: 1 }, { unique: true }),
+    // Fase 4 · Paso 22: comentarios de un proyecto en orden (colección nueva).
+    db.collection("comentarios").createIndex({ proyectoId: 1, creadoEn: 1 }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),
   ]);
