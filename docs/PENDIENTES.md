@@ -36,5 +36,10 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Importar: `req.formData()` lee el archivo antes de revisar los 4 MB y exceljs no limita el tamaño descomprimido. Solo el admin importa y Vercel corta en 4,5 MB.
 - Las claves fáciles de prueba (`semilla-local`, `semilla:demo` local) solo existen en la base local; en Atlas la demo genera una al azar.
 
+- Modo orden de llegada: el interruptor se lee antes de la transacción (reserva, reprogramar, mover y aprobar). Justo en el instante en que el admin lo enciende o apaga, una acción en curso puede ir con el modo anterior (p. ej. una reserva sin candado que pasa el tope en 1, o un reprogramar que toma un asiento de otra ciudad).
+- Modo orden de llegada: editar la ciudad de un proyecto con hora o unir proyectos de distinta ciudad conservando la hora del otro escribe el candado (las reservas lo cuentan), pero no avisa si la ciudad nueva queda sobre el tope: el admin la deja así sin confirmación (se ve en la tarjeta de Reglas).
+
 ## Más adelante
+- Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).
+  Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".

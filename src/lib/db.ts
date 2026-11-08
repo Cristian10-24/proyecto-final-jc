@@ -3,7 +3,7 @@ import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./eva
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
 import type { FranjaEditada } from "./franjas";
 import type { PlanSala } from "./salas";
-import type { Asiento, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
+import type { AjusteModoCupos, Asiento, CandadoCupo, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
 declare global {
   // Se reutiliza entre recargas en desarrollo y entre invocaciones en Vercel.
@@ -129,6 +129,9 @@ export async function collections() {
     evalMonitor: db.collection<EvalMonitor>("evaluacion_monitor"),
     evalAnuladas: db.collection<EvalAnulada>("evaluacion_anuladas"),
     cambiosSugeridos: db.collection<CambioSugerido>("cambios_sugeridos"),
+    // Fase 4 (colecciones nuevas; solo usan el índice de _id).
+    ajustes: db.collection<AjusteModoCupos>("ajustes"),
+    candadosCupo: db.collection<CandadoCupo>("candados_cupo"),
   };
 }
 

@@ -6,6 +6,7 @@ import { diaCOL } from "./edicion";
 import { calc } from "./evaluacion/criterios";
 import { criterios } from "./evaluacion/datos";
 import { enmascararNumero } from "./estudiante";
+import { conCandado, modoOrdenLlegada, topeDeDia } from "./modoCupos";
 import { Falla, liberarProyecto, moverProyecto } from "./mover";
 import type { Actor, Asiento, Proyecto } from "./types";
 
@@ -83,8 +84,16 @@ const MENSAJE: Record<Falla["codigo"], string> = {
   ya_evaluado: "Ya tiene una evaluación guardada: no se mueve ni se libera.",
   cambio: "La hora del proyecto cambió mientras tanto. Recarga y vuelve a intentarlo.",
   sin_hora: "Ese proyecto no tiene hora.",
+  tope: "Su ciudad ya llegó al tope de ese día.",
 };
 const falla = (e: Falla): ResultadoAdmin => ({ ok: false, error: e.codigo, mensaje: MENSAJE[e.codigo] });
+
+const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", timeZone: "UTC" });
+/** "Cartagena ya tiene 30 de 30 el jueves 12. ¿Mover igual?" (advertencia del admin al pasar el tope). */
+export async function mensajeTope(ciudad: string, dia: string): Promise<string> {
+  const t = await topeDeDia(ciudad, dia);
+  return t ? `${ciudad} ya tiene ${t.lleva} de ${t.tope} el ${fmtDia.format(new Date(dia + "T12:00:00Z"))}. ¿Mover igual?` : MENSAJE.tope;
+}
 
 /** Libera la hora y registra el cambio en la misma transacción (lógica común en mover.ts). */
 export async function liberar(proyectoId: ObjectId, motivo: string, actor: Actor): Promise<ResultadoAdmin> {
@@ -142,32 +151,36 @@ export async function anularEvaluacion(proyectoId: ObjectId, motivo: string, act
  * asiento actual (si tiene) y toma uno libre, en una transacción (lógica común en mover.ts). Por defecto solo asientos
  * de su ciudad; con `otraCiudad`, cualquiera libre. Un proyecto con evaluación guardada no se mueve.
  */
-export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string; asiento?: ObjectId }, actor: Actor): Promise<ResultadoAdmin> {
+export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string; asiento?: ObjectId; confirmarTope?: boolean }, actor: Actor): Promise<ResultadoAdmin> {
   const c = await collections();
   const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!proyecto) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
-  const ciudad: Filter<Asiento> = opciones.otraCiudad ? {} : { ciudades: proyecto.ciudad };
+  // Modo orden de llegada: las etiquetas no cuentan (primero se prueba uno de su ciudad, luego cualquiera).
+  const orden = await modoOrdenLlegada();
+  const otra = opciones.otraCiudad || orden;
+  const ciudad: Filter<Asiento> = otra ? {} : { ciudades: proyecto.ciudad };
   const filtros: Filter<Asiento>[] = opciones.asiento
     ? [{ _id: opciones.asiento, inicio, ...ciudad }]
-    : [{ inicio, ciudades: proyecto.ciudad }, ...(opciones.otraCiudad ? [{ inicio }] : [])];
+    : [{ inicio, ciudades: proyecto.ciudad }, ...(otra ? [{ inicio }] : [])];
   let resultado: ResultadoAdmin = { ok: false, error: "sin_cupo", mensaje: MENSAJE.sin_cupo };
   try {
-    await transaccion(async (s) => {
+    await conCandado(async (s) => {
       const viejo = await c.asientos.findOne({ proyectoId }, { session: s });
       if (viejo && (opciones.asiento ? viejo._id.equals(opciones.asiento) : viejo.inicio.getTime() === inicio.getTime())) throw new Error("misma_hora");
       const ahora = new Date();
-      const nuevo = await moverProyecto(s, proyectoId, viejo?._id ?? null, filtros, actor.usuario ?? actor.rol, ahora);
-      const ajeno = !nuevo.ciudades.includes(proyecto.ciudad);
+      const nuevo = await moverProyecto(s, proyectoId, viejo?._id ?? null, filtros, actor.usuario ?? actor.rol, ahora, { tope: opciones.confirmarTope ? "permitir" : "respetar" });
+      const ajeno = !orden && !nuevo.ciudades.includes(proyecto.ciudad);
       const cambioMentor = !!viejo && viejo.inicio.getTime() === nuevo.inicio.getTime();
       await c.changeLog.insertOne({
         proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: `${etiqueta(viejo.inicio)}${cambioMentor ? ` · ${viejo.mentorId}` : ""}` } : {}),
-        nuevo: `${etiqueta(nuevo.inicio)}${cambioMentor ? ` · ${nuevo.mentorId}` : ""}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}`,
+        nuevo: `${etiqueta(nuevo.inicio)}${cambioMentor ? ` · ${nuevo.mentorId}` : ""}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}${nuevo.sobreTope ? " · sobre el tope" : ""}`,
         motivo: opciones.motivo, actor, fecha: ahora,
       }, { session: s });
       resultado = { ok: true, inicio: nuevo.inicio.toISOString() };
     });
   } catch (e) {
     if (e instanceof Error && e.message === "misma_hora") return { ok: false, error: "misma_hora", mensaje: "El proyecto ya tiene esa hora." };
+    if (e instanceof Falla && e.codigo === "tope") return { ok: false, error: "tope", mensaje: await mensajeTope(proyecto.ciudad, diaCOL(inicio)) };
     if (e instanceof Falla) return falla(e);
     // Un integrante reservó en el mismo instante: el índice único sobre proyectoId lo frenó.
     if (e instanceof MongoServerError && e.code === 11000) return { ok: false, error: "ya_tiene_hora", mensaje: "El proyecto acaba de reservar una hora. Recarga y vuelve a intentarlo." };
@@ -185,17 +198,22 @@ export async function bloquesLibres(proyectoId: ObjectId, dia: string) {
   const c = await collections();
   const p = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!p) return null;
+  // Modo orden de llegada: todo libre cuenta como de su ciudad, y se informa el tope (sin contar al propio proyecto si
+  // ya tiene hora ese día: moverlo dentro del día no cambia lo que lleva su ciudad).
+  const orden = await modoOrdenLlegada();
+  const tope = orden ? await topeDeDia(p.ciudad, dia) : null;
+  if (tope && await c.asientos.findOne({ proyectoId, dia }, { projection: { _id: 1 } })) tope.lleva--;
   const libres = await c.asientos.find({ dia, proyectoId: null }).sort({ inicio: 1 }).toArray();
   const porBloque = new Map<string, { inicio: string; libres: number; deSuCiudad: boolean; otras: string[] }>();
   for (const a of libres) {
     const k = a.inicio.toISOString();
     const b = porBloque.get(k) ?? { inicio: k, libres: 0, deSuCiudad: false, otras: [] };
-    if (a.ciudades.includes(p.ciudad)) { b.deSuCiudad = true; b.libres++; }
+    if (orden || a.ciudades.includes(p.ciudad)) { b.deSuCiudad = true; b.libres++; }
     else if (!b.otras.includes(claveGrupo(a.ciudades))) b.otras.push(claveGrupo(a.ciudades));
     porBloque.set(k, b);
   }
   const todos = await c.dias.find({}).toArray();
-  return { ciudadTieneElDia: diasPorCiudad(todos, p.ciudad).includes(dia), bloques: [...porBloque.values()] };
+  return { ciudadTieneElDia: diasPorCiudad(todos, p.ciudad).includes(dia), bloques: [...porBloque.values()], ordenLlegada: orden, ciudad: p.ciudad, ...(tope ? { tope } : {}) };
 }
 
 export async function asignarMonitor(proyectoId: ObjectId, monitor: string | null, actor: Actor): Promise<ResultadoAdmin> {

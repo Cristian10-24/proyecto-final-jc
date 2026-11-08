@@ -20,6 +20,7 @@ const MENSAJE: Record<string, string> = {
   no_existe: "Este proyecto ya no existe.",
   sin_hora: "Este proyecto ya no tiene hora.",
   sin_cupo: "Ese cupo ya no está libre. Elige otro.",
+  tope: "La ciudad del estudiante ya llegó a su tope ese día. Elige otro día o sugiere un cambio especial.",
   ya_evaluado: "Ya tiene una evaluación guardada: no se puede reprogramar.",
   cambio: "La hora del proyecto cambió mientras tanto. Ciérralo y vuelve a abrirlo.",
   ya_sugerido: "Ya hay una sugerencia pendiente para este proyecto.",

@@ -29,7 +29,8 @@ export type ChangeLog = {
   _id?: ObjectId;
   proyectoId?: ObjectId;
   accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion" | "reglas_cupos" | "cierre_inscripciones" | "franjas"
-    | "crear_proyecto" | "editar_proyecto" | "separar_pareja" | "agregar_integrante" | "unir_proyecto";
+    | "crear_proyecto" | "editar_proyecto" | "separar_pareja" | "agregar_integrante" | "unir_proyecto"
+    | "modo_cupos";
   anterior?: string;
   nuevo?: string;
   motivo?: string;
@@ -86,6 +87,13 @@ export type DiaConfig = { _id: string; ciudades: CupoCiudad[]; editadoEn?: Date;
 export type InscripcionesConfig = { _id: "cierre"; horasAntes: number; porCiudad: Record<string, Date>; actualizadoEn: Date };
 
 export type RateLimit ={ _id: string; count: number; expiraEn: Date };
+
+/** Fase 4 · Interruptor del modo orden de llegada (colección nueva `ajustes`). Sin documento = apagado (como antes). */
+export type AjusteModoCupos = { _id: "modoCupos"; ordenLlegada: boolean; actualizadoEn: Date; actualizadoPor: string };
+
+/** Fase 4 · Candado de una ciudad en un día (`candados_cupo`, `_id` = "<día>|<ciudad>"): solo se incrementa, para que
+ *  dos reservas simultáneas de la misma ciudad y día choquen en la transacción y no pasen el tope. */
+export type CandadoCupo = { _id: string; v: number };
 
 /** Lo último importado en el libro de salas y monitores (ya reconocido): permite recalcular el plan. */
 export type SalasConfig = { _id: "actual"; salas: Sala[]; importados: MonitorFijo[]; disponibilidad: Disponible[]; actualizadoEn: Date };

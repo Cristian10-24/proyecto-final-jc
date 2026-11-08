@@ -20,6 +20,8 @@ type Proyecto = {
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
 type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
 type Bloque = { inicio: string; libres: number; deSuCiudad: boolean; otras: string[] };
+/** Modo orden de llegada: tope de la ciudad ese día y cuántos lleva (sin contar este proyecto si ya está ese día). */
+type Tope = { tope: number; lleva: number };
 type Grupo = { grupo: string; ciudades: string[]; libres: number; ocupados: number };
 type Estado = "" | "con_hora" | "sin_hora" | "sin_monitor";
 
@@ -249,15 +251,15 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
 
   const v = useVentana(onCerrar, { bloqueado: ocupado });
 
-  async function enviar(body: Record<string, unknown>, msg: string): Promise<{ error?: string } | null> {
+  async function enviar(body: Record<string, unknown>, msg: string): Promise<{ error?: string; mensaje?: string } | null> {
     setOcupado(true); setError("");
     try {
       const r = await api<{ ok: boolean; error?: string; mensaje?: string }>(`/api/admin/proyectos/${p.id}`, body);
       setOcupado(false);
       if (r.ok) { setModo("ver"); setMotivo(""); v.limpiar(); await onHecho(msg); return null; }
       if (r.status === 404) setError("Este proyecto ya no existe. Cierra y recarga la lista.");
-      else setError(r.data?.mensaje ?? "No se pudo guardar. Inténtalo otra vez.");
-      return { error: r.data?.error };
+      else if (r.data?.error !== "tope") setError(r.data?.mensaje ?? "No se pudo guardar. Inténtalo otra vez.");
+      return { error: r.data?.error, mensaje: r.data?.mensaje };
     } catch (e) {
       setOcupado(false);
       if (!(e instanceof SinSesion)) setError(ERROR_RED);
@@ -356,7 +358,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
         {modo === "cambiar" && (
           <CambiarHora p={p} dias={dias} motivo={motivo} setMotivo={setMotivo} ocupado={ocupado}
             onCancelar={() => { setModo("ver"); setError(""); }}
-            onEnviar={(inicio, otraCiudad) => enviar({ accion: "cambiar", inicio, otraCiudad, motivo: motivo.trim() }, "Hora cambiada")} />
+            onEnviar={(inicio, otraCiudad, confirmarTope) => enviar({ accion: "cambiar", inicio, otraCiudad, confirmarTope, motivo: motivo.trim() }, "Hora cambiada")} />
         )}
 
         <div>
@@ -400,23 +402,25 @@ function Motivo({ valor, onCambio, opcional }: { valor: string; onCambio: (v: st
 
 function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar, sinMotivo }: {
   p: Proyecto; dias: string[]; motivo: string; setMotivo: (v: string) => void; ocupado: boolean; sinMotivo?: boolean;
-  onCancelar: () => void; onEnviar: (inicio: string, otraCiudad: boolean) => Promise<{ error?: string } | null>;
+  onCancelar: () => void; onEnviar: (inicio: string, otraCiudad: boolean, confirmarTope: boolean) => Promise<{ error?: string; mensaje?: string } | null>;
 }) {
   const [dia, setDia] = useState(() => (p.hora ? diaCOL(new Date(p.hora.inicio)) : ""));
-  const [datos, setDatos] = useState<{ estado: "inicial" | "cargando" | "error" | "listo"; tiene: boolean; bloques: Bloque[] }>({ estado: "inicial", tiene: true, bloques: [] });
+  const [datos, setDatos] = useState<{ estado: "inicial" | "cargando" | "error" | "listo"; tiene: boolean; bloques: Bloque[]; tope?: Tope }>({ estado: "inicial", tiene: true, bloques: [] });
   const [elegido, setElegido] = useState<Bloque | null>(null);
   const [noCabe, setNoCabe] = useState(false);
+  // Modo orden de llegada: el servidor rechazó por el tope de la ciudad; el admin puede confirmar y mover igual.
+  const [sobreTope, setSobreTope] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     if (!dia) return;
     setDatos((d) => ({ ...d, estado: "cargando" }));
     try {
-      const r = await api<{ ciudadTieneElDia: boolean; bloques: Bloque[] }>(`/api/admin/proyectos/${p.id}/bloques?dia=${dia}`);
-      setDatos(r.ok && r.data ? { estado: "listo", tiene: r.data.ciudadTieneElDia, bloques: r.data.bloques } : { estado: "error", tiene: true, bloques: [] });
+      const r = await api<{ ciudadTieneElDia: boolean; bloques: Bloque[]; tope?: Tope }>(`/api/admin/proyectos/${p.id}/bloques?dia=${dia}`);
+      setDatos(r.ok && r.data ? { estado: "listo", tiene: r.data.ciudadTieneElDia, bloques: r.data.bloques, ...(r.data.tope ? { tope: r.data.tope } : {}) } : { estado: "error", tiene: true, bloques: [] });
     } catch (e) { if (!(e instanceof SinSesion)) setDatos({ estado: "error", tiene: true, bloques: [] }); }
   }, [p.id, dia]);
 
-  useEffect(() => { setElegido(null); void cargar(); }, [cargar]);
+  useEffect(() => { setElegido(null); setSobreTope(null); void cargar(); }, [cargar]);
 
   const porHora = useMemo(() => {
     const m = new Map<string, Bloque[]>();
@@ -428,10 +432,11 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
     return [...m.entries()];
   }, [datos.bloques]);
 
-  async function mover(b: Bloque) {
+  async function mover(b: Bloque, confirmarTope = false) {
     setNoCabe(false);
-    const r = await onEnviar(b.inicio, !b.deSuCiudad);
-    if (r?.error === "sin_cupo") { setNoCabe(true); setElegido(null); void cargar(); }
+    const r = await onEnviar(b.inicio, !b.deSuCiudad, confirmarTope);
+    if (r?.error === "sin_cupo") { setNoCabe(true); setElegido(null); setSobreTope(null); void cargar(); }
+    else if (r?.error === "tope") setSobreTope(r.mensaje ?? "Su ciudad ya llegó al tope de ese día. ¿Mover igual?");
   }
 
   const esLaActual = (b: Bloque) => p.hora?.inicio === b.inicio;
@@ -453,6 +458,12 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
 
       {noCabe && <div className="note note-error"><b>No cabe.</b>&nbsp;Ese bloque se llenó. Elige otro.</div>}
 
+      {dia && datos.tope && (
+        <div className={`note ${datos.tope.lleva >= datos.tope.tope ? "note-warn" : "note-info"}`}>
+          Orden de llegada: {p.ciudad} lleva {datos.tope.lleva} de {datos.tope.tope} este día{datos.tope.lleva >= datos.tope.tope ? ". Ya llegó al tope: mover aquí lo pasa (pedirá confirmación)." : "."}
+        </div>
+      )}
+
       {dia && datos.estado === "cargando" && datos.bloques.length === 0 && <div className={s.skelFila} />}
       {dia && datos.estado === "error" && <div className="note note-error">No pudimos cargar los bloques. <button type="button" className="btn-link" onClick={() => void cargar()}>Intentar de nuevo</button></div>}
       {dia && datos.estado === "listo" && datos.bloques.length === 0 && <p className={s.panelTxt}>No quedan bloques libres ese día.</p>}
@@ -466,7 +477,7 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
                 {bs.map((b) => (
                   <button key={b.inicio} type="button" disabled={esLaActual(b)}
                     className={`${s.bloque} ${elegido?.inicio === b.inicio ? s.opcionOn : ""} ${b.deSuCiudad ? "" : s.bloqueOtra}`}
-                    onClick={() => { setElegido(b); setNoCabe(false); }}>
+                    onClick={() => { setElegido(b); setNoCabe(false); setSobreTope(null); }}>
                     <b>{horaCO(new Date(b.inicio))}</b>
                     <span>{esLaActual(b) ? "Hora actual" : b.deSuCiudad ? `${b.libres} ${b.libres === 1 ? "libre" : "libres"}` : `de ${b.otras.join(", ")}`}</span>
                   </button>
@@ -479,7 +490,15 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
 
       {!sinMotivo && <Motivo valor={motivo} onCambio={setMotivo} opcional />}
 
-      {elegido && !elegido.deSuCiudad ? (
+      {elegido && sobreTope ? (
+        <>
+          <div className="note note-warn" role="alert">{sobreTope} Quedará anotado en el historial.</div>
+          <div className={s.acts}>
+            <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setElegido(null); setSobreTope(null); }}>Cancelar</button>
+            <button type="button" className="btn btn-dark" disabled={ocupado} onClick={() => void mover(elegido, true)}>{ocupado ? "Moviendo…" : "Mover igual"}</button>
+          </div>
+        </>
+      ) : elegido && !elegido.deSuCiudad ? (
         <>
           <div className="note note-warn">A las {etiquetaHora(elegido.inicio)} COL no quedan asientos de {p.ciudad}: este asiento era de {elegido.otras.join(", ")}. Quedará anotado en el historial.</div>
           <div className={s.acts}>
@@ -526,12 +545,12 @@ function Bandeja({ dias, version, onHecho }: { dias: string[]; version: number; 
     ya_evaluado: "El proyecto ya tiene una evaluación guardada: no se puede mover.", cambio: "La hora del proyecto cambió mientras tanto. Vuelve a abrirla.",
     misma_hora: "Esa es la hora que ya tiene.", no_existe: "La sugerencia ya no existe.",
   };
-  async function resolver(id: string, body: Record<string, unknown>, msg: string): Promise<{ error?: string } | null> {
+  async function resolver(id: string, body: Record<string, unknown>, msg: string): Promise<{ error?: string; mensaje?: string } | null> {
     setOcupado(true); setError("");
     try {
-      const r = await api<{ ok?: boolean; error?: string }>(`/api/admin/sugerencias/${id}`, body);
+      const r = await api<{ ok?: boolean; error?: string; mensaje?: string }>(`/api/admin/sugerencias/${id}`, body);
       if (r.ok) { setAbierta(null); setMotivo(""); await onHecho(msg); void cargar(); return null; }
-      if (r.data?.error !== "sin_cupo") setError((r.data?.error && MENSAJE[r.data.error]) || "No se pudo guardar.");
+      if (r.data?.error !== "sin_cupo" && r.data?.error !== "tope") setError((r.data?.error && MENSAJE[r.data.error]) || "No se pudo guardar.");
       return r.data;
     } catch (e) { if (!(e instanceof SinSesion)) setError(ERROR_RED); return null; }
     finally { setOcupado(false); }
@@ -574,7 +593,7 @@ function Bandeja({ dias, version, onHecho }: { dias: string[]; version: number; 
               <>
                 <div className="note note-warn">Elige el bloque nuevo. Puede ser otro día, otra ciudad o después de la clausura de {x.ciudad}: la pantalla te avisa y queda en el historial.</div>
                 <CambiarHora p={p} dias={dias} motivo={motivo} setMotivo={setMotivo} ocupado={ocupado} onCancelar={() => setAbierta(null)} sinMotivo
-                  onEnviar={(inicio, otraCiudad) => resolver(x.id, { accion: "aprobar", inicio, otraCiudad }, "Sugerencia aprobada: hora cambiada")} />
+                  onEnviar={(inicio, otraCiudad, confirmarTope) => resolver(x.id, { accion: "aprobar", inicio, otraCiudad, confirmarTope }, "Sugerencia aprobada: hora cambiada")} />
               </>
             )}
             {esta && abierta.modo === "rechazar" && (

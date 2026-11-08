@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
+import type { EstadoModo } from "@/lib/modoCupos";
 import type { CierreCiudad, PlanDia } from "@/lib/reglasCupos";
 import AppShell from "./AppShell";
 import s from "./ReglasPanel.module.css";
@@ -89,6 +90,7 @@ export default function ReglasPanel({ user }: { user: SessionUser }) {
 
       {d && (
         <>
+          <ModoLlegada />
           <div className={s.dias} role="group" aria-label="Día">
             {d.dias.map((x) => (
               <button key={x.dia} type="button" className={`${s.dia} ${x.dia === dia ? s.diaOn : ""}`} aria-pressed={x.dia === dia} onClick={() => setDia(x.dia)}>
@@ -181,6 +183,80 @@ export default function ReglasPanel({ user }: { user: SessionUser }) {
         </div>
       )}
     </AppShell>
+  );
+}
+
+/** Fase 4 · Interruptor del modo orden de llegada, con el tope, lo que lleva y lo que puede tomar cada ciudad por día. */
+function ModoLlegada() {
+  const [m, setM] = useState<EstadoModo | null>(null);
+  const [error, setError] = useState(false);
+  const [confirmar, setConfirmar] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [msg, setMsg] = useState("");
+  const cargar = useCallback(async () => {
+    const r = await api<EstadoModo>("/api/admin/reglas/modo").catch(() => null);
+    if (!r?.ok || !r.data) return setError(true);
+    setM(r.data); setError(false);
+  }, []);
+  useEffect(() => { void cargar(); }, [cargar]);
+
+  async function cambiar() {
+    if (!m) return;
+    setConfirmar(false); setOcupado(true); setMsg("");
+    const r = await api<EstadoModo & { ok?: boolean }>("/api/admin/reglas/modo", { ordenLlegada: !m.ordenLlegada }).catch(() => null);
+    setOcupado(false);
+    if (r?.ok && r.data) { setM(r.data); setMsg(r.data.ordenLlegada ? "Modo orden de llegada activado." : "Modo orden de llegada desactivado: cada ciudad vuelve a sus asientos."); }
+    else setMsg("No se pudo cambiar. Inténtalo otra vez.");
+  }
+
+  if (error) return <div className="note note-error">No pudimos cargar el modo orden de llegada. <button type="button" className="btn-link" onClick={() => void cargar()}>Intentar de nuevo</button></div>;
+  if (!m) return null;
+  const tope = (t: number | null) => (t === null ? "Sin tope" : t);
+  return (
+    <section className={s.card} aria-labelledby="modo-t">
+      <div className={s.cardHead}>
+        <h2 id="modo-t" className={s.cardT}>Modo orden de llegada</h2>
+        <span className={s.chip}><b>{m.ordenLlegada ? "Activado" : "Desactivado"}</b>{m.actualizadoEn && ` · ${fecha(m.actualizadoEn)} por ${m.actualizadoPor}`}</span>
+      </div>
+      <p className={s.sub}>Activado, cualquier asiento libre de un día lo puede tomar cualquier ciudad habilitada ese día, sin importar de qué ciudad era el asiento. El límite es el tope de cada ciudad en el día: su «Máximo del día» o, si no tiene, sus «Cupos reservados». La ciudad de sobrante y las que presentan por «Todas» no tienen tope. Se respetan los días por ciudad, la apertura y el cierre. Los asientos y las reservas no cambian: desactivarlo vuelve a como estaba.</p>
+      <div className={s.tablaWrap}>
+        <table className={s.tabla}>
+          <thead><tr><th>Día</th><th>Ciudad</th><th>Tope</th><th>Lleva</th><th>Libres que puede tomar</th></tr></thead>
+          <tbody>
+            {m.dias.flatMap((x) => x.ciudades.map((c, i) => (
+              <tr key={`${x.dia}|${c.ciudad}`}>
+                <td>{i === 0 && <><b>{etiquetaDia(x.dia)}</b><div className={s.sub}>{x.libres} libres desde ahora</div></>}</td>
+                <td><b>{c.ciudad}</b>{!c.habilitada && <div className={s.malo}>No presenta este día (reservas movidas a mano)</div>}</td>
+                <td>{c.habilitada ? tope(c.tope) : "—"}</td>
+                <td>{c.lleva}</td>
+                <td>{c.habilitada ? <>{c.puedeTomar}{c.tope !== null && c.lleva >= c.tope && <div className={s.malo}>Llegó al tope</div>}</> : "—"}</td>
+              </tr>
+            )))}
+          </tbody>
+        </table>
+      </div>
+      <div className={s.acts}>
+        {msg && <span className={s.sub} role="status">{msg}</span>}
+        <button type="button" className="btn-link" onClick={() => void cargar()}>Actualizar</button>
+        <button type="button" className={`btn ${m.ordenLlegada ? "btn-ghost" : "btn-primary"}`} disabled={ocupado} onClick={() => setConfirmar(true)}>
+          {ocupado ? "Guardando…" : m.ordenLlegada ? "Desactivar" : "Activar modo orden de llegada"}
+        </button>
+      </div>
+      {confirmar && (
+        <div className={s.overlay} role="alertdialog" aria-modal="true" aria-labelledby="modo-c">
+          <div className={s.modal}>
+            <div id="modo-c" className={s.modalT}>{m.ordenLlegada ? "¿Desactivar el modo orden de llegada?" : "¿Activar el modo orden de llegada?"}</div>
+            <p className={s.sub}>{m.ordenLlegada
+              ? "Cada ciudad vuelve a ver solo los asientos de su etiqueta. Las reservas hechas se conservan. Queda en el historial."
+              : "Desde ya, los estudiantes ven todas las horas libres de sus días habilitados hasta llegar al tope de su ciudad. No se mueve ninguna reserva. Queda en el historial."}</p>
+            <div className={s.acts}>
+              <button type="button" className="btn btn-ghost" onClick={() => setConfirmar(false)}>Cancelar</button>
+              <button type="button" className="btn btn-primary" autoFocus onClick={() => void cambiar()}>{m.ordenLlegada ? "Desactivar" : "Activar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

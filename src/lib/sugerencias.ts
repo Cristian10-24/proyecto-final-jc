@@ -3,6 +3,8 @@ import { horaCO } from "./ciudades";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
 import type { CambioSugerido } from "./evaluacion/monitor";
+import { mensajeTope } from "./admin";
+import { conCandado, modoOrdenLlegada } from "./modoCupos";
 import { Falla, moverProyecto } from "./mover";
 import type { Actor, Asiento } from "./types";
 
@@ -55,7 +57,7 @@ export async function pendientes(): Promise<number> {
   return (await collections()).cambiosSugeridos.countDocuments({ estado: "pendiente" });
 }
 
-type ErrorSugerencia = { error: "no_existe" | "ya_resuelta" | "sin_hora" | "sin_cupo" | "ya_evaluado" | "cambio" | "misma_hora" };
+type ErrorSugerencia = { error: "no_existe" | "ya_resuelta" | "sin_hora" | "sin_cupo" | "ya_evaluado" | "cambio" | "misma_hora" | "tope"; mensaje?: string };
 class Resuelta extends Error {}
 
 /**
@@ -63,7 +65,7 @@ class Resuelta extends Error {}
  * y marca la sugerencia como aprobada, todo en una transacción. Vale cualquier día de la edición, también uno en
  * que su ciudad no presenta o después de su clausura (la pantalla lo advierte).
  */
-export async function aprobar(id: string, inicio: Date, otraCiudad: boolean, actor: Actor & { usuario: string }): Promise<{ ok: true; nuevo: string } | ErrorSugerencia> {
+export async function aprobar(id: string, inicio: Date, otraCiudad: boolean, actor: Actor & { usuario: string }, confirmarTope = false): Promise<{ ok: true; nuevo: string } | ErrorSugerencia> {
   if (!ObjectId.isValid(id)) return { error: "no_existe" };
   const c = await collections();
   const sug = await c.cambiosSugeridos.findOne({ _id: new ObjectId(id) });
@@ -73,18 +75,20 @@ export async function aprobar(id: string, inicio: Date, otraCiudad: boolean, act
   if (!p) return { error: "no_existe" };
   if (!viejo) return { error: "sin_hora" };
   if (viejo.inicio.getTime() === inicio.getTime()) return { error: "misma_hora" };
-  const filtros: Filter<Asiento>[] = [{ inicio, ciudades: p.ciudad }, ...(otraCiudad ? [{ inicio }] : [])];
+  // Modo orden de llegada: las etiquetas no cuentan; el tope de la ciudad sí (el admin lo pasa confirmando).
+  const orden = await modoOrdenLlegada();
+  const filtros: Filter<Asiento>[] = [{ inicio, ciudades: p.ciudad }, ...(otraCiudad || orden ? [{ inicio }] : [])];
   const ahora = new Date();
   let nuevo = "";
   try {
-    await transaccion(async (s) => {
+    await conCandado(async (s) => {
       // Reclamar la sugerencia primero: si otro admin la resolvió, aquí se detiene.
       const tomada = await c.cambiosSugeridos.findOneAndUpdate({ _id: sug._id, estado: "pendiente" },
         { $set: { estado: "aprobado", resueltoPor: actor.usuario, resueltoEn: ahora } }, { session: s });
       if (!tomada) throw new Resuelta();
-      const a = await moverProyecto(s, sug.proyectoId, viejo._id, filtros, actor.usuario, ahora);
-      const ajeno = !a.ciudades.includes(p.ciudad);
-      nuevo = `${etiqueta(a.inicio)} · ${a.mentorId}${ajeno ? ` · asiento de ${a.ciudades.join(" + ") || "(sin ciudad)"}` : ""}`;
+      const a = await moverProyecto(s, sug.proyectoId, viejo._id, filtros, actor.usuario, ahora, { tope: confirmarTope ? "permitir" : "respetar" });
+      const ajeno = !orden && !a.ciudades.includes(p.ciudad);
+      nuevo = `${etiqueta(a.inicio)} · ${a.mentorId}${ajeno ? ` · asiento de ${a.ciudades.join(" + ") || "(sin ciudad)"}` : ""}${a.sobreTope ? " · sobre el tope" : ""}`;
       await c.cambiosSugeridos.updateOne({ _id: sug._id }, { $set: { nuevo } }, { session: s });
       await c.changeLog.insertOne({
         proyectoId: sug.proyectoId, accion: "cambiar_hora", anterior: `${etiqueta(viejo.inicio)} · ${viejo.mentorId}`, nuevo,
@@ -94,6 +98,7 @@ export async function aprobar(id: string, inicio: Date, otraCiudad: boolean, act
     });
   } catch (e) {
     if (e instanceof Resuelta) return { error: "ya_resuelta" };
+    if (e instanceof Falla && e.codigo === "tope") return { error: "tope", mensaje: await mensajeTope(p.ciudad, diaCOL(inicio)) };
     if (e instanceof Falla) return { error: e.codigo };
     if (e instanceof MongoServerError && e.code === 11000) return { error: "sin_cupo" };
     throw e;

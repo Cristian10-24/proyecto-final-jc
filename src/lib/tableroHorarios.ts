@@ -3,6 +3,7 @@ import { collections } from "./db";
 import { horaCOL, inicioUTC } from "./edicion";
 import { calc, estadoFila } from "./evaluacion/criterios";
 import { criterios, idEval } from "./evaluacion/datos";
+import { modoOrdenLlegada } from "./modoCupos";
 import type { Proyecto, Ruta } from "./types";
 
 // Tablero de horarios (Paso 16): un día con sus horas, los 4 bloques de 15 min de cada hora con capacidad usada/total,
@@ -34,6 +35,8 @@ export type DatosTablero = {
   diasPorCiudad: Record<string, string[]>;
   horas: HoraTablero[];
   sinHora: Tarjeta[];
+  /** Fase 4: modo orden de llegada (las etiquetas de los asientos no cuentan; el tope sí, lo avisa el servidor). */
+  ordenLlegada: boolean;
 };
 
 /** Solo lo que usa la tarjeta (el documento, para cruzar con la evaluación; no sale en la respuesta). */
@@ -108,5 +111,6 @@ export async function datosTablero(diaPedido?: string): Promise<DatosTablero> {
     diasPorCiudad: Object.fromEntries(ciudades.map((x) => [x, diasPorCiudad(diasCfg, x)])),
     horas: [...horas.values()].sort((a, b) => a.hora - b.hora),
     sinHora: sinHoraP.map((p) => tarjeta(p)),
+    ordenLlegada: await modoOrdenLlegada(),
   };
 }

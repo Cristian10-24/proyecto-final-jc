@@ -85,12 +85,13 @@ describe("cambiar hora", () => {
 
   it("bloques libres: de su ciudad, y si la ciudad presenta ese día", async () => {
     // A las 8:00 hay 1 libre de Cartagena y 1 de Cali (CALI se movió a las 8:15).
-    expect(await admin.bloquesLibres(ids.CTG!, "2026-11-12")).toEqual({ ciudadTieneElDia: true, bloques: [
+    // (Fase 4: con el modo orden de llegada apagado también dice ordenLlegada: false y la ciudad, sin tope.)
+    expect(await admin.bloquesLibres(ids.CTG!, "2026-11-12")).toEqual({ ciudadTieneElDia: true, ordenLlegada: false, ciudad: "Cartagena", bloques: [
       { inicio: B8.toISOString(), libres: 1, deSuCiudad: true, otras: ["Cali"] },
       { inicio: inicioUTC("2026-11-12", 16, 0).toISOString(), libres: 4, deSuCiudad: true, otras: [] },
     ] });
     // El 13 Cartagena no presenta y el único asiento (de Barranquilla) ya lo tomó CALI2.
-    expect(await admin.bloquesLibres(ids.CTG!, "2026-11-13")).toEqual({ ciudadTieneElDia: false, bloques: [] });
+    expect(await admin.bloquesLibres(ids.CTG!, "2026-11-13")).toEqual({ ciudadTieneElDia: false, ordenLlegada: false, ciudad: "Cartagena", bloques: [] });
     // Un bloque solo con asientos ajenos sale marcado.
     const c = await db.collections();
     await c.asientos.insertOne({ _id: new ObjectId(), dia: "2026-11-13", inicio: inicioUTC("2026-11-13", 17, 0), mentorId: "m9", ciudades: ["Barranquilla"], proyectoId: null });

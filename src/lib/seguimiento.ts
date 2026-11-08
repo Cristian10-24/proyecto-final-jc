@@ -5,6 +5,7 @@ import { CIUDADES, horaCO, horaUY } from "./ciudades";
 import { collections } from "./db";
 import { diaCOL } from "./edicion";
 import { enmascararNumero } from "./estudiante";
+import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Proyecto } from "./types";
 
 // Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
@@ -48,7 +49,11 @@ export async function resumen(): Promise<{ total: number; conHora: number; ciuda
     { $group: { _id: "$dia", capacidad: { $sum: 1 }, ocupados: { $sum: { $cond: [{ $eq: [{ $type: "$proyectoId" }, "objectId"] }, 1, 0] } } } },
     { $sort: { _id: 1 } },
   ]).toArray();
-  const ch = new Map(conHora.map((x) => [x._id, x.n])), li = new Map(libres.map((x) => [x._id, x]));
+  const ch = new Map(conHora.map((x) => [x._id, x.n]));
+  let li = new Map<string, { n: number; dias: string[] }>(libres.map((x) => [x._id, x]));
+  // Modo orden de llegada: los libres de una ciudad son, en cada día que presenta, lo que aún puede tomar
+  // (mín. entre los libres del día y lo que le falta para su tope), sin mirar las etiquetas.
+  if (await modoOrdenLlegada()) li = await libresOrdenLlegada();
   const ciudades = porCiudad.map((c): ResumenCiudad => ({
     ciudad: c._id, proyectos: c.n, conHora: ch.get(c._id) ?? 0, asientosLibres: li.get(c._id)?.n ?? 0, dias: (li.get(c._id)?.dias ?? []).sort(),
   })).sort((a, b) => a.conHora / a.proyectos - b.conHora / b.proyectos || a.ciudad.localeCompare(b.ciudad, "es"));
@@ -56,6 +61,29 @@ export async function resumen(): Promise<{ total: number; conHora: number; ciuda
     total: ciudades.reduce((s, c) => s + c.proyectos, 0), conHora: ciudades.reduce((s, c) => s + c.conHora, 0),
     ciudades, dias: dias.map((d) => ({ dia: d._id, capacidad: d.capacidad, ocupados: d.ocupados })),
   };
+}
+
+async function libresOrdenLlegada(): Promise<Map<string, { n: number; dias: string[] }>> {
+  const c = await collections();
+  const [diasCfg, libresDia, ocupacion] = await Promise.all([
+    c.dias.find({}).toArray(),
+    c.asientos.aggregate<{ _id: string; n: number }>([{ $match: { proyectoId: null } }, { $group: { _id: "$dia", n: { $sum: 1 } } }]).toArray(),
+    c.asientos.aggregate<{ _id: { dia: string; ciudad: string }; n: number }>([
+      { $match: { proyectoId: { $type: "objectId" } } },
+      { $lookup: { from: "proyectos", localField: "proyectoId", foreignField: "_id", as: "p", pipeline: [{ $project: { ciudad: 1 } }] } },
+      { $unwind: "$p" },
+      { $group: { _id: { dia: "$dia", ciudad: "$p.ciudad" }, n: { $sum: 1 } } },
+    ]).toArray(),
+  ]);
+  const out = new Map<string, { n: number; dias: string[] }>();
+  for (const d of resumenModo(diasCfg, new Map(libresDia.map((x) => [x._id, x.n])), ocupacion.map((o) => ({ ...o._id, n: o.n }))))
+    for (const k of d.ciudades) {
+      if (!k.puedeTomar) continue;
+      const x = out.get(k.ciudad) ?? { n: 0, dias: [] };
+      x.n += k.puedeTomar; x.dias.push(d.dia);
+      out.set(k.ciudad, x);
+    }
+  return out;
 }
 
 const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });

@@ -9,7 +9,9 @@ const motivo = z.string().trim().max(300).default("");
 const Accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("liberar"), motivo }).strict(),
   // `asiento`: un asiento concreto de ese bloque (cambiar de mentor desde el tablero).
-  z.object({ accion: z.literal("cambiar"), inicio: z.iso.datetime(), otraCiudad: z.boolean().default(false), motivo, asiento: z.string().regex(/^[a-f0-9]{24}$/).optional() }).strict(),
+  z.object({ accion: z.literal("cambiar"), inicio: z.iso.datetime(), otraCiudad: z.boolean().default(false), motivo, asiento: z.string().regex(/^[a-f0-9]{24}$/).optional(),
+    // Modo orden de llegada: el admin confirmó que quiere pasar el tope de la ciudad ese día.
+    confirmarTope: z.boolean().default(false) }).strict(),
   z.object({ accion: z.literal("monitor"), monitor: z.string().trim().max(40).nullable() }).strict(),
   // Salida de emergencia: anular la evaluación (motivo obligatorio).
   // `version`: el actualizadoEn de la evaluación que vio el admin (si cambió, no se anula).
@@ -39,7 +41,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const a = parsed.data;
   const r = a.accion === "anular" ? await anularEvaluacion(pid, a.motivo, actor, a.version)
     : a.accion === "liberar" ? await liberar(pid, a.motivo, actor)
-    : a.accion === "cambiar" ? await cambiarHora(pid, new Date(a.inicio), { otraCiudad: a.otraCiudad, motivo: a.motivo, ...(a.asiento ? { asiento: new ObjectId(a.asiento) } : {}) }, actor)
+    : a.accion === "cambiar" ? await cambiarHora(pid, new Date(a.inicio), { otraCiudad: a.otraCiudad, motivo: a.motivo, confirmarTope: a.confirmarTope, ...(a.asiento ? { asiento: new ObjectId(a.asiento) } : {}) }, actor)
     : await asignarMonitor(pid, a.monitor || null, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === "sin_proyecto" ? 404 : 409 });
 }

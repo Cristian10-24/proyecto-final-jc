@@ -19,7 +19,7 @@ const Accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("sugerir"), detalle: texto(3, 300), motivo: texto(3, 300) }).strict(),
 ]);
 
-const ESTADO: Record<string, number> = { no_existe: 404, sin_hora: 404, otra_sala: 403, integrantes: 409, sin_cupo: 409, ya_evaluado: 409, cambio: 409, ya_sugerido: 409 };
+const ESTADO: Record<string, number> = { no_existe: 404, sin_hora: 404, otra_sala: 403, integrantes: 409, sin_cupo: 409, ya_evaluado: 409, cambio: 409, ya_sugerido: 409, tope: 409 };
 
 /** Ficha del proyecto para el monitor de su sala: contacto, asistencia, motivo, observación y sugerencia pendiente. */
 export async function GET(req: Request, { params }: Ctx) {

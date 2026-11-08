@@ -5,6 +5,7 @@ import { collections, transaccion } from "./db";
 import { enmascararCorreo, enmascararNumero } from "./estudiante";
 import { asignarMonitor } from "./importar/aplicar";
 import { leerCelular, leerCorreo, leerDocumento } from "./importar/proyectos";
+import { conCandado, modoOrdenLlegada, tocarCandado, topeVigente } from "./modoCupos";
 import type { Actor, Asiento, Integrante, Proyecto, Ruta } from "./types";
 import { cleanSpaces, toProperName } from "./validation/name";
 
@@ -193,7 +194,13 @@ export async function editarProyecto(pid: ObjectId, entrada: ProyectoEntrada, op
   const cambios = diferencias(p, v);
   if (!cambios.length) return { ok: true };
   try {
-    await transaccion(async (s) => {
+    await conCandado(async (s) => {
+      // Modo orden de llegada: si cambia la ciudad de un proyecto con hora, se escribe el candado de la ciudad nueva en
+      // ese día para que una reserva simultánea cuente al proyecto (el admin sí puede dejarla sobre el tope).
+      if (v.ciudad !== p.ciudad) {
+        const a = await c.asientos.findOne({ proyectoId: pid }, { session: s, projection: { dia: 1 } });
+        if (a && (await topeVigente(s, a.dia, v.ciudad)) !== null) await tocarCandado(s, a.dia, v.ciudad);
+      }
       if (cambiaDoc) {
         // Escribe el asiento (como guardar una evaluación): una evaluación que se guarde a la vez choca y se reintenta,
         // y aquí se vuelve a comprobar que no haya evaluación ni notas del documento viejo.
@@ -283,7 +290,7 @@ export async function agregarIntegrante(pid: ObjectId, entrada: Partial<Integran
   const c = await collections();
   let aviso: AvisoUnion | null = null, unido: ObjectId | null = null;
   try {
-    await transaccion(async (s) => {
+    await conCandado(async (s) => {
       aviso = null; unido = null;
       const p = await c.proyectos.findOne({ _id: pid }, { session: s });
       if (!p) throw new Corte(falla("no_existe", "Ese proyecto ya no existe."));
@@ -318,9 +325,13 @@ export async function agregarIntegrante(pid: ObjectId, entrada: Partial<Integran
       const sale = (a: Asiento) => c.asientos.findOneAndUpdate({ _id: a._id, proyectoId: a.proyectoId }, { $set: { proyectoId: null }, $unset: { reservadoEn: "" } }, { session: s });
       let horaFinal = hora(aP);
       if (aO && opciones.conservar === "otro") {
-        if (!aO.ciudades.includes(p.ciudad))
+        // Modo orden de llegada: la etiqueta del asiento no cuenta.
+        if (!aO.ciudades.includes(p.ciudad) && !(await modoOrdenLlegada(s)))
           throw new Corte(falla("datos", `La hora de ${o.codigo} es para ${aO.ciudades.join(", ") || "otra ciudad"}, no para ${p.ciudad}: conserva la de este proyecto o muévela después.`));
         if (aP && !(await sale(aP))) throw new Corte(falla("cambio", "La hora cambió mientras se unían. Ábrelo otra vez."));
+        // Modo orden de llegada: si la ciudad cambia, ese día suma un proyecto a la de este: se escribe su candado para que
+        // una reserva simultánea lo cuente (como al editar la ciudad, el admin puede dejarla sobre el tope).
+        if (o.ciudad !== p.ciudad && (await topeVigente(s, aO.dia, p.ciudad)) !== null) await tocarCandado(s, aO.dia, p.ciudad);
         if (!(await c.asientos.findOneAndUpdate({ _id: aO._id, proyectoId: o._id }, { $set: { proyectoId: pid } }, { session: s })))
           throw new Corte(falla("cambio", "La hora del otro proyecto cambió. Ábrelo otra vez."));
         horaFinal = hora(aO);
