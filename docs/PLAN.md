@@ -92,3 +92,135 @@ Correos: más adelante (PENDIENTES). La pantalla del mentor sigue con "Guarda la
 - [x] 17b. Franjas y mentores (/admin/franjas, prototipo 5b): mentores por hora, capacidad, ocupados y libres por ciudad; agregar y quitar mentor (solo admin).
 - [x] 18. Modo oscuro para el panel, el portal y el módulo de evaluación con las variables existentes: sigue la preferencia del sistema, con botón que se recuerda; contraste revisado (tintes de estado, chips y logos).
 - [x] Cierre técnico (con "siguiente"): 1) code-review de las Fases 2 y 3, corregir altos y medios; 2) ensayo de extremo a extremo con la semilla demo y --hoy (reserva → asistencia → evaluación → sugerencia aprobada → tablero → reglas de cupos → Excel), anotar fallas; 3) docs/PENDIENTES.md con la lista única y ordenada de lo que toca al usuario (datos reales con sus plantillas, despliegue según DESPLIEGUE.md con security-review, prueba en celular real, apertura de inscripciones; correos en "Más adelante"). Además, preparar el despliegue en dos tiempos (Preview contra `proyecto_final_jc_pruebas` con la semilla demo; luego Production contra `proyecto_final_jc` con datos reales): habilitar `semilla:demo` para Atlas SOLO contra `proyecto_final_jc_pruebas` con la confirmación explícita `--si-atlas-pruebas` (nunca contra `proyecto_final_jc`), y en DESPLIEGUE.md variables de pruebas solo en el ambiente Preview de Vercel y de producción solo en Production, con un usuario de Atlas distinto para cada base (readWrite solo sobre la suya).
+
+## Fase 4 · Ajustes de noviembre (rama feature/ajustes-noviembre) — PLAN POR APROBAR
+La app está en producción con >90 % de los proyectos con hora y muchos cambios hechos a mano.
+
+**Reglas de datos (valen para todos los pasos).** Cero migraciones, cero scripts que escriban en producción, cero
+cambios masivos. Los documentos e índices existentes no cambian de forma: solo campos NUEVOS y OPCIONALES y
+colecciones NUEVAS (con sus índices); todo funciona igual con documentos sin esos campos. Un dato existente solo cambia
+cuando un usuario hace a mano una acción sobre ESE registro. `ensureIndexes` solo suma índices de colecciones nuevas.
+Sin push (lo hace el usuario); local con la demo → Preview (base de pruebas) → `respaldo:produccion` → main.
+
+**Prueba "como producción" (en cada paso).** Helper nuevo `tests/helpers/foto-base.ts`: carga la demo, hace cambios a
+mano típicos (pareja separada, unida, hora movida, asiento de otra ciudad) y toma una foto (hash por documento) de
+proyectos, asientos, evaluaciones, evaluacion_monitor, users, dias, planSalas y changeLog; luego corre lo nuevo sin
+acciones de usuario (arranque, `ensureIndexes`, lecturas del portal, del admin, del monitor y del seguimiento, interruptor
+apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal responden lo mismo para cada documento.
+
+### Paso 19 · Cupos por orden de llegada: núcleo (urgente)
+- **Interruptor:** colección nueva `ajustes`, documento `{_id: "modoCupos", ordenLlegada: boolean, actualizadoEn,
+  actualizadoPor}`. Sin documento = apagado = la app exactamente como hoy (mismo código de reserva, sin transacción).
+  Cambiarlo deja changeLog `modo_cupos` (valor nuevo del enum; solo documentos nuevos).
+- **Encendido:** cualquier asiento libre de un día lo toma cualquier ciudad habilitada ese día; las etiquetas
+  (`asientos.ciudades`) se ignoran, no se borran ni cambian. Se siguen respetando días por ciudad, clausura, apertura
+  (`abre`) y cierre de inscripciones (las mismas funciones de hoy: `puedeElegir`, `estadoCiudad`).
+- **Tope por ciudad y día** = el «Máximo del día» de Reglas (`max`); si la ciudad no tiene máximo, sus `cupos` (hoy son
+  exactos); la ciudad de sobrante no tiene tope (ver preguntas). Ocupación = proyectos de esa ciudad (`proyectos.ciudad`
+  actual) con asiento ese día. Se calcula siempre de la verdad (asientos + proyectos), así que **no hay contadores que
+  inicializar ni mantener**: liberar, mover, separar, unir o editar la ciudad quedan bien solos.
+- **Atomicidad sin tocar datos existentes:** en modo nuevo la reserva es una transacción (`transaccion()` de db.ts):
+  1) `$inc` en un candado `candados_cupo {_id: "<día>|<ciudad>", v}` (colección nueva); 2) contar la ocupación;
+  3) si llegó al tope → error nuevo `dia_lleno` («Ese día ya no tiene horas para tu ciudad. Elige otro.»);
+  4) tomar el asiento con `findOneAndUpdate({inicio, dia, proyectoId: null})`; 5) comprobar que el documento siga en el
+  proyecto (como hoy). Dos reservas de la misma ciudad y día escriben el mismo candado: MongoDB aborta una por conflicto
+  de escritura y `withTransaction` la reintenta ya con la ocupación nueva, así que el tope no se pasa ni en simultáneo.
+  Que nadie tome el mismo asiento lo siguen garantizando el `findOneAndUpdate` atómico y el índice único de
+  `proyectoId` (sin cambios). Los candados se crean al encender el modo (uno por día × ciudad, `insertOne` que ignora
+  duplicados) y, si falta uno, se crea fuera de la transacción antes de entrar. Mover (admin, monitor, bandeja) y editar
+  la ciudad de un proyecto con hora también tocan el candado del día de destino, para que la reserva simultánea lo vea.
+- **Portal (`agenda`):** días = los habilitados con ocupación < tope y algún asiento libre futuro; horas = todos los
+  bloques libres del día. Sigue sin mostrar conteos. Si el tope se llena entre ver y confirmar: `dia_lleno`.
+- **Reglas:** tarjeta «Modo orden de llegada» (activado/desactivado, con confirmación) y, por día, «Cartagena 27 de 30».
+  Aplicar reglas sigue reetiquetando solo libres (sin efecto mientras el modo esté encendido).
+- Archivos: `src/lib/modoCupos.ts` (nuevo: modo, topes, ocupación, candado), `reservas.ts`, `estudiante.ts`, ruta y
+  pantalla de Reglas, `db.ts` (colecciones nuevas e índices solo de ellas).
+- Pruebas: funciones puras del tope; reserva en ambos modos (apagado = mismos resultados de hoy); **concurrencia**:
+  120 estudiantes de Cartagena a la vez el mismo día con tope 30 y 60 libres → exactamente 30 reservas y ningún asiento
+  doble; mezcla Cali + Cartagena simultánea; reserva mientras el admin libera o mueve; apagar el modo deja todo como
+  estaba (las reservas en asientos «ajenos» se conservan). Foto «como producción».
+- Riesgos: (a) el candado serializa las reservas de una misma ciudad y día (más reintentos en un pico; se mide en la
+  prueba de concurrencia con el pool de 5); (b) con el modo encendido quedan proyectos en asientos con etiqueta de
+  otra ciudad: si luego se apaga y se aplican Reglas, la vista previa podría reportar reservas «fuera de su cupo» (se
+  prueba; si pasa, se muestra como aviso y no como error); (c) ciudades que llegan por «Todas» (ver preguntas).
+
+### Paso 20 · Orden de llegada en admin, monitor, bandeja y tablero
+- Admin (Horarios, Tablero, bandeja): con el modo encendido ve todos los bloques libres (sin el aviso «asiento de otra
+  ciudad») y, si la ciudad ya llegó al tope ese día, «Cartagena ya tiene 30 de 30 el jueves 12. ¿Mover igual?»; el
+  servidor exige la confirmación (`confirmarTope`) y el changeLog lo anota («· sobre el tope»).
+- Monitor (reprogramar): respeta el tope (no lo pasa); si está lleno, «Sugerir un cambio especial» como hoy.
+- Resumen de coordinación: «asientos libres» por ciudad = mín(libres del día, tope − ocupación) con el modo encendido.
+  `mover.ts` sigue siendo la única lógica de mover y liberar (se le suma el candado).
+- Pruebas: mover sobre el tope con y sin confirmación, monitor rechazado al tope, tablero; foto «como producción».
+- Riesgo: un admin que mueve a la vez que un estudiante reserva puede dejar la ciudad 1 sobre el tope (el admin puede
+  pasarlo de todas formas; queda en el changeLog).
+
+### Paso 21 · Estado «Sin proyecto»
+- **Participantes sin proyecto:** colección nueva `sin_proyecto {nombre, documento, ciudad, celular?, correo?, monitor?,
+  creadoEn, creadoPor, convertidoEn?, proyectoId?}` con índice único en `documento`. Apartado «Sin proyecto» en el admin:
+  cargar por Excel (Nombre, Documento, Ciudad, Celular, Correo, Monitor; sinónimos y vista previa como el importador) y
+  agregar uno por uno. Un documento no puede estar a la vez aquí y en un proyecto (se revisa en las dos direcciones,
+  en una transacción). «Convertir en proyecto» abre «Nuevo proyecto» con sus datos y, al crearlo, marca el registro
+  como convertido (no se borra).
+- **Marcar un proyecto como «Sin proyecto»:** solo si NO tiene hora (si la tiene: «Primero libera su hora»). Campo nuevo
+  y opcional en ese proyecto: `sinProyecto?: {desde, por, motivo?}`; «Quitar marca» lo borra. Los dos dejan changeLog
+  (`sin_proyecto` / `quitar_sin_proyecto`). Proyectos sin el campo = como hoy. `reservar` rechaza un proyecto marcado
+  (y lo vuelve a comprobar después de tomar el asiento, como ya hace con separar y unir).
+- **Portal:** un documento de `sin_proyecto` o de un proyecto marcado ve «No tienes un proyecto inscrito. Escríbele a tu
+  monitor.» (mismo límite de intentos; no revela nada más).
+- **Estadísticas:** los marcados no cuentan en el seguimiento de inscripción (resumen, avance por ciudad), en el avance
+  del monitor ni en el Seguimiento general de evaluaciones. Apartado nuevo en el Seguimiento de evaluaciones: «Sin
+  proyecto» por ciudad (participantes + proyectos marcados) y «Eligieron hora y no se presentaron» por ciudad
+  (integrantes con «No se presentó» guardado, o asistencia «No» del monitor sin evaluación guardada).
+- Pruebas: carga por Excel con errores, documento repetido entre colecciones, marcar con hora (rechazado), carrera
+  marcar/reservar, portal, conteos; foto «como producción» (sin marcas, todos los conteos idénticos a hoy).
+
+### Paso 22 · Comentarios en proyectos (seguimiento)
+- Colección nueva `comentarios {proyectoId, autor (usuario), autorNombre, rol, texto (máx. 1000, texto plano),
+  creadoEn, editadoEn?, borradoEn?}`, índice `{proyectoId, creadoEn}`. El proyecto no se toca.
+- Monitor: en su seguimiento (sus ciudades, como hoy) agrega comentarios; edita o borra solo los suyos (borrar = oculto
+  con `borradoEn`). Admin y coordinación ven todos en la ficha del proyecto (Horarios y Tablero). Indicador «Con
+  comentarios» en las listas (Horarios, Tablero y seguimiento del monitor).
+- Los comentarios de salas de la evaluación (`evaluacion_monitor`) no cambian.
+- Rutas con Zod `.strict()`, `exigir(permiso)` y `sameOrigin`. Pruebas de permisos (monitor de otra ciudad, editar ajeno).
+
+### Paso 23 · El estudiante edita nombre y descripción
+- Portal, después de entrar con su documento: «Editar nombre y descripción» (cualquiera de los integrantes).
+- Nombre 3–120 caracteres, descripción 0–600; texto plano (sin etiquetas ni caracteres de control, espacios
+  normalizados, NFC); tildes y ñ permitidas. No se puede si el proyecto tiene evaluación guardada.
+- Escribe solo `nombre` y `descripcion` de ESE proyecto (acción manual del estudiante), con versión (`actualizadoEn`)
+  para no pisar un cambio simultáneo del admin. changeLog `editar_proyecto` con antes y después, actor estudiante con
+  documento enmascarado. En la ficha del admin, «Revertir» sobre esa entrada (solo si el valor actual sigue siendo el
+  «después»), con changeLog.
+- Límite de intentos: cuenta para el límite por documento (como consultar y reservar) y por IP.
+- Riesgo: el portal solo pide el documento; quien conozca el documento de otro podría cambiarle el nombre. Mitigación:
+  historial, revertir y límite. Pruebas: largos, tildes, evaluado, carrera con el admin, revertir.
+
+### Paso 24 · Carga de los mentores (solo lectura)
+- /admin/carga-mentores (admin y coordinación, solo lectura) y Excel: por mentor, día y hora, cuántos proyectos tiene,
+  con las horas de 1 o 2 proyectos marcadas y las horas sueltas (con huecos entre ellas).
+- Propuestas de redistribución (no se aplican): en cada hora, juntar proyectos para que cada mentor que califique tenga
+  al menos 3. Primero, cambio de mentor en el MISMO bloque (el estudiante no cambia de hora); si no alcanza, otro bloque
+  de la misma hora (marcado «cambia la hora del estudiante»). Nunca otro día (así se respetan los días por ciudad) y
+  nunca proyectos evaluados. Cada propuesta: proyecto, de mentor/bloque → a mentor/bloque. El admin las aplica a mano
+  en el Tablero.
+- **Solo propuesta, sin implementar:** que una reserva nueva prefiera al mentor que ya tiene proyectos en esa hora.
+  Cómo: antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora (más primero) y
+  probarlos en ese orden. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva, y
+  concentra la carga (un mentor puede quedar con 4 en todos los bloques de la hora). Se decide después del reporte.
+
+### Preguntas para aprobar el plan
+1. Tope cuando una ciudad no tiene «Máximo del día»: ¿se usan sus «Cupos reservados» como tope? (propuesta: sí).
+2. Ciudades que presentan por «Todas» (sin filas propias): ¿sin tope, o el máximo de la fila «Todas» para cada una?
+3. Editar nombre y descripción: ¿también después del cierre de inscripciones de su ciudad? (propuesta: sí, hasta que
+   haya evaluación guardada, mientras el portal esté encendido).
+4. Marcar un proyecto «Sin proyecto» con un campo nuevo y opcional en ese proyecto (propuesta), en vez de pasarlo a otra
+   colección (eso sería borrar el proyecto).
+
+### Pasos de la Fase 4
+- [ ] 19. Cupos por orden de llegada: interruptor, tope por ciudad y día, reserva atómica con candado, portal, Reglas.
+- [ ] 20. Orden de llegada en admin, monitor, bandeja, tablero y resumen (mover sobre el tope con advertencia).
+- [ ] 21. «Sin proyecto»: colección, carga por Excel y uno por uno, marcar/quitar, portal, estadísticas y apartado.
+- [ ] 22. Comentarios en proyectos (monitor escribe; admin y coordinación ven; indicador «Con comentarios»).
+- [ ] 23. El estudiante edita nombre y descripción (historial y revertir).
+- [ ] 24. Reporte de carga de los mentores con propuestas (solo lectura) y propuesta de preferencia de mentor.

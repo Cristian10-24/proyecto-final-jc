@@ -37,4 +37,6 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Las claves fáciles de prueba (`semilla-local`, `semilla:demo` local) solo existen en la base local; en Atlas la demo genera una al azar.
 
 ## Más adelante
+- Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).
+  Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".
