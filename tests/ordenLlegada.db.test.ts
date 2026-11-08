@@ -119,7 +119,10 @@ describe("encendido", () => {
   });
 
   it("la ciudad de sobrante (Cali) no tiene tope y sigue tomando los libres", async () => {
-    const r = await Promise.all(Array.from({ length: 5 }, (_, i) => reservar(CALI(i), BLOQUES_J[14]!, AHORA)));
+    // Un bloque que todavía tenga libres (la prueba anterior reparte 30 reservas de Cartagena al azar entre los bloques).
+    const c = await db.collections();
+    const libre = (await c.asientos.findOne({ dia: J, proyectoId: null }, { sort: { inicio: -1 } }))!;
+    const r = await Promise.all(Array.from({ length: 5 }, (_, i) => reservar(CALI(i), libre.inicio, AHORA)));
     expect(r.filter((x) => x.ok).length).toBeGreaterThan(0);
   });
 

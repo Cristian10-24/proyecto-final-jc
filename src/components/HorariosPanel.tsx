@@ -392,7 +392,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
 
         <div>
           <div className={s.seccionK}>Comentarios de seguimiento</div>
-          <Comentarios proyectoId={p.id} />
+          <Comentarios proyectoId={p.id} onCambio={() => v.limpiar()} />
         </div>
 
         <div>

@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComentarioVista } from "@/lib/comentarios";
-import { ROL_TXT } from "@/lib/permisos";
+import type { RolUsuario } from "@/lib/permisos";
 import s from "./Comentarios.module.css";
 
-// Paso 22 · Comentarios de seguimiento de un proyecto. El monitor escribe y edita o borra los suyos; coordinación y
-// admin solo leen (el servidor decide `puedeEscribir`). Texto plano: React lo escapa.
+// Paso 22 · Comentarios de seguimiento de un proyecto. Monitor, coordinación y admin escriben y editan o borran solo los
+// suyos (el servidor decide `puedeEscribir`); cada comentario muestra el rol del autor. Texto plano: React lo escapa.
+
+const ROL: Record<RolUsuario, string> = { mentor: "Mentor", monitor: "Monitor", coordinador: "Coordinación", admin: "Admin" };
 
 const MAX = 1000;
 const fmt = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
@@ -60,7 +62,7 @@ export default function Comentarios({ proyectoId, onCambio }: { proyectoId: stri
           {datos.comentarios.map((c) => (
             <li key={c.id} className={s.item}>
               <div className={s.cabeza}>
-                <b>{c.autorNombre}</b><span className={s.meta}>{ROL_TXT[c.rol]} · {fecha(c.creadoEn)}{c.editadoEn ? " · editado" : ""}</span>
+                <b>{c.autorNombre}</b><span className={s.meta}><span className={s.rol}>{ROL[c.rol]}</span> · {fecha(c.creadoEn)}{c.editadoEn ? " · editado" : ""}</span>
               </div>
               {editando?.id === c.id ? (
                 <div className={s.form}>

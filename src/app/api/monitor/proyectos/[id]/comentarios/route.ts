@@ -5,8 +5,8 @@ import { exigir, sameOrigin } from "@/lib/auth";
 import { borrarComentario, crearComentario, editarComentario, listarComentarios, MAX_COMENTARIO } from "@/lib/comentarios";
 import { IdParams } from "@/lib/validation/id";
 
-// Paso 22 · Comentarios de seguimiento de un proyecto. Leer: monitor (sus ciudades), coordinación y admin. Escribir,
-// editar y borrar (los propios): solo el monitor.
+// Paso 22 · Comentarios de seguimiento de un proyecto. Leer y escribir: monitor (sus ciudades), coordinación y admin
+// (todos). Editar y borrar: cada uno solo los suyos.
 
 // El límite real se aplica después de limpiar el texto; aquí se corta lo absurdo antes de procesarlo.
 const Texto = z.string().max(MAX_COMENTARIO * 2);

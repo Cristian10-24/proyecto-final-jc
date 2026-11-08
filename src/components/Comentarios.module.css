@@ -11,3 +11,4 @@
 .acts { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-3); }
 .contador { margin-right: auto; font: 600 12px var(--mono); color: var(--muted-2); }
 .skel { height: 44px; border-radius: var(--r-sm); background: var(--soft); }
+.rol { padding: 1px var(--s-2); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); }

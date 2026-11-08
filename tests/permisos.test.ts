@@ -78,9 +78,13 @@ const soloMonitor: [string, () => Promise<Response>][] = [
   ["reprogramar desde la sala", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "reprogramar", asiento: ID, motivo: "Cita médica" }), ctx)],
   ["sugerir un cambio especial", async () => (await import("@/app/api/evaluacion/salas/[id]/route")).POST(json("POST", { accion: "sugerir", detalle: "Otro día", motivo: "Viaja" }), ctx)],
   ["ver cupos para reprogramar", async () => (await import("@/app/api/evaluacion/salas/[id]/cupos/route")).GET(new Request("http://localhost/x"), ctx)],
-  // Paso 22: escribir, editar y borrar comentarios de seguimiento (coordinación y admin solo leen).
+];
+// Paso 22: comentarios de seguimiento. Escriben monitor, coordinación y admin; el mentor no (ni lee).
+const comentar: [string, () => Promise<Response>][] = [
   ["escribir un comentario", async () => (await import("@/app/api/monitor/proyectos/[id]/comentarios/route")).POST(json("POST", { accion: "crear", texto: "Hola" }), ctx)],
+  ["editar un comentario", async () => (await import("@/app/api/monitor/proyectos/[id]/comentarios/route")).POST(json("POST", { accion: "editar", comentario: ID, texto: "Hola" }), ctx)],
   ["borrar un comentario", async () => (await import("@/app/api/monitor/proyectos/[id]/comentarios/route")).POST(json("POST", { accion: "borrar", comentario: ID }), ctx)],
+  ["leer los comentarios", async () => (await import("@/app/api/monitor/proyectos/[id]/comentarios/route")).GET(new Request("http://localhost/x"), ctx)],
 ];
 
 // Seguimiento general, Excel de resultados y criterios: coordinación y admin.
@@ -104,7 +108,7 @@ describe("matriz de permisos", () => {
     ver_evaluaciones: [false, false, true, true],
     monitorear_salas: [false, true, false, false],
     editar_criterios: [false, false, true, true],
-    comentar_proyectos: [false, true, false, false],
+    comentar_proyectos: [false, true, true, true],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -124,7 +128,7 @@ describe("el monitor recibe 403", () => {
 describe("el mentor recibe 403", () => {
   beforeAll(() => como("mentor"));
   const seguimiento: [string, () => Promise<Response>] = ["ver el seguimiento", async () => (await import("@/app/api/monitor/seguimiento/route")).GET()];
-  for (const [nombre, llamar] of [...soloAdmin, seguimiento, ...soloMonitor]) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
+  for (const [nombre, llamar] of [...soloAdmin, seguimiento, ...soloMonitor, ...comentar]) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
 });
 
 describe("coordinación y admin no escriben evaluaciones", () => {
@@ -238,7 +242,7 @@ describe("coordinación y admin no entran a Mis salas", () => {
 
 describe("sin sesión", () => {
   beforeAll(() => { estado.token = ""; estado.usuario = null; });
-  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones, ...soloMonitor, ...soloCoordinacion]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
+  for (const [nombre, llamar] of [...soloAdmin, ...soloMentor, ...verEvaluaciones, ...soloMonitor, ...soloCoordinacion, ...comentar]) it(`401 al ${nombre}`, async () => expect((await llamar()).status).toBe(401));
 });
 
 describe("sesión con clave restablecida", () => {

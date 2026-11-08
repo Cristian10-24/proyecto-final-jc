@@ -231,7 +231,7 @@ export default function SeguimientoPanel({ user }: { user: SessionUser }) {
                     )}
                     {!esMonitor && f.monitor === null && <span className={`${s.chip} ${s.chip_neutro}`}><i />Monitor por asignar</span>}
                     <button type="button" className="btn-link" onClick={() => setNotas(f)}>
-                      {f.comentarios ? `Con comentarios (${f.comentarios})` : esMonitor ? "Comentar" : "Comentarios"}
+                      {f.comentarios ? `Con comentarios (${f.comentarios})` : "Comentar"}
                     </button>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default function SeguimientoPanel({ user }: { user: SessionUser }) {
   );
 }
 
-/** Paso 22 · Comentarios de seguimiento de un proyecto (el monitor escribe; coordinación y admin leen). */
+/** Paso 22 · Comentarios de seguimiento de un proyecto (monitor, coordinación y admin escriben). */
 function VentanaComentarios({ f, onCerrar, onCambio }: { f: Fila; onCerrar: () => void; onCambio: (n: number) => void }) {
   const v = useVentana(onCerrar);
   return (

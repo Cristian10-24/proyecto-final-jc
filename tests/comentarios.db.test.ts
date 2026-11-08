@@ -41,10 +41,10 @@ describe("texto", () => {
 });
 
 describe("permisos y propiedad", () => {
-  it("el monitor comenta en sus ciudades y no en otras; coordinación, admin y mentor no escriben", async () => {
+  it("el monitor comenta en sus ciudades y no en otras; el mentor no escribe", async () => {
     expect(await k.crearComentario(MON_CALI, CALI, "Llamé a la familia.")).toMatchObject({ ok: true });
     expect(await k.crearComentario(MON_CALI, CTG, "No es mío")).toMatchObject({ ok: false, error: "no_existe" });
-    for (const x of [COORD, ADMIN, MENTOR]) expect(await k.crearComentario(x, CALI, "Hola")).toMatchObject({ ok: false, error: "sin_permiso" });
+    expect(await k.crearComentario(MENTOR, CALI, "Hola")).toMatchObject({ ok: false, error: "sin_permiso" });
     expect(await k.crearComentario(MON_CALI, CALI, "   \n ")).toMatchObject({ ok: false, error: "datos" });
     expect(await k.crearComentario(MON_CALI, CALI, "x".repeat(1001))).toMatchObject({ ok: false, error: "datos" });
     expect(await k.crearComentario(MON_CALI, new ObjectId(), "Hola")).toMatchObject({ ok: false, error: "no_existe" });
@@ -53,8 +53,8 @@ describe("permisos y propiedad", () => {
   it("leen: el monitor de la ciudad (otro también), coordinación y admin; el de otra ciudad no", async () => {
     const r = await k.listarComentarios(MON_CALI2, CALI);
     expect(r).toMatchObject({ ok: true, puedeEscribir: true, comentarios: [{ autorNombre: "Nombre moni.cali", rol: "monitor", texto: "Llamé a la familia.", tuyo: false }] });
-    expect(await k.listarComentarios(COORD, CALI)).toMatchObject({ ok: true, puedeEscribir: false, comentarios: [{ tuyo: false }] });
-    expect(await k.listarComentarios(ADMIN, CALI)).toMatchObject({ ok: true, puedeEscribir: false });
+    expect(await k.listarComentarios(COORD, CALI)).toMatchObject({ ok: true, puedeEscribir: true, comentarios: [{ tuyo: false }] });
+    expect(await k.listarComentarios(ADMIN, CALI)).toMatchObject({ ok: true, puedeEscribir: true });
     expect(await k.listarComentarios(MON_CTG, CALI)).toMatchObject({ ok: false, error: "no_existe" });
     expect(JSON.stringify(r)).not.toContain('"autor"'); // no expone el usuario del autor
   });
@@ -102,11 +102,36 @@ describe("casos del revisor", () => {
     const id = new ObjectId(r.id);
     expect(await k.editarComentario(MON_CALI, b, id, "Cambiado")).toMatchObject({ ok: false, error: "no_existe" });
     expect(await k.borrarComentario(MON_CALI, b, id)).toMatchObject({ ok: false, error: "no_existe" });
-    for (const x of [COORD, ADMIN, MENTOR]) {
-      expect(await k.editarComentario(x, a, id, "Cambiado")).toMatchObject({ ok: false, error: "sin_permiso" });
-      expect(await k.borrarComentario(x, a, id)).toMatchObject({ ok: false, error: "sin_permiso" });
+    // Coordinación y admin escriben pero no tocan el del monitor; el mentor no puede nada.
+    for (const x of [COORD, ADMIN]) {
+      expect(await k.editarComentario(x, a, id, "Cambiado")).toMatchObject({ ok: false, error: "ajeno" });
+      expect(await k.borrarComentario(x, a, id)).toMatchObject({ ok: false, error: "ajeno" });
     }
+    expect(await k.editarComentario(MENTOR, a, id, "Cambiado")).toMatchObject({ ok: false, error: "sin_permiso" });
+    expect(await k.borrarComentario(MENTOR, a, id)).toMatchObject({ ok: false, error: "sin_permiso" });
     expect(await k.listarComentarios(ADMIN, a)).toMatchObject({ comentarios: [{ texto: "En A" }] });
+  });
+});
+
+describe("coordinación y admin responden (cambio pedido tras el Paso 22)", () => {
+  it("escriben en cualquier ciudad, se ve su rol, editan o borran solo los suyos y tienen el mismo tope", async () => {
+    const p = await proyecto("P-8100000020", "Cartagena", "8100000020");
+    expect(await k.crearComentario(MON_CTG, p, "Pregunta del monitor")).toMatchObject({ ok: true });
+    const rc = await k.crearComentario(COORD, p, "Respuesta de coordinación") as { ok: true; id: string };
+    const ra = await k.crearComentario(ADMIN, p, "Respuesta de admin") as { ok: true; id: string };
+    expect(rc.ok && ra.ok).toBe(true);
+    const vista = await k.listarComentarios(MON_CTG, p) as { comentarios: { rol: string; tuyo: boolean }[] };
+    expect(vista.comentarios.map((x) => [x.rol, x.tuyo])).toEqual([["monitor", true], ["coordinador", false], ["admin", false]]);
+    // Cada uno, solo los suyos.
+    expect(await k.editarComentario(ADMIN, p, new ObjectId(rc.id), "Pisar")).toMatchObject({ ok: false, error: "ajeno" });
+    expect(await k.borrarComentario(MON_CTG, p, new ObjectId(ra.id))).toMatchObject({ ok: false, error: "ajeno" });
+    expect(await k.editarComentario(COORD, p, new ObjectId(rc.id), "Respuesta corregida")).toMatchObject({ ok: true });
+    expect(await k.borrarComentario(ADMIN, p, new ObjectId(ra.id))).toMatchObject({ ok: true });
+    // Mismo tope por autor y proyecto.
+    const c = await db.collections();
+    await c.comentarios.insertMany(Array.from({ length: k.MAX_POR_AUTOR - 1 }, (_, i) => ({ _id: new ObjectId(), proyectoId: p, autor: "coord", autorNombre: "C", rol: "coordinador" as const, texto: `n${i}`, creadoEn: new Date() })));
+    expect(await k.crearComentario(COORD, p, "Uno más")).toMatchObject({ ok: false, error: "datos" });
+    expect(await k.crearComentario(ADMIN, p, "Admin sí")).toMatchObject({ ok: true });
   });
 });
 

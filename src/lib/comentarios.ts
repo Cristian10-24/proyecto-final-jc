@@ -5,8 +5,8 @@ import { puede, type RolUsuario } from "./permisos";
 import type { Proyecto } from "./types";
 
 // Fase 4 · Paso 22 · Comentarios de seguimiento en un proyecto (colección nueva `comentarios`; el proyecto no se toca).
-// El monitor escribe en los proyectos de sus ciudades y edita o borra solo los suyos (borrar = ocultar con `borradoEn`).
-// Coordinación y admin los leen todos. Texto plano: se guarda tal cual (React lo escapa al mostrarlo).
+// El monitor escribe en los proyectos de sus ciudades; coordinación y admin, en todos (para responderle). Cada uno edita
+// o borra solo los suyos (borrar = ocultar con `borradoEn`). Texto plano: se guarda tal cual (React lo escapa al mostrarlo).
 
 export type Comentario = {
   _id: ObjectId; proyectoId: ObjectId;
@@ -62,7 +62,7 @@ export async function listarComentarios(user: SessionUser, pid: ObjectId): Promi
 }
 
 export async function crearComentario(user: SessionUser, pid: ObjectId, t: string): Promise<{ ok: true; id: string } | Falla> {
-  if (!puede(user.rol, "comentar_proyectos")) return falla("sin_permiso", "Solo los monitores escriben comentarios.");
+  if (!puede(user.rol, "comentar_proyectos")) return falla("sin_permiso", "No puedes escribir comentarios.");
   const limpio = texto(t);
   if (typeof limpio !== "string") return limpio;
   if (!(await visible(user, pid))) return falla("no_existe", "Ese proyecto no existe o no es de tus ciudades.");
@@ -81,7 +81,7 @@ export async function crearComentario(user: SessionUser, pid: ObjectId, t: strin
 
 /** Editar o borrar: solo el autor, en un proyecto que todavía ve, y un comentario que no esté borrado. */
 async function propio(user: SessionUser, pid: ObjectId, id: ObjectId, cambio: object | object[]): Promise<{ ok: true } | Falla> {
-  if (!puede(user.rol, "comentar_proyectos")) return falla("sin_permiso", "Solo los monitores editan sus comentarios.");
+  if (!puede(user.rol, "comentar_proyectos")) return falla("sin_permiso", "No puedes cambiar comentarios.");
   if (!(await visible(user, pid))) return falla("no_existe", "Ese proyecto no existe o no es de tus ciudades.");
   const { comentarios } = await collections();
   const r = await comentarios.updateOne({ _id: id, proyectoId: pid, autor: user.usuario, borradoEn: { $exists: false } }, Array.isArray(cambio) ? cambio : { $set: cambio });

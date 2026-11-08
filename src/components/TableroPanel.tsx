@@ -369,7 +369,7 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
           </div>
         )}
         <div className={s.histT}>Comentarios de seguimiento</div>
-        <Comentarios proyectoId={t.id} />
+        <Comentarios proyectoId={t.id} onCambio={() => v.limpiar()} />
         <div className={s.histT}>Historial</div>
         {!hist ? <div className={s.skelFila} /> : !hist.length ? <p className={s.vacioTxt}>Sin cambios registrados.</p> : (
           <ol className={s.hist}>
