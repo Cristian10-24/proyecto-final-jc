@@ -33,7 +33,7 @@ export type FilaProyecto = {
   comentarios: number;
 };
 
-export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" | "sin_proyecto" };
+export type FiltroProyectos = { q?: string; ciudad?: string; estado?: "con_hora" | "sin_hora" | "sin_monitor" | "sin_proyecto"; mentor?: string };
 
 /** Lista para el tablero del admin (máx. 200). El admin sí ve mentor y documento completo. */
 export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[]> {
@@ -53,6 +53,8 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
     const conHora = (await asientos.distinct("proyectoId", { proyectoId: { $type: "objectId" } })).filter((x): x is ObjectId => x !== null);
     filtro._id = f.estado === "con_hora" ? { $in: conHora } : { $nin: conHora };
   }
+  // Paso 25: solo los proyectos con un asiento de ese mentor (cualquier día).
+  if (f.mentor) filtro.$and = [{ _id: { $in: (await asientos.distinct("proyectoId", { mentorId: f.mentor, proyectoId: { $type: "objectId" } })).filter((x): x is ObjectId => x !== null) } }];
   const lista = await proyectos.find(filtro).sort({ ciudad: 1, nombre: 1 }).limit(200).toArray();
   const ocupados = await asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }).toArray();
   const porProyecto = new Map(ocupados.map((a) => [String(a.proyectoId), a]));
@@ -101,7 +103,7 @@ const MENSAJE: Record<Falla["codigo"], string> = {
   sin_hora: "Ese proyecto no tiene hora.",
   tope: "Su ciudad ya llegó al tope de ese día.",
   marcado: "Este proyecto está marcado «Sin proyecto»: quita la marca para darle hora.",
-  con_datos: "Este proyecto ya tiene evaluación, asistencia, notas del monitor o borrador del mentor: no se cambia desde la carga de mentores.",
+  con_datos: "Este proyecto ya tiene evaluación, asistencia, notas del monitor o borrador del mentor: no se le cambia el mentor.",
   por_empezar: "Esa presentación empieza en menos de 30 minutos o ya pasó: no se cambia desde la carga de mentores.",
   en_curso: "Esta presentación está por empezar o en curso; cambiará el mentor y la sala.",
 };
@@ -190,6 +192,8 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
   desde?: ObjectId; limpio?: boolean; noAntesDe?: Date;
   /** El admin confirmó cambiar una presentación por empezar (menos de 30 min) o en curso. */
   confirmarEnCurso?: boolean;
+  /** Paso 25 · «Cambiar mentor (mismo bloque)»: el proyecto debe seguir en `inicio` y sin datos de evaluación. */
+  mismoBloque?: boolean;
 }, actor: Actor): Promise<ResultadoAdmin> {
   const c = await collections();
   const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
@@ -210,7 +214,9 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
       if (viejo && (opciones.asiento ? viejo._id.equals(opciones.asiento) : viejo.inicio.getTime() === inicio.getTime())) throw new Error("misma_hora");
       const ahora = new Date();
       if (opciones.noAntesDe && viejo && viejo.inicio < opciones.noAntesDe) throw new Falla("por_empezar");
-      if (opciones.limpio && (await conDatosDeEvaluacion(proyectoId, s))) throw new Falla("con_datos");
+      if (opciones.mismoBloque && !viejo) throw new Falla("sin_hora");
+      if (opciones.mismoBloque && viejo!.inicio.getTime() !== inicio.getTime()) throw new Falla("cambio");
+      if ((opciones.limpio || opciones.mismoBloque) && (await conDatosDeEvaluacion(proyectoId, s))) throw new Falla("con_datos");
       // Presentación por empezar o en curso: se puede (un mentor falla a última hora), pero con confirmación explícita.
       const enCurso = !!viejo && viejo.inicio.getTime() < ahora.getTime() + MARGEN_MS;
       if (enCurso && !opciones.confirmarEnCurso) throw new Falla("en_curso");

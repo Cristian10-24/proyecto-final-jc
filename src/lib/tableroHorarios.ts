@@ -120,3 +120,22 @@ export async function datosTablero(diaPedido?: string): Promise<DatosTablero> {
     ordenLlegada: await modoOrdenLlegada(),
   };
 }
+
+/** Paso 25 · Resultado del buscador del Tablero (sin documentos: coordinación también lo usa). `dia`: null = sin hora. */
+export type Encontrado = { id: string; codigo: string; proyecto: string; ciudad: string; dia: string | null; inicio: string | null };
+
+/** Busca por nombre del proyecto, integrante, código o documento (máx. 20; sin los marcados «Sin proyecto»).
+ *  `documentoParcial`: solo el admin (que ya ve los documentos en Horarios) busca por parte del documento; coordinación,
+ *  solo con el documento exacto, para que el buscador no sirva para adivinar documentos por prefijos. */
+export async function buscarTablero(q: string, { documentoParcial }: { documentoParcial: boolean }): Promise<Encontrado[]> {
+  const c = await collections();
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  const lista = await c.proyectos
+    .find({ $or: [{ nombre: re }, { codigo: re }, { "integrantes.nombre": re }, { "integrantes.documento": documentoParcial ? re : q }], sinProyecto: { $exists: false } }, { projection: { codigo: 1, nombre: 1, ciudad: 1 } })
+    .sort({ nombre: 1 }).limit(20).toArray();
+  const asientos = new Map((await c.asientos.find({ proyectoId: { $in: lista.map((p) => p._id) } }, { projection: { proyectoId: 1, dia: 1, inicio: 1 } }).toArray()).map((a) => [String(a.proyectoId), a]));
+  return lista.map((p) => {
+    const a = asientos.get(String(p._id));
+    return { id: String(p._id), codigo: p.codigo, proyecto: p.nombre, ciudad: p.ciudad, dia: a?.dia ?? null, inicio: a ? a.inicio.toISOString() : null };
+  });
+}

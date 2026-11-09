@@ -15,7 +15,9 @@ const Accion = z.discriminatedUnion("accion", [
     // Modo orden de llegada: el admin confirmó que quiere pasar el tope de la ciudad ese día.
     confirmarTope: z.boolean().default(false),
     // Paso 24: el admin confirmó cambiar una presentación por empezar (menos de 30 min) o en curso.
-    confirmarEnCurso: z.boolean().default(false) }).strict(),
+    confirmarEnCurso: z.boolean().default(false),
+    // Paso 25: «Cambiar mentor (mismo bloque)» (exige `asiento`; la hora no cambia y sin datos de evaluación).
+    mismoBloque: z.boolean().default(false) }).strict().refine((x) => !x.mismoBloque || !!x.asiento),
   z.object({ accion: z.literal("monitor"), monitor: z.string().trim().max(40).nullable() }).strict(),
   // Salida de emergencia: anular la evaluación (motivo obligatorio).
   // `version`: el actualizadoEn de la evaluación que vio el admin (si cambió, no se anula).
@@ -53,7 +55,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     : a.accion === "sin_proyecto" ? await marcarSinProyecto(pid, a.motivo, actor)
     : a.accion === "quitar_sin_proyecto" ? await quitarMarca(pid, actor)
     : a.accion === "revertir" ? await revertirEdicion(pid, new ObjectId(a.cambio), actor)
-    : a.accion === "cambiar" ? await cambiarHora(pid, new Date(a.inicio), { otraCiudad: a.otraCiudad, motivo: a.motivo, confirmarTope: a.confirmarTope, confirmarEnCurso: a.confirmarEnCurso, ...(a.asiento ? { asiento: new ObjectId(a.asiento) } : {}) }, actor)
+    : a.accion === "cambiar" ? await cambiarHora(pid, new Date(a.inicio), { otraCiudad: a.otraCiudad, motivo: a.motivo, confirmarTope: a.confirmarTope, confirmarEnCurso: a.confirmarEnCurso, mismoBloque: a.mismoBloque, ...(a.asiento ? { asiento: new ObjectId(a.asiento) } : {}) }, actor)
     : await asignarMonitor(pid, a.monitor || null, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === "sin_proyecto" || r.error === "no_existe" ? 404 : 409 });
 }

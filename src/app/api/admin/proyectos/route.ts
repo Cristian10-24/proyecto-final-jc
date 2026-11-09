@@ -12,6 +12,8 @@ const Query = z
     q: z.string().trim().max(80).optional(),
     ciudad: z.enum(NOMBRES_CIUDADES as [string, ...string[]]).optional(),
     estado: z.enum(["con_hora", "sin_hora", "sin_monitor", "sin_proyecto"]).optional(),
+    // Paso 25: filtro por mentor (su _id).
+    mentor: z.string().trim().max(120).optional(),
   })
   .strict();
 
@@ -21,12 +23,16 @@ export async function GET(req: Request) {
   if (g.error) return g.error;
   const parsed = Query.safeParse(Object.fromEntries([...new URL(req.url).searchParams].filter(([, v]) => v !== "")));
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  const { users } = await collections();
-  const monitores = await users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).sort({ nombre: 1 }).toArray();
+  const { users, mentores } = await collections();
+  const [monitores, listaMentores] = await Promise.all([
+    users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).sort({ nombre: 1 }).toArray(),
+    mentores.find({}, { projection: { nombre: 1 } }).sort({ nombre: 1 }).toArray(),
+  ]);
   return NextResponse.json({
     proyectos: await listarProyectos(parsed.data),
     monitores: monitores.map((m) => ({ usuario: m.usuario, nombre: m.nombre, ciudades: m.ciudades })),
     ciudades: [...NOMBRES_CIUDADES].sort((a, b) => a.localeCompare(b, "es")),
+    mentores: listaMentores.map((m) => ({ id: m._id, nombre: m.nombre })),
   });
 }
 

@@ -1,0 +1,7 @@
+.caja { display: flex; flex-direction: column; gap: 10px; }
+.sub { margin: 0; color: var(--ink-2); font-size: 14px; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.check input { margin-top: 3px; }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.skel { height: 40px; border-radius: 10px; background: var(--line-2); }

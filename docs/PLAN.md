@@ -225,3 +225,7 @@ apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal respon
 - [x] 22. Comentarios en proyectos (monitor escribe; admin y coordinación ven; indicador «Con comentarios»).
 - [x] 23. El estudiante edita nombre y descripción (historial y revertir).
 - [x] 24. Reporte de carga de los mentores con propuestas (solo lectura) y propuesta de preferencia de mentor.
+
+### Pasos de mentor y roles (rama feature/mentor-y-roles)
+- [x] 25. Cambiar mentor (mismo bloque) desde la ficha de Horarios, filtro por mentor y buscador en el Tablero.
+- [ ] 26. Un usuario con varios roles (`rolesExtra`, solo el admin los asigna, con changeLog).

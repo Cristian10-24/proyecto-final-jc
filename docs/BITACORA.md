@@ -263,3 +263,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `docs: revisión de seguridad de los pasos 23 y 24 (sin altos ni medios)`. Sin hallazgos altos ni medios: confirmado `sameOrigin` + `exigir("cambiar_horario")` (solo admin) en «Aplicar» y en «Revertir», Zod `.strict()`, transacciones atómicas que revalidan origen, destino libre y evaluación, documento enmascarado en el changeLog del estudiante y sin datos de otros proyectos en el portal. Un bajo a PENDIENTES (botón «Revertir» visible para coordinación en pantalla, aunque el servidor lo rechaza).
 - Verificar: `docs/PENDIENTES.md` (nueva línea de Horarios).
 - Pendiente: nada de este paso; sigue la Fase 4 (probar en Preview y publicar).
+
+## Paso 25 · Cambiar mentor desde Horarios, filtro por mentor y buscador en el Tablero
+- Commit: `feat: cambiar mentor (mismo bloque) desde Horarios, filtro por mentor y buscador en el Tablero`. Componente común en ambas fichas (GET `/api/admin/proyectos/[id]/mentores` + cambiarHora con `mismoBloque`: la hora nunca cambia; sin datos de evaluación; asiento ocupado = rechazo con aviso; <30 min pide confirmación). revisor-seguridad: 1 medio corregido (buscador: coordinación solo documento exacto), 1 bajo aceptado. 289 unitarias y 282 con base (base de pruebas local limpiada antes: dos test:db en paralelo la dejaron con un duplicado); typecheck y build pasan.
+- Verificar (demo local, admin.demo): Horarios → abrir un proyecto con hora → «Cambiar mentor (mismo bloque)»; filtro «Todos los mentores»; Tablero → buscador.
+- Pendiente: Paso 26 (varios roles), aprobado con sameOrigin; empezar cuando el usuario publique el Paso 25.

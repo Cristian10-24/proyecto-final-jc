@@ -30,6 +30,8 @@ Next.js 16 (App Router) + TypeScript, driver `mongodb`, Zod, exceljs, Vitest. Ve
 - Sin bloqueos en memoria: toda reserva es una operación atómica de MongoDB con índices únicos.
 - Toda ruta: Zod `.strict()`, `exigir(permiso)` si usa sesión, `sameOrigin` si usa la cookie y cambia datos.
 - Antes de cerrar un paso: `npm test`, `npm run test:db`, `npm run typecheck`, `npm run build`.
+- Nunca correr `test:db` en paralelo: ni dos a la vez, ni el revisor de pruebas mientras corren otras pruebas con base
+  (comparten la base local `proyecto_final_jc_pruebas`).
 
 ## Registro
 - UN solo paso del PLAN a la vez. Al terminarlo: commit, entrada en la bitácora, mostrar solo esa

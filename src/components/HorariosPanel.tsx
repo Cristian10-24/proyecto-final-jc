@@ -6,6 +6,7 @@ import { horaCO } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
 import type { FilaSugerencia } from "@/lib/sugerencias";
 import AppShell from "./AppShell";
+import CambiarMentor from "./CambiarMentor";
 import Comentarios from "./Comentarios";
 import GestionProyecto, { type ModoGestion } from "./GestionProyecto";
 import { useVentana } from "./useVentana";
@@ -67,6 +68,8 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
   const [qFinal, setQFinal] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [estado, setEstado] = useState<Estado>("");
+  const [mentor, setMentor] = useState("");
+  const [mentores, setMentores] = useState<{ id: string; nombre: string }[]>([]);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [monitores, setMonitores] = useState<Monitor[]>([]);
@@ -99,20 +102,21 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
   const cargar = useCallback(async () => {
     const n = ++pedido.current;
     setCarga("cargando");
-    const p = new URLSearchParams({ q: qFinal, ciudad, estado });
+    const p = new URLSearchParams({ q: qFinal, ciudad, estado, mentor });
     try {
-      const r = await api<{ proyectos: Proyecto[]; monitores: Monitor[]; ciudades: string[] }>(`/api/admin/proyectos?${p}`);
+      const r = await api<{ proyectos: Proyecto[]; monitores: Monitor[]; ciudades: string[]; mentores: { id: string; nombre: string }[] }>(`/api/admin/proyectos?${p}`);
       if (n !== pedido.current) return;
       if (!r.ok || !r.data) return setCarga("error");
       setProyectos(r.data.proyectos);
       if (abrir.current) { const f = r.data.proyectos.find((x) => x.id === abrir.current); if (f) { setSel(f); abrir.current = null; } }
       setMonitores(r.data.monitores);
       setCiudades(r.data.ciudades);
+      setMentores(r.data.mentores ?? []);
       setCarga("listo");
     } catch (e) {
       if (!(e instanceof SinSesion) && n === pedido.current) setCarga("error");
     }
-  }, [qFinal, ciudad, estado]);
+  }, [qFinal, ciudad, estado, mentor]);
 
   useEffect(() => { void cargar(); }, [cargar]);
 
@@ -139,7 +143,7 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
     } catch { /* la lista ya se recarga */ }
   }, [avisar, cargar, sel]);
 
-  const limpiar = () => { setQ(""); setQFinal(""); setCiudad(""); setEstado(""); };
+  const limpiar = () => { setQ(""); setQFinal(""); setCiudad(""); setEstado(""); setMentor(""); };
 
   return (
     <AppShell user={user} active="horarios">
@@ -157,6 +161,10 @@ export default function HorariosPanel({ user }: { user: SessionUser }) {
           <select className={`input ${s.select}`} value={ciudad} onChange={(e) => setCiudad(e.target.value)} aria-label="Ciudad">
             <option value="">Todas las ciudades</option>
             {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className={`input ${s.select}`} value={mentor} onChange={(e) => setMentor(e.target.value)} aria-label="Mentor">
+            <option value="">Todos los mentores</option>
+            {mentores.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
           </select>
           <div className={s.segmento} role="group" aria-label="Estado">
             {ESTADOS.map((e) => (
@@ -239,7 +247,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
   onGestion: (modo: "editar" | "separar" | "agregar") => void;
 }) {
   const [hist, setHist] = useState<{ estado: "cargando" | "error" | "listo"; items: Cambio[] }>({ estado: "cargando", items: [] });
-  const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "anular" | "sin_proyecto">("ver");
+  const [modo, setModo] = useState<"ver" | "liberar" | "cambiar" | "mentor" | "anular" | "sin_proyecto">("ver");
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -328,6 +336,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
         {modo === "ver" && !p.sinProyecto && (
           <div className={s.acts}>
             <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => { setError(""); setModo("cambiar"); }}>{p.hora ? "Cambiar hora" : "Asignar hora"}</button>
+            {p.hora && !p.evaluado && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setModo("mentor"); }}>Cambiar mentor (mismo bloque)</button>}
             {p.hora && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setModo("liberar"); }}>Liberar hora</button>}
             {p.evaluado && <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setError(""); setMotivo(""); setModo("anular"); }}>Anular evaluación</button>}
           </div>
@@ -381,6 +390,13 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
                 {ocupado ? "Liberando…" : "Liberar hora"}
               </button>
             </div>
+          </div>
+        )}
+
+        {modo === "mentor" && p.hora && (
+          <div className={s.panel}>
+            <CambiarMentor proyectoId={p.id} motivoBase="Horarios: cambio de mentor" conMotivo onOcupado={setOcupado}
+              onCancelar={() => setModo("ver")} onHecho={(msg) => { setModo("ver"); v.limpiar(); void onHecho(msg); }} />
           </div>
         )}
 
