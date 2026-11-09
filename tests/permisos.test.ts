@@ -168,6 +168,7 @@ describe("Carga de mentores (Paso 24): aplicar desde otro origen o con datos de 
     expect([(await ruta.POST(otro)).status]).toEqual([403]);
     for (const body of [{ accion: "aplicar", proyecto: ID, desde: ID, hacia: ID, inicio: "2026-11-12T13:00:00Z" }, { accion: "aplicar", proyecto: "x", desde: ID, hacia: ID }, { accion: "mover", proyecto: ID, desde: ID, hacia: ID }])
       expect((await ruta.POST(json("POST", body))).status).toBe(400);
+    expect((await ruta.POST(json("POST", { accion: "aplicar", proyecto: ID, desde: ID, hacia: ID, relleno: "x".repeat(2000) }))).status).toBe(413);
   });
 });
 

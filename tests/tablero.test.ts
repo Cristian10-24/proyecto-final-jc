@@ -38,6 +38,8 @@ describe("Excel sin fórmulas", () => {
   it("el texto que empieza con = + - @ va con apóstrofo; lo demás igual", async () => {
     const { sinFormula } = await import("@/lib/evaluacion/resultados");
     expect(["=HYPERLINK(1)", "+57 300", "-1", "@x", "Ana", 4, "8:00 a. m."].map(sinFormula)).toEqual(["'=HYPERLINK(1)", "'+57 300", "'-1", "'@x", "Ana", 4, "8:00 a. m."]);
+    // Paso 24: con espacios antes del = y signos de ancho completo.
+    expect(["  =1+1", "　=x", "＝SUMA(1)", "Ana = Luis"].map(sinFormula)).toEqual(["'  =1+1", "'　=x", "'＝SUMA(1)", "Ana = Luis"]);
   }, 20_000); // importar resultados (exceljs y la base) tarda más que el límite de 5 s cuando corren todas las pruebas
 });
 

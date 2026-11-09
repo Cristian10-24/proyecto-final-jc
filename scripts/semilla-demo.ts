@@ -2,6 +2,7 @@
 //   npm run semilla:demo                       (falla si la base ya tiene proyectos o asientos)
 //   npm run semilla:demo -- --reset            (borra proyectos, horarios, salas, evaluaciones y changeLog de la base local)
 //   npm run semilla:demo -- --reset --hoy=2026-11-03   (mueve las presentaciones para que el día "en vivo" sea esa fecha)
+//   npm run semilla:demo -- --reset --carga-dispersa   (además, un día con proyectos dispersos para «Carga de mentores»)
 //
 // Pasa por los MISMOS importadores que los Excel reales (Mentores/Horarios/Cupos, Proyectos y Salas y monitores):
 // los libros se arman en memoria con las reglas reales de Cupos. Base LOCAL (127.0.0.1/localhost) o, con
@@ -252,11 +253,49 @@ async function main() {
     ok(await ev.guardarEvaluacion(otro, String(p._id), form(p.integrantes.map(() => ({ b1: 3, b2: 2 })), { a: A(1) })), `otro mentor: ${p.nombre}`);
   }
 
+  // ---- 6) Opcional (--carga-dispersa): un día con proyectos dispersos para ver y aplicar «Carga de mentores» ----
+  let dispersa = "";
+  if (process.argv.includes("--carga-dispersa")) {
+    const dia = mover(DIAS_REALES.at(-1)!); // el último día: siempre en el futuro
+    const libresDia = await c.asientos.find({ dia, proyectoId: null }).sort({ inicio: 1, mentorId: 1 }).toArray();
+    const porHora = new Map<number, Map<string, typeof libresDia>>();
+    for (const a of libresDia) {
+      const h = horaCOL(a.inicio), m = porHora.get(h) ?? new Map();
+      m.set(a.mentorId, [...(m.get(a.mentorId) ?? []), a]); porHora.set(h, m);
+    }
+    const nuevos: { a: (typeof libresDia)[number]; que: string }[] = [];
+    // a) Una hora con 3 mentores y 1 proyecto cada uno, en bloques distintos → «Juntar».
+    const h1 = [...porHora.keys()].sort((x, y) => x - y).find((h) => [...porHora.get(h)!.values()].filter((v) => v.length === 4).length >= 3);
+    if (h1 !== undefined) [...porHora.get(h1)!.values()].filter((v) => v.length === 4).slice(0, 3).forEach((v, i) => nuevos.push({ a: v[i]!, que: `juntar ${h1}:00` }));
+    // b) Un mentor con horas sueltas (h y h+2, 3 proyectos cada una) y otro con 3 a las h+1, donde el primero está libre → «Evitar huecos».
+    for (const h of [...porHora.keys()].sort((x, y) => x - y)) {
+      if (h === h1 || h + 1 === h1 || h + 2 === h1) continue;
+      const [en0, en1, en2] = [porHora.get(h), porHora.get(h + 1), porHora.get(h + 2)];
+      if (!en0 || !en1 || !en2) continue;
+      const a = [...en0.keys()].find((m) => en0.get(m)!.length === 4 && en1.get(m)?.length === 4 && en2.get(m)?.length === 4);
+      const b = a && [...en1.keys()].find((m) => m !== a && en1.get(m)!.length === 4);
+      if (!a || !b) continue;
+      for (const x of en0.get(a)!.slice(0, 3)) nuevos.push({ a: x, que: `hueco ${h}:00` });
+      for (const x of en2.get(a)!.slice(0, 3)) nuevos.push({ a: x, que: `hueco ${h + 2}:00` });
+      for (const x of en1.get(b)!.slice(0, 3)) nuevos.push({ a: x, que: `hueco ${h + 1}:00` });
+      break;
+    }
+    // Proyectos inventados de Medellín (documentos 1000300xxx), puestos directo en esos asientos.
+    const now = new Date();
+    for (const [i, x] of nuevos.entries()) {
+      const _id = new ObjectId(), d = String(1_000_300_001 + i);
+      await c.proyectos.insertOne({ _id, codigo: `P-${d}`, ciudad: "Medellín", nombre: `Carga dispersa ${i + 1}`, monitor: "monitor.med.demo", integrantes: [{ documento: d, nombre: `${toma(NOMBRES)} ${toma(APELLIDOS)}` }], creadoEn: now, actualizadoEn: now });
+      await c.asientos.updateOne({ _id: x.a._id, proyectoId: null }, { $set: { proyectoId: _id, reservadoEn: now } });
+    }
+    dispersa = `\nCarga dispersa el ${dia}: ${nuevos.length} proyectos (${[...new Set(nuevos.map((x) => x.que))].join(", ") || "no se encontraron horas con mentores suficientes"}). Ábrelo en «Carga de mentores».`;
+  }
+
   // ---- resumen ----
   const total = await c.proyectos.countDocuments(), reservadosN = await c.asientos.countDocuments({ proyectoId: { $type: "objectId" } });
   console.log(`\nListo: ${MENTORES.length} mentores, ${await c.asientos.countDocuments()} asientos en ${DIAS_REALES.length} días, ${total} proyectos (${reservadosN} con hora), 7 salas.`);
   console.log(`Día en vivo ${vivo}: ${deMentorDemo.length} proyectos de mentor.demo (${[...new Set(deMentorDemo.map((p) => p.ciudad))].join(", ")}); monitor.demo en sus salas a las ${horasDemo.sort((a, b) => a - b).join(", ")} h.`);
   console.log(`Evaluaciones: ${hechas.join(" · ")}.`);
+  if (dispersa) console.log(dispersa);
   console.log(atlas ? `\nUsuarios (clave para todos: ${clave} · guárdala ahora, no se vuelve a mostrar):` : `\nUsuarios (clave para todos: ${CLAVE}, SOLO base local):`);
   console.table(USUARIOS.map((u) => ({ usuario: u.usuario, rol: u.rol, nombre: u.nombre, ciudades: u.rol === "mentor" ? "sus proyectos" : u.ciudades.join(", ") || "todas" })));
   const docs = (p: (typeof proyectos)[number]) => p.integrantes.map((x) => x.documento).join(" / ");

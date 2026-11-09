@@ -24,7 +24,13 @@ export async function POST(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
-  const p = Aplicar.safeParse(await req.json().catch(() => null));
+  // El cuerpo válido son tres ids: algo más grande ni se lee.
+  if (Number(req.headers.get("content-length") ?? 0) > 1024) return NextResponse.json({ error: "muy_grande", mensaje: "Datos inválidos." }, { status: 413 });
+  const texto = await req.text().catch(() => "");
+  if (texto.length > 1024) return NextResponse.json({ error: "muy_grande", mensaje: "Datos inválidos." }, { status: 413 });
+  let cuerpo: unknown = null;
+  try { cuerpo = JSON.parse(texto); } catch { /* inválido */ }
+  const p = Aplicar.safeParse(cuerpo);
   if (!p.success) return NextResponse.json({ error: "datos_invalidos", mensaje: "Datos inválidos." }, { status: 400 });
   const r = await aplicarPropuesta(p.data.proyecto, p.data.desde, p.data.hacia, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json(r, { status: r.ok ? 200 : ESTADO[r.error] ?? 409 });

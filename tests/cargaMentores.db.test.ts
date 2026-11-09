@@ -103,6 +103,7 @@ describe("objetivo 1 · juntar (sin mover la hora)", () => {
     e.asientos("a", 7, [0, 1]); e.asientos("a", 9); e.poner("a", 9, 0); e.poner("a", 9, 1); e.poner("a", 9, 2);
     e.asientos("b", 7, [0]); e.poner("b", 7, 0);
     e.asientos("c", 7, [1]); e.poner("c", 7, 1);
+    e.asientos("d", 8); // el día tiene presentaciones a las 8: entre 7 y 9 sí hay hueco
     const r = e.calcular();
     invariantes(e, r);
     const h7 = r.resumen.find((x) => x.hora === 7)!;
@@ -112,6 +113,12 @@ describe("objetivo 1 · juntar (sin mover la hora)", () => {
 });
 
 describe("objetivo 2 · evitar huecos", () => {
+  it("entre la mañana y la tarde (horas sin presentaciones) no hay hueco", () => {
+    expect([...k.sueltas([11, 16], [8, 9, 10, 11, 16, 17])]).toEqual([]);
+    expect(k.huecos(new Map([["a", new Set([11, 16])]]), [8, 9, 10, 11, 16, 17])).toBe(0);
+    expect(k.huecos(new Map([["a", new Set([10, 16])]]), [8, 9, 10, 11, 16, 17])).toBe(1);
+  });
+
   it("a con 6 y 8, b con 7 (a disponible a las 7) → la 7 pasa a a y nadie queda suelto", () => {
     const e = escenario();
     for (const h of [6, 7, 8]) e.asientos("a", h);
@@ -280,8 +287,51 @@ describe("con la base: aplicar y disponibilidad", () => {
     const otroBloque = (await c.asientos.findOne({ mentorId: "c", inicio: { $ne: new Date(q.inicio) }, proyectoId: null }))!;
     expect(await k.aplicarPropuesta(id(q.proyecto.id), id(q.desde), otroBloque._id, ADMIN)).toMatchObject({ ok: false, error: "datos" });
     await c.evalResultados.insertOne({ _id: `${q.proyecto.id}|x`, proyectoId: id(q.proyecto.id), documento: "x", noPresento: false } as never);
-    expect(await k.aplicarPropuesta(id(q.proyecto.id), id(q.desde), id(q.hacia), ADMIN)).toMatchObject({ ok: false, error: "ya_evaluado" });
+    expect(await k.aplicarPropuesta(id(q.proyecto.id), id(q.desde), id(q.hacia), ADMIN)).toMatchObject({ ok: false, error: "con_datos" });
     expect((await k.cargaMentores(D)).dia!.resumen[0]!.propuestas.some((x) => x.proyecto.id === q.proyecto.id)).toBe(false);
+  });
+
+  it("fuera de las propuestas y rechazados: «No se presentó», asistencia o notas del monitor, borrador; y bloques a menos de 30 min", async () => {
+    const c = await db.collections();
+    // Base nueva: tres proyectos a las 9, cada uno con un mentor distinto, y d disponible toda la hora.
+    await c.asientos.deleteMany({}); await c.evalResultados.deleteMany({}); await c.evalMonitor.deleteMany({}); await c.evalBorradores.deleteMany({});
+    const s = (inicio: Date, mentorId: string, proyectoId: ObjectId | null = null) => ({ _id: new ObjectId(), dia: D, inicio, mentorId, ciudades: ["Cali"], proyectoId });
+    await c.asientos.insertMany([s(H(9), "a", ids[0]), s(H(9, 15), "b", ids[1]), s(H(9, 30), "c", ids[2]), ...[0, 15, 30, 45].map((m) => s(H(9, m), "d"))]);
+    await c.mentores.updateOne({ _id: "d" }, { $set: { nombre: "Dani Mentor" } }, { upsert: true });
+    const ANTES = new Date("2026-11-11T12:00:00Z");
+    const props = async (ahora = ANTES) => (await k.cargaMentores(D, ahora)).dia!.resumen.flatMap((x) => x.propuestas).map((p) => p.proyecto.codigo).sort();
+    expect(await props()).toEqual(["P-0", "P-1", "P-2"]);
+    await c.evalResultados.insertOne({ _id: `${ids[0]}|x`, proyectoId: ids[0]!, documento: "x", noPresento: true } as never); // «No se presentó»
+    await c.evalMonitor.insertOne({ _id: `${ids[1]}|x`, proyectoId: ids[1]!, documento: "x", asistencia: null, motivo: null, observacion: "Nota", actualizadoEn: new Date(), actualizadoPor: "moni" } as never);
+    await c.evalBorradores.insertOne({ _id: String(ids[2]), usuario: "m", datos: {}, actualizadoEn: new Date() } as never);
+    expect(await props()).toEqual([]);
+    // Aplicar (con los ids de antes) también lo rechaza, dentro de la transacción.
+    const libre = (await c.asientos.findOne({ mentorId: "d", inicio: H(9) }))!;
+    const desde = (await c.asientos.findOne({ proyectoId: ids[0] }))!;
+    expect(await k.aplicarPropuesta(ids[0]!, desde._id, libre._id, ADMIN, ANTES)).toMatchObject({ ok: false, error: "con_datos" });
+    // Sin datos, pero a menos de 30 min: ni propuesta ni aplicar.
+    await c.evalResultados.deleteMany({}); await c.evalMonitor.deleteMany({}); await c.evalBorradores.deleteMany({});
+    const cerca = new Date(H(9, 30).getTime() - 20 * 60e3); // 9:10: los tres bloques (9:00, 9:15, 9:30) empiezan en menos de 30 min
+    expect(await props(cerca)).toEqual([]);
+    expect(await k.aplicarPropuesta(ids[0]!, desde._id, libre._id, ADMIN, cerca)).toMatchObject({ ok: false, error: "por_empezar" });
+    expect(await props(new Date(H(9).getTime() - 31 * 60e3))).toEqual(["P-0", "P-1", "P-2"]);
+  });
+
+  it("Cambiar mentor (Tablero u Horarios) a menos de 30 min: pide confirmación y lo anota", async () => {
+    const { cambiarHora } = await import("@/lib/admin");
+    const c = await db.collections();
+    const ahora = new Date();
+    const pronto = new Date(Math.ceil((ahora.getTime() + 10 * 60e3) / 900e3) * 900e3); // próximo bloque en menos de 30 min
+    const s = (mentorId: string, proyectoId: ObjectId | null = null) => ({ _id: new ObjectId(), dia: D, inicio: pronto, mentorId, ciudades: ["Cali"], proyectoId });
+    const [viejo, otro] = [s("a", ids[3]), s("e")];
+    await c.asientos.deleteMany({ proyectoId: ids[3] });
+    await c.asientos.insertMany([viejo, otro]);
+    const pid = ids[3]!;
+    expect(await cambiarHora(pid, pronto, { otraCiudad: false, motivo: "", asiento: otro._id }, ADMIN)).toMatchObject({ ok: false, error: "en_curso", mensaje: expect.stringMatching(/por empezar o en curso/) });
+    expect((await c.asientos.findOne({ proyectoId: pid }))!.mentorId).toBe("a");
+    expect(await cambiarHora(pid, pronto, { otraCiudad: false, motivo: "El mentor no llegó", asiento: otro._id, confirmarEnCurso: true }, ADMIN)).toMatchObject({ ok: true });
+    expect((await c.asientos.findOne({ proyectoId: pid }))!.mentorId).toBe("e");
+    expect(await c.changeLog.findOne({ proyectoId: pid, accion: "cambiar_hora", nuevo: /presentación por empezar o en curso/ })).toBeTruthy();
   });
 
   it("Excel: Resumen, Carga, Propuestas y No se puede juntar; nombres como texto", async () => {

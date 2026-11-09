@@ -99,7 +99,7 @@ export async function aprobar(id: string, inicio: Date, otraCiudad: boolean, act
   } catch (e) {
     if (e instanceof Resuelta) return { error: "ya_resuelta" };
     if (e instanceof Falla && e.codigo === "tope") return { error: "tope", mensaje: await mensajeTope(p.ciudad, diaCOL(inicio)) };
-    if (e instanceof Falla) return { error: e.codigo === "marcado" ? "cambio" : e.codigo };
+    if (e instanceof Falla) return { error: e.codigo === "marcado" || e.codigo === "con_datos" || e.codigo === "por_empezar" || e.codigo === "en_curso" ? "cambio" : e.codigo };
     if (e instanceof MongoServerError && e.code === 11000) return { error: "sin_cupo" };
     throw e;
   }

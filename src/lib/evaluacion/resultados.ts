@@ -145,7 +145,9 @@ export function filaExcel(f: FilaEstudiante, crit: Criterios): (string | number)
 }
 
 /** Texto que una hoja de cálculo podría leer como fórmula (= + - @, tabulador o retorno) va con apóstrofo delante. */
-export const sinFormula = (v: string | number) => (typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? `'${v}` : v);
+/** Texto que una hoja de cálculo podría leer como fórmula: empieza (tras espacios) por = + - @ o sus versiones de ancho
+ *  completo, o por tabulación o retorno. */
+export const sinFormula = (v: string | number) => (typeof v === "string" && /^(?:[\s\u3000]*[=+\-@\uff1d\uff0b\uff0d\uff20]|[\t\r])/.test(v) ? `'${v}` : v);
 
 function hoja(wb: ExcelJS.Workbook, nombre: string, encabezados: string[], filas: (string | number)[][], anchos?: number[]) {
   const ws = wb.addWorksheet(nombre);

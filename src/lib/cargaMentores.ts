@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { ObjectId } from "mongodb";
-import { cambiarHora, type ResultadoAdmin } from "./admin";
+import { cambiarHora, MARGEN_MS, type ResultadoAdmin } from "./admin";
 import { horaCO } from "./ciudades";
 import { collections } from "./db";
 import { horaCOL } from "./edicion";
@@ -47,16 +47,23 @@ export type ProyectoC = { _id: ObjectId; codigo: string; nombre: string; ciudad:
 type Estado = Map<string, string | null>;
 
 /** Horas con proyectos de un mentor → cuáles son sueltas (sin la anterior ni la siguiente, habiendo otras). */
-export function sueltas(horasConProyectos: number[]): Set<number> {
+export function sueltas(horasConProyectos: number[], horasDelDia?: number[]): Set<number> {
   const h = new Set(horasConProyectos);
   if (h.size < 2) return new Set();
-  return new Set([...h].filter((x) => !h.has(x - 1) && !h.has(x + 1)));
+  // Vecinas: la hora anterior y la siguiente del día (las 11 y las 4 de la tarde son seguidas si no hay nada en medio).
+  const vecinas = (x: number) => { if (!horasDelDia) return [x - 1, x + 1]; const i = horasDelDia.indexOf(x); return [horasDelDia[i - 1], horasDelDia[i + 1]]; };
+  return new Set([...h].filter((x) => !vecinas(x).some((y) => y !== undefined && h.has(y))));
 }
 
-/** Horas vacías dentro del tramo de cada mentor (6 y 8 sin la 7 = 1 hueco). */
-export function huecos(porMentor: Map<string, Set<number>>): number {
+/** Horas vacías dentro del tramo de cada mentor (6 y 8 sin la 7 = 1 hueco). Solo cuentan las horas que el día tiene
+ *  (`horasDelDia`): entre las 11 de la mañana y las 4 de la tarde no hay presentaciones, así que no es hueco. */
+export function huecos(porMentor: Map<string, Set<number>>, horasDelDia?: number[]): number {
   let n = 0;
-  for (const hs of porMentor.values()) if (hs.size > 1) { const v = [...hs]; n += Math.max(...v) - Math.min(...v) + 1 - hs.size; }
+  for (const hs of porMentor.values()) {
+    if (hs.size < 2) continue;
+    const v = [...hs], min = Math.min(...v), max = Math.max(...v);
+    n += (horasDelDia ? horasDelDia.filter((h) => h >= min && h <= max).length : max - min + 1) - hs.size;
+  }
   return n;
 }
 
@@ -126,7 +133,7 @@ export function planDia(asientos: AsientoC[], proyectos: Map<string, ProyectoC>,
   }
 
   // ---- Fase 1: juntar (y, a igual cantidad de mentores, menos huecos) ----
-  const puntaje1 = (h: number, e: Estado) => [enHora(h, e).length, huecos(horasPorMentor(e)), movidos(e)];
+  const puntaje1 = (h: number, e: Estado) => [enHora(h, e).length, huecos(horasPorMentor(e), horas), movidos(e)];
   let estado: Estado = new Map(original);
   for (let pasada = 0; pasada < 4; pasada++) {
     let cambio = false;
@@ -169,7 +176,7 @@ export function planDia(asientos: AsientoC[], proyectos: Map<string, ProyectoC>,
   const tocadas = new Set<number>();
   for (let vuelta = 0; vuelta < 50 && disponibles.length > 1 && spread(estado) >= 2; vuelta++) {
     let mejor: { e: Estado; h: number; puntos: number[] } | null = null;
-    const base = [huecos(horasPorMentor(estado)), sumsq(estado)];
+    const base = [huecos(horasPorMentor(estado), horas), sumsq(estado)];
     for (const h of horas) {
       if (tocadas.has(h)) continue;
       for (const A of enHora(h, estado)) {
@@ -182,7 +189,7 @@ export function planDia(asientos: AsientoC[], proyectos: Map<string, ProyectoC>,
           if (destinos.some((x) => !x)) continue;
           const n = new Map(estado);
           deA.forEach((a, i) => { n.set(String(destinos[i]!._id), estado.get(String(a._id))!); n.set(String(a._id), null); });
-          const puntos = [huecos(horasPorMentor(n)), sumsq(n)];
+          const puntos = [huecos(horasPorMentor(n), horas), sumsq(n)];
           if (puntos[0]! > base[0]! || puntos[1]! >= base[1]!) continue; // no abre huecos y reparte mejor
           if (!mejor || menor(puntos, mejor.puntos)) mejor = { e: n, h, puntos };
         }
@@ -196,7 +203,7 @@ export function planDia(asientos: AsientoC[], proyectos: Map<string, ProyectoC>,
   return { estado, original, seat, porHora, horas, motivoDe };
 }
 
-function filas(asientos: AsientoC[], e: Estado, nombre: (id: string) => string): FilaMentor[] {
+function filas(asientos: AsientoC[], e: Estado, nombre: (id: string) => string, horasDelDia: number[]): FilaMentor[] {
   const out = new Map<string, FilaMentor>();
   for (const a of asientos) {
     const f = out.get(a.mentorId) ?? { mentorId: a.mentorId, nombre: nombre(a.mentorId), total: 0, horas: [] };
@@ -209,7 +216,7 @@ function filas(asientos: AsientoC[], e: Estado, nombre: (id: string) => string):
   }
   for (const f of out.values()) {
     f.horas.sort((a, b) => a.hora - b.hora);
-    const s = sueltas(f.horas.filter((x) => x.proyectos).map((x) => x.hora));
+    const s = sueltas(f.horas.filter((x) => x.proyectos).map((x) => x.hora), horasDelDia);
     for (const x of f.horas) { x.poca = x.proyectos > 0 && x.proyectos < MINIMO; x.suelta = s.has(x.hora); }
   }
   return [...out.values()].filter((f) => f.total > 0).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
@@ -253,42 +260,62 @@ export function cargaDia(dia: string, asientos: AsientoC[], proyectos: Map<strin
     const noSePuede = total > 0 && despues.size > Math.ceil(total / 4) && [...despues].some((m) => carga(m) < MINIMO);
     return { hora: h, proyectos: total, mentoresAntes: mentores(original).size, mentoresDespues: despues.size, propuestas, noSePuede };
   });
-  const antes = filas(asientos, original, nombre), desp = filas(asientos, estado, nombre);
+  const antes = filas(asientos, original, nombre, horas), desp = filas(asientos, estado, nombre, horas);
   return { dia, horas, antes, despues: desp, indicadores: { antes: indicadores(antes), despues: indicadores(desp) }, resumen };
 }
 
-async function datosDia(dia: string) {
+/** Proyectos que la carga de mentores no mueve: con cualquier dato de evaluación (resultado o «No se presentó»,
+ *  asistencia o notas del monitor, borrador del mentor) o con presentación que empieza en menos de 30 minutos. */
+async function noMovibles(asientos: AsientoC[], ahora: Date): Promise<Set<string>> {
+  const c = await collections();
+  const ids = asientos.map((a) => a.proyectoId).filter((x): x is ObjectId => !!x);
+  const [e, m, b] = await Promise.all([
+    c.evalResultados.distinct("proyectoId", { proyectoId: { $in: ids } }),
+    c.evalMonitor.distinct("proyectoId", { proyectoId: { $in: ids } }),
+    c.evalBorradores.find({ _id: { $in: ids.map(String) } }, { projection: { _id: 1 } }).toArray(),
+  ]);
+  const limite = ahora.getTime() + MARGEN_MS;
+  return new Set([
+    ...e.map(String), ...m.map(String), ...b.map((x) => x._id),
+    ...asientos.filter((a) => a.proyectoId && a.inicio.getTime() < limite).map((a) => String(a.proyectoId)),
+  ]);
+}
+
+async function datosDia(dia: string, ahora = new Date()) {
   const c = await collections();
   const asientos = await c.asientos.find({ dia }, { projection: { inicio: 1, mentorId: 1, ciudades: 1, proyectoId: 1 } }).sort({ inicio: 1, mentorId: 1 }).toArray() as AsientoC[];
   const ids = asientos.map((a) => a.proyectoId).filter((x): x is ObjectId => !!x);
-  const [proys, evals, mentores, orden] = await Promise.all([
+  const [proys, fijos, mentores, orden] = await Promise.all([
     c.proyectos.find({ _id: { $in: ids } }, { projection: { codigo: 1, nombre: 1, ciudad: 1 } }).toArray(),
-    c.evalResultados.distinct("proyectoId", { proyectoId: { $in: ids }, noPresento: false }),
+    noMovibles(asientos, ahora),
     c.mentores.find({}, { projection: { nombre: 1 } }).toArray(),
     modoOrdenLlegada(),
   ]);
   const nombres = new Map(mentores.map((m) => [m._id, m.nombre]));
-  return cargaDia(dia, asientos, new Map(proys.map((p) => [String(p._id), p as ProyectoC])), new Set(evals.map(String)), orden, (id) => nombres.get(id) ?? id);
+  return cargaDia(dia, asientos, new Map(proys.map((p) => [String(p._id), p as ProyectoC])), fijos, orden, (id) => nombres.get(id) ?? id);
 }
 
 /** Se recalcula en cada lectura (los estudiantes siguen reservando). Solo lee. */
-export async function cargaMentores(diaPedido?: string): Promise<CargaMentores> {
+export async function cargaMentores(diaPedido?: string, ahora = new Date()): Promise<CargaMentores> {
   const c = await collections();
   const dias = ((await c.asientos.distinct("dia")) as string[]).sort();
   const dia = diaPedido && dias.includes(diaPedido) ? diaPedido : dias[0];
-  return { dias, dia: dia ? await datosDia(dia) : null };
+  return { dias, dia: dia ? await datosDia(dia, ahora) : null };
 }
 
 /** Aplica UNA propuesta: el proyecto debe seguir en `desde` y `hacia` debe ser un asiento libre del MISMO bloque. */
-export async function aplicarPropuesta(proyectoId: ObjectId, desde: ObjectId, hacia: ObjectId, actor: Actor): Promise<ResultadoAdmin> {
+export async function aplicarPropuesta(proyectoId: ObjectId, desde: ObjectId, hacia: ObjectId, actor: Actor, ahora = new Date()): Promise<ResultadoAdmin> {
   const c = await collections();
   const [d, h] = await Promise.all([c.asientos.findOne({ _id: desde }), c.asientos.findOne({ _id: hacia })]);
   if (!d || !d.proyectoId?.equals(proyectoId)) return { ok: false, error: "cambio", mensaje: "El proyecto ya no está en ese asiento. Recalculamos las propuestas." };
   if (!h || h.dia !== d.dia || h.inicio.getTime() !== d.inicio.getTime() || h._id.equals(d._id)) return { ok: false, error: "datos", mensaje: "Solo se cambia de mentor en el mismo bloque: la hora del estudiante no cambia." };
   if (h.proyectoId) return { ok: false, error: "sin_cupo", mensaje: "Ese asiento ya no está libre. Recalculamos las propuestas." };
+  const noAntesDe = new Date(ahora.getTime() + MARGEN_MS);
+  if (d.inicio < noAntesDe) return { ok: false, error: "por_empezar", mensaje: "Esa presentación empieza en menos de 30 minutos o ya pasó: no se cambia desde aquí. Recalculamos las propuestas." };
   // La misma lógica y transacción de «Cambiar mentor» del Tablero (mover.ts): no mueve evaluados y deja historial.
-  // cambiarHora vuelve a exigir, dentro de la transacción, que el proyecto siga en `desde` y que `hacia` esté libre.
-  return cambiarHora(proyectoId, d.inicio, { otraCiudad: true, motivo: `Carga de mentores. ${NOTA}`, asiento: hacia, desde }, actor);
+  // cambiarHora vuelve a exigir, dentro de la transacción, que el proyecto siga en `desde`, que `hacia` esté libre en el
+  // mismo bloque, que no tenga datos de evaluación y que falten más de 30 minutos.
+  return cambiarHora(proyectoId, d.inicio, { otraCiudad: true, motivo: `Carga de mentores. ${NOTA}`, asiento: hacia, desde, limpio: true, noAntesDe }, actor);
 }
 
 /** Excel: Resumen (antes → después por día), Carga (antes), Propuestas y horas que no se pueden juntar. */
