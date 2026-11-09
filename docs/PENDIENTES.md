@@ -44,7 +44,7 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Comentarios: el texto anterior de un comentario editado se guarda (`anteriores`) pero no se muestra en pantalla; coordinación solo ve la marca «editado».
 - Edición del estudiante: quien conozca el documento de otro puede cambiarle el nombre y la descripción (lo cubren el límite por documento, el historial y «Revertir»). Un estudiante sin hora cuya ciudad ya cerró ve «cerrado» y no llega a la pantalla para editar.
 - Carga de mentores: el plan solo usa asientos que hoy están libres; después de aplicar, los asientos liberados pueden dar nuevas propuestas en el siguiente cálculo (cada proyecto se mueve a lo sumo una vez por cálculo).
-- Carga de mentores (Paso 24d): el subagente revisor-seguridad no se pudo lanzar (el sistema de permisos lo bloqueó); la revisión se hizo a mano. Correrlo cuando se pueda sobre «Aplicar» y la confirmación «en curso».
+- Horarios: el botón «Revertir este cambio» se muestra según el permiso de ver el historial (que también tiene coordinación), sin revisar en pantalla el permiso de cambiar hora; para coordinación el botón aparece pero el servidor lo rechaza (403). No es un hueco de seguridad, solo un botón que falla en silencio para ese rol.
 
 ## Más adelante
 - Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.
