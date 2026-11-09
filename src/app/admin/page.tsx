@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "ver_resumen")) redirect("/monitor");
+  if (!puede(user, "ver_resumen")) redirect("/monitor");
   return <ResumenPanel user={user} />;
 }

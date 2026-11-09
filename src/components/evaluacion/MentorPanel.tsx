@@ -24,7 +24,7 @@ const ESTADOS: [Estado, string][] = [["", "Todos los estados"], ["pendientes", "
 const sinTildes = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export default function MentorPanel({ user }: { user: SessionUser }) {
-  const verTodos = puede(user.rol, "ver_evaluaciones");
+  const verTodos = puede(user, "ver_evaluaciones");
   const [datos, setDatos] = useState<Datos | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
   const [mentor, setMentor] = useState("");

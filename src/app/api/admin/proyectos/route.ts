@@ -6,6 +6,7 @@ import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
 import { crearProyecto } from "@/lib/gestionProyectos";
 import { ProyectoEntrada } from "@/lib/validation/proyectoEntrada";
+import { FILTRO_MONITOR } from "@/lib/permisos";
 
 const Query = z
   .object({
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
   const { users, mentores } = await collections();
   const [monitores, listaMentores] = await Promise.all([
-    users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).sort({ nombre: 1 }).toArray(),
+    users.find({ ...FILTRO_MONITOR, activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).sort({ nombre: 1 }).toArray(),
     mentores.find({}, { projection: { nombre: 1 } }).sort({ nombre: 1 }).toArray(),
   ]);
   return NextResponse.json({

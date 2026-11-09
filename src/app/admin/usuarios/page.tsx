@@ -9,6 +9,6 @@ export const dynamic = "force-dynamic";
 export default async function UsuariosPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "gestionar_usuarios")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "gestionar_usuarios")) redirect(inicioPorRol(user));
   return <UsersPanel user={user} />;
 }

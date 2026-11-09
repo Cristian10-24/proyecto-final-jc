@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function ReglasPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "cambiar_horario")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "cambiar_horario")) redirect(inicioPorRol(user));
   return <ReglasPanel user={user} />;
 }

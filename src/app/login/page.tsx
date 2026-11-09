@@ -9,7 +9,7 @@ export const metadata = { title: "Ingresa · Panel de monitores · Jóvenes crea
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect(inicioPorRol(user.rol));
+  if (user) redirect(inicioPorRol(user));
   return (
     <div className={s.shell}>
       <aside className={s.brand}>

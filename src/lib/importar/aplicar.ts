@@ -8,6 +8,7 @@ import type { Actor, Asiento } from "../types";
 import { clave, type ErrorFila } from "./excel";
 import { HOJAS_MENTORES, type LibroMentores } from "./mentores";
 import { CAMPOS, type Campo, type Columna, type LecturaProyectos, type ProyectoLeido } from "./proyectos";
+import { FILTRO_MONITOR } from "../permisos";
 
 // Vista previa (no escribe) y aplicación de cada importación. La vista previa también revisa contra
 // la base: documentos que ya son de otro proyecto, proyectos con hora que cambian de ciudad y horas-mentor
@@ -56,7 +57,7 @@ export async function previaProyectos(lectura: LecturaProyectos): Promise<Previa
   const configDias = await dias.find({}).toArray();
   if (!configDias.length && leidos.length)
     avisos.push({ hoja: "", fila: 0, mensaje: "Aún no hay mentores ni cupos importados: no se pudo revisar qué ciudades tienen días habilitados." });
-  const monitores = (await users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray()) as MonitorUsuario[];
+  const monitores = (await users.find({ ...FILTRO_MONITOR, activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray()) as MonitorUsuario[];
 
   let nuevos = 0, actualizados = 0, asignados = 0;
   const porCiudad: Record<string, number> = {};

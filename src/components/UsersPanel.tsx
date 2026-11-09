@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
-import { ROL_TXT, ROLES, type RolUsuario } from "@/lib/permisos";
+import { ROL_TXT, ROLES, ROLES_EXTRA, type RolExtra, type RolUsuario } from "@/lib/permisos";
 import type { VistaUsuario } from "@/lib/usuarios";
 import type { ClaveNueva, PreviaUsuarios, RevisionNombres } from "@/lib/usuariosExcel";
 import AppShell from "./AppShell";
@@ -23,6 +23,9 @@ type Form = {
   nombre: string;
   correo: string;
   rol: RolUsuario;
+  /** Paso 26: roles adicionales (se guardan aparte, con su changeLog). `rolesExtraIni`: los que tenía al abrir. */
+  rolesExtra: RolExtra[];
+  rolesExtraIni: RolExtra[];
   ciudades: string[];
   activo: boolean;
   claveModo: "generar" | "asignar";
@@ -83,10 +86,10 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
   }
 
   function nuevo() {
-    setForm({ modo: "crear", usuario: "", nombre: "", correo: "", rol: "monitor", ciudades: [], activo: true, claveModo: "generar", clave: "", saving: false, error: "" });
+    setForm({ modo: "crear", usuario: "", nombre: "", correo: "", rol: "monitor", rolesExtra: [], rolesExtraIni: [], ciudades: [], activo: true, claveModo: "generar", clave: "", saving: false, error: "" });
   }
   function editar(u: VistaUsuario) {
-    setForm({ modo: "editar", id: u.id, usuario: u.usuario, nombre: u.nombre, correo: u.correo, rol: u.rol, ciudades: u.ciudades, activo: u.activo, claveModo: "generar", clave: "", saving: false, error: "" });
+    setForm({ modo: "editar", id: u.id, usuario: u.usuario, nombre: u.nombre, correo: u.correo, rol: u.rol, rolesExtra: u.rolesExtra, rolesExtraIni: u.rolesExtra, ciudades: u.ciudades, activo: u.activo, claveModo: "generar", clave: "", saving: false, error: "" });
   }
 
   async function guardar() {
@@ -102,8 +105,20 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
         setForm(null);
         setNuevaClave({ usuario: d.usuario.usuario, clave: d.clave });
       } else {
-        const d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { nombre: form.nombre, correo: form.correo, rol: form.rol, ciudades: form.ciudades, activo: form.activo });
+        let d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { nombre: form.nombre, correo: form.correo, rol: form.rol, ciudades: form.ciudades, activo: form.activo });
         reemplazar(d.usuario);
+        // Paso 26: los roles adicionales, solo si cambiaron (sin el que quedó como principal).
+        const extras = form.rol === "admin" ? [] : form.rolesExtra.filter((r) => r !== form.rol);
+        if (form.rol !== "admin" && [...extras].sort().join() !== [...(d.usuario as VistaUsuario).rolesExtra].sort().join()) {
+          d = await pedir(`/api/admin/usuarios/${form.id}/roles`, "POST", { rolesExtra: extras });
+          reemplazar(d.usuario);
+          // Recién agregado como monitor: sus ciudades se guardan ahora que ya es monitor.
+          const u = d.usuario as VistaUsuario;
+          if (u.rolesExtra.includes("monitor") && [...u.ciudades].sort().join() !== [...form.ciudades].sort().join()) {
+            d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { ciudades: form.ciudades });
+            reemplazar(d.usuario);
+          }
+        }
         setForm(null);
         aviso("Usuario actualizado ✓");
       }
@@ -160,7 +175,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
   }
 
   const lista = (usuarios ?? [])
-    .filter((u) => filtro === "todos" || u.rol === filtro)
+    .filter((u) => filtro === "todos" || u.rol === filtro || (u.rolesExtra as string[]).includes(filtro))
     .sort((a, b) => ROLES.indexOf(b.rol) - ROLES.indexOf(a.rol) || a.usuario.localeCompare(b.usuario));
   const esYo = (id?: string) => id === user.id;
 
@@ -177,7 +192,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       <div className={s.filters}>
         {(["todos", ...ROLES] as const).map((k) => (
           <button key={k} type="button" className={`${s.pill} ${filtro === k ? s.pillOn : ""}`} onClick={() => setFiltro(k)}>
-            {k === "todos" ? "Todos" : ROL_TXT[k]} {usuarios ? `(${k === "todos" ? usuarios.length : usuarios.filter((u) => u.rol === k).length})` : ""}
+            {k === "todos" ? "Todos" : ROL_TXT[k]} {usuarios ? `(${k === "todos" ? usuarios.length : usuarios.filter((u) => u.rol === k || (u.rolesExtra as string[]).includes(k)).length})` : ""}
           </button>
         ))}
       </div>
@@ -212,8 +227,11 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
             <div className={s.user}>{u.usuario}</div>
             {u.correo && <div className={s.correo}>{u.correo}</div>}
           </div>
-          <span className={`${s.rol} ${s[`rol_${u.rol}`]}`}>{ROL_TXT[u.rol]}</span>
-          <div className={s.cities}>{u.rol === "monitor" ? u.ciudades.join(", ") || "Solo sus salas" : u.rol === "mentor" ? "Sus proyectos asignados" : "Todas las ciudades"}</div>
+          <div className={s.rolesFila}>
+            <span className={`${s.rol} ${s[`rol_${u.rol}`]}`}>{ROL_TXT[u.rol]}</span>
+            {u.rolesExtra.map((r) => <span key={r} className={`${s.rol} ${s.rolExtra}`} title="Rol adicional">+ {ROL_TXT[r]}</span>)}
+          </div>
+          <div className={s.cities}>{u.rol === "admin" || u.rol === "coordinador" || u.rolesExtra.includes("coordinador") ? "Todas las ciudades" : u.rol === "monitor" || u.rolesExtra.includes("monitor") ? u.ciudades.join(", ") || "Solo sus salas" : "Sus proyectos asignados"}</div>
           <div className={s.state}><i className={s.dot} style={{ background: u.activo ? "var(--green)" : "var(--muted-2)" }} />{u.activo ? "Activo" : "Inactivo"}</div>
           <div className={s.acts}>
             <button type="button" className={s.act} onClick={() => editar(u)}>Editar</button>
@@ -261,9 +279,27 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
               </div>
               {esYo(form.id) && <div className={s.hint}>No puedes quitarte el rol de administración.</div>}
             </div>
-            {form.rol === "monitor" && (
+            {form.modo === "editar" && form.rol !== "admin" && (
               <div>
-                <span className="label">Ciudades</span>
+                <span className="label">Roles adicionales</span>
+                {esYo(form.id) ? <div className={s.hint}>No puedes cambiar tus propios roles.</div> : (
+                  <div className={s.cityGrid}>
+                    {ROLES_EXTRA.filter((r) => r !== form.rol).map((r) => {
+                      const on = form.rolesExtra.includes(r);
+                      return (
+                        <label key={r} className={`${s.cityChk} ${on ? s.cityOn : ""}`}>
+                          <input type="checkbox" checked={on} onChange={() => setForm({ ...form, rolesExtra: on ? form.rolesExtra.filter((x) => x !== r) : [...form.rolesExtra, r] })} />{ROL_TXT[r]}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className={s.hint}>Suma los permisos de esos roles. Administración no se da como rol adicional. Queda en el historial.</div>
+              </div>
+            )}
+            {(form.rol === "monitor" || (form.rol !== "admin" && form.rolesExtra.includes("monitor"))) && (
+              <div>
+                <span className="label">Ciudades{form.rol !== "monitor" ? " (como monitor)" : ""}</span>
                 <div className={s.cityGrid}>
                   {ciudadesDisp.map((c) => {
                     const on = form.ciudades.includes(c);

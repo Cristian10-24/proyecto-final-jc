@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
-import { puede, ROL_TXT, type Permiso } from "@/lib/permisos";
+import { etiquetaRoles, puede, type Permiso } from "@/lib/permisos";
 import BotonTema from "./BotonTema";
 import s from "./AppShell.module.css";
 
@@ -32,18 +32,18 @@ export function iniciales(nombre: string): string {
 }
 
 export default function AppShell({ user, active, children }: { user: SessionUser; active: Seccion; children: React.ReactNode }) {
-  const nav = NAV.filter((n) => puede(user.rol, n.permiso));
+  const nav = NAV.filter((n) => puede(user, n.permiso));
   // Contador de cambios sugeridos por los monitores que esperan respuesta (junto a "Horarios").
   const [pendientes, setPendientes] = useState(0);
   useEffect(() => {
-    if (!puede(user.rol, "cambiar_horario")) return;
+    if (!puede(user, "cambiar_horario")) return;
     const leer = () => fetch("/api/admin/sugerencias/conteo", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setPendientes(d.pendientes)).catch(() => null);
     void leer();
     const t = setInterval(leer, 60_000);
     const alCambiar = (e: Event) => { const n = (e as CustomEvent<unknown>).detail; if (Number.isInteger(n)) setPendientes(n as number); };
     window.addEventListener("pfjc-pendientes", alCambiar);
     return () => { clearInterval(t); window.removeEventListener("pfjc-pendientes", alCambiar); };
-  }, [user.rol]);
+  }, [user]);
   const etiqueta = (n: (typeof NAV)[number]) => (
     <>{n.label}{n.key === "horarios" && pendientes > 0 && <span className={s.badge} aria-label={`${pendientes} cambios sugeridos pendientes`}>{pendientes}</span>}</>
   );
@@ -70,7 +70,7 @@ export default function AppShell({ user, active, children }: { user: SessionUser
           <div className={s.avatar}>{iniciales(user.nombre)}</div>
           <div>
             <div className={s.sideName}>{user.nombre}</div>
-            <div className={s.sideRole}>{user.rol === "monitor" ? `Monitor · ${user.ciudades.join(" · ")}` : ROL_TXT[user.rol]}</div>
+            <div className={s.sideRole}>{etiquetaRoles(user)}</div>
           </div>
         </div>
       </aside>

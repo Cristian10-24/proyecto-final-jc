@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   // Coordinación y administración entran al resumen; los monitores, a su grupo.
-  const res = NextResponse.json({ ok: true, destino: inicioPorRol(user.rol) });
+  const res = NextResponse.json({ ok: true, destino: inicioPorRol(user) });
   res.cookies.set(SESSION_COOKIE, createToken(user._id.toHexString(), user.tokenVersion ?? 0), cookieOptions);
   return res;
 }

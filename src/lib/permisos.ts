@@ -32,11 +32,38 @@ const PERMISOS: Record<RolUsuario, readonly Permiso[]> = {
   admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones", "editar_criterios", "comentar_proyectos"],
 };
 
-export function puede(rol: string | undefined, permiso: Permiso): boolean {
-  return !!rol && (PERMISOS[rol as RolUsuario] ?? []).includes(permiso);
+/** Paso 26 · Roles que se pueden dar como adicionales (nunca administración). */
+export const ROLES_EXTRA = ["mentor", "monitor", "coordinador"] as const satisfies readonly RolUsuario[];
+export type RolExtra = (typeof ROLES_EXTRA)[number];
+
+/** Quien pide: un rol suelto o un usuario con su rol principal y, opcionales, sus roles adicionales. */
+export type ConRoles = { rol: string; rolesExtra?: readonly string[] };
+
+/** Todos los roles de un usuario: el principal más los adicionales válidos (administración nunca entra como adicional). */
+export function rolesDe(quien: string | ConRoles | undefined): RolUsuario[] {
+  if (!quien) return [];
+  if (typeof quien === "string") return ROLES.includes(quien as RolUsuario) ? [quien as RolUsuario] : [];
+  const extra = (quien.rolesExtra ?? []).filter((r): r is RolExtra => (ROLES_EXTRA as readonly string[]).includes(r));
+  return [...new Set([...rolesDe(quien.rol), ...extra])];
 }
+
+/** ¿Tiene el permiso? Con un usuario, sus permisos son la suma de los de todos sus roles. */
+export function puede(quien: string | ConRoles | undefined, permiso: Permiso): boolean {
+  return rolesDe(quien).some((r) => PERMISOS[r].includes(permiso));
+}
+
+/** ¿Tiene ese rol, como principal o adicional? */
+export const tieneRol = (quien: string | ConRoles | undefined, rol: RolUsuario) => rolesDe(quien).includes(rol);
+
+/** Filtro de Mongo de quienes cuentan como monitores (rol principal o adicional). */
+export const FILTRO_MONITOR = { $or: [{ rol: "monitor" as const }, { rolesExtra: "monitor" as const }] };
 
 export const ROL_TXT: Record<RolUsuario, string> = { mentor: "Mentor", monitor: "Monitor", coordinador: "Coordinación", admin: "Administración" };
 
 /** Página de inicio después del login. */
-export const inicioPorRol = (rol: string) => (puede(rol, "ver_resumen") ? "/admin" : puede(rol, "evaluar") ? "/mentor" : "/monitor");
+export const inicioPorRol = (quien: string | ConRoles) => (puede(quien, "ver_resumen") ? "/admin" : puede(quien, "evaluar") ? "/mentor" : "/monitor");
+
+/** "Monitor · Panamá + Coordinación" (rol principal primero; las ciudades solo junto a Monitor). */
+export function etiquetaRoles(u: ConRoles & { ciudades?: readonly string[] }): string {
+  return rolesDe(u).map((r) => (r === "monitor" && u.ciudades?.length ? `Monitor · ${u.ciudades.join(" · ")}` : ROL_TXT[r])).join(" + ");
+}

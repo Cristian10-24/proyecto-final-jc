@@ -8,6 +8,7 @@ import { clave, texto } from "./importar/excel";
 import { leerCelular, leerCorreo, leerDocumento } from "./importar/proyectos";
 import type { Actor, ParticipanteSinProyecto } from "./types";
 import { cleanSpaces, normalizeCity, toProperName } from "./validation/name";
+import { FILTRO_MONITOR } from "./permisos";
 
 // Fase 4 · Paso 21 · «Sin proyecto».
 //  - Participantes sin proyecto: colección nueva `sin_proyecto` (documento único). Se cargan por Excel o uno por uno y
@@ -50,7 +51,7 @@ type Monitor = { usuario: string; nombre: string; ciudades: string[] };
 
 async function monitoresActivos(): Promise<Monitor[]> {
   const { users } = await collections();
-  return (await users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray())
+  return (await users.find({ ...FILTRO_MONITOR, activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray())
     .map((m) => ({ usuario: m.usuario, nombre: m.nombre, ciudades: m.ciudades }));
 }
 

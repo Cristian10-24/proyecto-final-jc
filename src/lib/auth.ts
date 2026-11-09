@@ -13,7 +13,7 @@ import type { User } from "./types";
 export const SESSION_COOKIE = "pfjc_session";
 export const SESSION_DAYS = 7;
 
-export type SessionUser = Pick<User, "usuario" | "nombre" | "rol" | "ciudades" | "mentorId"> & { id: string };
+export type SessionUser = Pick<User, "usuario" | "nombre" | "rol" | "rolesExtra" | "ciudades" | "mentorId"> & { id: string };
 
 function secret(): string {
   const s = process.env.SESSION_SECRET;
@@ -57,12 +57,12 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const { users } = await collections();
   const u = await users.findOne({ _id: new ObjectId(t.uid), activo: true }, { projection: { passwordHash: 0 } });
   if (u && (u.tokenVersion ?? 0) !== t.ver) return null; // clave restablecida: sesión vieja
-  return u ? { id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol, ciudades: u.ciudades, ...(u.mentorId ? { mentorId: u.mentorId } : {}) } : null;
+  return u ? { id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol, ...(u.rolesExtra?.length ? { rolesExtra: u.rolesExtra } : {}), ciudades: u.ciudades, ...(u.mentorId ? { mentorId: u.mentorId } : {}) } : null;
 }
 
 /** Filtro obligatorio en toda consulta de proyectos: el monitor solo ve sus ciudades. */
-export function scopeFilter<T extends { ciudad: string }>(user: Pick<SessionUser, "rol" | "ciudades">): Filter<T> {
-  return puede(user.rol, "ver_todas_las_ciudades") ? {} : ({ ciudad: { $in: user.ciudades } } as Filter<T>);
+export function scopeFilter<T extends { ciudad: string }>(user: Pick<SessionUser, "rol" | "rolesExtra" | "ciudades">): Filter<T> {
+  return puede(user, "ver_todas_las_ciudades") ? {} : ({ ciudad: { $in: user.ciudades } } as Filter<T>);
 }
 
 /**
@@ -72,7 +72,7 @@ export function scopeFilter<T extends { ciudad: string }>(user: Pick<SessionUser
 export async function exigir(permiso?: Permiso | Permiso[]): Promise<{ user: SessionUser; error?: undefined } | { user?: undefined; error: NextResponse }> {
   const user = await getCurrentUser();
   if (!user) return { error: NextResponse.json({ error: "sesion" }, { status: 401 }) };
-  if (permiso && ![permiso].flat().some((p) => puede(user.rol, p))) return { error: NextResponse.json({ error: "sin_permiso" }, { status: 403 }) };
+  if (permiso && ![permiso].flat().some((p) => puede(user, p))) return { error: NextResponse.json({ error: "sin_permiso" }, { status: 403 }) };
   return { user };
 }
 

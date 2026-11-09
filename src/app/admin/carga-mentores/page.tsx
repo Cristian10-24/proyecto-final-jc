@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function CargaMentoresPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "ver_resumen")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "ver_resumen")) redirect(inicioPorRol(user));
   return <CargaMentoresPanel user={user} />;
 }

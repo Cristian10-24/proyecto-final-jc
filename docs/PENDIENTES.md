@@ -51,3 +51,4 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).
   Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".
+- Paso 26 (bajo, auditoría): el actor del historial, de las evaluaciones y de los comentarios guarda solo el rol principal (p. ej. una evaluación de coordinación + mentor queda como «coordinador»).

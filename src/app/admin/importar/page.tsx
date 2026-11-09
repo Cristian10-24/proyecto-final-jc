@@ -9,6 +9,6 @@ export const dynamic = "force-dynamic";
 export default async function ImportarPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "importar")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "importar")) redirect(inicioPorRol(user));
   return <ImportPanel user={user} />;
 }

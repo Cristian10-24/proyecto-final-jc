@@ -9,6 +9,7 @@ import { idMentor } from "./importar/mentores";
 import type { LibroSalas } from "./importar/salas";
 import { HOJAS_SALAS, planificar, type CambioAdmin, type Disponible, type MonitorFijo, type OrigenMonitor, type PlanSala, type Sala } from "./salas";
 import type { Actor } from "./types";
+import { FILTRO_MONITOR } from "./permisos";
 
 // Plan de salas en la base: se calcula al importar el libro de salas y monitores (o al recalcular
 // después de reimportar mentores) y el admin cambia el monitor de una sala. Todo deja changeLog.
@@ -30,7 +31,7 @@ async function horasDeMentores(session?: ClientSession): Promise<HoraMentores[]>
 
 async function monitoresActivos(session?: ClientSession): Promise<MonitorUsuario[]> {
   const { users } = await collections();
-  return users.find({ rol: "monitor", activo: true }, { session, projection: { _id: 0, usuario: 1, nombre: 1 } }).toArray() as Promise<MonitorUsuario[]>;
+  return users.find({ ...FILTRO_MONITOR, activo: true }, { session, projection: { _id: 0, usuario: 1, nombre: 1 } }).toArray() as Promise<MonitorUsuario[]>;
 }
 
 /** Usuario del monitor por nombre (sin tildes ni mayúsculas) o por usuario. */
@@ -179,7 +180,7 @@ export async function verPlan(): Promise<VistaPlan> {
   // Defensa en profundidad: solo se devuelve un enlace https, aunque la base se haya escrito por otro camino.
   const enlace = new Map((cfg?.salas ?? []).filter((s) => esHttps(s.enlace)).map((s) => [s.sala, s.enlace]));
   const nombreMentor = new Map(mentores.map((m) => [m._id, m.nombre]));
-  const nombres = new Map((await c.users.find({ rol: "monitor" }, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
+  const nombres = new Map((await c.users.find(FILTRO_MONITOR, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
   const enAsientos = new Set(horas.flatMap((h) => h.mentores.map((m) => `${h.dia}|${h.hora}|${m}`)));
   const enPlan = new Set(plan.map((p) => `${p.dia}|${p.hora}|${p.mentorId}`));
   const desactualizado = !!cfg && (enAsientos.size !== enPlan.size || [...enPlan].some((x) => !enAsientos.has(x)));

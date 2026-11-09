@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import { NOMBRES_CIUDADES } from "./ciudades";
 import { collections, transaccion } from "./db";
 import { clave, texto } from "./importar/excel";
-import type { RolUsuario } from "./permisos";
+import { tieneRol, type RolUsuario } from "./permisos";
 import type { User } from "./types";
 import { generarClave, hashClave, mentorIdDe, parecidos } from "./usuarios";
 import { cleanSpaces, normalizeCity } from "./validation/name";
@@ -133,13 +133,15 @@ export async function previaUsuarios(l: LecturaUsuarios, yo: string): Promise<Pr
       if (actual.nombre !== f.nombre) cambios.push(`nombre: ${actual.nombre} → ${f.nombre}`);
       if (actual.rol !== f.rol) cambios.push(`rol: ${ROL_TXT[actual.rol]} → ${ROL_TXT[f.rol]}`);
       if (f.correo && actual.correo !== f.correo) cambios.push(`correo: ${f.correo}`);
-      const ciudades = f.ciudades.length || f.rol !== "monitor" ? f.ciudades : actual.ciudades;
-      if (ciudades.join(",") !== (f.rol === "monitor" ? actual.ciudades : []).join(",")) cambios.push(`ciudades: ${ciudades.join(", ") || "ninguna"}`);
+      // Paso 26: quien es monitor como rol adicional conserva sus ciudades aunque la fila diga otro rol.
+      const monitorFila = tieneRol({ rol: f.rol, rolesExtra: actual.rolesExtra }, "monitor");
+      const ciudades = f.ciudades.length || !monitorFila ? f.ciudades : actual.ciudades;
+      if (ciudades.join(",") !== (monitorFila ? actual.ciudades : []).join(",")) cambios.push(`ciudades: ${ciudades.join(", ") || "ninguna"}`);
       existentes.set(f.fila, actual);
     } else tomados.add(usuario);
     acciones.push({
       fila: f.fila, nombre: f.nombre, rol: f.rol, usuario, ...(f.correo ? { correo: f.correo } : {}),
-      ciudades: f.ciudades.length || f.rol !== "monitor" || !actual ? f.ciudades : actual.ciudades,
+      ciudades: f.ciudades.length || !actual || !tieneRol({ rol: f.rol, rolesExtra: actual.rolesExtra }, "monitor") ? f.ciudades : actual.ciudades,
       accion: actual ? (cambios.length ? "actualizar" : "igual") : "crear", cambios,
     });
   }
@@ -165,7 +167,8 @@ export async function aplicarUsuarios(previa: Awaited<ReturnType<typeof previaUs
   const hashDe = new Map(claves.map((k, i) => [k.usuario, hashes[i]!]));
   await transaccion(async (s) => {
     for (const a of previa.acciones) {
-      const mentorId = mentorIdDe(a.rol, a.nombre);
+      // Paso 26: un mentor como rol adicional conserva su mentorId (la carga nunca toca los roles adicionales).
+      const mentorId = mentorIdDe([a.rol, ...(a.accion === "actualizar" ? previa.existentes.get(a.fila)!.rolesExtra ?? [] : [])], a.nombre);
       if (a.accion === "crear") {
         await users.insertOne({
           _id: new ObjectId(), usuario: a.usuario, nombre: a.nombre, rol: a.rol, ciudades: a.ciudades, ...(a.correo ? { correo: a.correo } : {}),
@@ -174,7 +177,8 @@ export async function aplicarUsuarios(previa: Awaited<ReturnType<typeof previaUs
       } else if (a.accion === "actualizar") {
         const u = previa.existentes.get(a.fila)!;
         // Solo si sigue como en la vista previa (activo y con el mismo rol: nunca administración). Cambiar el rol cierra sus sesiones.
-        const r = await users.updateOne({ _id: u._id, rol: u.rol, activo: true }, {
+        // Paso 26: y con los mismos roles adicionales (si cambiaron después de la vista previa, no se aplica nada).
+        const r = await users.updateOne({ _id: u._id, rol: u.rol, activo: true, ...(u.rolesExtra ? { rolesExtra: u.rolesExtra } : { rolesExtra: { $exists: false } }) }, {
           $set: { nombre: a.nombre, rol: a.rol, ciudades: a.ciudades, actualizadoEn: ahora, ...(a.correo ? { correo: a.correo } : {}), ...(mentorId ? { mentorId } : {}) },
           ...(mentorId ? {} : { $unset: { mentorId: "" } }), ...(u.rol !== a.rol ? { $inc: { tokenVersion: 1 } } : {}),
         }, { session: s });
@@ -200,7 +204,7 @@ export type RevisionNombres = {
 export async function revisionNombres(): Promise<RevisionNombres> {
   const { users, mentores, planSalas } = await collections();
   const [activos, horarios, plan] = await Promise.all([
-    users.find({ activo: true, rol: { $in: ["mentor", "monitor"] } }, { projection: { usuario: 1, nombre: 1, rol: 1, mentorId: 1 } }).toArray(),
+    users.find({ activo: true, $or: [{ rol: { $in: ["mentor", "monitor"] } }, { rolesExtra: { $in: ["mentor", "monitor"] } }] }, { projection: { usuario: 1, nombre: 1, rol: 1, rolesExtra: 1, mentorId: 1 } }).toArray(),
     mentores.find({}, { projection: { nombre: 1 } }).toArray(),
     planSalas.find({}, { projection: { monitor: 1 } }).toArray(),
   ]);
@@ -212,10 +216,10 @@ export async function revisionNombres(): Promise<RevisionNombres> {
     horariosImportados: horarios.length > 0,
     mentoresSinUsuario: horarios.filter((m) => !conUsuario.has(m._id)).map((m) => m.nombre).sort(porNombre),
     usuariosSinMentor: horarios.length
-      ? activos.filter((u) => u.rol === "mentor" && !idsHorarios.has(u.mentorId ?? "")).map((u) => ({ usuario: u.usuario, nombre: u.nombre, sugerencias: parecidos(u.nombre, horarios.map((m) => m.nombre)) }))
+      ? activos.filter((u) => tieneRol(u, "mentor") && !idsHorarios.has(u.mentorId ?? "")).map((u) => ({ usuario: u.usuario, nombre: u.nombre, sugerencias: parecidos(u.nombre, horarios.map((m) => m.nombre)) }))
       : [],
     planSalas: plan.length > 0,
-    monitoresSinSalas: plan.length ? activos.filter((u) => u.rol === "monitor" && !conSala.has(u.usuario)).map((u) => u.nombre).sort(porNombre) : [],
+    monitoresSinSalas: plan.length ? activos.filter((u) => tieneRol(u, "monitor") && !conSala.has(u.usuario)).map((u) => u.nombre).sort(porNombre) : [],
     salasSinMonitor: plan.filter((p) => !p.monitor).length,
   };
 }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { collections } from "@/lib/db";
+import { tieneRol } from "@/lib/permisos";
 import { EdicionUsuario, errorMentor, mensajeZod, mentorIdDe, vistaUsuario } from "@/lib/usuarios";
 
 const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
@@ -29,23 +30,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "propio", mensaje: "No puedes quitarte el rol de administración ni desactivar tu propia cuenta." }, { status: 409 });
 
   const rol = cambios.rol ?? actual.rol;
-  const ciudades = rol === "monitor" ? (cambios.ciudades ?? actual.ciudades) : [];
+  // Paso 26: los roles adicionales siguen (sin el que pasa a ser principal; administración no lleva adicionales).
+  const extras = rol === "admin" ? [] : (actual.rolesExtra ?? []).filter((r) => r !== rol);
+  const cambiaExtras = extras.length !== (actual.rolesExtra ?? []).length;
+  const ciudades = tieneRol({ rol, rolesExtra: extras }, "monitor") ? (cambios.ciudades ?? actual.ciudades) : [];
 
-  const mentorId = mentorIdDe(rol, cambios.nombre ?? actual.nombre);
+  const mentorId = mentorIdDe([rol, ...extras], cambios.nombre ?? actual.nombre);
   const errM = mentorId !== actual.mentorId ? await errorMentor(mentorId, actual._id, cambios.nombre ?? actual.nombre) : null;
   if (errM) return NextResponse.json({ error: "mentor", mensaje: errM }, { status: 409 });
   const set = {
     ...(cambios.nombre !== undefined ? { nombre: cambios.nombre } : {}),
     ...(cambios.activo !== undefined ? { activo: cambios.activo } : {}),
     ...(cambios.correo ? { correo: cambios.correo } : {}),
-    rol, ciudades, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}),
+    rol, ciudades, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}), ...(cambiaExtras ? { rolesExtra: extras } : {}),
   };
   // Desactivar también invalida las sesiones abiertas (por si luego se reactiva).
-  try { await users.updateOne({ _id: actual._id }, { $set: set, ...(mentorId && cambios.correo !== "" ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) }); } catch (e) {
+  // Paso 26: solo si sus roles siguen como se leyeron (si otro admin los cambió a la vez, no se pisan).
+  const mismaVersion = { _id: actual._id, rol: actual.rol, ...(actual.rolesExtra ? { rolesExtra: actual.rolesExtra } : { rolesExtra: { $exists: false } }) };
+  let hecho = true;
+  try { hecho = !!(await users.updateOne(mismaVersion, { $set: set, ...(mentorId && cambios.correo !== "" ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) })).matchedCount; } catch (e) {
   if (e instanceof Error && "code" in e && (e as { code?: number }).code === 11000)
     return NextResponse.json({ error: "duplicado", mensaje: "Ese usuario o ese mentor ya existe (alguien lo guardó al mismo tiempo). Recarga la lista." }, { status: 409 });
   throw e;
   }
+  if (!hecho) return NextResponse.json({ error: "cambio", mensaje: "Alguien cambió los roles de este usuario mientras tanto. Recarga la lista." }, { status: 409 });
   const u = await users.findOne({ _id: actual._id });
   return NextResponse.json({ usuario: vistaUsuario(u!) });
 }

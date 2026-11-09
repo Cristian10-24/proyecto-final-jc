@@ -110,3 +110,7 @@
 .claveFila code { font: 700 15px var(--mono); }
 .correo { font: 500 12.5px var(--font); color: var(--muted); overflow-wrap: anywhere; }
 .cargaError { margin-top: 12px; padding: 10px 12px; border-radius: 12px; }
+
+/* Paso 26 · roles adicionales */
+.rolesFila { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.rolExtra { background: var(--surface-2); color: var(--ink-2); }
