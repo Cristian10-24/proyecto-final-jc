@@ -45,6 +45,7 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Edición del estudiante: quien conozca el documento de otro puede cambiarle el nombre y la descripción (lo cubren el límite por documento, el historial y «Revertir»). Un estudiante sin hora cuya ciudad ya cerró ve «cerrado» y no llega a la pantalla para editar.
 
 ## Más adelante
+- Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.
 - Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).
   Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".

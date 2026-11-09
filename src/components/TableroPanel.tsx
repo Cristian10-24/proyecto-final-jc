@@ -47,11 +47,11 @@ async function post(id: string, body: unknown): Promise<{ ok: boolean; status: n
   return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
 }
 
-export default function TableroPanel({ user }: { user: SessionUser }) {
+export default function TableroPanel({ user, diaInicial = "" }: { user: SessionUser; diaInicial?: string }) {
   const mueve = puede(user.rol, "cambiar_horario");
   const [d, setD] = useState<DatosTablero | null>(null);
   const [error, setError] = useState(false);
-  const [dia, setDia] = useState("");
+  const [dia, setDia] = useState(diaInicial);
   const [fCiudad, setFCiudad] = useState("");
   const [fRuta, setFRuta] = useState("");
   const [fEstado, setFEstado] = useState("");

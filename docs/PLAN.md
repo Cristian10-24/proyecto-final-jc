@@ -224,4 +224,4 @@ apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal respon
 - [x] 21. «Sin proyecto»: colección, carga por Excel y uno por uno, marcar/quitar, portal, estadísticas y apartado.
 - [x] 22. Comentarios en proyectos (monitor escribe; admin y coordinación ven; indicador «Con comentarios»).
 - [x] 23. El estudiante edita nombre y descripción (historial y revertir).
-- [ ] 24. Reporte de carga de los mentores con propuestas (solo lectura) y propuesta de preferencia de mentor.
+- [x] 24. Reporte de carga de los mentores con propuestas (solo lectura) y propuesta de preferencia de mentor.

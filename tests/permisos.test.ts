@@ -93,6 +93,9 @@ const soloCoordinacion: [string, () => Promise<Response>][] = [
   ["ver el seguimiento general", async () => (await import("@/app/api/evaluacion/seguimiento/route")).GET(new Request("http://localhost/x"))],
   ["descargar el Excel de resultados", async () => (await import("@/app/api/evaluacion/seguimiento/excel/route")).GET(new Request("http://localhost/x"))],
   ["guardar los criterios", async () => (await import("@/app/api/evaluacion/criterios/route")).POST(json("POST", { exA: 0.9, exB: 3 }))],
+  // Paso 24: carga de los mentores (solo lectura) y su Excel.
+  ["ver la carga de los mentores", async () => (await import("@/app/api/admin/carga-mentores/route")).GET(new Request("http://localhost/x"))],
+  ["descargar la carga de los mentores", async () => (await import("@/app/api/admin/carga-mentores/excel/route")).GET()],
 ];
 
 describe("matriz de permisos", () => {
