@@ -60,6 +60,7 @@ describe("consultar", () => {
       proyecto: { nombre: "App de reciclaje", descripcion: "Mapa de reciclaje.", ciudad: "Cali" },
       integrantes: [{ nombre: "Valentina Prueba", documento: "•••• 0001", celular: "•••• 4567", correo: "va•••@ejemplo.org", tu: true }],
       hora: null,
+      edicion: { version: expect.any(String), puede: true }, // Paso 23
     });
     const json = JSON.stringify(v);
     for (const secreto of ["7000000001", "3001234567", "valentina@", "G1", "mon.cali", "P-7000000001", String(individual)]) expect(json).not.toContain(secreto);

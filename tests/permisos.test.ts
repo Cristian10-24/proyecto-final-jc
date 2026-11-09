@@ -52,6 +52,8 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["cambiar la hora (Horarios o tablero)", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z" }), ctx)],
   ["cambiar el mentor desde el tablero", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z", asiento: ID }), ctx)],
   ["anular una evaluación", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "anular", motivo: "Error de mentor" }), ctx)],
+  ["aplicar una propuesta de carga de mentores (Paso 24)", async () => (await import("@/app/api/admin/carga-mentores/route")).POST(json("POST", { accion: "aplicar", proyecto: ID, desde: ID, hacia: ID }))],
+  ["revertir un cambio del estudiante (Paso 23)", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "revertir", cambio: ID }), ctx)],
   ["liberar una hora", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "liberar" }), ctx)],
   ["ver las reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).GET()],
   ["aplicar reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).POST(json("POST", { accion: "aplicar", dia: "2026-11-12", ciudades: [] }))],
@@ -92,6 +94,9 @@ const soloCoordinacion: [string, () => Promise<Response>][] = [
   ["ver el seguimiento general", async () => (await import("@/app/api/evaluacion/seguimiento/route")).GET(new Request("http://localhost/x"))],
   ["descargar el Excel de resultados", async () => (await import("@/app/api/evaluacion/seguimiento/excel/route")).GET(new Request("http://localhost/x"))],
   ["guardar los criterios", async () => (await import("@/app/api/evaluacion/criterios/route")).POST(json("POST", { exA: 0.9, exB: 3 }))],
+  // Paso 24: carga de los mentores (solo lectura) y su Excel.
+  ["ver la carga de los mentores", async () => (await import("@/app/api/admin/carga-mentores/route")).GET(new Request("http://localhost/x"))],
+  ["descargar la carga de los mentores", async () => (await import("@/app/api/admin/carga-mentores/excel/route")).GET()],
 ];
 
 describe("matriz de permisos", () => {
@@ -152,6 +157,18 @@ describe("Comentarios (Paso 22): origen, validación y lectura", () => {
     expect((await (await ruta()).GET(new Request("http://localhost/x"), ctx)).status).toBe(403);
     estado.token = ""; estado.usuario = null;
     expect((await (await ruta()).GET(new Request("http://localhost/x"), ctx)).status).toBe(401);
+  });
+});
+
+describe("Carga de mentores (Paso 24): aplicar desde otro origen o con datos de más", () => {
+  it("403 desde otro origen aunque sea admin; 400 con campos de más o ids inválidos", async () => {
+    await como("admin");
+    const ruta = await import("@/app/api/admin/carga-mentores/route");
+    const otro = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ accion: "aplicar", proyecto: ID, desde: ID, hacia: ID }) });
+    expect([(await ruta.POST(otro)).status]).toEqual([403]);
+    for (const body of [{ accion: "aplicar", proyecto: ID, desde: ID, hacia: ID, inicio: "2026-11-12T13:00:00Z" }, { accion: "aplicar", proyecto: "x", desde: ID, hacia: ID }, { accion: "mover", proyecto: ID, desde: ID, hacia: ID }])
+      expect((await ruta.POST(json("POST", body))).status).toBe(400);
+    expect((await ruta.POST(json("POST", { accion: "aplicar", proyecto: ID, desde: ID, hacia: ID, relleno: "x".repeat(2000) }))).status).toBe(413);
   });
 });
 

@@ -47,11 +47,11 @@ async function post(id: string, body: unknown): Promise<{ ok: boolean; status: n
   return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
 }
 
-export default function TableroPanel({ user }: { user: SessionUser }) {
+export default function TableroPanel({ user, diaInicial = "" }: { user: SessionUser; diaInicial?: string }) {
   const mueve = puede(user.rol, "cambiar_horario");
   const [d, setD] = useState<DatosTablero | null>(null);
   const [error, setError] = useState(false);
-  const [dia, setDia] = useState("");
+  const [dia, setDia] = useState(diaInicial);
   const [fCiudad, setFCiudad] = useState("");
   const [fRuta, setFRuta] = useState("");
   const [fEstado, setFEstado] = useState("");
@@ -105,6 +105,9 @@ export default function TableroPanel({ user }: { user: SessionUser }) {
     // Modo orden de llegada: su ciudad ya llegó al tope de ese día. El admin puede confirmar y moverlo igual.
     else if (r?.data?.error === "tope" && body.accion === "cambiar")
       setConfirmar({ titulo: `¿Pasar el tope de ${t.ciudad}?`, avisos: [r.data.mensaje ?? "Su ciudad ya llegó al tope de ese día.", "Quedará anotado en el historial."], si: "Mover igual", ok: () => void enviar(t, { ...body, confirmarTope: true }, hecho) });
+    // Paso 24: presentación por empezar (menos de 30 min) o en curso: se puede, con confirmación explícita.
+    else if (r?.data?.error === "en_curso" && body.accion === "cambiar")
+      setConfirmar({ titulo: `¿Cambiar ${t.proyecto} ahora?`, avisos: [r.data.mensaje ?? "Esta presentación está por empezar o en curso; cambiará el mentor y la sala.", "Quedará anotado en el historial."], si: "Cambiar igual", ok: () => void enviar(t, { ...body, confirmarEnCurso: true }, hecho) });
     else if (r?.data?.error === "sin_cupo") setAlerta("Ese bloque se llenó mientras arrastrabas (un estudiante tomó el cupo). La tarjeta volvió a su lugar.");
     else setAlerta(r?.data?.mensaje ?? "No se pudo guardar. Revisa tu conexión e inténtalo otra vez.");
     await cargar();

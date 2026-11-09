@@ -1,7 +1,8 @@
-import { MongoServerError, ObjectId, type Filter } from "mongodb";
+import { MongoServerError, ObjectId, type ClientSession, type Filter } from "mongodb";
 import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
 import { conteoComentarios } from "./comentarios";
+import { revertible } from "./edicionEstudiante";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
 import { calc } from "./evaluacion/criterios";
@@ -79,10 +80,13 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
 }
 
 export async function historial(proyectoId: ObjectId) {
-  const { changeLog } = await collections();
+  const { changeLog, proyectos } = await collections();
+  const p = await proyectos.findOne({ _id: proyectoId }, { projection: { nombre: 1, descripcion: 1 } });
+  const ultima = await changeLog.findOne({ proyectoId, accion: "editar_proyecto" }, { sort: { fecha: -1, _id: -1 }, projection: { _id: 1 } });
   return (await changeLog.find({ proyectoId }).sort({ fecha: -1 }).limit(50).toArray())
     // Coordinación también ve el historial: el documento del estudiante que reservó va enmascarado.
     .map((c) => ({
+      id: String(c._id), ...(revertible(c, p, ultima ? String(ultima._id) : null) ? { revertible: true } : {}),
       accion: c.accion, anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, fecha: c.fecha.toISOString(),
       actor: c.actor.rol === "estudiante" && c.actor.usuario ? { ...c.actor, usuario: enmascararNumero(c.actor.usuario) } : c.actor,
     }));
@@ -97,7 +101,24 @@ const MENSAJE: Record<Falla["codigo"], string> = {
   sin_hora: "Ese proyecto no tiene hora.",
   tope: "Su ciudad ya llegó al tope de ese día.",
   marcado: "Este proyecto está marcado «Sin proyecto»: quita la marca para darle hora.",
+  con_datos: "Este proyecto ya tiene evaluación, asistencia, notas del monitor o borrador del mentor: no se cambia desde la carga de mentores.",
+  por_empezar: "Esa presentación empieza en menos de 30 minutos o ya pasó: no se cambia desde la carga de mentores.",
+  en_curso: "Esta presentación está por empezar o en curso; cambiará el mentor y la sala.",
 };
+
+/** Margen antes de una presentación: menos de esto es «por empezar» (Paso 24). */
+export const MARGEN_MS = 30 * 60e3;
+
+/** ¿El proyecto ya tiene algo de la evaluación? (resultado o «No se presentó», asistencia o notas del monitor, borrador). */
+export async function conDatosDeEvaluacion(proyectoId: ObjectId, s?: ClientSession): Promise<boolean> {
+  const c = await collections();
+  const [e, m, b] = await Promise.all([
+    c.evalResultados.findOne({ proyectoId }, { session: s, projection: { _id: 1 } }),
+    c.evalMonitor.findOne({ proyectoId }, { session: s, projection: { _id: 1 } }),
+    c.evalBorradores.findOne({ _id: String(proyectoId) }, { session: s, projection: { _id: 1 } }),
+  ]);
+  return !!(e || m || b);
+}
 const falla = (e: Falla): ResultadoAdmin => ({ ok: false, error: e.codigo, mensaje: MENSAJE[e.codigo] });
 
 const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", timeZone: "UTC" });
@@ -163,7 +184,13 @@ export async function anularEvaluacion(proyectoId: ObjectId, motivo: string, act
  * asiento actual (si tiene) y toma uno libre, en una transacción (lógica común en mover.ts). Por defecto solo asientos
  * de su ciudad; con `otraCiudad`, cualquiera libre. Un proyecto con evaluación guardada no se mueve.
  */
-export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string; asiento?: ObjectId; confirmarTope?: boolean }, actor: Actor): Promise<ResultadoAdmin> {
+export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: {
+  otraCiudad: boolean; motivo: string; asiento?: ObjectId; confirmarTope?: boolean;
+  /** Carga de mentores: el proyecto debe seguir en `desde`, sin datos de evaluación y a más de 30 min de empezar. */
+  desde?: ObjectId; limpio?: boolean; noAntesDe?: Date;
+  /** El admin confirmó cambiar una presentación por empezar (menos de 30 min) o en curso. */
+  confirmarEnCurso?: boolean;
+}, actor: Actor): Promise<ResultadoAdmin> {
   const c = await collections();
   const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!proyecto) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
@@ -178,14 +205,21 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
   try {
     await conCandado(async (s) => {
       const viejo = await c.asientos.findOne({ proyectoId }, { session: s });
+      // Paso 24: «Carga de mentores» exige que el proyecto siga en el asiento de la propuesta.
+      if (opciones.desde && !viejo?._id.equals(opciones.desde)) throw new Falla("cambio");
       if (viejo && (opciones.asiento ? viejo._id.equals(opciones.asiento) : viejo.inicio.getTime() === inicio.getTime())) throw new Error("misma_hora");
       const ahora = new Date();
+      if (opciones.noAntesDe && viejo && viejo.inicio < opciones.noAntesDe) throw new Falla("por_empezar");
+      if (opciones.limpio && (await conDatosDeEvaluacion(proyectoId, s))) throw new Falla("con_datos");
+      // Presentación por empezar o en curso: se puede (un mentor falla a última hora), pero con confirmación explícita.
+      const enCurso = !!viejo && viejo.inicio.getTime() < ahora.getTime() + MARGEN_MS;
+      if (enCurso && !opciones.confirmarEnCurso) throw new Falla("en_curso");
       const nuevo = await moverProyecto(s, proyectoId, viejo?._id ?? null, filtros, actor.usuario ?? actor.rol, ahora, { tope: opciones.confirmarTope ? "permitir" : "respetar" });
       const ajeno = !orden && !nuevo.ciudades.includes(proyecto.ciudad);
       const cambioMentor = !!viejo && viejo.inicio.getTime() === nuevo.inicio.getTime();
       await c.changeLog.insertOne({
         proyectoId, accion: "cambiar_hora", ...(viejo ? { anterior: `${etiqueta(viejo.inicio)}${cambioMentor ? ` · ${viejo.mentorId}` : ""}` } : {}),
-        nuevo: `${etiqueta(nuevo.inicio)}${cambioMentor ? ` · ${nuevo.mentorId}` : ""}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}${nuevo.sobreTope ? " · sobre el tope" : ""}`,
+        nuevo: `${etiqueta(nuevo.inicio)}${cambioMentor ? ` · ${nuevo.mentorId}` : ""}${ajeno ? ` · asiento de ${claveGrupo(nuevo.ciudades)}` : ""}${nuevo.sobreTope ? " · sobre el tope" : ""}${enCurso ? " · presentación por empezar o en curso" : ""}`,
         motivo: opciones.motivo, actor, fecha: ahora,
       }, { session: s });
       resultado = { ok: true, inicio: nuevo.inicio.toISOString() };

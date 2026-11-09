@@ -17,6 +17,7 @@ const { resumen, seguimiento: seguimientoInscripcion } = await import("@/lib/seg
 const { listarSinProyecto, noInscrito } = await import("@/lib/sinProyecto");
 const { seguimiento: seguimientoEval } = await import("@/lib/evaluacion/resultados");
 const { listarProyectos } = await import("@/lib/admin");
+const { cargaMentores } = await import("@/lib/cargaMentores");
 
 const ADMIN = { rol: "admin" as const, usuario: "admin.demo" };
 const AHORA = new Date("2026-11-11T15:00:00Z");
@@ -31,6 +32,7 @@ async function portal() {
   const algunos = (await c.proyectos.find({}).sort({ _id: 1 }).limit(15).toArray()).map((p) => p._id);
   for (const dia of dias) {
     out[`tablero ${dia}`] = await datosTablero(dia);
+    out[`carga ${dia}`] = await cargaMentores(dia); // Paso 24: solo lectura
     for (const p of algunos) out[`bloques ${dia} ${p}`] = await bloquesLibres(p, dia);
   }
   out.resumen = await resumen();

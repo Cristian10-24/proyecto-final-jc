@@ -8,6 +8,8 @@ export type Consulta = {
   proyecto: { nombre: string; descripcion?: string; ciudad: string };
   integrantes: Integrante[];
   hora: HoraElegida | null;
+  /** Paso 23: versión para editar nombre y descripción, y si todavía se puede (sin evaluación guardada). */
+  edicion?: { version: string; puede: boolean };
 };
 
 export type DiaAgenda = { dia: string; estado: "disponible" | "sin_horas" | "aun_no_abre"; abre?: string };

@@ -23,7 +23,7 @@ type Proyecto = {
   comentarios?: number;
 };
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
-type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
+type Cambio = { id?: string; revertible?: boolean; accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
 type Bloque = { inicio: string; libres: number; deSuCiudad: boolean; otras: string[] };
 /** Modo orden de llegada: tope de la ciudad ese día y cuántos lleva (sin contar este proyecto si ya está ese día). */
 type Tope = { tope: number; lleva: number };
@@ -263,7 +263,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
       setOcupado(false);
       if (r.ok) { setModo("ver"); setMotivo(""); v.limpiar(); await onHecho(msg); return null; }
       if (r.status === 404) setError("Este proyecto ya no existe. Cierra y recarga la lista.");
-      else if (r.data?.error !== "tope") setError(r.data?.mensaje ?? "No se pudo guardar. Inténtalo otra vez.");
+      else if (r.data?.error !== "tope" && r.data?.error !== "en_curso") setError(r.data?.mensaje ?? "No se pudo guardar. Inténtalo otra vez.");
       return { error: r.data?.error, mensaje: r.data?.mensaje };
     } catch (e) {
       setOcupado(false);
@@ -387,7 +387,7 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
         {modo === "cambiar" && (
           <CambiarHora p={p} dias={dias} motivo={motivo} setMotivo={setMotivo} ocupado={ocupado}
             onCancelar={() => { setModo("ver"); setError(""); }}
-            onEnviar={(inicio, otraCiudad, confirmarTope) => enviar({ accion: "cambiar", inicio, otraCiudad, confirmarTope, motivo: motivo.trim() }, "Hora cambiada")} />
+            onEnviar={(inicio, otraCiudad, confirmarTope, confirmarEnCurso) => enviar({ accion: "cambiar", inicio, otraCiudad, confirmarTope, confirmarEnCurso, motivo: motivo.trim() }, "Hora cambiada")} />
         )}
 
         <div>
@@ -409,6 +409,9 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
                     <div className={s.histHead}><b>{ACCION[c.accion] ?? c.accion}</b><span className={s.histFecha}>{limpia(fmtFecha.format(f))} · {horaCO(f)}</span></div>
                     {(c.anterior || c.nuevo) && <div>{c.anterior ?? "—"}{c.nuevo !== undefined && <> → {c.nuevo}</>}</div>}
                     {c.motivo && <div className={s.histMotivo}>Motivo: {c.motivo}</div>}
+                    {c.revertible && c.id && (
+                      <div><button type="button" className="btn-link" disabled={ocupado} onClick={() => void enviar({ accion: "revertir", cambio: c.id }, "Cambio del estudiante revertido")}>Revertir este cambio</button></div>
+                    )}
                     <div className={s.sub}>{ROL[c.actor.rol] ?? c.actor.rol}{c.actor.usuario ? ` · ${c.actor.usuario}` : ""}</div>
                   </li>
                 );
@@ -436,7 +439,7 @@ function Motivo({ valor, onCambio, opcional }: { valor: string; onCambio: (v: st
 
 function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar, sinMotivo }: {
   p: Proyecto; dias: string[]; motivo: string; setMotivo: (v: string) => void; ocupado: boolean; sinMotivo?: boolean;
-  onCancelar: () => void; onEnviar: (inicio: string, otraCiudad: boolean, confirmarTope: boolean) => Promise<{ error?: string; mensaje?: string } | null>;
+  onCancelar: () => void; onEnviar: (inicio: string, otraCiudad: boolean, confirmarTope: boolean, confirmarEnCurso: boolean) => Promise<{ error?: string; mensaje?: string } | null>;
 }) {
   const [dia, setDia] = useState(() => (p.hora ? diaCOL(new Date(p.hora.inicio)) : ""));
   const [datos, setDatos] = useState<{ estado: "inicial" | "cargando" | "error" | "listo"; tiene: boolean; bloques: Bloque[]; tope?: Tope }>({ estado: "inicial", tiene: true, bloques: [] });
@@ -444,6 +447,9 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
   const [noCabe, setNoCabe] = useState(false);
   // Modo orden de llegada: el servidor rechazó por el tope de la ciudad; el admin puede confirmar y mover igual.
   const [sobreTope, setSobreTope] = useState<string | null>(null);
+  // Paso 24: su presentación empieza en menos de 30 min o está en curso; el admin confirma explícitamente.
+  const [enCurso, setEnCurso] = useState<string | null>(null);
+  const [enCursoOk, setEnCursoOk] = useState(false);
 
   const cargar = useCallback(async () => {
     if (!dia) return;
@@ -454,7 +460,7 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
     } catch (e) { if (!(e instanceof SinSesion)) setDatos({ estado: "error", tiene: true, bloques: [] }); }
   }, [p.id, dia]);
 
-  useEffect(() => { setElegido(null); setSobreTope(null); void cargar(); }, [cargar]);
+  useEffect(() => { setElegido(null); setSobreTope(null); setEnCurso(null); setEnCursoOk(false); void cargar(); }, [cargar]);
 
   const porHora = useMemo(() => {
     const m = new Map<string, Bloque[]>();
@@ -466,10 +472,12 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
     return [...m.entries()];
   }, [datos.bloques]);
 
-  async function mover(b: Bloque, confirmarTope = false) {
+  async function mover(b: Bloque, confirmarTope = false, confirmarEnCurso = enCursoOk) {
     setNoCabe(false);
-    const r = await onEnviar(b.inicio, !b.deSuCiudad, confirmarTope);
+    if (confirmarEnCurso) { setEnCursoOk(true); setEnCurso(null); }
+    const r = await onEnviar(b.inicio, !b.deSuCiudad, confirmarTope, confirmarEnCurso);
     if (r?.error === "sin_cupo") { setNoCabe(true); setElegido(null); setSobreTope(null); void cargar(); }
+    else if (r?.error === "en_curso") setEnCurso(r.mensaje ?? "Esta presentación está por empezar o en curso; cambiará el mentor y la sala.");
     else if (r?.error === "tope") setSobreTope(r.mensaje ?? "Su ciudad ya llegó al tope de ese día. ¿Mover igual?");
   }
 
@@ -524,7 +532,15 @@ function CambiarHora({ p, dias, motivo, setMotivo, ocupado, onCancelar, onEnviar
 
       {!sinMotivo && <Motivo valor={motivo} onCambio={setMotivo} opcional />}
 
-      {elegido && sobreTope ? (
+      {elegido && enCurso ? (
+        <>
+          <div className="note note-warn" role="alert">{enCurso} Quedará anotado en el historial.</div>
+          <div className={s.acts}>
+            <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={() => { setElegido(null); setEnCurso(null); }}>Cancelar</button>
+            <button type="button" className="btn btn-dark" disabled={ocupado} onClick={() => void mover(elegido, false, true)}>{ocupado ? "Cambiando…" : "Cambiar igual"}</button>
+          </div>
+        </>
+      ) : elegido && sobreTope ? (
         <>
           <div className="note note-warn" role="alert">{sobreTope} Quedará anotado en el historial.</div>
           <div className={s.acts}>

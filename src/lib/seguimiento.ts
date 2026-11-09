@@ -6,6 +6,7 @@ import { collections } from "./db";
 import { diaCOL } from "./edicion";
 import { enmascararNumero } from "./estudiante";
 import { conteoComentarios } from "./comentarios";
+import { sinFormula } from "./evaluacion/resultados";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Proyecto } from "./types";
 
@@ -121,7 +122,7 @@ export async function cronogramaExcel(): Promise<Buffer> {
       const [i1, i2] = p?.integrantes ?? [];
       ws.addRow([
         horaCO(a.inicio), p && uruguay.has(p.ciudad) ? horaUY(a.inicio) : "", nombresMentor.get(a.mentorId) ?? a.mentorId,
-        p?.monitor ? nombresMonitor.get(p.monitor) ?? p.monitor : "Por asignar", p?.ciudad ?? "", p?.nombre ?? "", p?.codigo ?? "",
+        p?.monitor ? nombresMonitor.get(p.monitor) ?? p.monitor : "Por asignar", p?.ciudad ?? "", sinFormula(p?.nombre ?? ""), p?.codigo ?? "",
         i1?.nombre ?? "", i1?.celular ?? "", i2?.nombre ?? "", i2?.celular ?? "",
       ]);
     }

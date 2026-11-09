@@ -9,7 +9,7 @@ import type { Asiento } from "./types";
 // - Como el prototipo, quien estaba "No se presentó" vuelve a Pendiente, se borra la asistencia que marcó el monitor
 //   (motivo y observación quedan) y el borrador del mentor anterior.
 
-export class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio" | "sin_hora" | "tope" | "marcado") { super(codigo); } }
+export class Falla extends Error { constructor(readonly codigo: "sin_cupo" | "ya_evaluado" | "cambio" | "sin_hora" | "tope" | "marcado" | "con_datos" | "por_empezar" | "en_curso") { super(codigo); } }
 
 /**
  * Fase 4 · `tope`: con el modo orden de llegada encendido, "respetar" (por defecto; monitor) rechaza con Falla("tope")

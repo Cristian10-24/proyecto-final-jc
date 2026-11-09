@@ -7,9 +7,11 @@ export const metadata = { title: "Tablero · Administración · Jóvenes creaTIv
 export const dynamic = "force-dynamic";
 
 // Tablero de horarios: el admin mueve y libera; coordinación lo ve en solo lectura.
-export default async function TableroPage() {
+export default async function TableroPage({ searchParams }: { searchParams: Promise<{ dia?: string | string[] }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!puede(user.rol, "ver_resumen")) redirect(inicioPorRol(user.rol));
-  return <TableroPanel user={user} />;
+  // Paso 24: «Carga de mentores» abre el Tablero en un día (?dia=AAAA-MM-DD).
+  const { dia } = await searchParams;
+  return <TableroPanel user={user} diaInicial={typeof dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : ""} />;
 }

@@ -41,11 +41,13 @@ export function asignarMonitor(p: Pick<ProyectoLeido, "ciudad" | "monitorTexto">
 }
 
 export async function previaProyectos(lectura: LecturaProyectos): Promise<PreviaProyectos & { asignaciones: Map<string, string | null> }> {
-  const { proyectos, asientos, dias, users, sinProyecto } = await collections();
+  const { proyectos, asientos, dias, users, sinProyecto, changeLog } = await collections();
   const { proyectos: leidos, columnas, faltan } = lectura;
   const errs = [...lectura.errores];
   const avisos: ErrorFila[] = [];
-  const existentes = await proyectos.find({}, { projection: { codigo: 1, ciudad: 1, "integrantes.documento": 1 } }).toArray();
+  const existentes = await proyectos.find({}, { projection: { codigo: 1, ciudad: 1, nombre: 1, descripcion: 1, "integrantes.documento": 1 } }).toArray();
+  // Paso 23: proyectos cuyo nombre o descripción cambió el estudiante en el portal.
+  const editadosPorEstudiante = new Set((await changeLog.distinct("proyectoId", { accion: "editar_proyecto", "actor.rol": "estudiante" })).map(String));
   const porCodigo = new Map(existentes.map((p) => [p.codigo, p]));
   const duenoDoc = new Map(existentes.flatMap((p) => p.integrantes.map((i) => [i.documento, p.codigo] as const)));
   const conHora = new Set((await asientos.find({ proyectoId: { $type: "objectId" } }, { projection: { proyectoId: 1 } }).toArray()).map((a) => String(a.proyectoId)));
@@ -78,6 +80,8 @@ export async function previaProyectos(lectura: LecturaProyectos): Promise<Previa
       err(`El proyecto ${p.codigo} ya tiene hora en ${actual.ciudad}: libera su hora antes de cambiarle la ciudad.`);
     if (configDias.length && diasPorCiudad(configDias, p.ciudad).length === 0)
       err(`${p.ciudad} no tiene días habilitados en la hoja Cupos.`);
+    if (actual && editadosPorEstudiante.has(String(actual._id)) && (actual.nombre !== p.nombre || (actual.descripcion ?? "") !== (p.descripcion ?? "")))
+      avisos.push({ hoja, fila: p.fila, mensaje: `${p.codigo}: el estudiante cambió el nombre o la descripción en el portal («${actual.nombre}»); al importar se reemplaza por lo del Excel.` });
     if (actual) actualizados++; else nuevos++;
     porCiudad[p.ciudad] = (porCiudad[p.ciudad] ?? 0) + 1;
 

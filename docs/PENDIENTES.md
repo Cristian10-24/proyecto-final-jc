@@ -42,8 +42,12 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - «Sin proyecto»: convertir crea el proyecto y luego marca el registro como convertido; si alguien quita al participante en ese instante (o el proceso se cae entre los dos pasos), el proyecto queda creado y el registro borrado o pendiente.
 - «Sin proyecto»: el portal revela que un documento está «sin proyecto» (cuenta para el límite por documento, no para el de la IP), sin dar nombre, ciudad ni datos.
 - Comentarios: el texto anterior de un comentario editado se guarda (`anteriores`) pero no se muestra en pantalla; coordinación solo ve la marca «editado».
+- Edición del estudiante: quien conozca el documento de otro puede cambiarle el nombre y la descripción (lo cubren el límite por documento, el historial y «Revertir»). Un estudiante sin hora cuya ciudad ya cerró ve «cerrado» y no llega a la pantalla para editar.
+- Carga de mentores: el plan solo usa asientos que hoy están libres; después de aplicar, los asientos liberados pueden dar nuevas propuestas en el siguiente cálculo (cada proyecto se mueve a lo sumo una vez por cálculo).
+- Horarios: el botón «Revertir este cambio» se muestra según el permiso de ver el historial (que también tiene coordinación), sin revisar en pantalla el permiso de cambiar hora; para coordinación el botón aparece pero el servidor lo rechaza (403). No es un hueco de seguridad, solo un botón que falla en silencio para ese rol.
 
 ## Más adelante
+- Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.
 - Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).
   Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".
