@@ -5,9 +5,10 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { horaCO } from "@/lib/ciudades";
 import { puede } from "@/lib/permisos";
-import type { BloqueTablero, DatosTablero, Tarjeta } from "@/lib/tableroHorarios";
+import type { BloqueTablero, DatosTablero, Encontrado, Tarjeta } from "@/lib/tableroHorarios";
 import AppShell from "./AppShell";
 import GestionProyecto from "./GestionProyecto";
+import CambiarMentor from "./CambiarMentor";
 import Comentarios from "./Comentarios";
 import { useVentana } from "./useVentana";
 import s from "./TableroPanel.module.css";
@@ -63,6 +64,8 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<Tarjeta | null>(null);
   const [nuevo, setNuevo] = useState(false);
+  // Paso 25: tarjeta elegida en el buscador (se resalta y se lleva a la vista).
+  const [resaltado, setResaltado] = useState<string | null>(null);
   const toastT = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Respuestas desordenadas: solo vale la del último día pedido.
@@ -88,6 +91,20 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
     const t = setInterval(() => void cargar(), 30_000);
     return () => clearInterval(t);
   }, [cargar, quieto]);
+
+  // Al cargar el día con la tarjeta buscada: llevarla a la vista (la visible: tablero o lista del celular).
+  useEffect(() => {
+    if (!resaltado || !d) return;
+    const el = [...document.querySelectorAll<HTMLElement>(`[data-tarjeta="${resaltado}"]`)].find((x) => x.offsetParent !== null);
+    el?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    const t = setTimeout(() => setResaltado(null), 6000);
+    return () => clearTimeout(t);
+  }, [resaltado, d]);
+  function irA(r: Encontrado) {
+    setFCiudad(""); setFRuta(""); setFEstado(""); setFSinHora("");
+    if (r.dia && r.dia !== d?.dia) setDia(r.dia);
+    setResaltado(r.id);
+  }
 
   const avisar = (t: string) => { setToast(t); if (toastT.current) clearTimeout(toastT.current); toastT.current = setTimeout(() => setToast(""), 2800); };
 
@@ -176,6 +193,7 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
         <select className={`input ${s.sel}`} aria-label="Estado" value={fEstado} onChange={(e) => setFEstado(e.target.value)}>
           <option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="presente">Se presentó</option><option value="ausente">No se presentó</option><option value="evaluado">Evaluado</option>
         </select>
+        <Buscador onElegir={irA} />
         {d && d.ciudadesDia.length > 0 && (
           <div className={s.habilitadas}>Ciudades habilitadas:{d.ciudadesDia.map((c) => <span key={c.ciudad} className={s.ciudadChip}><i style={{ background: colorDe(c.ciudad) }} />{c.ciudad}</span>)}</div>
         )}
@@ -189,14 +207,14 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setArrastrando(null)}
           accessibility={{ screenReaderInstructions: { draggable: "Para mover la tarjeta, presiona espacio o Enter, usa las flechas y vuelve a presionar espacio o Enter para soltar. Escape cancela. La letra O abre la ficha." }, announcements: ANUNCIOS }}>
           <div className={s.tablero}>
-            <ColumnaSinHora tarjetas={sinHora} total={d.sinHora.length} ciudades={ciudades} filtro={fSinHora} setFiltro={setFSinHora} mueve={mueve} ocupado={ocupado} onAbrir={setAbierta} onNuevo={() => setNuevo(true)} />
+            <ColumnaSinHora tarjetas={sinHora} total={d.sinHora.length} ciudades={ciudades} filtro={fSinHora} setFiltro={setFSinHora} mueve={mueve} ocupado={ocupado} resaltado={resaltado} onAbrir={setAbierta} onNuevo={() => setNuevo(true)} />
             <div className={s.horas}>
               {!d.horas.length && <div className={s.vacio}>Este día no tiene horas con mentores.</div>}
               {d.horas.map((h) => (
                 <section key={h.hora} className={s.hora} aria-label={`${horaCO(new Date(h.bloques[0]!.inicio))}`}>
                   <div className={s.horaHead}><b>{horaCO(new Date(h.bloques[0]!.inicio))}</b><span>{h.mentores} {h.mentores === 1 ? "mentor" : "mentores"}</span></div>
                   <div className={s.bloques}>
-                    {h.bloques.map((b) => <Bloque key={b.inicio} b={b} pasa={pasa} mueve={mueve} ocupado={ocupado} onAbrir={setAbierta} />)}
+                    {h.bloques.map((b) => <Bloque key={b.inicio} b={b} pasa={pasa} mueve={mueve} ocupado={ocupado} resaltado={resaltado} onAbrir={setAbierta} />)}
                   </div>
                 </section>
               ))}
@@ -212,16 +230,17 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
           {d.horas.flatMap((h) => h.bloques).filter((b) => b.tarjetas.some(pasa)).map((b) => (
             <div key={b.inicio}>
               <div className={s.listaHora}><b>{horaCO(new Date(b.inicio))}</b><span>{b.ocupados}/{b.total}</span></div>
-              {b.tarjetas.filter(pasa).map((t) => <TarjetaVista key={t.id} t={t} onClick={() => setAbierta(t)} />)}
+              {b.tarjetas.filter(pasa).map((t) => <TarjetaVista key={t.id} t={t} resaltada={t.id === resaltado} onClick={() => setAbierta(t)} />)}
             </div>
           ))}
           {sinHora.length > 0 && <div className={s.listaHora}><b>Sin hora</b><span>{sinHora.length}</span></div>}
-          {sinHora.map((t) => <TarjetaVista key={t.id} t={t} onClick={() => setAbierta(t)} />)}
+          {sinHora.map((t) => <TarjetaVista key={t.id} t={t} resaltada={t.id === resaltado} onClick={() => setAbierta(t)} />)}
         </div>
       )}
 
       {abierta && d && <Ficha t={abierta} d={d} mueve={mueve} ocupado={!!ocupado} onCerrar={() => setAbierta(null)} onLiberar={() => liberar(abierta)}
-        onCambiarMentor={(asiento) => void enviar(abierta, { accion: "cambiar", inicio: abierta.inicio, asiento, otraCiudad: true, motivo: "Tablero: cambio de mentor" }, "Mentor cambiado")}
+        onOcupado={(v) => setOcupado(v ? abierta.id : null)}
+        onMentorCambiado={(msg) => { avisar(msg); setAbierta(null); void cargar(); }}
         onAnular={(motivo) => { const t = abierta; setConfirmar({
           titulo: `¿Anular la evaluación de ${t.proyecto}?`, avisos: ["La evaluación se guarda en el historial (no se borra) y el proyecto vuelve a Pendiente: se puede mover o volver a evaluar.", `Motivo: ${motivo}`], si: "Sí, anular",
           ok: () => void enviar(t, { accion: "anular", motivo, ...(t.evaluadoEn ? { version: t.evaluadoEn } : {}) }, "Evaluación anulada"),
@@ -248,8 +267,8 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
   );
 }
 
-function ColumnaSinHora({ tarjetas, total, ciudades, filtro, setFiltro, mueve, ocupado, onAbrir, onNuevo }: {
-  tarjetas: Tarjeta[]; total: number; ciudades: string[]; filtro: string; setFiltro: (c: string) => void; mueve: boolean; ocupado: string | null; onAbrir: (t: Tarjeta) => void; onNuevo: () => void;
+function ColumnaSinHora({ tarjetas, total, ciudades, filtro, setFiltro, mueve, ocupado, resaltado, onAbrir, onNuevo }: {
+  tarjetas: Tarjeta[]; total: number; ciudades: string[]; filtro: string; setFiltro: (c: string) => void; mueve: boolean; ocupado: string | null; resaltado: string | null; onAbrir: (t: Tarjeta) => void; onNuevo: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: SIN_HORA, disabled: !mueve });
   return (
@@ -261,14 +280,14 @@ function ColumnaSinHora({ tarjetas, total, ciudades, filtro, setFiltro, mueve, o
         {ciudades.map((c) => <button key={c} type="button" className={`${s.fc} ${filtro === c ? s.fcOn : ""}`} onClick={() => setFiltro(filtro === c ? "" : c)}><i style={{ background: colorDe(c) }} />{c}</button>)}
       </div>
       <div className={s.sinHoraLista}>
-        {tarjetas.map((t) => <Arrastrable key={t.id} t={t} mueve={mueve} ocupado={ocupado === t.id} onAbrir={onAbrir} />)}
+        {tarjetas.map((t) => <Arrastrable key={t.id} t={t} mueve={mueve} ocupado={ocupado === t.id} resaltada={resaltado === t.id} onAbrir={onAbrir} />)}
         {!tarjetas.length && <p className={s.vacioTxt}>{total ? "Nadie con ese filtro." : "Todos los proyectos tienen hora."}</p>}
       </div>
     </section>
   );
 }
 
-const Bloque = memo(function Bloque({ b, pasa, mueve, ocupado, onAbrir }: { b: BloqueTablero; pasa: (t: Tarjeta) => boolean; mueve: boolean; ocupado: string | null; onAbrir: (t: Tarjeta) => void }) {
+const Bloque = memo(function Bloque({ b, pasa, mueve, ocupado, resaltado, onAbrir }: { b: BloqueTablero; pasa: (t: Tarjeta) => boolean; mueve: boolean; ocupado: string | null; resaltado: string | null; onAbrir: (t: Tarjeta) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: b.inicio, data: { b }, disabled: !mueve || !b.total });
   const lleno = b.total > 0 && b.ocupados >= b.total;
   return (
@@ -278,24 +297,24 @@ const Bloque = memo(function Bloque({ b, pasa, mueve, ocupado, onAbrir }: { b: B
         <span className={`${s.capacidad} ${lleno ? s.capLlena : ""}`}>{b.ocupados}/{b.total}</span>
       </div>
       <div className={s.bloqueLista}>
-        {b.tarjetas.filter(pasa).map((t) => <Arrastrable key={t.id} t={t} mueve={mueve} ocupado={ocupado === t.id} onAbrir={onAbrir} />)}
+        {b.tarjetas.filter(pasa).map((t) => <Arrastrable key={t.id} t={t} mueve={mueve} ocupado={ocupado === t.id} resaltada={resaltado === t.id} onAbrir={onAbrir} />)}
       </div>
     </div>
   );
 });
 
-const Arrastrable = memo(function Arrastrable({ t, mueve, ocupado, onAbrir }: { t: Tarjeta; mueve: boolean; ocupado: boolean; onAbrir: (t: Tarjeta) => void }) {
+const Arrastrable = memo(function Arrastrable({ t, mueve, ocupado, resaltada, onAbrir }: { t: Tarjeta; mueve: boolean; ocupado: boolean; resaltada?: boolean; onAbrir: (t: Tarjeta) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id, data: { t }, disabled: !mueve || t.evaluado || ocupado });
   return (
     <div ref={setNodeRef} {...listeners} {...attributes} className={s.arrastrable} style={{ opacity: isDragging || ocupado ? 0.4 : 1 }}
       aria-label={`${t.proyecto}, ${t.ciudad}${t.inicio ? `, ${horaCO(new Date(t.inicio))}` : ", sin hora"}`}
       onClick={() => onAbrir(t)} onKeyDown={(e) => { listeners?.onKeyDown?.(e); if (e.key === "o" || e.key === "O") onAbrir(t); }}>
-      <TarjetaVista t={t} />
+      <TarjetaVista t={t} resaltada={resaltada} />
     </div>
   );
 });
 
-function TarjetaVista({ t, flotando, onClick }: { t: Tarjeta; flotando?: boolean; onClick?: () => void }) {
+function TarjetaVista({ t, flotando, resaltada, onClick }: { t: Tarjeta; flotando?: boolean; resaltada?: boolean; onClick?: () => void }) {
   const cuerpo = (
     <>
       <i className={s.borde} style={{ background: colorDe(t.ciudad) }} />
@@ -307,8 +326,9 @@ function TarjetaVista({ t, flotando, onClick }: { t: Tarjeta; flotando?: boolean
       <span className={`${s.estado} ${s[`estado_${t.estado}`]}`}>{t.evaluado ? "Evaluado" : ESTADO[t.estado]}</span>
     </>
   );
-  if (onClick) return <button type="button" className={`${s.tarjeta} ${s[`t_${t.estado}`]}`} onClick={onClick}>{cuerpo}</button>;
-  return <div className={`${s.tarjeta} ${s[`t_${t.estado}`]} ${flotando ? s.flotando : ""}`}>{cuerpo}</div>;
+  const marca = resaltada ? s.resaltada : "";
+  if (onClick) return <button type="button" data-tarjeta={t.id} className={`${s.tarjeta} ${s[`t_${t.estado}`]} ${marca}`} onClick={onClick}>{cuerpo}</button>;
+  return <div data-tarjeta={flotando ? undefined : t.id} className={`${s.tarjeta} ${s[`t_${t.estado}`]} ${flotando ? s.flotando : ""} ${marca}`}>{cuerpo}</div>;
 }
 
 const fmtFecha = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
@@ -317,21 +337,17 @@ const ACCION: Record<string, string> = {
   no_presento: "No se presentó", presente: "Se presentó", nota_monitor: "Nota del monitor", sugerir_cambio: "Cambio sugerido", aprobar_cambio: "Sugerencia aprobada", rechazar_cambio: "Sugerencia rechazada", anular_evaluacion: "Evaluación anulada",
 };
 
-function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onAnular }: {
-  t: Tarjeta; d: DatosTablero; mueve: boolean; ocupado: boolean; onCerrar: () => void; onLiberar: () => void; onCambiarMentor: (asiento: string) => void; onAnular: (motivo: string) => void;
+function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onOcupado, onMentorCambiado, onAnular }: {
+  t: Tarjeta; d: DatosTablero; mueve: boolean; ocupado: boolean; onCerrar: () => void; onLiberar: () => void; onOcupado: (v: boolean) => void; onMentorCambiado: (msg: string) => void; onAnular: (motivo: string) => void;
 }) {
   const [motivoAnular, setMotivoAnular] = useState("");
   const [hist, setHist] = useState<Cambio[] | null>(null);
-  const [asiento, setAsiento] = useState("");
   useEffect(() => {
     let vivo = true;
     fetch(`/api/admin/proyectos/${t.id}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { historial: [] })).then((x) => vivo && setHist(x.historial)).catch(() => vivo && setHist([]));
     return () => { vivo = false; };
   }, [t.id]);
   const v = useVentana(onCerrar, { bloqueado: ocupado });
-  const bloque = d.horas.flatMap((h) => h.bloques).find((b) => b.inicio === t.inicio);
-  const otros = bloque?.asientosLibres ?? [];
-  const elegido = otros.find((x) => x.id === asiento);
   return (
     <div className={s.overlay}>
       <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="f-t" {...v.dialogo}>
@@ -357,17 +373,9 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
         )}
         {mueve && !t.evaluado && t.inicio && (
           <div className={s.panel}>
-            <label className={s.campo}>
-              <span className="label">Cambiar mentor (mismo bloque)</span>
-              <select className={`input ${s.sel}`} value={asiento} onChange={(e) => setAsiento(e.target.value)} disabled={!otros.length}>
-                <option value="">{otros.length ? "Elige un mentor con cupo libre" : "No hay otro mentor libre a esta hora"}</option>
-                {otros.map((x) => <option key={x.id} value={x.id}>{x.mentor}{x.ciudades.includes(t.ciudad) ? "" : ` · asiento de ${x.ciudades.join(" + ") || "sin ciudad"}`}</option>)}
-              </select>
-            </label>
-            {elegido && !elegido.ciudades.includes(t.ciudad) && <div className="note note-warn">Ese asiento es de {elegido.ciudades.join(" + ") || "ninguna ciudad"}, no de {t.ciudad}. Quedará en el historial.</div>}
+            <CambiarMentor proyectoId={t.id} motivoBase="Tablero: cambio de mentor" bloqueado={ocupado} onOcupado={onOcupado} onHecho={(msg) => { v.limpiar(); onMentorCambiado(msg); }} />
             <div className={s.acts}>
               <button type="button" className="btn btn-ghost" disabled={ocupado} onClick={onLiberar}>Liberar hora</button>
-              <button type="button" className="btn btn-primary" disabled={ocupado || !asiento} onClick={() => onCambiarMentor(asiento)}>Cambiar mentor</button>
             </div>
           </div>
         )}
@@ -383,6 +391,44 @@ function Ficha({ t, d, mueve, ocupado, onCerrar, onLiberar, onCambiarMentor, onA
         )}
         <div className={s.acts}><a className="btn btn-ghost" href="/admin/horarios">Abrir en Horarios</a><button type="button" className="btn btn-dark" onClick={v.cerrar}>Cerrar</button></div>
       </div>
+    </div>
+  );
+}
+
+/** Paso 25 · Buscador por nombre del proyecto, integrante, código o documento: lleva a la tarjeta (y a su día). */
+function Buscador({ onElegir }: { onElegir: (r: Encontrado) => void }) {
+  const [q, setQ] = useState("");
+  const [res, setRes] = useState<Encontrado[] | null>(null);
+  const [abierto, setAbierto] = useState(false);
+  useEffect(() => {
+    const texto = q.trim();
+    if (texto.length < 2) { setRes(null); return; }
+    let vivo = true;
+    const t = setTimeout(() => {
+      fetch(`/api/admin/tablero/buscar?${new URLSearchParams({ q: texto })}`, { cache: "no-store" })
+        .then((r) => { if (r.status === 401) window.location.assign("/login"); return r.ok ? (r.json() as Promise<{ resultados: Encontrado[] }>) : null; })
+        .then((x) => { if (vivo) setRes(x?.resultados ?? []); })
+        .catch(() => { if (vivo) setRes([]); });
+    }, 300);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [q]);
+  const elegir = (r: Encontrado) => { onElegir(r); setAbierto(false); };
+  return (
+    <div className={s.buscador} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAbierto(false); }}>
+      <input className={`input ${s.sel}`} type="search" value={q} placeholder="Buscar proyecto, integrante, código o documento" aria-label="Buscar en el tablero"
+        onChange={(e) => { setQ(e.target.value); setAbierto(true); }} onFocus={() => setAbierto(true)}
+        onKeyDown={(e) => { if (e.key === "Enter" && res?.[0]) elegir(res[0]); if (e.key === "Escape") setAbierto(false); }} />
+      {abierto && res && (
+        <div className={s.resultados} aria-label="Resultados">
+          {!res.length && <p className={s.vacioTxt}>Ningún proyecto coincide.</p>}
+          {res.map((r) => (
+            <button key={r.id} type="button" className={s.resultado} onClick={() => elegir(r)}>
+              <b>{r.proyecto}</b>
+              <span>{r.codigo} · {r.ciudad} · {r.dia && r.inicio ? `${etiquetaDia(r.dia)}, ${horaCO(new Date(r.inicio))}` : "Sin hora"}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
