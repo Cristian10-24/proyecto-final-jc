@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { anularEvaluacion, asignarMonitor, cambiarHora, historial, liberar } from "@/lib/admin";
 import { exigir, sameOrigin } from "@/lib/auth";
+import { revertirEdicion } from "@/lib/edicionEstudiante";
 import { marcarSinProyecto, quitarMarca } from "@/lib/sinProyecto";
 import { IdParams } from "@/lib/validation/id";
 
@@ -20,6 +21,8 @@ const Accion = z.discriminatedUnion("accion", [
   // Paso 21: marcar (solo sin hora) o quitar la marca «Sin proyecto».
   z.object({ accion: z.literal("sin_proyecto"), motivo }).strict(),
   z.object({ accion: z.literal("quitar_sin_proyecto") }).strict(),
+  // Paso 23: revertir un cambio de nombre y descripción hecho por el estudiante (entrada del historial).
+  z.object({ accion: z.literal("revertir"), cambio: z.string().regex(/^[a-f0-9]{24}$/) }).strict(),
 ]);
 
 const id = async (params: Promise<{ id: string }>) => { const r = IdParams.safeParse(await params); return r.success ? r.data.id : null; };
@@ -47,6 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     : a.accion === "liberar" ? await liberar(pid, a.motivo, actor)
     : a.accion === "sin_proyecto" ? await marcarSinProyecto(pid, a.motivo, actor)
     : a.accion === "quitar_sin_proyecto" ? await quitarMarca(pid, actor)
+    : a.accion === "revertir" ? await revertirEdicion(pid, new ObjectId(a.cambio), actor)
     : a.accion === "cambiar" ? await cambiarHora(pid, new Date(a.inicio), { otraCiudad: a.otraCiudad, motivo: a.motivo, confirmarTope: a.confirmarTope, ...(a.asiento ? { asiento: new ObjectId(a.asiento) } : {}) }, actor)
     : await asignarMonitor(pid, a.monitor || null, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === "sin_proyecto" || r.error === "no_existe" ? 404 : 409 });

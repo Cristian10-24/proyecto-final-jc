@@ -52,6 +52,7 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["cambiar la hora (Horarios o tablero)", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z" }), ctx)],
   ["cambiar el mentor desde el tablero", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "cambiar", inicio: "2026-11-12T13:00:00.000Z", asiento: ID }), ctx)],
   ["anular una evaluación", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "anular", motivo: "Error de mentor" }), ctx)],
+  ["revertir un cambio del estudiante (Paso 23)", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "revertir", cambio: ID }), ctx)],
   ["liberar una hora", async () => (await import("@/app/api/admin/proyectos/[id]/route")).POST(json("POST", { accion: "liberar" }), ctx)],
   ["ver las reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).GET()],
   ["aplicar reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).POST(json("POST", { accion: "aplicar", dia: "2026-11-12", ciudades: [] }))],

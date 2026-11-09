@@ -2,6 +2,7 @@ import { MongoServerError, ObjectId, type Filter } from "mongodb";
 import { ciudadesDelDia, ciudadesExplicitas, diasPorCiudad } from "./agenda";
 import { horaCO } from "./ciudades";
 import { conteoComentarios } from "./comentarios";
+import { revertible } from "./edicionEstudiante";
 import { collections, transaccion } from "./db";
 import { diaCOL } from "./edicion";
 import { calc } from "./evaluacion/criterios";
@@ -79,10 +80,13 @@ export async function listarProyectos(f: FiltroProyectos): Promise<FilaProyecto[
 }
 
 export async function historial(proyectoId: ObjectId) {
-  const { changeLog } = await collections();
+  const { changeLog, proyectos } = await collections();
+  const p = await proyectos.findOne({ _id: proyectoId }, { projection: { nombre: 1, descripcion: 1 } });
+  const ultima = await changeLog.findOne({ proyectoId, accion: "editar_proyecto" }, { sort: { fecha: -1, _id: -1 }, projection: { _id: 1 } });
   return (await changeLog.find({ proyectoId }).sort({ fecha: -1 }).limit(50).toArray())
     // Coordinación también ve el historial: el documento del estudiante que reservó va enmascarado.
     .map((c) => ({
+      id: String(c._id), ...(revertible(c, p, ultima ? String(ultima._id) : null) ? { revertible: true } : {}),
       accion: c.accion, anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, fecha: c.fecha.toISOString(),
       actor: c.actor.rol === "estudiante" && c.actor.usuario ? { ...c.actor, usuario: enmascararNumero(c.actor.usuario) } : c.actor,
     }));

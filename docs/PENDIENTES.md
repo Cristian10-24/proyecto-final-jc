@@ -42,6 +42,7 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - «Sin proyecto»: convertir crea el proyecto y luego marca el registro como convertido; si alguien quita al participante en ese instante (o el proceso se cae entre los dos pasos), el proyecto queda creado y el registro borrado o pendiente.
 - «Sin proyecto»: el portal revela que un documento está «sin proyecto» (cuenta para el límite por documento, no para el de la IP), sin dar nombre, ciudad ni datos.
 - Comentarios: el texto anterior de un comentario editado se guarda (`anteriores`) pero no se muestra en pantalla; coordinación solo ve la marca «editado».
+- Edición del estudiante: quien conozca el documento de otro puede cambiarle el nombre y la descripción (lo cubren el límite por documento, el historial y «Revertir»). Un estudiante sin hora cuya ciudad ya cerró ve «cerrado» y no llega a la pantalla para editar.
 
 ## Más adelante
 - Número de proyecto: hoy el código es `P-<documento>` (al separar una pareja puede quedar `P-<doc>` y `P-<doc>-2`).

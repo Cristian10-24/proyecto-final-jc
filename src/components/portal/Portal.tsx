@@ -6,6 +6,7 @@ import { diaDe, diaLargo, fechaHora, grupoHora, hora, paisDe, partesDia } from "
 import { BotonCalendario, Boleto, Kicker, Nota, Skeleton, Titulo, ZonaAviso } from "./Piezas";
 import type { Aviso, Consulta, DiaAgenda, EstadoInicial } from "./tipos";
 import BotonTema from "../BotonTema";
+import EditarProyecto, { type ErrorEdicion } from "./EditarProyecto";
 import s from "./Portal.module.css";
 
 // Portal del estudiante (sin sesión): documento → datos → día → hora → confirmar → boleto.
@@ -77,6 +78,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
   const [confirmada, setConfirmada] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<Aviso | null>(null);
+  const [editando, setEditando] = useState(false);
   const turno = useRef(0); // descarta respuestas de cargas que ya no corresponden a la pantalla
 
   const ir = (v: Vista) => {
@@ -124,6 +126,31 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
   }
 
   // ---------- Acciones ----------
+
+  /** Paso 23: guarda nombre y descripción. Devuelve el error para el formulario (o null si se guardó). */
+  async function guardarEdicion(nombre: string, descripcion: string): Promise<ErrorEdicion> {
+    if (!datos?.edicion) return { mensaje: "Algo salió mal. Inténtalo otra vez." };
+    const r = await api("editar", { documento, nombre, descripcion, version: datos.edicion.version });
+    if (r.ok) {
+      const ok = r.data as { proyecto: { nombre: string; descripcion?: string }; version: string };
+      setDatos({ ...datos, proyecto: { ...datos.proyecto, nombre: ok.proyecto.nombre, descripcion: ok.proyecto.descripcion }, edicion: { version: ok.version, puede: true } });
+      setEditando(false);
+      setAviso({ tipo: "info", titulo: "Guardamos los cambios de tu proyecto." });
+      return null;
+    }
+    if (r.status === 400 && r.data.error === "datos") return { mensaje: r.data.mensaje ?? "Revisa los datos.", ...((r.data as { campo?: "nombre" | "descripcion" }).campo ? { campo: (r.data as { campo: "nombre" | "descripcion" }).campo } : {}) };
+    if (r.data.error === "cambio" || r.data.error === "evaluado") {
+      // Se recargan los datos para que vea cómo quedó (o que ya no se puede editar).
+      const c = await api("consultar", { documento });
+      if (c.ok) setDatos(c.data as Consulta);
+      setEditando(false);
+      setAviso({ tipo: "warn", titulo: r.data.mensaje ?? "Tu proyecto cambió. Revisa y vuelve a intentarlo." });
+      return null;
+    }
+    setEditando(false);
+    if (!comun(r)) errorGeneral();
+    return null;
+  }
 
   async function buscar(e: React.FormEvent) {
     e.preventDefault();
@@ -225,6 +252,23 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
     if (!comun(r)) errorGeneral();
   }
 
+  /** Paso 23: tarjeta del proyecto, o el formulario para editar nombre y descripción. */
+  // Se llama como función (no como componente): así el formulario no se vuelve a montar en cada render.
+  function tarjetaProyecto() {
+    if (!datos) return null;
+    if (editando) return <EditarProyecto nombre={datos.proyecto.nombre} descripcion={datos.proyecto.descripcion ?? ""} onGuardar={guardarEdicion} onCancelar={() => setEditando(false)} />;
+    return (
+      <section className={`${s.tarjeta} ${s.tarjetaProyecto}`} aria-label="Tu proyecto">
+        <i className={s.aro} aria-hidden="true" />
+        <Kicker>Tu proyecto</Kicker>
+        <div className={s.nombre}>{datos.proyecto.nombre}</div>
+        {datos.proyecto.descripcion && <p className={s.descripcion}>{datos.proyecto.descripcion}</p>}
+        <div className={s.ciudad}>{datos.proyecto.ciudad}</div>
+        {datos.edicion?.puede && <button type="button" className="btn btn-soft" onClick={() => { setAviso(null); setEditando(true); }}>Editar nombre y descripción</button>}
+      </section>
+    );
+  }
+
   function atras() {
     const destino = ATRAS[vista];
     if (!destino) return;
@@ -235,6 +279,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
 
   function reiniciar() {
     turno.current++;
+    setEditando(false);
     setDatos(null);
     setDias(null);
     setBloques(null);
@@ -358,7 +403,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
         {vista === "datos" && datos && (
           <Pantalla nav={nav} intro={<>
             <Titulo>Hola, {tu?.nombre.split(" ")[0] ?? "estudiante"}</Titulo>
-            <p className={s.texto}>Revisa que todo esté bien. Aquí no se puede editar.</p>
+            <p className={s.texto}>Revisa que todo esté bien. Puedes cambiar el nombre y la descripción de tu proyecto.</p>
           </>}>
             <ZonaAviso aviso={aviso} />
             {datos.integrantes.map((i) => (
@@ -373,13 +418,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
               </section>
             ))}
             {!pareja && <div className={s.chip}>Proyecto individual</div>}
-            <section className={`${s.tarjeta} ${s.tarjetaProyecto}`} aria-label="Tu proyecto">
-              <i className={s.aro} aria-hidden="true" />
-              <Kicker>Tu proyecto</Kicker>
-              <div className={s.nombre}>{datos.proyecto.nombre}</div>
-              {datos.proyecto.descripcion && <p className={s.descripcion}>{datos.proyecto.descripcion}</p>}
-              <div className={s.ciudad}>{datos.proyecto.ciudad}</div>
-            </section>
+            {tarjetaProyecto()}
             <button type="button" className="btn btn-primary" onClick={() => cargarDias()}>Mis datos están bien, elegir hora</button>
             <p className={s.ayuda}>¿Algo está mal? Escríbele a tu monitor.</p>
           </Pantalla>
@@ -507,6 +546,7 @@ export default function Portal({ estado }: { estado: EstadoInicial }) {
             <BotonCalendario inicio={datos.hora.inicio} proyecto={datos.proyecto.nombre} />
             <Nota aviso={{ tipo: "info", titulo: "Tu monitor te enviará el enlace de la sala por WhatsApp.", texto: "Si necesitas cambiarla, escríbele a tu monitor." }} />
             <ZonaAviso aviso={aviso} />
+            {tarjetaProyecto()}
             <button type="button" className="btn btn-soft" onClick={reiniciar}>Salir</button>
           </Pantalla>
         )}

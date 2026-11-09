@@ -34,6 +34,8 @@ export type ChangeLog = {
   anterior?: string;
   nuevo?: string;
   motivo?: string;
+  /** Fase 4 · Paso 23: edición del estudiante en el portal, [antes, después] (para revertirla). Solo en entradas nuevas. */
+  cambio?: { nombre: [string, string]; descripcion: [string, string] };
   actor: Actor;
   fecha: Date;
 };

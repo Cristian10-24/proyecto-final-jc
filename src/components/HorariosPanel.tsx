@@ -23,7 +23,7 @@ type Proyecto = {
   comentarios?: number;
 };
 type Monitor = { usuario: string; nombre: string; ciudades: string[] };
-type Cambio = { accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
+type Cambio = { id?: string; revertible?: boolean; accion: string; anterior?: string; nuevo?: string; motivo?: string; actor: { rol: string; usuario?: string }; fecha: string };
 type Bloque = { inicio: string; libres: number; deSuCiudad: boolean; otras: string[] };
 /** Modo orden de llegada: tope de la ciudad ese día y cuántos lleva (sin contar este proyecto si ya está ese día). */
 type Tope = { tope: number; lleva: number };
@@ -409,6 +409,9 @@ function Detalle({ p, version, dias, monitores, nombreMonitor, onCerrar, onHecho
                     <div className={s.histHead}><b>{ACCION[c.accion] ?? c.accion}</b><span className={s.histFecha}>{limpia(fmtFecha.format(f))} · {horaCO(f)}</span></div>
                     {(c.anterior || c.nuevo) && <div>{c.anterior ?? "—"}{c.nuevo !== undefined && <> → {c.nuevo}</>}</div>}
                     {c.motivo && <div className={s.histMotivo}>Motivo: {c.motivo}</div>}
+                    {c.revertible && c.id && (
+                      <div><button type="button" className="btn-link" disabled={ocupado} onClick={() => void enviar({ accion: "revertir", cambio: c.id }, "Cambio del estudiante revertido")}>Revertir este cambio</button></div>
+                    )}
                     <div className={s.sub}>{ROL[c.actor.rol] ?? c.actor.rol}{c.actor.usuario ? ` · ${c.actor.usuario}` : ""}</div>
                   </li>
                 );

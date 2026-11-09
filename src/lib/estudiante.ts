@@ -23,6 +23,8 @@ export type ProyectoVista = {
   proyecto: { nombre: string; descripcion?: string; ciudad: string };
   integrantes: IntegranteVista[];
   hora: HoraVista | null;
+  /** Paso 23: para editar nombre y descripción (versión que se vio y si todavía se puede: sin evaluación guardada). */
+  edicion?: { version: string; puede: boolean };
 };
 
 function vistaIntegrante(i: Integrante, documento: string): IntegranteVista {
@@ -47,7 +49,7 @@ export function vistaProyecto(p: Pick<Proyecto, "nombre" | "descripcion" | "ciud
 async function proyectoDe(documento: string) {
   const { proyectos } = await collections();
   // Un proyecto marcado «Sin proyecto» (Paso 21) no se muestra: la ruta responde «No tienes un proyecto inscrito».
-  return proyectos.findOne({ "integrantes.documento": documento, sinProyecto: { $exists: false } }, { projection: { nombre: 1, descripcion: 1, ciudad: 1, integrantes: 1 } });
+  return proyectos.findOne({ "integrantes.documento": documento, sinProyecto: { $exists: false } }, { projection: { nombre: 1, descripcion: 1, ciudad: 1, integrantes: 1, actualizadoEn: 1 } });
 }
 
 /** Hora del proyecto y quién la eligió (por el registro de la reserva). */
@@ -63,7 +65,9 @@ async function horaDe(p: Pick<Proyecto, "_id">, documento: string): Promise<{ as
 export async function consultar(documento: string): Promise<ProyectoVista | null> {
   const p = await proyectoDe(documento);
   if (!p) return null;
-  return vistaProyecto(p, documento, (await horaDe(p, documento))?.vista ?? null);
+  const { evalResultados } = await collections();
+  const evaluado = !!(await evalResultados.findOne({ proyectoId: p._id, noPresento: false }, { projection: { _id: 1 } }));
+  return { ...vistaProyecto(p, documento, (await horaDe(p, documento))?.vista ?? null), edicion: { version: p.actualizadoEn.toISOString(), puede: !evaluado } };
 }
 
 export type DiaVista = { dia: string; estado: "disponible" | "sin_horas" | "aun_no_abre"; abre?: string };
