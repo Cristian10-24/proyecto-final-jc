@@ -43,8 +43,7 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - «Sin proyecto»: el portal revela que un documento está «sin proyecto» (cuenta para el límite por documento, no para el de la IP), sin dar nombre, ciudad ni datos.
 - Comentarios: el texto anterior de un comentario editado se guarda (`anteriores`) pero no se muestra en pantalla; coordinación solo ve la marca «editado».
 - Edición del estudiante: quien conozca el documento de otro puede cambiarle el nombre y la descripción (lo cubren el límite por documento, el historial y «Revertir»). Un estudiante sin hora cuya ciudad ya cerró ve «cerrado» y no llega a la pantalla para editar.
-- Carga de mentores: el plan solo usa asientos que están libres al calcular; al aplicar una hora se liberan otros y el plan siguiente puede proponer más cambios (en la demo, 4 vueltas hasta quedar estable). En casos raros un proyecto cambia de mentor dos veces (la hora del estudiante nunca cambia). Con pocos proyectos por día, «Equilibrar» reparte mucho (en la demo, máximo 2 proyectos por mentor).
-- Carga de mentores: el revisor de seguridad (subagente) no se pudo correr en este ajuste porque el sistema de permisos bloqueó su lanzamiento; la revisión se hizo a mano (ver bitácora).
+- Carga de mentores: el plan solo usa asientos que hoy están libres; después de aplicar, los asientos liberados pueden dar nuevas propuestas en el siguiente cálculo (cada proyecto se mueve a lo sumo una vez por cálculo).
 
 ## Más adelante
 - Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.

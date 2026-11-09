@@ -132,11 +132,11 @@ export default function CargaMentoresPanel({ user }: { user: SessionUser }) {
 
           <section className={h.card}>
             <div className={h.cardHead}><h2 className={h.cardTitle}>Propuestas</h2><span className={`${h.chip} ${h.chip_neutro}`}><i />{nPropuestas}</span></div>
-            <p className={h.desc}>En orden: juntar (cada mentor con 3 o 4 proyectos por hora), evitar horas sueltas y repartir las horas. Nunca proyectos evaluados. {NOTA} Se aplican hora por hora, en el orden indicado (mejor todas las de la hora juntas): cada vez se recalcula todo.</p>
+            <p className={h.desc}>En orden: juntar (cada mentor con 3 o 4 proyectos por hora), evitar horas sueltas y repartir las horas. Nunca proyectos evaluados. {NOTA} Cada proyecto se mueve una sola vez, directo a su mentor final: se pueden aplicar en cualquier orden.</p>
             {nPropuestas === 0 && !c.resumen.some((x) => x.noSePuede) ? <div className={h.vacio}><b>No hay cambios que proponer este día.</b></div> : (
               <div className={s.horas}>
-                {[...c.resumen.filter((x) => x.propuestas.length).sort((a, b) => a.orden! - b.orden!), ...c.resumen.filter((x) => !x.propuestas.length && x.noSePuede)].map((x) => (
-                  <Hora key={x.hora} x={x} aplica={aplica && x.orden === 1} ocupado={ocupado}
+                {c.resumen.filter((x) => x.propuestas.length || x.noSePuede).map((x) => (
+                  <Hora key={x.hora} x={x} aplica={aplica} ocupado={ocupado}
                     onAplicar={(lista, titulo) => setConfirmar({ titulo, lista })} />
                 ))}
               </div>
@@ -182,8 +182,7 @@ function Resumen({ a, z }: { a: Indicadores; z: Indicadores }) {
 function Hora({ x, aplica, ocupado, onAplicar }: { x: HoraResumen; aplica: boolean; ocupado: boolean; onAplicar: (lista: Propuesta[], titulo: string) => void }) {
   return (
     <div className={s.hora}>
-      <div className={s.horaT}>{x.orden ? <span className={`${h.chip} ${x.orden === 1 ? h.chip_verde : h.chip_neutro}`}><i />{x.orden === 1 ? "1.º · siguiente" : `${x.orden}.º`}</span> : null} <b>{hora12(x.hora)}</b> · {x.proyectos} proyectos en {x.mentoresAntes} mentores{x.propuestas.length ? ` → ${x.mentoresDespues}` : ""}</div>
-      {x.orden !== null && x.orden > 1 && <div className={h.sub}>Se aplica después de las anteriores.</div>}
+      <div className={s.horaT}><b>{hora12(x.hora)}</b> · {x.proyectos} proyectos en {x.mentoresAntes} mentores{x.propuestas.length ? ` → ${x.mentoresDespues}` : ""}</div>
       {x.noSePuede && <div className="note note-info">No se puede juntar sin mover la hora.</div>}
       {x.propuestas.length > 0 && (
         <ul className={s.lista}>

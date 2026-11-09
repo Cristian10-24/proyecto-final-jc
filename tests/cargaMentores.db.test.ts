@@ -148,40 +148,68 @@ describe("objetivo 3 · equilibrar", () => {
   });
 });
 
-describe("aplicar en el orden propuesto no deshace nada", () => {
-  /** Aplica las propuestas de la hora con orden 1 sobre el escenario, recalcula y repite. */
-  function aplicarEnOrden(e: ReturnType<typeof escenario>) {
-    const visitas = new Map<string, Set<string>>(); // proyecto → mentores por los que pasó
-    for (const a of e.lista) if (a.proyectoId) visitas.set(String(a.proyectoId), new Set([a.mentorId]));
-    let vueltas = 0;
-    for (;;) {
-      const r = e.calcular();
-      invariantes(e, r);
-      const siguiente = r.resumen.find((x) => x.orden === 1);
-      if (!siguiente) return vueltas;
-      for (const p of siguiente.propuestas) {
-        const de = e.lista.find((x) => String(x._id) === p.desde)!, a = e.lista.find((x) => String(x._id) === p.hacia)!;
-        // Nunca vuelve a un mentor por el que ya pasó.
-        expect(visitas.get(p.proyecto.id)!.has(a.mentorId)).toBe(false);
-        visitas.get(p.proyecto.id)!.add(a.mentorId);
-        a.proyectoId = de.proyectoId; de.proyectoId = null;
-      }
-      if (++vueltas > 30) throw new Error("no termina");
+describe("ajustes a «Equilibrar» y movimientos directos", () => {
+  /** Aplica TODAS las propuestas de una vez y recalcula; devuelve el resultado nuevo. */
+  function aplicarTodas(e: ReturnType<typeof escenario>) {
+    const r = e.calcular();
+    const ida = new Map<string, string>(); // proyecto → mentor del que salió
+    for (const p of r.resumen.flatMap((x) => x.propuestas)) {
+      const de = e.lista.find((x) => String(x._id) === p.desde)!, a = e.lista.find((x) => String(x._id) === p.hacia)!;
+      ida.set(p.proyecto.id, de.mentorId);
+      a.proyectoId = de.proyectoId; de.proyectoId = null;
     }
+    return { despues: e.calcular(), ida };
   }
 
-  it("equilibrar 5 horas seguidas: termina sin volver atrás", () => {
-    const e = escenario();
-    for (let h = 6; h <= 10; h++) { e.asientos("a", h); e.asientos("b", h); for (const b of [0, 1, 2]) e.poner("a", h, b); }
-    expect(aplicarEnOrden(e)).toBeGreaterThan(0);
-  });
-
-  it("varios mentores con horas de 1 o 2 proyectos (como la demo): termina sin volver atrás", () => {
+  it("cada proyecto aparece a lo sumo en una propuesta y, aplicadas todas, nada vuelve atrás", () => {
     const e = escenario();
     for (const m of ["a", "b", "c", "d"]) for (let h = 8; h <= 11; h++) e.asientos(m, h);
     e.poner("a", 8, 0); e.poner("a", 9, 1); e.poner("a", 9, 3); e.poner("a", 10, 2); e.poner("a", 11, 0);
     e.poner("b", 8, 1); e.poner("c", 8, 2); e.poner("d", 9, 0);
-    aplicarEnOrden(e);
+    for (let h = 8; h <= 11; h++) for (const b of [0, 1, 2]) if (!e.lista.find((x) => x.mentorId === "c" && x.inicio.getTime() === H(h, b * 15).getTime())!.proyectoId && h > 9) e.poner("c", h, b);
+    const r = e.calcular();
+    invariantes(e, r);
+    const ids = r.resumen.flatMap((x) => x.propuestas.map((p) => p.proyecto.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    const { despues, ida } = aplicarTodas(e);
+    for (const p of despues.resumen.flatMap((x) => x.propuestas)) expect(e.lista.find((x) => String(x._id) === p.hacia)!.mentorId).not.toBe(ida.get(p.proyecto.id));
+  });
+
+  it("con pocos proyectos no se reparten horas de 1 o 2 (como la demo)", () => {
+    const e = escenario();
+    for (const m of ["a", "b", "c", "d", "e"]) for (let h = 8; h <= 11; h++) e.asientos(m, h);
+    e.poner("a", 8, 0); e.poner("a", 8, 1); e.poner("a", 9, 0); e.poner("a", 9, 2); e.poner("a", 10, 1); e.poner("a", 11, 3);
+    const r = e.calcular();
+    expect(r.resumen.flatMap((x) => x.propuestas)).toEqual([]);
+    expect(r.indicadores.despues.mentores).toBe(1);
+  });
+
+  it("equilibrar mueve horas completas de 3 o más y nunca parte una hora", () => {
+    const e = escenario();
+    for (let h = 6; h <= 10; h++) { e.asientos("a", h); e.asientos("b", h); for (const b of [0, 1, 2]) e.poner("a", h, b); }
+    const r = e.calcular();
+    invariantes(e, r);
+    for (const x of r.resumen) {
+      if (!x.propuestas.length) continue;
+      expect(x.propuestas).toHaveLength(3); // la hora entera
+      expect(new Set(x.propuestas.map((p) => p.a)).size).toBe(1);
+      expect(x.mentoresDespues).toBe(1);
+    }
+    const horasDe = (m: string) => r.despues.find((f) => f.nombre === `Mentor ${m}`)?.horas.filter((y) => y.proyectos).length ?? 0;
+    expect(Math.abs(horasDe("a") - horasDe("b"))).toBeLessThan(2);
+    expect(r.despues.every((f) => f.horas.every((y) => !y.proyectos || y.proyectos >= 3))).toBe(true);
+  });
+
+  it("solo equilibra con diferencia de 2 o más horas", () => {
+    const uno = escenario();
+    for (const h of [6, 7]) { uno.asientos("a", h); uno.asientos("b", h); for (const b of [0, 1, 2]) uno.poner("a", h, b); }
+    uno.asientos("b", 8); for (const b of [0, 1, 2]) uno.poner("b", 8, b);
+    expect(uno.calcular().resumen.flatMap((x) => x.propuestas)).toEqual([]); // 2 y 1: diferencia 1
+    const dos = escenario();
+    for (const h of [6, 7, 8]) { dos.asientos("a", h); dos.asientos("b", h); for (const b of [0, 1, 2]) dos.poner("a", h, b); }
+    const r = dos.calcular(); // 3 y 0: se pasa una hora completa (sin abrir huecos)
+    expect(r.resumen.flatMap((x) => x.propuestas)).toHaveLength(3);
+    expect(r.indicadores.despues.horasSueltas).toBe(0);
   });
 });
 
@@ -197,6 +225,8 @@ describe("la hora nunca cambia (escenarios al azar)", () => {
       const r = e.calcular(azar() < 0.5);
       invariantes(e, r);
       for (const x of r.resumen) expect(x.mentoresDespues).toBeLessThanOrEqual(x.mentoresAntes);
+      const ids = r.resumen.flatMap((x) => x.propuestas.map((p) => p.proyecto.id));
+      expect(new Set(ids).size).toBe(ids.length); // cada proyecto se mueve a lo sumo una vez
     }
   });
 });
