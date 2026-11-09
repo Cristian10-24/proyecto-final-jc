@@ -167,7 +167,7 @@ export async function anularEvaluacion(proyectoId: ObjectId, motivo: string, act
  * asiento actual (si tiene) y toma uno libre, en una transacción (lógica común en mover.ts). Por defecto solo asientos
  * de su ciudad; con `otraCiudad`, cualquiera libre. Un proyecto con evaluación guardada no se mueve.
  */
-export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string; asiento?: ObjectId; confirmarTope?: boolean }, actor: Actor): Promise<ResultadoAdmin> {
+export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: { otraCiudad: boolean; motivo: string; asiento?: ObjectId; confirmarTope?: boolean; desde?: ObjectId }, actor: Actor): Promise<ResultadoAdmin> {
   const c = await collections();
   const proyecto = await c.proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!proyecto) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
@@ -182,6 +182,8 @@ export async function cambiarHora(proyectoId: ObjectId, inicio: Date, opciones: 
   try {
     await conCandado(async (s) => {
       const viejo = await c.asientos.findOne({ proyectoId }, { session: s });
+      // Paso 24: «Carga de mentores» exige que el proyecto siga en el asiento de la propuesta.
+      if (opciones.desde && !viejo?._id.equals(opciones.desde)) throw new Falla("cambio");
       if (viejo && (opciones.asiento ? viejo._id.equals(opciones.asiento) : viejo.inicio.getTime() === inicio.getTime())) throw new Error("misma_hora");
       const ahora = new Date();
       const nuevo = await moverProyecto(s, proyectoId, viejo?._id ?? null, filtros, actor.usuario ?? actor.rol, ahora, { tope: opciones.confirmarTope ? "permitir" : "respetar" });
