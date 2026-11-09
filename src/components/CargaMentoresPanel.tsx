@@ -20,7 +20,7 @@ const hora12 = (x: number) => horaCO(new Date(Date.UTC(2026, 0, 1, x + 5)));
 type Confirmar = { titulo: string; lista: Propuesta[] } | null;
 
 export default function CargaMentoresPanel({ user }: { user: SessionUser }) {
-  const aplica = puede(user.rol, "cambiar_horario");
+  const aplica = puede(user, "cambiar_horario");
   const [dia, setDia] = useState("");
   const [d, setD] = useState<CargaMentores | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
@@ -85,7 +85,7 @@ export default function CargaMentoresPanel({ user }: { user: SessionUser }) {
             {d.dias.map((x) => <option key={x} value={x}>{etiquetaDia(x)}</option>)}
           </select>
         )}
-        {puede(user.rol, "descargar_excel") && <a className="btn btn-ghost" href="/api/admin/carga-mentores/excel">Descargar Excel (todos los días)</a>}
+        {puede(user, "descargar_excel") && <a className="btn btn-ghost" href="/api/admin/carga-mentores/excel">Descargar Excel (todos los días)</a>}
       </div>
       {aviso && <div className={`note ${aviso.tipo === "ok" ? "note-info" : "note-error"}`} role="status">{aviso.texto}</div>}
 

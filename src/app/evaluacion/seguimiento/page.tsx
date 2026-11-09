@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function SeguimientoGeneralPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "ver_evaluaciones")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "ver_evaluaciones")) redirect(inicioPorRol(user));
   return <SeguimientoGeneral user={user} />;
 }

@@ -9,6 +9,7 @@ import { conCandado, modoOrdenLlegada, tocarCandado, topeVigente } from "./modoC
 import { enSinProyecto, mensajeEnSinProyecto } from "./sinProyecto";
 import type { Actor, Asiento, Integrante, Proyecto, Ruta } from "./types";
 import { cleanSpaces, toProperName } from "./validation/name";
+import { FILTRO_MONITOR } from "./permisos";
 
 // Gestión manual de proyectos (solo admin): crear, editar, separar una pareja y agregar un integrante.
 // Reglas: solo campos que ya existen en `proyectos` (nada nuevo en los documentos), ningún índice nuevo, y una
@@ -87,7 +88,7 @@ async function validar(p: ProyectoEntrada, s?: ClientSession, previos: Integrant
   }
   if (integrantes[1] && integrantes[0]!.documento === integrantes[1].documento) return falla("datos", "Los dos integrantes tienen el mismo documento.", "integrante2.documento");
   const { users } = await collections();
-  const monitores = (await users.find({ rol: "monitor", activo: true }, { session: s, projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray())
+  const monitores = (await users.find({ ...FILTRO_MONITOR, activo: true }, { session: s, projection: { usuario: 1, nombre: 1, ciudades: 1 } }).toArray())
     .map((m) => ({ usuario: m.usuario, nombre: m.nombre, ciudades: m.ciudades }));
   let monitor: string | null;
   if (p.monitor === undefined) monitor = asignarMonitor({ ciudad: p.ciudad, monitorTexto: undefined }, monitores).monitor;
@@ -444,7 +445,7 @@ export async function convertirEnProyecto(id: ObjectId, datos: { nombre: string;
   const sp = await c.sinProyecto.findOne({ _id: id });
   if (!sp || sp.convertidoEn) return falla("cambio", "Ese participante ya se convirtió en proyecto (o ya no está). Recarga la lista.");
   // El monitor guardado solo si sigue activo; si no, el de la ciudad (como al crear).
-  const activo = sp.monitor ? await c.users.findOne({ usuario: sp.monitor, rol: "monitor", activo: true }, { projection: { _id: 1 } }) : null;
+  const activo = sp.monitor ? await c.users.findOne({ usuario: sp.monitor, ...FILTRO_MONITOR, activo: true }, { projection: { _id: 1 } }) : null;
   return crearProyecto({
     ciudad: sp.ciudad, nombre: datos.nombre, ...(datos.descripcion ? { descripcion: datos.descripcion } : {}), ...(datos.ruta ? { ruta: datos.ruta } : {}),
     monitor: activo ? sp.monitor : sp.monitor === null ? null : undefined,

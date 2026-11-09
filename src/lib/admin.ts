@@ -11,6 +11,7 @@ import { enmascararNumero } from "./estudiante";
 import { conCandado, modoOrdenLlegada, topeDeDia } from "./modoCupos";
 import { Falla, liberarProyecto, moverProyecto } from "./mover";
 import type { Actor, Asiento, Proyecto } from "./types";
+import { FILTRO_MONITOR } from "./permisos";
 
 // Acciones del admin sobre horas, asientos y monitores. Toda acción deja registro en changeLog.
 // Liberar y cambiar la hora van en transacción, con la lógica común de mover.ts (también la usa el tablero).
@@ -285,7 +286,7 @@ export async function asignarMonitor(proyectoId: ObjectId, monitor: string | nul
   const p = await proyectos.findOne({ _id: proyectoId }, { projection: { ciudad: 1 } });
   if (!p) return { ok: false, error: "sin_proyecto", mensaje: "No existe ese proyecto." };
   if (monitor) {
-    const u = await users.findOne({ usuario: monitor, rol: "monitor", activo: true });
+    const u = await users.findOne({ usuario: monitor, ...FILTRO_MONITOR, activo: true });
     if (!u) return { ok: false, error: "sin_monitor", mensaje: "Ese monitor no existe o está inactivo." };
     // El seguimiento del monitor filtra por sus ciudades: fuera de ellas no vería el proyecto.
     if (!u.ciudades.includes(p.ciudad)) return { ok: false, error: "otra_ciudad", mensaje: `Ese monitor no tiene ${p.ciudad} entre sus ciudades. Agrégasela en Usuarios o elige otro.` };

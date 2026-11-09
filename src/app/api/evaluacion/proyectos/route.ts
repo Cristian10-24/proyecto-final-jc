@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
   const [filas, crit, mentores] = await Promise.all([
     listaEvaluaciones(g.user, parsed.data), criterios(),
-    puede(g.user.rol, "ver_evaluaciones") ? mentoresConProyectos() : Promise.resolve(null),
+    puede(g.user, "ver_evaluaciones") ? mentoresConProyectos() : Promise.resolve(null),
   ]);
   return NextResponse.json({ filas, criterios: crit, ...(mentores ? { mentores } : {}) });
 }

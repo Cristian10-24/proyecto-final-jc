@@ -228,4 +228,4 @@ apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal respon
 
 ### Pasos de mentor y roles (rama feature/mentor-y-roles)
 - [x] 25. Cambiar mentor (mismo bloque) desde la ficha de Horarios, filtro por mentor y buscador en el Tablero.
-- [ ] 26. Un usuario con varios roles (`rolesExtra`, solo el admin los asigna, con changeLog).
+- [x] 26. Un usuario con varios roles (`rolesExtra`, solo el admin los asigna, con changeLog).

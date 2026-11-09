@@ -6,6 +6,7 @@ import { collections } from "@/lib/db";
 import { convertirEnProyecto } from "@/lib/gestionProyectos";
 import { agregarParticipante, listarSinProyecto, quitarParticipante } from "@/lib/sinProyecto";
 import { IdParams } from "@/lib/validation/id";
+import { FILTRO_MONITOR } from "@/lib/permisos";
 
 // Paso 21 · «Sin proyecto» (solo admin): lista, agregar uno, quitar uno cargado por error y convertir en proyecto.
 
@@ -35,7 +36,7 @@ export async function GET() {
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
   const { users } = await collections();
-  const monitores = await users.find({ rol: "monitor", activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).sort({ nombre: 1 }).toArray();
+  const monitores = await users.find({ ...FILTRO_MONITOR, activo: true }, { projection: { usuario: 1, nombre: 1, ciudades: 1 } }).sort({ nombre: 1 }).toArray();
   return NextResponse.json({
     ...(await listarSinProyecto()),
     monitores: monitores.map((m) => ({ usuario: m.usuario, nombre: m.nombre, ciudades: m.ciudades })),

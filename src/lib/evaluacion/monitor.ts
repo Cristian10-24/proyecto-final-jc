@@ -51,14 +51,14 @@ const etiqueta = (inicio: Date) => `${diaCOL(inicio)} ${horaCO(inicio)}`;
 
 /** Salas del monitor (día, hora y mentor de cada una). Sin el permiso, ninguna. */
 async function salasDelMonitor(user: SessionUser) {
-  if (!puede(user.rol, "monitorear_salas")) return [];
+  if (!puede(user, "monitorear_salas")) return [];
   const { planSalas } = await collections();
   return planSalas.find({ monitor: user.usuario }).sort({ dia: 1, hora: 1, sala: 1 }).toArray();
 }
 
 /** ¿El asiento cae en una sala de este monitor? (mismo día, hora y mentor). */
 async function esDeSuSala(user: SessionUser, a: Pick<Asiento, "inicio" | "mentorId">): Promise<boolean> {
-  if (!puede(user.rol, "monitorear_salas")) return false;
+  if (!puede(user, "monitorear_salas")) return false;
   const { planSalas } = await collections();
   return !!(await planSalas.findOne({ dia: diaCOL(a.inicio), hora: horaCOL(a.inicio), mentorId: a.mentorId, monitor: user.usuario }, { projection: { _id: 1 } }));
 }
@@ -76,7 +76,7 @@ export type MiSugerencia = VistaSugerencia & { proyecto: string; integrantes: st
 
 /** Las sugerencias que hizo este monitor (las últimas 30), con su estado: aunque el proyecto ya no esté en sus salas. */
 async function misSugerencias(user: SessionUser): Promise<MiSugerencia[]> {
-  if (!puede(user.rol, "monitorear_salas")) return [];
+  if (!puede(user, "monitorear_salas")) return [];
   const c = await collections();
   const lista = await c.cambiosSugeridos.find({ creadoPor: user.usuario }).sort({ creadoEn: -1 }).limit(30).toArray();
   const ps = new Map((await c.proyectos.find({ _id: { $in: lista.map((x) => x.proyectoId) } }, { projection: { nombre: 1, integrantes: 1 } }).toArray()).map((p) => [String(p._id), p]));

@@ -32,7 +32,7 @@ export default function ResumenPanel({ user }: { user: SessionUser }) {
   const [datos, setDatos] = useState<Resumen | null>(null);
   const [descarga, setDescarga] = useState<Descarga>("listo");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const puedeDescargar = puede(user.rol, "descargar_excel");
+  const puedeDescargar = puede(user, "descargar_excel");
 
   const cargar = useCallback(async () => {
     setCarga("cargando");

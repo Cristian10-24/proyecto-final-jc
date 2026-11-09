@@ -52,7 +52,7 @@ export default function SeguimientoGeneral({ user }: { user: SessionUser }) {
     <EvalShell user={user} active="seguimiento">
       <div className={s.hello}>
         <div><h1>Seguimiento general</h1><p>Se actualiza cada minuto mientras los mentores evalúan.</p></div>
-        {puede(user.rol, "descargar_excel") && (
+        {puede(user, "descargar_excel") && (
           <a className="ev-btn ev-btn-navy" href={`/api/evaluacion/seguimiento/excel${filtro ? `?${filtro}` : ""}`}>Descargar resultados (Excel)</a>
         )}
       </div>
@@ -169,7 +169,7 @@ export default function SeguimientoGeneral({ user }: { user: SessionUser }) {
               filas={d.porMentor.map((x) => [x.mentor, x.asignados, x.evaluados, x.avance === null ? "—" : pct(x.avance), x.funciona === null ? "—" : pct(x.funciona), uno(x.nivel)])} />
           </section>
 
-          <CriteriosCard inicial={d.criterios} editable={puede(user.rol, "editar_criterios")} onGuardado={() => void cargar()} />
+          <CriteriosCard inicial={d.criterios} editable={puede(user, "editar_criterios")} onGuardado={() => void cargar()} />
         </>
       )}
     </EvalShell>

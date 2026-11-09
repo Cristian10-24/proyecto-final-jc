@@ -6,7 +6,7 @@ import { z } from "zod";
 import { collections, transaccion } from "./db";
 import { clave } from "./importar/excel";
 import { idMentor } from "./importar/mentores";
-import { ROLES, type RolUsuario } from "./permisos";
+import { ROL_TXT, ROLES, ROLES_EXTRA, rolesDe, tieneRol, type RolExtra, type RolUsuario } from "./permisos";
 import type { User } from "./types";
 import { cleanSpaces, normalizeCity } from "./validation/name";
 
@@ -46,8 +46,8 @@ export const EdicionUsuario = z
   })
   .strict();
 
-/** El mentor se reconoce por su nombre, escrito igual que en la hoja Horarios. */
-export const mentorIdDe = (rol: RolUsuario, nombre: string) => (rol === "mentor" ? idMentor(nombre) : undefined);
+/** El mentor se reconoce por su nombre, escrito igual que en la hoja Horarios (Paso 26: también si es mentor como rol adicional). */
+export const mentorIdDe = (roles: RolUsuario | readonly RolUsuario[], nombre: string) => ([roles].flat().includes("mentor") ? idMentor(nombre) : undefined);
 
 /** Distancia de edición entre dos textos (para sugerir nombres). */
 function distancia(a: string, b: string): number {
@@ -107,10 +107,60 @@ export async function restablecerClave(id: ObjectId, claveDada: string | undefin
 export function vistaUsuario(u: User) {
   return {
     id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol, correo: u.correo ?? "",
-    ciudades: u.rol === "monitor" ? u.ciudades : [], activo: u.activo,
+    rolesExtra: rolesDe(u).filter((r) => r !== u.rol) as RolExtra[],
+    ciudades: tieneRol(u, "monitor") ? u.ciudades : [], activo: u.activo,
   };
 }
 export type VistaUsuario = ReturnType<typeof vistaUsuario>;
 
 /** Primer mensaje de error legible de un ZodError. */
 export const mensajeZod = (e: z.ZodError) => e.issues[0]?.message ?? "Datos inválidos.";
+
+/* ------------------------------------------------------------- Paso 26 · roles adicionales */
+
+export const RolesExtraEntrada = z.object({ rolesExtra: z.array(z.enum(ROLES_EXTRA)).max(ROLES_EXTRA.length) }).strict();
+
+export type ResultadoRoles = { ok: true; usuario: User } | { ok: false; error: "no_existe" | "propio" | "admin" | "mentor" | "cambio"; mensaje: string };
+
+const textoRoles = (rs: readonly RolUsuario[]) => (rs.length ? rs.map((r) => ROL_TXT[r]).join(" + ") : "ninguno");
+
+/**
+ * Agregar o quitar roles adicionales a un usuario (solo el admin, nunca a sí mismo, nunca «Administración»).
+ * Escribe solo `rolesExtra` (y `mentorId` si gana o pierde el rol de mentor) de ESE usuario, con su changeLog, en una
+ * transacción que exige que nadie lo haya cambiado mientras tanto. La sesión se relee en cada petición: aplica al instante.
+ */
+export async function cambiarRolesExtra(id: ObjectId, pedidos: readonly RolExtra[], actor: Actor & { id: string }): Promise<ResultadoRoles> {
+  if (String(id) === actor.id) return { ok: false, error: "propio", mensaje: "No puedes cambiar tus propios roles." };
+  const { users, changeLog } = await collections();
+  const actual = await users.findOne({ _id: id });
+  if (!actual) return { ok: false, error: "no_existe", mensaje: "Ese usuario ya no existe." };
+  if (actual.rol === "admin") return { ok: false, error: "admin", mensaje: "Administración ya tiene todos los permisos: no lleva roles adicionales." };
+  // Sin repetidos y sin el rol principal (ya lo tiene); en el orden de la lista de roles.
+  const nuevos = ROLES_EXTRA.filter((r) => pedidos.includes(r) && r !== actual.rol);
+  const antes = (actual.rolesExtra ?? []).filter((r) => (ROLES_EXTRA as readonly string[]).includes(r));
+  if (nuevos.join() === ROLES_EXTRA.filter((r) => antes.includes(r)).join()) return { ok: true, usuario: actual };
+  const mentorId = mentorIdDe([actual.rol, ...nuevos], actual.nombre);
+  if (mentorId && mentorId !== actual.mentorId) {
+    const err = await errorMentor(mentorId, actual._id, actual.nombre);
+    if (err) return { ok: false, error: "mentor", mensaje: err };
+  }
+  let hecho: User | null = null;
+  try {
+    await transaccion(async (s) => {
+      // Solo si sigue como se leyó (mismo rol principal y mismos roles adicionales).
+      hecho = await users.findOneAndUpdate(
+        { _id: id, rol: actual.rol, ...(actual.rolesExtra ? { rolesExtra: actual.rolesExtra } : { rolesExtra: { $exists: false } }) },
+        { $set: { rolesExtra: nuevos, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}), ...(tieneRol({ rol: actual.rol, rolesExtra: nuevos }, "monitor") ? {} : { ciudades: [] }) }, ...(mentorId ? {} : { $unset: { mentorId: "" } }) },
+        { returnDocument: "after", session: s },
+      );
+      if (hecho) await changeLog.insertOne({
+        accion: "roles_usuario", anterior: `${actual.usuario}: ${textoRoles(antes)}`, nuevo: `${actual.usuario}: ${textoRoles(nuevos)}`, actor: { rol: actor.rol, ...(actor.usuario ? { usuario: actor.usuario } : {}) }, fecha: new Date(),
+      }, { session: s });
+    });
+  } catch (e) {
+    if (e instanceof Error && "code" in e && (e as { code?: number }).code === 11000) return { ok: false, error: "mentor", mensaje: "Ya hay otro usuario para ese mentor." };
+    throw e;
+  }
+  const u = hecho as User | null;
+  return u ? { ok: true, usuario: u } : { ok: false, error: "cambio", mensaje: "Alguien cambió este usuario mientras tanto. Recarga la lista." };
+}

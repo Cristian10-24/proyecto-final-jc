@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { puede, ROLES, type Permiso } from "@/lib/permisos";
+import { etiquetaRoles, inicioPorRol, puede, rolesDe, ROLES, type Permiso } from "@/lib/permisos";
 
 // Se prueba el camino real de autorización (cookie firmada → getCurrentUser → exigir) contra los route handlers.
 // Solo se simulan la cookie (next/headers) y la base: si un permiso fallara, la ruta intentaría usar
@@ -24,10 +24,10 @@ vi.mock("@/lib/db", () => ({
   }),
 }));
 
-async function como(rol: "mentor" | "monitor" | "coordinador" | "admin") {
+async function como(rol: "mentor" | "monitor" | "coordinador" | "admin", rolesExtra?: string[]) {
   const { createToken } = await import("@/lib/auth");
   const _id = new ObjectId();
-  estado.usuario = { _id, usuario: `prueba-${rol}`, nombre: "Usuario Prueba", rol, ciudades: rol === "monitor" ? ["Cali"] : [], ...(rol === "mentor" ? { mentorId: "mentor-prueba" } : {}), activo: true, tokenVersion: 0 };
+  estado.usuario = { _id, usuario: `prueba-${rol}`, nombre: "Usuario Prueba", rol, ciudades: rol === "monitor" ? ["Cali"] : [], ...(rol === "mentor" ? { mentorId: "mentor-prueba" } : {}), ...(rolesExtra ? { rolesExtra } : {}), activo: true, tokenVersion: 0 };
   estado.token = createToken(_id.toHexString(), 0);
 }
 
@@ -59,6 +59,8 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["aplicar reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).POST(json("POST", { accion: "aplicar", dia: "2026-11-12", ciudades: [] }))],
   ["guardar el cierre de inscripciones", async () => (await import("@/app/api/admin/reglas/cierre/route")).POST(json("POST", { horasAntes: 24, porCiudad: {} }))],
   ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
+  ["cambiar roles adicionales (Paso 26)", async () => (await import("@/app/api/admin/usuarios/[id]/roles/route")).POST(json("POST", { rolesExtra: ["coordinador"] }), ctx)],
+  ["ver mentores libres de un bloque (Paso 25)", async () => (await import("@/app/api/admin/proyectos/[id]/mentores/route")).GET(new Request("http://localhost/x"), ctx)],
 ];
 
 // Escribir una evaluación: solo el mentor (coordinación y admin solo leen).
@@ -268,5 +270,53 @@ describe("sesión con clave restablecida", () => {
     estado.usuario = { ...estado.usuario!, tokenVersion: 1 }; // se restableció la clave después de emitir la cookie
     const { getCurrentUser } = await import("@/lib/auth");
     expect(await getCurrentUser()).toBeNull();
+  });
+});
+
+describe("Paso 26 · un usuario con varios roles", () => {
+  const todos = Object.keys({ ver_seguimiento: 1, ver_todas_las_ciudades: 1, ver_resumen: 1, descargar_excel: 1, importar: 1, gestionar_usuarios: 1, cambiar_horario: 1, evaluar: 1, ver_evaluaciones: 1, monitorear_salas: 1, editar_criterios: 1, comentar_proyectos: 1 }) as Permiso[];
+
+  it("sus permisos son la suma de sus roles, sin ninguno de administración", () => {
+    const k = { rol: "monitor", rolesExtra: ["coordinador"] };
+    for (const p of todos) expect(puede(k, p), p).toBe(puede("monitor", p) || puede("coordinador", p));
+    for (const p of ["importar", "gestionar_usuarios", "cambiar_horario"] as Permiso[]) expect(puede(k, p), p).toBe(false);
+    expect(etiquetaRoles({ ...k, ciudades: ["Panamá"] })).toBe("Monitor · Panamá + Coordinación");
+    expect(inicioPorRol(k)).toBe("/admin");
+  });
+
+  it("un monitor sin roles extra (o con la lista vacía) tiene exactamente lo de hoy", () => {
+    for (const u of [{ rol: "monitor" }, { rol: "monitor", rolesExtra: [] }])
+      for (const p of todos) expect(puede(u, p), p).toBe(puede("monitor", p));
+    expect(inicioPorRol({ rol: "monitor" })).toBe("/monitor");
+  });
+
+  it("«admin» o un rol desconocido como adicional no dan nada", () => {
+    expect(rolesDe({ rol: "monitor", rolesExtra: ["admin", "intruso", "monitor"] })).toEqual(["monitor"]);
+    for (const p of todos) expect(puede({ rol: "monitor", rolesExtra: ["admin"] }, p), p).toBe(puede("monitor", p));
+  });
+
+  describe("monitor + coordinación recibe 403 en todo lo de administración", () => {
+    beforeAll(() => como("monitor", ["coordinador"]));
+    for (const [nombre, llamar] of soloAdmin) it(`al ${nombre}`, async () => expect((await llamar()).status).toBe(403));
+  });
+
+  it("quitar el rol adicional le quita el acceso en la petición siguiente", async () => {
+    const { exigir } = await import("@/lib/auth");
+    await como("monitor", ["coordinador"]);
+    expect((await exigir("ver_resumen")).error).toBeUndefined();
+    estado.usuario = { ...estado.usuario!, rolesExtra: [] }; // el admin se lo quitó (la sesión se relee en cada petición)
+    expect((await exigir("ver_resumen")).error?.status).toBe(403);
+    expect((await exigir("ver_seguimiento")).error).toBeUndefined(); // sigue siendo monitor
+  });
+
+  it("cambiar roles: 403 desde otro origen aunque sea admin; 400 con «admin», un rol desconocido o campos de más", async () => {
+    await como("admin");
+    const ruta = await import("@/app/api/admin/usuarios/[id]/roles/route");
+    const otro = new Request("http://localhost/x", { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://otro.test", Host: "localhost" }, body: JSON.stringify({ rolesExtra: ["coordinador"] }) });
+    const res = await ruta.POST(otro, ctx);
+    expect([res.status, (await res.json()).error]).toEqual([403, "origen"]);
+    for (const body of [{ rolesExtra: ["admin"] }, { rolesExtra: ["jefe"] }, { rolesExtra: ["monitor"], rol: "admin" }, {}, { rolesExtra: "monitor" }])
+      expect((await ruta.POST(json("POST", body), ctx)).status, JSON.stringify(body)).toBe(400);
+    expect((await ruta.POST(json("POST", { rolesExtra: [] }), { params: Promise.resolve({ id: "no-es-id" }) })).status).toBe(400);
   });
 });

@@ -95,8 +95,8 @@ export type FilaEvaluacion = {
 
 /** ¿Quién ve las evaluaciones de qué mentor? El mentor, solo las suyas; coordinación y admin, todas. */
 function mentorVisible(user: SessionUser, mentorId?: string): string | null | undefined {
-  if (puede(user.rol, "ver_evaluaciones")) return mentorId; // undefined = todos
-  if (puede(user.rol, "evaluar")) return user.mentorId ?? null; // null = ninguno (usuario sin mentor)
+  if (puede(user, "ver_evaluaciones")) return mentorId; // undefined = todos
+  if (puede(user, "evaluar")) return user.mentorId ?? null; // null = ninguno (usuario sin mentor)
   return null;
 }
 
@@ -120,7 +120,7 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
     evalResultados.find({ proyectoId: { $in: ids } }).toArray(),
     evalMonitor.find({ proyectoId: { $in: ids } }).toArray(),
     // El mentor solo ve la marca de SUS borradores (no la de un mentor anterior del proyecto).
-    evalBorradores.find({ _id: { $in: ids.map((x) => x.toHexString()) }, ...(user.rol === "mentor" ? { usuario: user.usuario } : {}) }, { projection: { _id: 1 } }).toArray(),
+    evalBorradores.find({ _id: { $in: ids.map((x) => x.toHexString()) }, ...(!puede(user, "ver_evaluaciones") ? { usuario: user.usuario } : {}) }, { projection: { _id: 1 } }).toArray(),
     criterios(), salasDe(asis),
   ]);
   const porId = new Map(lista.map((p) => [String(p._id), p]));
@@ -168,7 +168,7 @@ async function cargar(user: SessionUser, proyectoId: string) {
   if (!asiento) return { error: "sin_hora" } as ErrorLectura;
   const mentorId = mentorVisible(user, asiento.mentorId);
   if (mentorId !== asiento.mentorId) return { error: "otro_mentor" } as ErrorLectura;
-  const editable = puede(user.rol, "evaluar") && user.mentorId === asiento.mentorId;
+  const editable = puede(user, "evaluar") && user.mentorId === asiento.mentorId;
   return { p, asiento, editable };
 }
 

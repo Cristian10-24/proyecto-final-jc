@@ -12,5 +12,5 @@ export async function GET(req: Request) {
   if (g.error) return g.error;
   const parsed = Query.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  return NextResponse.json({ resultados: await buscarTablero(parsed.data.q, { documentoParcial: puede(g.user.rol, "cambiar_horario") }) });
+  return NextResponse.json({ resultados: await buscarTablero(parsed.data.q, { documentoParcial: puede(g.user, "cambiar_horario") }) });
 }

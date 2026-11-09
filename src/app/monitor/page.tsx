@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function MonitorPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "ver_seguimiento")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "ver_seguimiento")) redirect(inicioPorRol(user));
   return <SeguimientoPanel user={user} />;
 }

@@ -9,6 +9,7 @@ import { conteoComentarios } from "./comentarios";
 import { sinFormula } from "./evaluacion/resultados";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Proyecto } from "./types";
+import { FILTRO_MONITOR } from "./permisos";
 
 // Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
 
@@ -106,7 +107,7 @@ export async function cronogramaExcel(): Promise<Buffer> {
   const ocupados = await asientos.find({ proyectoId: { $type: "objectId" } }).sort({ inicio: 1, mentorId: 1 }).toArray();
   const proys = new Map((await proyectos.find({ _id: { $in: ocupados.map((a) => a.proyectoId!) } }).toArray()).map((p) => [String(p._id), p]));
   const nombresMentor = new Map((await mentores.find({}).toArray()).map((m) => [m._id, m.nombre]));
-  const nombresMonitor = new Map((await users.find({ rol: "monitor" }, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
+  const nombresMonitor = new Map((await users.find(FILTRO_MONITOR, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
   const uruguay = new Set<string>(CIUDADES.filter((c) => c.pais === "UY").map((c) => c.nombre));
 
   const wb = new ExcelJS.Workbook();

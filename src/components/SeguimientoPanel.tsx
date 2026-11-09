@@ -8,6 +8,7 @@ import AppShell from "./AppShell";
 import Comentarios from "./Comentarios";
 import { useVentana } from "./useVentana";
 import s from "./SeguimientoPanel.module.css";
+import { puede } from "@/lib/permisos";
 
 // Seguimiento (Paso 6). Diseño: docs/DISENO.md (2 · Monitor). El monitor solo recibe sus ciudades;
 // coordinación y admin, todas. Horas en hora COL (y UY para ciudades de Uruguay).
@@ -30,7 +31,8 @@ function etiquetaHora(iso: string, ciudad: string): string {
 const normal = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 export default function SeguimientoPanel({ user }: { user: SessionUser }) {
-  const esMonitor = user.rol === "monitor";
+  // Vista de monitor (sus ciudades) salvo que algún rol suyo vea todas (p. ej. monitor + coordinación).
+  const esMonitor = !puede(user, "ver_todas_las_ciudades");
   const [carga, setCarga] = useState<"cargando" | "error" | "prohibido" | "listo">("cargando");
   const [filas, setFilas] = useState<Fila[]>([]);
   const [filtro, setFiltro] = useState<Filtro>("todos");

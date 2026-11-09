@@ -49,7 +49,7 @@ async function post(id: string, body: unknown): Promise<{ ok: boolean; status: n
 }
 
 export default function TableroPanel({ user, diaInicial = "" }: { user: SessionUser; diaInicial?: string }) {
-  const mueve = puede(user.rol, "cambiar_horario");
+  const mueve = puede(user, "cambiar_horario");
   const [d, setD] = useState<DatosTablero | null>(null);
   const [error, setError] = useState(false);
   const [dia, setDia] = useState(diaInicial);

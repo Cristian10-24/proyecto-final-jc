@@ -1,5 +1,5 @@
 import type { ObjectId } from "mongodb";
-import type { RolUsuario } from "./permisos";
+import type { RolExtra, RolUsuario } from "./permisos";
 import type { Disponible, MonitorFijo, Sala } from "./salas";
 
 export type Rol = "estudiante" | RolUsuario;
@@ -12,6 +12,8 @@ export type User = {
   nombre: string;
   passwordHash: string;
   rol: RolUsuario;
+  /** Paso 26 · Opcional: roles adicionales (nunca administración). Sus permisos se suman a los del rol principal. */
+  rolesExtra?: RolExtra[];
   /** Opcional (no se usa para entrar): sirve para reconocer a la persona al cargar usuarios por Excel. */
   correo?: string;
   ciudades: string[];
@@ -30,7 +32,9 @@ export type ChangeLog = {
   proyectoId?: ObjectId;
   accion: "reservar" | "liberar" | "cambiar_hora" | "importar" | "asignar_monitor" | "reetiquetar" | "monitor_sala" | "evaluar" | "no_presento" | "presente" | "nota_monitor" | "sugerir_cambio" | "aprobar_cambio" | "rechazar_cambio" | "restablecer_clave" | "criterios" | "anular_evaluacion" | "reglas_cupos" | "cierre_inscripciones" | "franjas"
     | "crear_proyecto" | "editar_proyecto" | "separar_pareja" | "agregar_integrante" | "unir_proyecto"
-    | "modo_cupos" | "sin_proyecto" | "quitar_sin_proyecto";
+    | "modo_cupos" | "sin_proyecto" | "quitar_sin_proyecto"
+    /** Paso 26 · El admin agregó o quitó roles adicionales a un usuario. */
+    | "roles_usuario";
   anterior?: string;
   nuevo?: string;
   motivo?: string;

@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function MonitorSalasPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "monitorear_salas")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "monitorear_salas")) redirect(inicioPorRol(user));
   return <MonitorPanel user={user} />;
 }

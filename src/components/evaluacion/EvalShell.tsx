@@ -20,9 +20,9 @@ const TABS: { key: SeccionEval; label: string; href: string; permiso: Permiso }[
 ];
 
 export default function EvalShell({ user, active, children }: { user: SessionUser; active: SeccionEval; children: React.ReactNode }) {
-  const tabs = TABS.filter((t) => puede(user.rol, t.permiso));
+  const tabs = TABS.filter((t) => puede(user, t.permiso));
   // Quien también usa el panel (seguimiento, horarios, importar…) vuelve a él desde aquí.
-  const panel = puede(user.rol, "ver_seguimiento") ? inicioPorRol(user.rol) : null;
+  const panel = puede(user, "ver_seguimiento") ? inicioPorRol(user) : null;
 
   async function salir() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);

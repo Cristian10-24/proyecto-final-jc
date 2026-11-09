@@ -36,7 +36,7 @@ type Falla = { ok: false; error: "no_existe" | "datos" | "ajeno" | "sin_permiso"
 const falla = (error: Falla["error"], mensaje: string): Falla => ({ ok: false, error, mensaje });
 
 /** El proyecto existe y está en el alcance del usuario (monitor: sus ciudades). */
-async function visible(user: Pick<SessionUser, "rol" | "ciudades">, pid: ObjectId) {
+async function visible(user: Pick<SessionUser, "rol" | "rolesExtra" | "ciudades">, pid: ObjectId) {
   const { proyectos } = await collections();
   return proyectos.findOne({ _id: pid, ...(scopeFilter<Proyecto>(user) as Filter<Proyecto>) }, { projection: { _id: 1 } });
 }
@@ -53,7 +53,7 @@ export async function listarComentarios(user: SessionUser, pid: ObjectId): Promi
   const { comentarios } = await collections();
   const lista = (await comentarios.find({ proyectoId: pid, borradoEn: { $exists: false } }, { projection: { anteriores: 0 } }).sort({ creadoEn: -1 }).limit(MAX_LISTA).toArray()).reverse();
   return {
-    ok: true, puedeEscribir: puede(user.rol, "comentar_proyectos"),
+    ok: true, puedeEscribir: puede(user, "comentar_proyectos"),
     comentarios: lista.map((c) => ({
       id: String(c._id), autorNombre: c.autorNombre, rol: c.rol, texto: c.texto, creadoEn: c.creadoEn.toISOString(),
       ...(c.editadoEn ? { editadoEn: c.editadoEn.toISOString() } : {}), tuyo: c.autor === user.usuario,
@@ -62,7 +62,7 @@ export async function listarComentarios(user: SessionUser, pid: ObjectId): Promi
 }
 
 export async function crearComentario(user: SessionUser, pid: ObjectId, t: string): Promise<{ ok: true; id: string } | Falla> {
-  if (!puede(user.rol, "comentar_proyectos")) return falla("sin_permiso", "No puedes escribir comentarios.");
+  if (!puede(user, "comentar_proyectos")) return falla("sin_permiso", "No puedes escribir comentarios.");
   const limpio = texto(t);
   if (typeof limpio !== "string") return limpio;
   if (!(await visible(user, pid))) return falla("no_existe", "Ese proyecto no existe o no es de tus ciudades.");
@@ -81,7 +81,7 @@ export async function crearComentario(user: SessionUser, pid: ObjectId, t: strin
 
 /** Editar o borrar: solo el autor, en un proyecto que todavía ve, y un comentario que no esté borrado. */
 async function propio(user: SessionUser, pid: ObjectId, id: ObjectId, cambio: object | object[]): Promise<{ ok: true } | Falla> {
-  if (!puede(user.rol, "comentar_proyectos")) return falla("sin_permiso", "No puedes cambiar comentarios.");
+  if (!puede(user, "comentar_proyectos")) return falla("sin_permiso", "No puedes cambiar comentarios.");
   if (!(await visible(user, pid))) return falla("no_existe", "Ese proyecto no existe o no es de tus ciudades.");
   const { comentarios } = await collections();
   const r = await comentarios.updateOne({ _id: id, proyectoId: pid, autor: user.usuario, borradoEn: { $exists: false } }, Array.isArray(cambio) ? cambio : { $set: cambio });

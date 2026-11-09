@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function FranjasPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "ver_resumen")) redirect(inicioPorRol(user.rol));
-  return <FranjasPanel user={user} puedeEditar={puede(user.rol, "cambiar_horario")} />;
+  if (!puede(user, "ver_resumen")) redirect(inicioPorRol(user));
+  return <FranjasPanel user={user} puedeEditar={puede(user, "cambiar_horario")} />;
 }

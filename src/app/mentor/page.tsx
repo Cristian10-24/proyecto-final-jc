@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function MentorPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!puede(user.rol, "evaluar") && !puede(user.rol, "ver_evaluaciones")) redirect(inicioPorRol(user.rol));
+  if (!puede(user, "evaluar") && !puede(user, "ver_evaluaciones")) redirect(inicioPorRol(user));
   return <MentorPanel user={user} />;
 }
