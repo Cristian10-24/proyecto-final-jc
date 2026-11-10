@@ -114,7 +114,7 @@ describe("libro de salas y monitores", () => {
 
   it("errores típicos: sala fuera de rango, enlace sin https, sala repetida, hora con minutos", () => {
     const r = leerLibroSalas(libro({
-      Salas: [["Sala", "Enlace"], [1, "https://a.org/1"], [8, "https://a.org/8"], [2, "meet.a.org/2"], ["Sala 1", "https://a.org/x"]],
+      Salas: [["Sala", "Enlace"], [1, "https://a.org/1"], [13, "https://a.org/13"], [2, "meet.a.org/2"], ["Sala 1", "https://a.org/x"]],
       Monitores: [["Día", "Hora", "Mentor", "Monitor"], ["Jueves 12 nov", "8:30", "Mentor Uno", "Ana"], ["Jueves 12 nov", "09 am", "Mentor Uno", "Ana"]],
     }));
     expect(r.errores.map((e) => [e.hoja, e.fila])).toEqual([["Salas", 3], ["Salas", 4], ["Salas", 5], ["Monitores", 2]]);
@@ -127,7 +127,9 @@ describe("libro de salas y monitores", () => {
   });
 
   it("número de sala", () => {
-    expect([leerSala(3), leerSala("Sala 7"), leerSala("8"), leerSala("dos")]).toEqual([3, 7, null, null]);
+    expect([leerSala(3), leerSala("Sala 7"), leerSala("8"), leerSala("Sala 12"), leerSala("dos")]).toEqual([3, 7, 8, 12, null]);
+    // Tope de 12 (la hoja Salas manda); 0, 13, negativos y decimales se rechazan.
+    expect([leerSala(0), leerSala("0"), leerSala(13), leerSala("Sala 13"), leerSala("-1"), leerSala("8.5")]).toEqual([null, null, null, null, null, null]);
   });
 });
 
