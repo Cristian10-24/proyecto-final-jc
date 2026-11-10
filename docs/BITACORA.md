@@ -283,3 +283,7 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: núcleo de citaciones por calendario y celular opcional del usuario`. `src/lib/citaciones/contenido.ts` (puro): eventos de participante (bloque exacto, solo integrantes), mentor y monitor (franjas ≤ 30 min, sala/enlace/monitor del plan de salas), «Ten en cuenta», modo prueba «[PRUEBA] », resumen sin contactos (correos como huella) y qué cambió. Campo nuevo y opcional `celular` en usuarios (Usuarios → Editar y columna Celular del Excel; sin celular: «sin registrar»). revisor-seguridad: sin altos; 1 medio (correos en el resumen) y 1 bajo (saltos de línea y < > en nombres) corregidos. 353 unitarias; con base 295/296: la de 120 reservas simultáneas pasó el límite de 60 s una vez; sola pasa en 54 s con y sin estos cambios (lentitud local).
 - Verificar: `npx vitest run tests/citaciones.test.ts tests/celularUsuario.test.ts`; demo local → Usuarios → Editar un monitor → Celular «300 123 4567» → la lista muestra +573001234567.
 - Pendiente: Paso 28 (cliente de Google simulable y servicio con la colección `citaciones`).
+
+## Ajuste de pruebas · límite de la prueba de 120 reservas
+- Commit: `test: límite de 120 s solo para la prueba de 120 reservas simultáneas`. En una máquina lenta pasaba del límite general de 60 s. No cambia la app ni lo que comprueba (sigue exigiendo 30 reservas exactas y menos de 45 s de reservas).
+- Verificar: `npx vitest run --config vitest.db.config.mts tests/ordenLlegada.db.test.ts` (pasa en ~42 s).

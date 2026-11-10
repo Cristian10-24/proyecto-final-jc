@@ -110,7 +110,7 @@ describe("encendido", () => {
     expect(new Set(ocupados.map((a) => String(a.proyectoId))).size).toBe(30);
     expect(ocupados.every((a) => a.ciudades.join() === "Cali")).toBe(true); // la etiqueta no se tocó
     expect(ms).toBeLessThan(45_000);
-  });
+  }, 120_000); // Solo el límite de la prueba (el general es 60 s): en una máquina lenta el montaje pasaba de 60 s.
 
   it("al tope, el jueves desaparece para Cartagena y la reserva responde dia_lleno", async () => {
     expect(await agenda(CTG(140), J, AHORA)).toEqual({ error: "dia_no_disponible" });
