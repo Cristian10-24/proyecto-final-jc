@@ -4,6 +4,7 @@ import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
 import type { FranjaEditada } from "./franjas";
 import type { PlanSala } from "./salas";
 import type { Comentario } from "./comentarios";
+import type { ConfigCitaciones, RegistroCitacion } from "./citaciones/registro";
 import type { AjusteModoCupos, Asiento, CandadoCupo, ChangeLog, DiaConfig, InscripcionesConfig, Mentor, ParticipanteSinProyecto, Proyecto, RateLimit, SalasConfig, User } from "./types";
 
 declare global {
@@ -137,6 +138,9 @@ export async function collections() {
     sinProyecto: db.collection<ParticipanteSinProyecto>("sin_proyecto"),
     // Fase 4 · Paso 22 (colección nueva, con su propio índice).
     comentarios: db.collection<Comentario>("comentarios"),
+    // Fase 5 (colecciones nuevas): citaciones del calendario (índice único propio) y su configuración.
+    citaciones: db.collection<RegistroCitacion>("citaciones"),
+    citacionesConfig: db.collection<ConfigCitaciones>("citaciones_config"),
   };
 }
 
@@ -164,6 +168,8 @@ async function ensureIndexes(db: Db) {
     db.collection("sin_proyecto").createIndex({ documento: 1 }, { unique: true }),
     // Fase 4 · Paso 22: comentarios de un proyecto en orden (colección nueva).
     db.collection("comentarios").createIndex({ proyectoId: 1, creadoEn: 1 }),
+    // Fase 5: una sola citación por tipo, persona o proyecto y día (colección nueva): nunca se cita dos veces.
+    db.collection("citaciones").createIndex({ tipo: 1, clave: 1, dia: 1 }, { unique: true }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),
   ]);

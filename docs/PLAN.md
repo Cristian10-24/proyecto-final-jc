@@ -260,7 +260,7 @@ por la app: un reintento o un doble clic actualiza el mismo evento, nunca crea o
   descripción), franjas ≤ 30 min, resumen/huella y qué cambió. Celular del monitor: campo nuevo y opcional `celular` en
   `users`, editable en Usuarios → Editar (y columna opcional Celular en la carga por Excel). Pruebas puras de contenido,
   invitados y privacidad (contactos solo en el evento del monitor de esa sala).
-- [ ] 28. Cliente de Google con interfaz simulable (refresh del token, insertar / actualizar / cancelar, lotes con pausa
+- [x] 28. Cliente de Google con interfaz simulable (refresh del token, insertar / actualizar / cancelar, lotes con pausa
   y reintentos ante 403-rate/429/5xx, modo correo de prueba) y servicio con base: citar, actualizar, cancelar, marcar
   como citado (uno, o en bloque por día y pestaña), «citar pendientes» por lotes (uno falla → Error y sigue). Pruebas
   con cliente simulado: no duplicar, desactualizadas, errores de la API, marcar; foto «como producción».

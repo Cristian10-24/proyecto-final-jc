@@ -36,7 +36,9 @@ export type ChangeLog = {
     | "crear_proyecto" | "editar_proyecto" | "separar_pareja" | "agregar_integrante" | "unir_proyecto"
     | "modo_cupos" | "sin_proyecto" | "quitar_sin_proyecto"
     /** Paso 26 · El admin agregó o quitó roles adicionales a un usuario. */
-    | "roles_usuario";
+    | "roles_usuario"
+    /** Fase 5 · Citaciones del calendario (solo documentos nuevos). */
+    | "citar" | "actualizar_citacion" | "cancelar_citacion" | "marcar_citado" | "texto_citacion";
   anterior?: string;
   nuevo?: string;
   motivo?: string;
