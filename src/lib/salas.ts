@@ -5,7 +5,8 @@ import type { ErrorFila } from "./importar/excel";
 // acompaña la sala esa hora. Las horas son de Colombia (0–23).
 
 export const HOJAS_SALAS = { salas: "Salas", monitores: "Monitores", disponibilidad: "Disponibilidad monitores" } as const;
-export const MAX_SALAS = 7;
+/** Tope de salas de la hoja Salas (Sala 1 a N). El número real de salas es el de la hoja importada. */
+export const MAX_SALAS = 12;
 
 export type Sala = { sala: number; enlace: string };
 export type OrigenMonitor = "importado" | "automatico" | "admin";

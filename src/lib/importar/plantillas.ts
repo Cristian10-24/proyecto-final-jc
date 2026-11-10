@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import { COLUMNAS_CUPOS, HOJAS_MENTORES } from "./mentores";
 import { COLUMNAS_PROYECTOS, HOJA_PROYECTOS } from "./proyectos";
 import { COLUMNAS_DISPONIBILIDAD, COLUMNAS_MONITORES, COLUMNAS_SALAS } from "./salas";
-import { HOJAS_SALAS } from "../salas";
+import { HOJAS_SALAS, MAX_SALAS } from "../salas";
 import { COLUMNAS_USUARIOS } from "../usuariosExcel";
 
 type Fila = (string | number | null)[];
@@ -82,7 +82,7 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
     instrucciones(wb, [
       "Plantilla de salas y monitores · Proyecto final JC 2026",
       "Importa primero mentores y disponibilidad: las salas se asignan a los mentores de cada hora.",
-      "Salas: número de sala (1 a 7) y su enlace (https://). Nunca hay más mentores a la vez que salas.",
+      `Salas: número de sala (1 a ${MAX_SALAS}) y su enlace (https://). Nunca hay más mentores a la vez que salas.`,
       "Cada mentor queda en una sala por hora y conserva la misma sala en horas seguidas cuando se puede.",
       "Monitores (opcional): un monitor fijo por día, hora y sala. En lugar de Sala puedes poner una columna Mentor.",
       "Disponibilidad monitores (opcional): una fila por monitor, día y hora en que puede acompañar.",

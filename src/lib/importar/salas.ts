@@ -3,7 +3,7 @@ import { HOJAS_SALAS, MAX_SALAS, type Sala } from "../salas";
 import { cleanSpaces } from "../validation/name";
 import { clave, hoja, leerDia, leerHora, texto, valor, type ErrorFila } from "./excel";
 
-// Libro de salas y monitores: "Salas" (Sala 1 a 7 y Enlace, obligatoria), "Monitores" (Día, Hora,
+// Libro de salas y monitores: "Salas" (Sala 1 a N, máximo MAX_SALAS = 12, y Enlace, obligatoria), "Monitores" (Día, Hora,
 // Sala o Mentor, Monitor; opcional) y "Disponibilidad monitores" (Monitor, Día, Hora; opcional).
 // Aquí solo se lee el archivo; los nombres de mentores y monitores se buscan en la base al revisar.
 
@@ -29,8 +29,10 @@ function columnas(ws: ExcelJS.Worksheet, buscar: Record<string, RegExp>): Record
   return Object.fromEntries(Object.entries(buscar).map(([campo, re]) => [campo, encab.findIndex((h) => !!h && re.test(h))]).map(([c, i]) => [c, Math.max(0, i as number)]));
 }
 
-/** "3", 3 o "Sala 3" → 3 (1 a 7). */
+/** "3", 3 o "Sala 3" → 3 (1 a MAX_SALAS). */
 export function leerSala(v: ExcelJS.CellValue): number | null {
+  // Signos o decimales ("-1", "8.5") no son una sala (la normalización de `clave` los quitaría).
+  if (/[^\p{L}\d\s]/u.test(texto(v).trim())) return null;
   const m = clave(texto(v)).match(/^(?:sala )?(\d+)$/);
   const n = m ? +m[1]! : NaN;
   return Number.isInteger(n) && n >= 1 && n <= MAX_SALAS ? n : null;
