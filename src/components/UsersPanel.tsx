@@ -22,6 +22,8 @@ type Form = {
   usuario: string;
   nombre: string;
   correo: string;
+  /** Fase 5 · Opcional: sale en las citaciones del calendario. */
+  celular: string;
   rol: RolUsuario;
   /** Paso 26: roles adicionales (se guardan aparte, con su changeLog). `rolesExtraIni`: los que tenía al abrir. */
   rolesExtra: RolExtra[];
@@ -86,10 +88,10 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
   }
 
   function nuevo() {
-    setForm({ modo: "crear", usuario: "", nombre: "", correo: "", rol: "monitor", rolesExtra: [], rolesExtraIni: [], ciudades: [], activo: true, claveModo: "generar", clave: "", saving: false, error: "" });
+    setForm({ modo: "crear", usuario: "", nombre: "", correo: "", celular: "", rol: "monitor", rolesExtra: [], rolesExtraIni: [], ciudades: [], activo: true, claveModo: "generar", clave: "", saving: false, error: "" });
   }
   function editar(u: VistaUsuario) {
-    setForm({ modo: "editar", id: u.id, usuario: u.usuario, nombre: u.nombre, correo: u.correo, rol: u.rol, rolesExtra: u.rolesExtra, rolesExtraIni: u.rolesExtra, ciudades: u.ciudades, activo: u.activo, claveModo: "generar", clave: "", saving: false, error: "" });
+    setForm({ modo: "editar", id: u.id, usuario: u.usuario, nombre: u.nombre, correo: u.correo, celular: u.celular, rol: u.rol, rolesExtra: u.rolesExtra, rolesExtraIni: u.rolesExtra, ciudades: u.ciudades, activo: u.activo, claveModo: "generar", clave: "", saving: false, error: "" });
   }
 
   async function guardar() {
@@ -99,13 +101,14 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
       if (form.modo === "crear") {
         const d = await pedir("/api/admin/usuarios", "POST", {
           usuario: form.usuario, nombre: form.nombre, rol: form.rol, ciudades: form.ciudades, ...(form.correo.trim() ? { correo: form.correo } : {}),
+          ...(form.celular.trim() ? { celular: form.celular } : {}),
           ...(form.claveModo === "asignar" ? { clave: form.clave } : {}),
         });
         setUsuarios((us) => [...(us ?? []), d.usuario]);
         setForm(null);
         setNuevaClave({ usuario: d.usuario.usuario, clave: d.clave });
       } else {
-        let d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { nombre: form.nombre, correo: form.correo, rol: form.rol, ciudades: form.ciudades, activo: form.activo });
+        let d = await pedir(`/api/admin/usuarios/${form.id}`, "PATCH", { nombre: form.nombre, correo: form.correo, celular: form.celular, rol: form.rol, ciudades: form.ciudades, activo: form.activo });
         reemplazar(d.usuario);
         // Paso 26: los roles adicionales, solo si cambiaron (sin el que quedó como principal).
         const extras = form.rol === "admin" ? [] : form.rolesExtra.filter((r) => r !== form.rol);
@@ -204,7 +207,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
         </section>
         <section className={s.box} aria-labelledby="carga-t">
           <h2 id="carga-t" className={s.boxTitle}>Cargar varias personas desde Excel</h2>
-          <p className={s.boxSub}>Columnas: <b>Nombre · Correo · Rol</b> (Mentor, Monitor o Coordinación); Usuario y Ciudades son opcionales. Si alguien ya existe, se actualiza y su clave no cambia. Primero ves qué va a pasar; nada se guarda hasta confirmar.</p>
+          <p className={s.boxSub}>Columnas: <b>Nombre · Correo · Rol</b> (Mentor, Monitor o Coordinación); Usuario, Ciudades y Celular son opcionales. Si alguien ya existe, se actualiza y su clave no cambia. Primero ves qué va a pasar; nada se guarda hasta confirmar.</p>
           <div className={s.cargaActs}>
             <label className={s.fileBtn}>
               Subir archivo de Excel
@@ -225,7 +228,7 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
           <div className={s.who}>
             <div className={s.name}>{u.nombre}{esYo(u.id) && <span className={s.me}>Tú</span>}</div>
             <div className={s.user}>{u.usuario}</div>
-            {u.correo && <div className={s.correo}>{u.correo}</div>}
+            {(u.correo || u.celular) && <div className={s.correo}>{[u.correo, u.celular].filter(Boolean).join(" · ")}</div>}
           </div>
           <div className={s.rolesFila}>
             <span className={`${s.rol} ${s[`rol_${u.rol}`]}`}>{ROL_TXT[u.rol]}</span>
@@ -263,6 +266,11 @@ export default function UsersPanel({ user }: { user: SessionUser }) {
               <label className="label" htmlFor="u-correo">Correo (opcional)</label>
               <input id="u-correo" className="input" type="text" inputMode="email" autoComplete="off" spellCheck={false} value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} autoCapitalize="none" autoCorrect="off" />
               <div className={s.hint}>No se usa para entrar: sirve para reconocer a la persona al cargar el Excel.</div>
+            </div>
+            <div>
+              <label className="label" htmlFor="u-celular">Celular (opcional)</label>
+              <input id="u-celular" className="input" type="text" inputMode="tel" autoComplete="off" value={form.celular} onChange={(e) => setForm({ ...form, celular: e.target.value })} />
+              <div className={s.hint}>Sale en las citaciones del calendario (p. ej. el del monitor en el evento del mentor).</div>
             </div>
             <div>
               <span className="label">Rol</span>

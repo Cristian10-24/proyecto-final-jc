@@ -18,6 +18,8 @@ const { listarSinProyecto, noInscrito } = await import("@/lib/sinProyecto");
 const { seguimiento: seguimientoEval } = await import("@/lib/evaluacion/resultados");
 const { listarProyectos } = await import("@/lib/admin");
 const { cargaMentores } = await import("@/lib/cargaMentores");
+const { vistaUsuario } = await import("@/lib/usuarios");
+const { revisionNombres } = await import("@/lib/usuariosExcel");
 
 const ADMIN = { rol: "admin" as const, usuario: "admin.demo" };
 const AHORA = new Date("2026-11-11T15:00:00Z");
@@ -36,6 +38,9 @@ async function portal() {
     for (const p of algunos) out[`bloques ${dia} ${p}`] = await bloquesLibres(p, dia);
   }
   out.resumen = await resumen();
+  // Fase 5 · Paso 27: la lista de Usuarios (con el celular opcional) y la revisión de nombres solo leen.
+  out.usuarios = (await c.users.find({}).sort({ usuario: 1 }).toArray()).map(vistaUsuario);
+  out.revisionNombres = await revisionNombres();
   // Paso 21: listas y estadísticas con «Sin proyecto» (sin marcas ni participantes: todo como antes).
   out.sinProyecto = await listarSinProyecto();
   out.inscripcion = await seguimientoInscripcion({ rol: "coordinador", ciudades: [] });

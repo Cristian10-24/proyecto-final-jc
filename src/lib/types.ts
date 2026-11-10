@@ -16,6 +16,8 @@ export type User = {
   rolesExtra?: RolExtra[];
   /** Opcional (no se usa para entrar): sirve para reconocer a la persona al cargar usuarios por Excel. */
   correo?: string;
+  /** Fase 5 · Opcional: celular (sale en las citaciones del calendario, p. ej. el del monitor en el evento del mentor). */
+  celular?: string;
   ciudades: string[];
   /** Solo rol mentor: su id en Horarios (idMentor de su nombre). */
   mentorId?: string;

@@ -240,3 +240,20 @@ describe("revisión de nombres", () => {
     expect(await ux.revisionNombres()).toEqual({ horariosImportados: false, mentoresSinUsuario: [], usuariosSinMentor: [], planSalas: false, monitoresSinSalas: [], salasSinMonitor: 0 });
   });
 });
+
+describe("Fase 5 · celular por Excel", () => {
+  it("crea y actualiza con celular; una fila sin celular no borra el guardado", async () => {
+    const conCel = (filas: (string | null)[][]) => ux.previaUsuarios(ux.leerUsuarios(libro(filas, ["Nombre", "Correo", "Rol", "Celular"])), String(ADMIN_ID));
+    let p = await conCel([["Monitora Celular", "mon.cel@ejemplo.org", "Monitor", "3005556666"]]);
+    expect(p.errores).toEqual([]);
+    await ux.aplicarUsuarios(p, "admin.p");
+    const c = await db.collections();
+    expect((await c.users.findOne({ correo: "mon.cel@ejemplo.org" }))!.celular).toBe("+573005556666");
+    p = await conCel([["Monitora Celular", "mon.cel@ejemplo.org", "Monitor", "3005557777"]]);
+    expect(p.acciones[0]!.cambios).toEqual(["celular: +573005557777"]);
+    await ux.aplicarUsuarios(p, "admin.p");
+    p = await conCel([["Monitora Celular", "mon.cel@ejemplo.org", "Monitor", null]]);
+    expect(p.acciones[0]!.accion).toBe("igual");
+    expect((await c.users.findOne({ correo: "mon.cel@ejemplo.org" }))!.celular).toBe("+573005557777");
+  });
+});

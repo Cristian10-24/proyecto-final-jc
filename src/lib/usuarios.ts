@@ -6,6 +6,7 @@ import { z } from "zod";
 import { collections, transaccion } from "./db";
 import { clave } from "./importar/excel";
 import { idMentor } from "./importar/mentores";
+import { leerCelular } from "./importar/proyectos";
 import { ROL_TXT, ROLES, ROLES_EXTRA, rolesDe, tieneRol, type RolExtra, type RolUsuario } from "./permisos";
 import type { User } from "./types";
 import { cleanSpaces, normalizeCity } from "./validation/name";
@@ -31,6 +32,7 @@ export const NuevoUsuario = z
     rol: z.enum(ROLES),
     ciudades: ciudadesSchema.default([]),
     correo: z.string().trim().toLowerCase().max(120).regex(/^([^\s@]+@[^\s@]+\.[^\s@]+)?$/, "El correo no es válido.").optional(),
+    celular: z.string().trim().max(30).optional(),
     clave: claveSchema.optional(),
   })
   .strict();
@@ -42,6 +44,7 @@ export const EdicionUsuario = z
     rol: z.enum(ROLES).optional(),
     ciudades: ciudadesSchema.optional(),
     activo: z.boolean().optional(),
+    celular: z.string().trim().max(30).optional(),
     correo: z.string().trim().toLowerCase().max(120).regex(/^([^\s@]+@[^\s@]+\.[^\s@]+)?$/, "El correo no es válido.").optional(),
   })
   .strict();
@@ -106,12 +109,26 @@ export async function restablecerClave(id: ObjectId, claveDada: string | undefin
 /** Lo que se muestra de un usuario (nunca el hash). */
 export function vistaUsuario(u: User) {
   return {
-    id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol, correo: u.correo ?? "",
+    id: u._id.toHexString(), usuario: u.usuario, nombre: u.nombre, rol: u.rol, correo: u.correo ?? "", celular: u.celular ?? "",
     rolesExtra: rolesDe(u).filter((r) => r !== u.rol) as RolExtra[],
     ciudades: tieneRol(u, "monitor") ? u.ciudades : [], activo: u.activo,
   };
 }
 export type VistaUsuario = ReturnType<typeof vistaUsuario>;
+
+/**
+ * Fase 5 · Celular de un usuario, con la misma normalización del importador (+57 para Colombia).
+ * "" = borrarlo; igual al guardado = se conserva tal cual (un dato viejo mal escrito no impide editar lo demás).
+ */
+export function celularUsuario(crudo: string | undefined, previo?: string): { celular?: string } | { error: string } {
+  if (crudo === undefined) return previo ? { celular: previo } : {};
+  const t = crudo.trim();
+  if (!t) return {};
+  if (previo && t === previo) return { celular: previo };
+  const c = leerCelular(t);
+  if (!c) return {};
+  return "error" in c ? { error: `El celular ${c.error}.` } : { celular: c.celular };
+}
 
 /** Primer mensaje de error legible de un ZodError. */
 export const mensajeZod = (e: z.ZodError) => e.issues[0]?.message ?? "Datos inválidos.";
