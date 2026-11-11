@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { diaCOL } from "@/lib/edicion";
-import { digitosTelefono, MOTIVOS_INASISTENCIA, primerNombre, type MotivoInasistencia } from "@/lib/evaluacion/criterios";
+import { MOTIVOS_INASISTENCIA, primerNombre, type MotivoInasistencia } from "@/lib/evaluacion/criterios";
 import type { Asistencia, CupoLibre, DetalleSala, VistaSugerencia } from "@/lib/evaluacion/monitor";
+import BotonesContacto from "./BotonesContacto";
 import s from "./Evaluacion.module.css";
 import { claseResultado, fechaLarga, horaTxt } from "./comun";
 
@@ -177,8 +178,7 @@ export default function MonitorHoja({ id, onCerrar }: { id: string; onCerrar: (c
                   {x.celular ? (
                     <div className={s.telefono}>
                       <span>Cel. {x.celular}</span>
-                      <a className="ev-btn" href={`tel:+${digitosTelefono(x.celular)}`}>Llamar</a>
-                      <a className="ev-btn" href={`https://wa.me/${digitosTelefono(x.celular)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                      <BotonesContacto celular={x.celular} />
                     </div>
                   ) : <div className={`ev-small ${s.sinCel}`}>Sin celular cargado.</div>}
                 </div>

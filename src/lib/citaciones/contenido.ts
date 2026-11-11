@@ -110,7 +110,7 @@ const finDe = (inicio: Date) => new Date(inicio.getTime() + MINUTOS_BLOQUE * 60_
 /** «8:00 a. m. a 8:15 a. m.» */
 const rango = (a: Date, b: Date) => `${horaCO(a)} a ${horaCO(b)}`;
 /** Colonia y Paysandú: también la hora de Uruguay en la misma línea. */
-const esUruguay = (ciudad: string) => CIUDADES.some((c) => c.nombre === ciudad && c.pais === "UY");
+export const esUruguay = (ciudad: string) => CIUDADES.some((c) => c.nombre === ciudad && c.pais === "UY");
 /**
  * Texto de una sola línea para el evento: sin saltos, sin caracteres de control ni invisibles o de dirección, y sin < >
  * (Google muestra HTML).
