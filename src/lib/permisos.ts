@@ -23,13 +23,15 @@ export type Permiso =
   | "monitorear_salas"
   | "editar_criterios"
   /** Fase 4 · Paso 22: escribir comentarios de seguimiento (monitor: sus ciudades; coordinación y admin: todas). */
-  | "comentar_proyectos";
+  | "comentar_proyectos"
+  /** Fase 5 · Paso 29: citar por Google Calendar (solo administración). */
+  | "citar";
 
 const PERMISOS: Record<RolUsuario, readonly Permiso[]> = {
   mentor: ["evaluar"],
   monitor: ["ver_seguimiento", "monitorear_salas", "comentar_proyectos"],
   coordinador: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "ver_evaluaciones", "editar_criterios", "comentar_proyectos"],
-  admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones", "editar_criterios", "comentar_proyectos"],
+  admin: ["ver_seguimiento", "ver_todas_las_ciudades", "ver_resumen", "descargar_excel", "importar", "gestionar_usuarios", "cambiar_horario", "ver_evaluaciones", "editar_criterios", "comentar_proyectos", "citar"],
 };
 
 /** Paso 26 · Roles que se pueden dar como adicionales (nunca administración). */

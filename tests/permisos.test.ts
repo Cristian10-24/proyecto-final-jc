@@ -58,6 +58,11 @@ const soloAdmin: [string, () => Promise<Response>][] = [
   ["ver las reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).GET()],
   ["aplicar reglas de cupos", async () => (await import("@/app/api/admin/reglas/route")).POST(json("POST", { accion: "aplicar", dia: "2026-11-12", ciudades: [] }))],
   ["guardar el cierre de inscripciones", async () => (await import("@/app/api/admin/reglas/cierre/route")).POST(json("POST", { horasAntes: 24, porCiudad: {} }))],
+  ["ver las citaciones (Paso 29)", async () => (await import("@/app/api/admin/citaciones/route")).GET(new Request("http://localhost/x?dia=2026-11-12&tipo=participante"))],
+  ["ver la vista previa de una citación", async () => (await import("@/app/api/admin/citaciones/previa/route")).GET(new Request("http://localhost/x?dia=2026-11-12&tipo=participante&clave=abc"))],
+  ["citar por Google Calendar", async () => (await import("@/app/api/admin/citaciones/acciones/route")).POST(json("POST", { accion: "citar", tipo: "participante", dia: "2026-11-12", claves: ["abc"] }))],
+  ["marcar todos como citados", async () => (await import("@/app/api/admin/citaciones/acciones/route")).POST(json("POST", { accion: "marcar_todos", tipo: "mentor", dia: "2026-11-12" }))],
+  ["editar el texto «Ten en cuenta»", async () => (await import("@/app/api/admin/citaciones/texto/route")).POST(json("POST", { texto: "Llega a tiempo" }))],
   ["cargar usuarios por Excel", async () => (await import("@/app/api/admin/usuarios/importar/route")).POST(new Request("http://localhost/x", { method: "POST", body: new FormData() }))],
   ["cambiar roles adicionales (Paso 26)", async () => (await import("@/app/api/admin/usuarios/[id]/roles/route")).POST(json("POST", { rolesExtra: ["coordinador"] }), ctx)],
   ["ver mentores libres de un bloque (Paso 25)", async () => (await import("@/app/api/admin/proyectos/[id]/mentores/route")).GET(new Request("http://localhost/x"), ctx)],
@@ -116,6 +121,7 @@ describe("matriz de permisos", () => {
     monitorear_salas: [false, true, false, false],
     editar_criterios: [false, false, true, true],
     comentar_proyectos: [false, true, true, true],
+    citar: [false, false, false, true],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -274,12 +280,12 @@ describe("sesión con clave restablecida", () => {
 });
 
 describe("Paso 26 · un usuario con varios roles", () => {
-  const todos = Object.keys({ ver_seguimiento: 1, ver_todas_las_ciudades: 1, ver_resumen: 1, descargar_excel: 1, importar: 1, gestionar_usuarios: 1, cambiar_horario: 1, evaluar: 1, ver_evaluaciones: 1, monitorear_salas: 1, editar_criterios: 1, comentar_proyectos: 1 }) as Permiso[];
+  const todos = Object.keys({ ver_seguimiento: 1, ver_todas_las_ciudades: 1, ver_resumen: 1, descargar_excel: 1, importar: 1, gestionar_usuarios: 1, cambiar_horario: 1, evaluar: 1, ver_evaluaciones: 1, monitorear_salas: 1, editar_criterios: 1, comentar_proyectos: 1, citar: 1 }) as Permiso[];
 
   it("sus permisos son la suma de sus roles, sin ninguno de administración", () => {
     const k = { rol: "monitor", rolesExtra: ["coordinador"] };
     for (const p of todos) expect(puede(k, p), p).toBe(puede("monitor", p) || puede("coordinador", p));
-    for (const p of ["importar", "gestionar_usuarios", "cambiar_horario"] as Permiso[]) expect(puede(k, p), p).toBe(false);
+    for (const p of ["importar", "gestionar_usuarios", "cambiar_horario", "citar"] as Permiso[]) expect(puede(k, p), p).toBe(false);
     expect(etiquetaRoles({ ...k, ciudades: ["Panamá"] })).toBe("Monitor · Panamá + Coordinación");
     expect(inicioPorRol(k)).toBe("/admin");
   });

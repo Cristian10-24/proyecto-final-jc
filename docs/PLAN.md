@@ -264,7 +264,7 @@ por la app: un reintento o un doble clic actualiza el mismo evento, nunca crea o
   y reintentos ante 403-rate/429/5xx, modo correo de prueba) y servicio con base: citar, actualizar, cancelar, marcar
   como citado (uno, o en bloque por día y pestaña), «citar pendientes» por lotes (uno falla → Error y sigue). Pruebas
   con cliente simulado: no duplicar, desactualizadas, errores de la API, marcar; foto «como producción».
-- [ ] 29. Rutas `/api/admin/citaciones/*` (solo admin, `exigir`, `sameOrigin`, Zod `.strict()`) y pantalla
+- [x] 29. Rutas `/api/admin/citaciones/*` (solo admin, `exigir`, `sameOrigin`, Zod `.strict()`) y pantalla
   /admin/citaciones: día, pestañas Participantes / Mentores / Monitores, estado por fila, Vista previa, Citar, Actualizar,
   Cancelar, Marcar como citado, «Citar todos los pendientes de este día» (confirmación con cuántos y a quiénes; el
   navegador envía lotes de 10 y muestra el avance), «Marcar todos como citados (sin evento)» y editor de «Ten en cuenta».
