@@ -50,7 +50,7 @@ const actorDe = (u: SessionUser): Actor => ({ rol: u.rol, usuario: u.usuario });
 const etiqueta = (inicio: Date) => `${diaCOL(inicio)} ${horaCO(inicio)}`;
 
 /** Salas del monitor (día, hora y mentor de cada una). Sin el permiso, ninguna. */
-async function salasDelMonitor(user: SessionUser) {
+export async function salasDelMonitor(user: SessionUser) {
   if (!puede(user, "monitorear_salas")) return [];
   const { planSalas } = await collections();
   return planSalas.find({ monitor: user.usuario }).sort({ dia: 1, hora: 1, sala: 1 }).toArray();

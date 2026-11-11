@@ -6,14 +6,15 @@ import { etiquetaRoles, puede, type Permiso } from "@/lib/permisos";
 import BotonTema from "./BotonTema";
 import s from "./AppShell.module.css";
 
-export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "segGeneral" | "tablero" | "franjas" | "reglas" | "cargaMentores" | "horarios" | "sinProyecto" | "salas" | "citaciones" | "importar" | "usuarios";
+export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "misproyectos" | "segGeneral" | "tablero" | "franjas" | "reglas" | "cargaMentores" | "horarios" | "sinProyecto" | "salas" | "citaciones" | "importar" | "usuarios";
 
 // Cada sección aparece solo si el rol tiene el permiso (el servidor lo vuelve a validar).
-const NAV: { key: Seccion; label: string; href: string; permiso: Permiso }[] = [
+const NAV: { key: Seccion; label: string; href: string; permiso: Permiso | Permiso[] }[] = [
   { key: "evaluaciones", label: "Mis evaluaciones", href: "/mentor", permiso: "evaluar" },
   { key: "resumen", label: "Resumen", href: "/admin", permiso: "ver_resumen" },
   { key: "seguimiento", label: "Seguimiento", href: "/monitor", permiso: "ver_seguimiento" },
   { key: "missalas", label: "Mis salas", href: "/monitor/salas", permiso: "monitorear_salas" },
+  { key: "misproyectos", label: "Mis proyectos", href: "/monitor/proyectos", permiso: ["monitorear_salas", "ver_todas_las_ciudades"] },
   { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "segGeneral", label: "Seguimiento general", href: "/evaluacion/seguimiento", permiso: "ver_evaluaciones" },
   { key: "tablero", label: "Tablero", href: "/admin/tablero", permiso: "ver_resumen" },
@@ -33,7 +34,7 @@ export function iniciales(nombre: string): string {
 }
 
 export default function AppShell({ user, active, children }: { user: SessionUser; active: Seccion; children: React.ReactNode }) {
-  const nav = NAV.filter((n) => puede(user, n.permiso));
+  const nav = NAV.filter((n) => [n.permiso].flat().some((p) => puede(user, p)));
   // Contador de cambios sugeridos por los monitores que esperan respuesta (junto a "Horarios").
   const [pendientes, setPendientes] = useState(0);
   useEffect(() => {

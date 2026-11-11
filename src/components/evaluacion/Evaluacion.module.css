@@ -202,3 +202,22 @@
 :global(:root[data-theme="dark"]) .kpiHl { border-color: var(--ev-line); }
 .temaTop { width: 32px; height: 32px; border-color: rgba(255, 255, 255, .35); color: var(--ev-on-navy); }
 .temaTop:hover { background: rgba(255, 255, 255, .1); }
+
+/* ---- Mis proyectos: tabla en pantalla ancha y tarjetas en el celular ---- */
+.contador { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--ev-muted); }
+.tablaProy { border: 1px solid var(--ev-line); border-radius: var(--ev-radius); background: var(--ev-surface); overflow-x: auto; }
+.tablaProy table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tablaProy th { text-align: left; padding: 10px 14px; background: var(--ev-surface-2); font-family: var(--ev-font-titulo); font-weight: 600; font-size: 13px; color: var(--ev-muted); white-space: nowrap; }
+.tablaProy td { padding: 12px 14px; border-top: 1px solid var(--ev-line); vertical-align: top; }
+.tarjetasProy { display: none; flex-direction: column; gap: 10px; }
+.tarjetaProy { border: 1px solid var(--ev-line); border-radius: var(--ev-radius); background: var(--ev-surface); padding: 14px 16px; }
+.tarjetaHead { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+.etiquetaProy { margin-top: 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ev-muted); }
+.salaProy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; font-weight: 600; white-space: nowrap; }
+.salaProy .abrirSala { margin-left: 0; }
+.personaProy { padding: 4px 0; }
+.personaProy + .personaProy { border-top: 1px dashed var(--ev-line); }
+.personaProy .telefono { margin-top: 6px; gap: 6px; }
+.personaProy .telefono a { padding: 5px 10px; font-size: 13px; }
+.sinCelProy { color: var(--ev-mid); font-weight: 600; }
+@media (max-width: 860px) { .tablaProy { display: none; } .tarjetasProy { display: flex; } .tarjetaHead .salaProy { align-items: flex-end; } }
