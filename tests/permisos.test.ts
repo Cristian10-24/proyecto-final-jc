@@ -122,6 +122,7 @@ describe("matriz de permisos", () => {
     editar_criterios: [false, false, true, true],
     comentar_proyectos: [false, true, true, true],
     citar: [false, false, false, true],
+    descargar_datos_personales: [false, false, false, true],
   };
   for (const [permiso, esperado] of Object.entries(tabla))
     it(permiso, () => expect(ROLES.map((r) => puede(r, permiso as Permiso))).toEqual(esperado));
@@ -280,12 +281,12 @@ describe("sesión con clave restablecida", () => {
 });
 
 describe("Paso 26 · un usuario con varios roles", () => {
-  const todos = Object.keys({ ver_seguimiento: 1, ver_todas_las_ciudades: 1, ver_resumen: 1, descargar_excel: 1, importar: 1, gestionar_usuarios: 1, cambiar_horario: 1, evaluar: 1, ver_evaluaciones: 1, monitorear_salas: 1, editar_criterios: 1, comentar_proyectos: 1, citar: 1 }) as Permiso[];
+  const todos = Object.keys({ ver_seguimiento: 1, ver_todas_las_ciudades: 1, ver_resumen: 1, descargar_excel: 1, importar: 1, gestionar_usuarios: 1, cambiar_horario: 1, evaluar: 1, ver_evaluaciones: 1, monitorear_salas: 1, editar_criterios: 1, comentar_proyectos: 1, citar: 1, descargar_datos_personales: 1 }) as Permiso[];
 
   it("sus permisos son la suma de sus roles, sin ninguno de administración", () => {
     const k = { rol: "monitor", rolesExtra: ["coordinador"] };
     for (const p of todos) expect(puede(k, p), p).toBe(puede("monitor", p) || puede("coordinador", p));
-    for (const p of ["importar", "gestionar_usuarios", "cambiar_horario", "citar"] as Permiso[]) expect(puede(k, p), p).toBe(false);
+    for (const p of ["importar", "gestionar_usuarios", "cambiar_horario", "citar", "descargar_datos_personales"] as Permiso[]) expect(puede(k, p), p).toBe(false);
     expect(etiquetaRoles({ ...k, ciudades: ["Panamá"] })).toBe("Monitor · Panamá + Coordinación");
     expect(inicioPorRol(k)).toBe("/admin");
   });

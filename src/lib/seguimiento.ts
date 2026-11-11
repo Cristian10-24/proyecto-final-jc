@@ -8,7 +8,7 @@ import { enmascararNumero } from "./estudiante";
 import { conteoComentarios } from "./comentarios";
 import { sinFormula } from "./evaluacion/resultados";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
-import type { Proyecto } from "./types";
+import type { Integrante, Proyecto } from "./types";
 import { FILTRO_MONITOR } from "./permisos";
 
 // Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
@@ -98,11 +98,16 @@ async function libresOrdenLlegada(): Promise<Map<string, { n: number; dias: stri
 const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const nombreHoja = (dia: string) => { const t = fmtDia.format(new Date(dia + "T12:00:00Z")).replace(/,/g, ""); return (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 31); };
 
+/** Correo para el Excel: sin espacios y en minúscula. */
+const correoLimpio = (c?: string) => (c ?? "").replace(/\s+/g, "").toLowerCase();
+
 /**
  * Cronograma en Excel: una hoja por día con hora (COL y UY), mentor (sala), monitor, ciudad, proyecto
  * e integrantes con celular. Solo coordinación y admin (permiso descargar_excel).
+ * Con `datosPersonales` (solo admin, permiso descargar_datos_personales) agrega documento (como texto) y correo
+ * de cada integrante, junto a su nombre y celular. Sin él, las columnas son las de siempre.
  */
-export async function cronogramaExcel(): Promise<Buffer> {
+export async function cronogramaExcel({ datosPersonales = false }: { datosPersonales?: boolean } = {}): Promise<Buffer> {
   const { asientos, proyectos, mentores, users } = await collections();
   const ocupados = await asientos.find({ proyectoId: { $type: "objectId" } }).sort({ inicio: 1, mentorId: 1 }).toArray();
   const proys = new Map((await proyectos.find({ _id: { $in: ocupados.map((a) => a.proyectoId!) } }).toArray()).map((p) => [String(p._id), p]));
@@ -117,17 +122,26 @@ export async function cronogramaExcel(): Promise<Buffer> {
   if (!porDia.size) wb.addWorksheet("Sin reservas").addRow(["Todavía no hay proyectos con hora."]);
   for (const [dia, lista] of porDia) {
     const ws = wb.addWorksheet(nombreHoja(dia));
-    ws.addRow(["Hora COL", "Hora UY", "Mentor (sala)", "Monitor", "Ciudad", "Proyecto", "Código", "Integrante 1", "Celular 1", "Integrante 2", "Celular 2"]).font = { bold: true };
+    const base = ["Hora COL", "Hora UY", "Mentor (sala)", "Monitor", "Ciudad", "Proyecto", "Código"];
+    const porIntegrante = (n: number) => datosPersonales
+      ? [`Integrante ${n}`, `Documento ${n}`, `Celular ${n}`, `Correo ${n}`]
+      : [`Integrante ${n}`, `Celular ${n}`];
+    ws.addRow([...base, ...porIntegrante(1), ...porIntegrante(2)]).font = { bold: true };
+    const datos = (i?: Integrante) => datosPersonales
+      ? [sinFormula(i?.nombre ?? ""), sinFormula(i?.documento ?? ""), i?.celular ?? "", sinFormula(correoLimpio(i?.correo))]
+      : [sinFormula(i?.nombre ?? ""), i?.celular ?? ""];
     for (const a of lista) {
       const p = proys.get(String(a.proyectoId));
       const [i1, i2] = p?.integrantes ?? [];
       ws.addRow([
         horaCO(a.inicio), p && uruguay.has(p.ciudad) ? horaUY(a.inicio) : "", nombresMentor.get(a.mentorId) ?? a.mentorId,
         p?.monitor ? nombresMonitor.get(p.monitor) ?? p.monitor : "Por asignar", p?.ciudad ?? "", sinFormula(p?.nombre ?? ""), p?.codigo ?? "",
-        i1?.nombre ?? "", i1?.celular ?? "", i2?.nombre ?? "", i2?.celular ?? "",
+        ...datos(i1), ...datos(i2),
       ]);
     }
-    ws.columns.forEach((c, i) => { c.width = [11, 11, 26, 22, 14, 34, 16, 28, 16, 28, 16][i]; });
+    if (datosPersonales) for (const col of [9, 13]) ws.getColumn(col).numFmt = "@"; // documento como texto, nunca número
+    const anchos = datosPersonales ? [11, 11, 26, 22, 14, 34, 16, 28, 16, 16, 30, 28, 16, 16, 30] : [11, 11, 26, 22, 14, 34, 16, 28, 16, 28, 16];
+    ws.columns.forEach((c, i) => { c.width = anchos[i]; });
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
   return Buffer.from(await wb.xlsx.writeBuffer());

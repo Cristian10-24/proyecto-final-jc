@@ -311,3 +311,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: hora de Uruguay en la citación de participantes de Colonia y Paysandú`. Línea «Hora: 8:00 a. m. a 8:15 a. m. (hora Colombia) · 10:00 a. m. a 10:15 a. m. (hora Uruguay)» solo para esas ciudades; los demás, sin cambios. 397 unitarias y 331 con base; typecheck y build pasan.
 - Verificar: `npx vitest run tests/citaciones.test.ts` (prueba «Colonia y Paysandú»).
 - Pendiente: push de feature/citaciones (cuando el usuario lo autorice) y probar en Preview.
+
+## Ajuste · Documento y correo en el cronograma (solo admin)
+- Commit: `feat: documento y correo por integrante en el cronograma de administración`. Permiso nuevo `descargar_datos_personales` (solo admin). Admin: Integrante, Documento (texto «@»), Celular, Correo (minúscula, sin espacios) por integrante; individual deja vacío el 2. Coordinación: columnas de siempre. revisor-seguridad: sin altos ni medios; bajos aceptados (celular sin `sinFormula`, como antes; mismo nombre de archivo). 398 unitarias; con base 326/327 + 14 omitidas: seguimiento, admin y estudiante fallan por la fecha (12-nov ya cerró hoy 11-nov), no por este cambio.
+- Verificar: `npx vitest run --config vitest.db.config.mts tests/cronogramaContacto.db.test.ts` (11/11).
+- Pendiente: push y deploy cuando el usuario lo autorice; actualizar las fechas fijas de las 3 pruebas con base vencidas.
