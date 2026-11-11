@@ -3,13 +3,14 @@ import type { Filter } from "mongodb";
 import { scopeFilter, type SessionUser } from "./auth";
 import { CIUDADES, horaCO, horaUY } from "./ciudades";
 import { collections } from "./db";
-import { diaCOL } from "./edicion";
+import { diaCOL, horaCOL } from "./edicion";
 import { enmascararNumero } from "./estudiante";
 import { conteoComentarios } from "./comentarios";
 import { sinFormula } from "./evaluacion/resultados";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Integrante, Proyecto } from "./types";
 import { FILTRO_MONITOR } from "./permisos";
+import { esHttps } from "./planSalas";
 
 // Seguimiento (monitor: solo sus ciudades; coordinación y admin: todas), resumen y cronograma en Excel.
 
@@ -96,24 +97,31 @@ async function libresOrdenLlegada(): Promise<Map<string, { n: number; dias: stri
 }
 
 const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
-const nombreHoja = (dia: string) => { const t = fmtDia.format(new Date(dia + "T12:00:00Z")).replace(/,/g, ""); return (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 31); };
+/** «Jueves 12 de noviembre». */
+const diaLargo = (dia: string) => { const t = fmtDia.format(new Date(dia + "T12:00:00Z")).replace(/,/g, ""); return t.charAt(0).toUpperCase() + t.slice(1); };
+const nombreHoja = (dia: string) => diaLargo(dia).slice(0, 31);
 
 /** Correo para el Excel: sin espacios y en minúscula. */
 const correoLimpio = (c?: string) => (c ?? "").replace(/\s+/g, "").toLowerCase();
 
 /**
- * Cronograma en Excel: una hoja por día con hora (COL y UY), mentor (sala), monitor, ciudad, proyecto
- * e integrantes con celular. Solo coordinación y admin (permiso descargar_excel).
+ * Cronograma en Excel: una hoja por día con día, hora (COL y UY), mentor (sala), sala y enlace (del plan de salas),
+ * monitor, ciudad, proyecto e integrantes con celular. Solo coordinación y admin (permiso descargar_excel).
+ * Sala o enlace que no estén en el plan/configuración quedan vacíos y el proyecto va a la hoja final «Avisos».
  * Con `datosPersonales` (solo admin, permiso descargar_datos_personales) agrega documento (como texto) y correo
  * de cada integrante, junto a su nombre y celular. Sin él, las columnas son las de siempre.
  */
 export async function cronogramaExcel({ datosPersonales = false }: { datosPersonales?: boolean } = {}): Promise<Buffer> {
-  const { asientos, proyectos, mentores, users } = await collections();
+  const { asientos, proyectos, mentores, users, planSalas, salasConfig } = await collections();
   const ocupados = await asientos.find({ proyectoId: { $type: "objectId" } }).sort({ inicio: 1, mentorId: 1 }).toArray();
   const proys = new Map((await proyectos.find({ _id: { $in: ocupados.map((a) => a.proyectoId!) } }).toArray()).map((p) => [String(p._id), p]));
   const nombresMentor = new Map((await mentores.find({}).toArray()).map((m) => [m._id, m.nombre]));
   const nombresMonitor = new Map((await users.find(FILTRO_MONITOR, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
   const uruguay = new Set<string>(CIUDADES.filter((c) => c.pais === "UY").map((c) => c.nombre));
+  // Sala por día + hora (Colombia) + mentor, como en el plan de salas; enlace solo si es https (como en la pantalla de salas).
+  const salaDe = new Map((await planSalas.find({}).toArray()).map((s) => [`${s.dia}|${s.hora}|${s.mentorId}`, s.sala]));
+  const enlaceDe = new Map(((await salasConfig.findOne({ _id: "actual" }))?.salas ?? []).filter((s) => esHttps(s.enlace)).map((s) => [s.sala, s.enlace]));
+  const avisos: (string | number)[][] = [];
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "Proyecto final JC 2026";
@@ -122,7 +130,7 @@ export async function cronogramaExcel({ datosPersonales = false }: { datosPerson
   if (!porDia.size) wb.addWorksheet("Sin reservas").addRow(["Todavía no hay proyectos con hora."]);
   for (const [dia, lista] of porDia) {
     const ws = wb.addWorksheet(nombreHoja(dia));
-    const base = ["Hora COL", "Hora UY", "Mentor (sala)", "Monitor", "Ciudad", "Proyecto", "Código"];
+    const base = ["Día", "Hora COL", "Hora UY", "Mentor (sala)", "Sala", "Enlace de sala", "Monitor", "Ciudad", "Proyecto", "Código"];
     const porIntegrante = (n: number) => datosPersonales
       ? [`Integrante ${n}`, `Documento ${n}`, `Celular ${n}`, `Correo ${n}`]
       : [`Integrante ${n}`, `Celular ${n}`];
@@ -133,15 +141,28 @@ export async function cronogramaExcel({ datosPersonales = false }: { datosPerson
     for (const a of lista) {
       const p = proys.get(String(a.proyectoId));
       const [i1, i2] = p?.integrantes ?? [];
+      const mentor = sinFormula(nombresMentor.get(a.mentorId) ?? a.mentorId);
+      const sala = salaDe.get(`${dia}|${horaCOL(a.inicio)}|${a.mentorId}`);
+      const enlace = sala === undefined ? "" : enlaceDe.get(sala) ?? "";
+      if (sala === undefined || !enlace)
+        avisos.push([diaLargo(dia), horaCO(a.inicio), mentor, sala ?? "", sinFormula(p?.nombre ?? ""), sinFormula(p?.codigo ?? ""), p?.ciudad ?? "",
+          sala === undefined ? "Sin sala en el plan de salas" : "Sin enlace de sala"]);
       ws.addRow([
-        horaCO(a.inicio), p && uruguay.has(p.ciudad) ? horaUY(a.inicio) : "", nombresMentor.get(a.mentorId) ?? a.mentorId,
-        p?.monitor ? nombresMonitor.get(p.monitor) ?? p.monitor : "Por asignar", p?.ciudad ?? "", sinFormula(p?.nombre ?? ""), p?.codigo ?? "",
+        diaLargo(dia), horaCO(a.inicio), p && uruguay.has(p.ciudad) ? horaUY(a.inicio) : "", mentor, sala ?? "", sinFormula(enlace),
+        p?.monitor ? sinFormula(nombresMonitor.get(p.monitor) ?? p.monitor) : "Por asignar", p?.ciudad ?? "", sinFormula(p?.nombre ?? ""), sinFormula(p?.codigo ?? ""),
         ...datos(i1), ...datos(i2),
       ]);
     }
-    if (datosPersonales) for (const col of [9, 13]) ws.getColumn(col).numFmt = "@"; // documento como texto, nunca número
-    const anchos = datosPersonales ? [11, 11, 26, 22, 14, 34, 16, 28, 16, 16, 30, 28, 16, 16, 30] : [11, 11, 26, 22, 14, 34, 16, 28, 16, 28, 16];
+    if (datosPersonales) for (const col of [base.length + 2, base.length + 6]) ws.getColumn(col).numFmt = "@"; // documento como texto, nunca número
+    const anchos = [24, 11, 11, 26, 7, 40, 22, 14, 34, 16, ...(datosPersonales ? [28, 16, 16, 30, 28, 16, 16, 30] : [28, 16, 28, 16])];
     ws.columns.forEach((c, i) => { c.width = anchos[i]; });
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+  }
+  if (avisos.length) {
+    const ws = wb.addWorksheet("Avisos");
+    ws.addRow(["Día", "Hora COL", "Mentor (sala)", "Sala", "Proyecto", "Código", "Ciudad", "Aviso"]).font = { bold: true };
+    for (const f of avisos) ws.addRow(f);
+    ws.columns.forEach((c, i) => { c.width = [24, 11, 26, 7, 34, 16, 14, 30][i]; });
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
   return Buffer.from(await wb.xlsx.writeBuffer());
