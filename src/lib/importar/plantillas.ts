@@ -37,16 +37,17 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   if (tipo === "usuarios") {
     hojaCon(wb, "Usuarios", COLUMNAS_USUARIOS, [
-      ["Mentora Ejemplo Uno", "mentora.uno@ejemplo.org", "Mentor", null, null],
-      ["Monitor Ejemplo Dos", "monitor.dos@ejemplo.org", "Monitor", null, "Cali, Cartagena"],
-      ["Coordinación Ejemplo", "coordinacion@ejemplo.org", "Coordinación", null, null],
-    ], [30, 32, 16, 20, 26]);
+      ["Mentora Ejemplo Uno", "mentora.uno@ejemplo.org", "Mentor", null, null, null],
+      ["Monitor Ejemplo Dos", "monitor.dos@ejemplo.org", "Monitor", null, "Cali, Cartagena", "300 000 0000"],
+      ["Coordinación Ejemplo", "coordinacion@ejemplo.org", "Coordinación", null, null, null],
+    ], [30, 32, 16, 20, 26, 18]);
     instrucciones(wb, [
       "Plantilla de usuarios · Proyecto final JC 2026",
       "Una persona por fila. Borra las filas de ejemplo antes de cargar.",
       "Rol: Mentor, Monitor o Coordinación. Administración se crea uno por uno en la página Usuarios.",
       "Mentor: el nombre debe estar escrito igual que en la hoja Horarios (la vista previa sugiere el más parecido).",
       "Monitor: Ciudades es opcional (separadas por coma). Sin ciudades, solo acompaña sus salas en las presentaciones.",
+      "Celular (opcional): sale en las citaciones del calendario. Vacío no borra el guardado.",
       "Usuario (opcional): con qué entra. Si no viene, se toma la parte del correo antes de la @ (o nombre.apellido).",
       "Si la persona ya existe (por usuario, correo o el mismo nombre), se actualiza y su clave no cambia.",
       "A los nuevos se les genera una clave temporal que se muestra una sola vez al cargar.",

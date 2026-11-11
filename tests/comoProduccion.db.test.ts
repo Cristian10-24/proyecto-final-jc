@@ -18,6 +18,9 @@ const { listarSinProyecto, noInscrito } = await import("@/lib/sinProyecto");
 const { seguimiento: seguimientoEval } = await import("@/lib/evaluacion/resultados");
 const { listarProyectos } = await import("@/lib/admin");
 const { cargaMentores } = await import("@/lib/cargaMentores");
+const { vistaUsuario } = await import("@/lib/usuarios");
+const { revisionNombres } = await import("@/lib/usuariosExcel");
+const citaciones = await import("@/lib/citaciones/registro");
 
 const ADMIN = { rol: "admin" as const, usuario: "admin.demo" };
 const AHORA = new Date("2026-11-11T15:00:00Z");
@@ -34,8 +37,18 @@ async function portal() {
     out[`tablero ${dia}`] = await datosTablero(dia);
     out[`carga ${dia}`] = await cargaMentores(dia); // Paso 24: solo lectura
     for (const p of algunos) out[`bloques ${dia} ${p}`] = await bloquesLibres(p, dia);
+    // Fase 5 · Paso 28: la pantalla de citaciones (filas y vistas previas, en modo real y prueba) solo lee.
+    for (const tipo of ["participante", "mentor", "monitor"] as const) {
+      const fs = await citaciones.filasDelDia(dia, tipo, null, AHORA);
+      out[`citaciones ${dia} ${tipo}`] = fs;
+      out[`citaciones prueba ${dia} ${tipo}`] = await citaciones.filasDelDia(dia, tipo, "yo@prueba.test", AHORA);
+      for (const f of fs.slice(0, 3)) out[`vista ${dia} ${tipo} ${f.clave}`] = await citaciones.vistaPrevia(dia, tipo, f.clave, null);
+    }
   }
   out.resumen = await resumen();
+  // Fase 5 · Paso 27: la lista de Usuarios (con el celular opcional) y la revisión de nombres solo leen.
+  out.usuarios = (await c.users.find({}).sort({ usuario: 1 }).toArray()).map(vistaUsuario);
+  out.revisionNombres = await revisionNombres();
   // Paso 21: listas y estadísticas con «Sin proyecto» (sin marcas ni participantes: todo como antes).
   out.sinProyecto = await listarSinProyecto();
   out.inscripcion = await seguimientoInscripcion({ rol: "coordinador", ciudades: [] });
@@ -76,6 +89,8 @@ describe("sin acciones de usuario no cambia nada", () => {
     expect(await c.candadosCupo.countDocuments()).toBe(0);
     expect(await c.sinProyecto.countDocuments()).toBe(0);
     expect(await c.comentarios.countDocuments()).toBe(0);
+    expect(await c.citaciones.countDocuments()).toBe(0); // Fase 5: ver la pantalla no crea citaciones
+    expect(await c.citacionesConfig.countDocuments()).toBe(0);
     expect(await c.proyectos.countDocuments({ sinProyecto: { $exists: true } })).toBe(0);
     // Ningún documento real queda como «no inscrito» y las listas nuevas están vacías.
     expect(documentos.filter((d) => (portalDespues[d] as { noInscrito: boolean }).noInscrito)).toEqual([]);

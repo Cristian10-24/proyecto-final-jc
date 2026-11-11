@@ -3,25 +3,27 @@ import { ObjectId } from "mongodb";
 import { NOMBRES_CIUDADES } from "./ciudades";
 import { collections, transaccion } from "./db";
 import { clave, texto } from "./importar/excel";
+import { leerCelular } from "./importar/proyectos";
 import { tieneRol, type RolUsuario } from "./permisos";
 import type { User } from "./types";
 import { generarClave, hashClave, mentorIdDe, parecidos } from "./usuarios";
 import { cleanSpaces, normalizeCity } from "./validation/name";
 
 // Carga de usuarios por Excel (Paso 13, como el prototipo: Nombre · Correo · Rol) y revisión de nombres.
-// Columnas opcionales: Usuario (si no viene, sale del correo o del nombre) y Ciudades (monitores).
+// Columnas opcionales: Usuario (si no viene, sale del correo o del nombre), Ciudades (monitores) y Celular (Fase 5).
+// Un celular vacío no borra el guardado.
 // Se envía dos veces el mismo archivo: "previa" no escribe; "confirmar" aplica solo si no hay errores.
 // Si alguien ya existe (por usuario, correo, su mentor en Horarios o el mismo nombre), se actualiza; la clave no
 // cambia. A los nuevos se les genera una clave temporal que se muestra una sola vez. Administración no se carga
 // por Excel (se crea uno por uno) y nadie cambia su propio rol desde aquí.
 
-export const COLUMNAS_USUARIOS = ["Nombre", "Correo", "Rol", "Usuario", "Ciudades"] as const;
+export const COLUMNAS_USUARIOS = ["Nombre", "Correo", "Rol", "Usuario", "Ciudades", "Celular"] as const;
 export const ROLES_EXCEL: Record<string, RolUsuario> = { mentor: "mentor", mentora: "mentor", monitor: "monitor", monitora: "monitor", coordinacion: "coordinador", coordinador: "coordinador", coordinadora: "coordinador" };
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Tope por archivo: cada usuario nuevo lleva un hash bcrypt (lento) y todo va en una transacción. */
 export const MAX_FILAS_USUARIOS = 300;
 
-export type FilaUsuario = { fila: number; nombre: string; correo?: string; rol: RolUsuario; usuario?: string; ciudades: string[] };
+export type FilaUsuario = { fila: number; nombre: string; correo?: string; rol: RolUsuario; usuario?: string; ciudades: string[]; celular?: string };
 export type LecturaUsuarios = { filas: FilaUsuario[]; errores: { fila: number; mensaje: string }[] };
 
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -42,7 +44,7 @@ export function leerUsuarios(wb: ExcelJS.Workbook): LecturaUsuarios {
   const out: LecturaUsuarios = { filas: [], errores: [] };
   const ws = wb.worksheets.find((w) => clave(w.name) === "usuarios") ?? wb.worksheets[0];
   if (!ws) return { filas: [], errores: [{ fila: 0, mensaje: "El archivo no tiene hojas." }] };
-  const col: Partial<Record<"nombre" | "correo" | "rol" | "usuario" | "ciudades", number>> = {};
+  const col: Partial<Record<"nombre" | "correo" | "rol" | "usuario" | "ciudades" | "celular", number>> = {};
   ws.getRow(1).eachCell((c, i) => {
     const k = clave(texto(c.value));
     if (/^nombre/.test(k)) col.nombre ??= i;
@@ -50,9 +52,10 @@ export function leerUsuarios(wb: ExcelJS.Workbook): LecturaUsuarios {
     else if (/^(rol|cargo)/.test(k)) col.rol ??= i;
     else if (/^usuario/.test(k)) col.usuario ??= i;
     else if (/^ciudad/.test(k)) col.ciudades ??= i;
+    else if (/^(celular|telefono|movil|whatsapp)/.test(k)) col.celular ??= i;
   });
   if (ws.actualRowCount > MAX_FILAS_USUARIOS + 1) return { filas: [], errores: [{ fila: 0, mensaje: `El archivo tiene más de ${MAX_FILAS_USUARIOS} personas. Divídelo en varios archivos.` }] };
-  if (!col.nombre || !col.rol) return { filas: [], errores: [{ fila: 1, mensaje: "La primera fila debe tener los encabezados Nombre, Correo y Rol (Usuario y Ciudades son opcionales)." }] };
+  if (!col.nombre || !col.rol) return { filas: [], errores: [{ fila: 1, mensaje: "La primera fila debe tener los encabezados Nombre, Correo y Rol (Usuario, Ciudades y Celular son opcionales)." }] };
   ws.eachRow((row, r) => {
     if (r === 1) return;
     const v = (c?: number) => (c ? cleanSpaces(texto(row.getCell(c).value)) : "");
@@ -71,14 +74,16 @@ export function leerUsuarios(wb: ExcelJS.Workbook): LecturaUsuarios {
     const ciudades = rol === "monitor" ? [...new Set(ciudadesTxt.split(/[,;/]| y /).map((c) => c.trim()).filter(Boolean).map(normalizeCity))] : [];
     const otra = ciudades.find((c) => !NOMBRES_CIUDADES.includes(c));
     if (otra) return err(`${nombre}: ciudad "${otra}" no reconocida.`);
-    out.filas.push({ fila: r, nombre, ...(correo ? { correo } : {}), rol, ...(usuario ? { usuario: usuario.toLowerCase() } : {}), ciudades });
+    const cel = col.celular ? leerCelular(row.getCell(col.celular).value) : null;
+    if (cel && "error" in cel) return err(`${nombre}: el celular ${cel.error}.`);
+    out.filas.push({ fila: r, nombre, ...(correo ? { correo } : {}), rol, ...(usuario ? { usuario: usuario.toLowerCase() } : {}), ciudades, ...(cel ? { celular: cel.celular } : {}) });
   });
   if (!out.filas.length && !out.errores.length) out.errores.push({ fila: 0, mensaje: "El archivo no tiene personas." });
   return out;
 }
 
 export type AccionUsuario = {
-  fila: number; nombre: string; rol: RolUsuario; usuario: string; correo?: string; ciudades: string[];
+  fila: number; nombre: string; rol: RolUsuario; usuario: string; correo?: string; ciudades: string[]; celular?: string;
   accion: "crear" | "actualizar" | "igual";
   /** Qué cambia al actualizar ("rol: Monitor → Mentor"). */
   cambios: string[];
@@ -133,6 +138,7 @@ export async function previaUsuarios(l: LecturaUsuarios, yo: string): Promise<Pr
       if (actual.nombre !== f.nombre) cambios.push(`nombre: ${actual.nombre} → ${f.nombre}`);
       if (actual.rol !== f.rol) cambios.push(`rol: ${ROL_TXT[actual.rol]} → ${ROL_TXT[f.rol]}`);
       if (f.correo && actual.correo !== f.correo) cambios.push(`correo: ${f.correo}`);
+      if (f.celular && actual.celular !== f.celular) cambios.push(`celular: ${f.celular}`);
       // Paso 26: quien es monitor como rol adicional conserva sus ciudades aunque la fila diga otro rol.
       const monitorFila = tieneRol({ rol: f.rol, rolesExtra: actual.rolesExtra }, "monitor");
       const ciudades = f.ciudades.length || !monitorFila ? f.ciudades : actual.ciudades;
@@ -140,7 +146,7 @@ export async function previaUsuarios(l: LecturaUsuarios, yo: string): Promise<Pr
       existentes.set(f.fila, actual);
     } else tomados.add(usuario);
     acciones.push({
-      fila: f.fila, nombre: f.nombre, rol: f.rol, usuario, ...(f.correo ? { correo: f.correo } : {}),
+      fila: f.fila, nombre: f.nombre, rol: f.rol, usuario, ...(f.correo ? { correo: f.correo } : {}), ...(f.celular ? { celular: f.celular } : {}),
       ciudades: f.ciudades.length || !actual || !tieneRol({ rol: f.rol, rolesExtra: actual.rolesExtra }, "monitor") ? f.ciudades : actual.ciudades,
       accion: actual ? (cambios.length ? "actualizar" : "igual") : "crear", cambios,
     });
@@ -171,7 +177,7 @@ export async function aplicarUsuarios(previa: Awaited<ReturnType<typeof previaUs
       const mentorId = mentorIdDe([a.rol, ...(a.accion === "actualizar" ? previa.existentes.get(a.fila)!.rolesExtra ?? [] : [])], a.nombre);
       if (a.accion === "crear") {
         await users.insertOne({
-          _id: new ObjectId(), usuario: a.usuario, nombre: a.nombre, rol: a.rol, ciudades: a.ciudades, ...(a.correo ? { correo: a.correo } : {}),
+          _id: new ObjectId(), usuario: a.usuario, nombre: a.nombre, rol: a.rol, ciudades: a.ciudades, ...(a.correo ? { correo: a.correo } : {}), ...(a.celular ? { celular: a.celular } : {}),
           ...(mentorId ? { mentorId } : {}), activo: true, passwordHash: hashDe.get(a.usuario)!, tokenVersion: 0, creadoEn: ahora, actualizadoEn: ahora,
         }, { session: s });
       } else if (a.accion === "actualizar") {
@@ -179,7 +185,7 @@ export async function aplicarUsuarios(previa: Awaited<ReturnType<typeof previaUs
         // Solo si sigue como en la vista previa (activo y con el mismo rol: nunca administración). Cambiar el rol cierra sus sesiones.
         // Paso 26: y con los mismos roles adicionales (si cambiaron después de la vista previa, no se aplica nada).
         const r = await users.updateOne({ _id: u._id, rol: u.rol, activo: true, ...(u.rolesExtra ? { rolesExtra: u.rolesExtra } : { rolesExtra: { $exists: false } }) }, {
-          $set: { nombre: a.nombre, rol: a.rol, ciudades: a.ciudades, actualizadoEn: ahora, ...(a.correo ? { correo: a.correo } : {}), ...(mentorId ? { mentorId } : {}) },
+          $set: { nombre: a.nombre, rol: a.rol, ciudades: a.ciudades, actualizadoEn: ahora, ...(a.correo ? { correo: a.correo } : {}), ...(a.celular ? { celular: a.celular } : {}), ...(mentorId ? { mentorId } : {}) },
           ...(mentorId ? {} : { $unset: { mentorId: "" } }), ...(u.rol !== a.rol ? { $inc: { tokenVersion: 1 } } : {}),
         }, { session: s });
         if (!r.matchedCount) throw new CambioUsuarios();

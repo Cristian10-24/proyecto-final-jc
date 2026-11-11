@@ -278,3 +278,36 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: número de salas desde la hoja Salas (hasta 12)`. El único tope fijo era MAX_SALAS = 7 al leer la hoja Salas; ahora 12. El plan, las alertas de «más mentores que salas» y Franjas ya usaban el número de salas importadas (sin salas importadas, igual que hoy: sin tope). La sala acepta «Sala N» o N (1–12); 0, 13, negativos y decimales se rechazan. Reimportar salas recalcula el plan sin tocar reservas ni evaluaciones (probado). revisor-seguridad y revisor-pruebas no se pudieron lanzar (el plugin context-mode cambia la llamada); revisión a mano sin hallazgos. 326 unitarias y 295 con base; typecheck y build pasan.
 - Verificar: Importar → Salas y monitores con 8 filas en la hoja Salas → la hora del jueves 12 con 8 mentores queda con las salas 1 a 8 en «Plan de salas».
 - Pendiente: publicar y volver a importar la hoja Salas con 8 salas en producción.
+
+## Paso 27 · Núcleo de citaciones y celular del usuario
+- Commit: `feat: núcleo de citaciones por calendario y celular opcional del usuario`. `src/lib/citaciones/contenido.ts` (puro): eventos de participante (bloque exacto, solo integrantes), mentor y monitor (franjas ≤ 30 min, sala/enlace/monitor del plan de salas), «Ten en cuenta», modo prueba «[PRUEBA] », resumen sin contactos (correos como huella) y qué cambió. Campo nuevo y opcional `celular` en usuarios (Usuarios → Editar y columna Celular del Excel; sin celular: «sin registrar»). revisor-seguridad: sin altos; 1 medio (correos en el resumen) y 1 bajo (saltos de línea y < > en nombres) corregidos. 353 unitarias; con base 295/296: la de 120 reservas simultáneas pasó el límite de 60 s una vez; sola pasa en 54 s con y sin estos cambios (lentitud local).
+- Verificar: `npx vitest run tests/citaciones.test.ts tests/celularUsuario.test.ts`; demo local → Usuarios → Editar un monitor → Celular «300 123 4567» → la lista muestra +573001234567.
+- Pendiente: Paso 28 (cliente de Google simulable y servicio con la colección `citaciones`).
+
+## Ajuste de pruebas · límite de la prueba de 120 reservas
+- Commit: `test: límite de 120 s solo para la prueba de 120 reservas simultáneas`. En una máquina lenta pasaba del límite general de 60 s. No cambia la app ni lo que comprueba (sigue exigiendo 30 reservas exactas y menos de 45 s de reservas).
+- Verificar: `npx vitest run --config vitest.db.config.mts tests/ordenLlegada.db.test.ts` (pasa en ~42 s).
+
+## Paso 28 · Cliente de Google y registro de citaciones
+- Commit: `feat: cliente de Google Calendar y registro de citaciones`. `google.ts`: API REST con refresh token (solo variables de entorno), ids propios, `sendUpdates=all`, invitados ocultos, reintentos con tope (Retry-After ≤ 10 s, 15 s por llamada, 45 s por evento), errores sin secretos ni correos; `entornoCitaciones()` lee cliente y modo prueba juntos y en prueba bloquea cualquier invitado real. `registro.ts`: colecciones nuevas `citaciones` (única por tipo+clave+día) y `citaciones_config`; citar/actualizar sin duplicar (toma con dueño e ids reservados antes de llamar a Google), cancelar, marcar como citado (uno o todos; nunca en modo prueba), citar varias (una falla → Error y sigue), desactualizadas y «sobra», «Ten en cuenta»; todo con changeLog. La demo `--reset` vacía las colecciones nuevas. revisor-seguridad: sin altos; 3 medios (toma sin dueño, esperas sin tope, modo prueba solo por parámetro) y 5 bajos corregidos. 367 unitarias; con base 311/312: la de 120 reservas cumplió sus comprobaciones de datos pero tardó 81,8 s (exige < 45 s) con la base local recién recreada.
+- Verificar: `npx vitest run tests/citacionesGoogle.test.ts` y `npx vitest run --config vitest.db.config.mts tests/citaciones.db.test.ts tests/comoProduccion.db.test.ts`.
+- Pendiente: Paso 29 (rutas solo admin con `entornoCitaciones()`, pantalla y CITACIONES.md); decidir qué hacer con el tiempo de la prueba de 120 reservas en esta máquina.
+
+## Ajuste de pruebas · tiempo de la prueba de 120 reservas solo como aviso
+- Commit: `test: el tiempo de las 120 reservas simultáneas se informa como aviso`. Obligatorio solo lo de datos: exactamente 30 reservas, 30 proyectos distintos y ningún proyecto con dos asientos en la base. El tiempo se escribe en la salida («[120 reservas simultáneas] N s», con AVISO si pasa de 45 s) y no hace fallar la prueba. La app no cambia.
+- Verificar: `npx vitest run --config vitest.db.config.mts tests/ordenLlegada.db.test.ts` (11/11; en esta máquina marcó 63,8 s con aviso).
+
+## Paso 29 · Rutas y pantalla de citaciones
+- Commit: `feat: pantalla de citaciones por Google Calendar (solo admin) y CITACIONES.md`. Permiso nuevo `citar` (solo admin). Rutas `/api/admin/citaciones` (GET días y filas), `previa`, `acciones` (citar/cancelar/marcar hasta 10, marcar_todos; 503 sin Google, 409 si la variable de prueba es inválida) y `texto`, todas con `entornoCitaciones()`. Pantalla /admin/citaciones: día, pestañas, estado por fila, vista previa, citar/actualizar/reintentar, cancelar, marcar, «Citar todos los pendientes» en lotes de 10 con avance, aviso fijo de MODO PRUEBA y editor «Ten en cuenta». `docs/CITACIONES.md` y variables en DESPLIEGUE.md. revisor-seguridad: sin altos ni medios; 3 bajos corregidos (previa con variable inválida, más roles en pruebas, nota del correo de prueba). 393 unitarias y 330 con base; typecheck y build pasan.
+- Verificar: Preview con `CITACIONES_CORREO_PRUEBA` → Citaciones → seguir `docs/CITACIONES.md` §3.
+- Pendiente: probar en Preview y publicar (CITACIONES.md §4). Bajos aceptados: `sameOrigin` sin Origin (SameSite=Lax), sin límite de frecuencia en acciones (solo admin).
+
+## Ajuste · Formato exacto de las citaciones
+- Commit: `feat: formato exacto de las citaciones de participantes, mentores y monitores`. Títulos y descripciones con los textos pedidos (hora «8:00 a. m.», hora Colombia; Uruguay sin su hora aparte); participante sin datos del monitor (cambiar el monitor ya no lo desactualiza); mentor con sala/enlace/monitor por tramo si cambia de sala; «Sin registrar»; nuevo valor por defecto de «Ten en cuenta» (lo guardado no se toca). Corregido: el texto «Ten en cuenta» NO desactualiza (así lo decidió el Paso 27; la guía y la pantalla decían lo contrario). revisor-seguridad: 2 medios corregidos («Ten en cuenta» podía imitar líneas de Sala/Enlace; enlace de sala sin limpio) y 2 bajos (invisibles en limpio, correos en modo prueba); bajos aceptados: huella de correos sin sal, monitor no se desactualiza si cambia el contacto de un integrante. 397 unitarias y 331 con base; typecheck y build pasan.
+- Verificar: `npx vitest run tests/citaciones.test.ts`; Preview → Citaciones → Vista previa de cada pestaña.
+- Pendiente: push de feature/citaciones (cuando el usuario lo autorice) y probar en Preview.
+
+## Ajuste · Hora de Uruguay en la citación del participante
+- Commit: `feat: hora de Uruguay en la citación de participantes de Colonia y Paysandú`. Línea «Hora: 8:00 a. m. a 8:15 a. m. (hora Colombia) · 10:00 a. m. a 10:15 a. m. (hora Uruguay)» solo para esas ciudades; los demás, sin cambios. 397 unitarias y 331 con base; typecheck y build pasan.
+- Verificar: `npx vitest run tests/citaciones.test.ts` (prueba «Colonia y Paysandú»).
+- Pendiente: push de feature/citaciones (cuando el usuario lo autorice) y probar en Preview.

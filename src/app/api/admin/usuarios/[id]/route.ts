@@ -4,7 +4,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { collections } from "@/lib/db";
 import { tieneRol } from "@/lib/permisos";
-import { EdicionUsuario, errorMentor, mensajeZod, mentorIdDe, vistaUsuario } from "@/lib/usuarios";
+import { celularUsuario, EdicionUsuario, errorMentor, mensajeZod, mentorIdDe, vistaUsuario } from "@/lib/usuarios";
 
 const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
 
@@ -29,6 +29,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (id === g.user.id && ((cambios.rol && cambios.rol !== "admin") || cambios.activo === false))
     return NextResponse.json({ error: "propio", mensaje: "No puedes quitarte el rol de administración ni desactivar tu propia cuenta." }, { status: 409 });
 
+  // Fase 5 · Celular opcional ("" lo borra; si no cambió, se conserva tal cual).
+  const cel = celularUsuario(cambios.celular, actual.celular);
+  if ("error" in cel) return NextResponse.json({ error: "datos_invalidos", mensaje: cel.error }, { status: 400 });
+  const borraCelular = cambios.celular !== undefined && !cel.celular && !!actual.celular;
+
   const rol = cambios.rol ?? actual.rol;
   // Paso 26: los roles adicionales siguen (sin el que pasa a ser principal; administración no lleva adicionales).
   const extras = rol === "admin" ? [] : (actual.rolesExtra ?? []).filter((r) => r !== rol);
@@ -42,13 +47,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     ...(cambios.nombre !== undefined ? { nombre: cambios.nombre } : {}),
     ...(cambios.activo !== undefined ? { activo: cambios.activo } : {}),
     ...(cambios.correo ? { correo: cambios.correo } : {}),
+    ...(cel.celular && cel.celular !== actual.celular ? { celular: cel.celular } : {}),
     rol, ciudades, actualizadoEn: new Date(), ...(mentorId ? { mentorId } : {}), ...(cambiaExtras ? { rolesExtra: extras } : {}),
   };
   // Desactivar también invalida las sesiones abiertas (por si luego se reactiva).
   // Paso 26: solo si sus roles siguen como se leyeron (si otro admin los cambió a la vez, no se pisan).
   const mismaVersion = { _id: actual._id, rol: actual.rol, ...(actual.rolesExtra ? { rolesExtra: actual.rolesExtra } : { rolesExtra: { $exists: false } }) };
   let hecho = true;
-  try { hecho = !!(await users.updateOne(mismaVersion, { $set: set, ...(mentorId && cambios.correo !== "" ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) })).matchedCount; } catch (e) {
+  try { hecho = !!(await users.updateOne(mismaVersion, { $set: set, ...(mentorId && cambios.correo !== "" && !borraCelular ? {} : { $unset: { ...(mentorId ? {} : { mentorId: "" }), ...(cambios.correo === "" ? { correo: "" } : {}), ...(borraCelular ? { celular: "" } : {}) } }), ...(cambios.activo === false ? { $inc: { tokenVersion: 1 } } : {}) })).matchedCount; } catch (e) {
   if (e instanceof Error && "code" in e && (e as { code?: number }).code === 11000)
     return NextResponse.json({ error: "duplicado", mensaje: "Ese usuario o ese mentor ya existe (alguien lo guardó al mismo tiempo). Recarga la lista." }, { status: 409 });
   throw e;

@@ -4,7 +4,7 @@ import { exigir, sameOrigin } from "@/lib/auth";
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
 import { revisionNombres } from "@/lib/usuariosExcel";
-import { generarClave, hashClave, errorMentor, mensajeZod, mentorIdDe, NuevoUsuario, vistaUsuario } from "@/lib/usuarios";
+import { celularUsuario, generarClave, hashClave, errorMentor, mensajeZod, mentorIdDe, NuevoUsuario, vistaUsuario } from "@/lib/usuarios";
 
 /** Lista de usuarios, ciudades disponibles y revisión de nombres (solo administración). */
 export async function GET() {
@@ -24,6 +24,8 @@ export async function POST(req: Request) {
   const parsed = NuevoUsuario.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "datos_invalidos", mensaje: mensajeZod(parsed.error) }, { status: 400 });
   const { usuario, nombre, rol, ciudades, correo, clave: claveDada } = parsed.data;
+  const cel = celularUsuario(parsed.data.celular);
+  if ("error" in cel) return NextResponse.json({ error: "datos_invalidos", mensaje: cel.error }, { status: 400 });
 
   const { users } = await collections();
   if (await users.findOne({ usuario })) return NextResponse.json({ error: "duplicado", mensaje: `Ya existe el usuario "${usuario}".` }, { status: 409 });
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
   const clave = claveDada ?? generarClave();
   const now = new Date();
   const doc = {
-    _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [], ...(correo ? { correo } : {}), ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}),
+    _id: new ObjectId(), usuario, nombre, rol, ciudades: rol === "monitor" ? ciudades : [], ...(correo ? { correo } : {}), ...(cel.celular ? { celular: cel.celular } : {}), ...(rol === "mentor" ? { mentorId: mentorIdDe(rol, nombre) } : {}),
     activo: true, passwordHash: await hashClave(clave), tokenVersion: 0, creadoEn: now, actualizadoEn: now,
   };
   // Dos admins a la vez con el mismo usuario o mentor: el índice único lo frena; 409 en vez de 500.

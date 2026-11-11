@@ -6,7 +6,7 @@ import { etiquetaRoles, puede, type Permiso } from "@/lib/permisos";
 import BotonTema from "./BotonTema";
 import s from "./AppShell.module.css";
 
-export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "segGeneral" | "tablero" | "franjas" | "reglas" | "cargaMentores" | "horarios" | "sinProyecto" | "salas" | "importar" | "usuarios";
+export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "segGeneral" | "tablero" | "franjas" | "reglas" | "cargaMentores" | "horarios" | "sinProyecto" | "salas" | "citaciones" | "importar" | "usuarios";
 
 // Cada sección aparece solo si el rol tiene el permiso (el servidor lo vuelve a validar).
 const NAV: { key: Seccion; label: string; href: string; permiso: Permiso }[] = [
@@ -23,6 +23,7 @@ const NAV: { key: Seccion; label: string; href: string; permiso: Permiso }[] = [
   { key: "sinProyecto", label: "Sin proyecto", href: "/admin/sin-proyecto", permiso: "cambiar_horario" },
   { key: "salas", label: "Salas", href: "/admin/salas", permiso: "cambiar_horario" },
   { key: "reglas", label: "Reglas de cupos", href: "/admin/reglas", permiso: "cambiar_horario" },
+  { key: "citaciones", label: "Citaciones", href: "/admin/citaciones", permiso: "citar" },
   { key: "importar", label: "Importar", href: "/admin/importar", permiso: "importar" },
   { key: "usuarios", label: "Usuarios", href: "/admin/usuarios", permiso: "gestionar_usuarios" },
 ];

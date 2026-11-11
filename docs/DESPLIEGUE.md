@@ -52,6 +52,8 @@ Marca cada casilla al terminar. Los secretos nunca van al repositorio, a un chat
 | `STUDENT_PORTAL_CLOSES_AT` | Cierre general en UTC. Normalmente no hace falta: el cierre por ciudad se maneja en Reglas de cupos | No |
 | `STUDENT_PORTAL_ENABLED` | `false` solo para cerrar el portal de emergencia | No |
 | `RATE_LIMIT_DOC_MAX` / `RATE_LIMIT_IP_MAX` | `15` / `300` por defecto | No |
+| `GOOGLE_CAL_CLIENT_ID` / `GOOGLE_CAL_CLIENT_SECRET` / `GOOGLE_CAL_REFRESH_TOKEN` | Citaciones por Google Calendar: ver `docs/CITACIONES.md` | No (sin ellas no se cita) |
+| `CITACIONES_CORREO_PRUEBA` | Correo de prueba: TODA invitación va solo ahí. Siempre en Preview; en Production solo en la primera prueba y luego se borra (con Redeploy) | No |
 
 - [ ] Deployment Protection: deja activa la protección de Vercel para los despliegues **Preview** (solo personas del equipo los abren).
 - [ ] Despliega y abre `/login`: debe responder 200 y traer el encabezado `Content-Security-Policy` (en las DevTools, sin errores de CSP en la consola).

@@ -229,3 +229,58 @@ apagado) y compara: idéntico. Además, `consultar` y `agenda` del portal respon
 ### Pasos de mentor y roles (rama feature/mentor-y-roles)
 - [x] 25. Cambiar mentor (mismo bloque) desde la ficha de Horarios, filtro por mentor y buscador en el Tablero.
 - [x] 26. Un usuario con varios roles (`rolesExtra`, solo el admin los asigna, con changeLog).
+
+## Fase 5 · Citaciones por calendario (rama feature/citaciones) — PLAN APROBADO
+Producción activa; presentaciones desde el jueves 12. Mismas reglas de datos de la Fase 4: cero migraciones ni scripts
+que escriban en producción; solo campos nuevos y opcionales y colecciones nuevas; foto «como producción» en cada paso.
+
+**Google.** OAuth de la cuenta organizadora (jovenescreativos@) con refresh token y alcance mínimo `calendar.events`,
+sobre su calendario principal. Sin librería nueva: `fetch` a la API REST (token + events). Variables solo en Vercel:
+`GOOGLE_CAL_CLIENT_ID`, `GOOGLE_CAL_CLIENT_SECRET`, `GOOGLE_CAL_REFRESH_TOKEN` y la opcional `CITACIONES_CORREO_PRUEBA`
+(si existe, TODA invitación va solo a ese correo: sirve para Preview y para la primera prueba). Sin variables, la
+pantalla dice «Google Calendar no está conectado» y no envía nada. Nunca se registran tokens ni respuestas completas.
+Eventos con `sendUpdates=all`, `guestsCanSeeOtherGuests=false`, `guestsCanInviteOthers=false`, `guestsCanModify=false`.
+
+**Qué se cita** (hora COL, tal como pidió el usuario): participantes = un evento por proyecto en su bloque de 15 min,
+solo sus integrantes; mentor = un evento por franja (bloques con proyecto unidos si hay ≤ 30 min entre ellos), solo el
+mentor, sin datos de contacto de estudiantes; monitor = un evento por franja de los bloques con proyecto de SUS salas
+(planSalas), con nombre, celular y correo de esos integrantes y el cierre de reprogramaciones. Sala, enlace y monitor de
+cada bloque salen de planSalas + salasConfig; correo y celular del mentor, de `mentores` (si no, de su usuario).
+
+**Registro.** Colección nueva `citaciones` (índice único `{tipo, clave, dia}`: proyecto o usuario/mentor): ids de los
+eventos, `resumen` (hora, sala, enlace, mentor, monitor, invitados y proyectos; sin contactos) y su huella, estado
+(`citado` · `externo` = marcado sin evento · `error` + mensaje · `cancelado`), fecha y quién. «Desactualizado» se calcula:
+huella actual ≠ huella citada (y dice qué cambió). Colección nueva `citaciones_config` con el texto «Ten en cuenta».
+Todo deja changeLog (acciones nuevas: `citar`, `actualizar_citacion`, `cancelar_citacion`, `marcar_citado`,
+`texto_citacion`). Antes de llamar a Google se reserva la fila (`enviando`) y se guardan los ids del evento generados
+por la app: un reintento o un doble clic actualiza el mismo evento, nunca crea otro.
+
+### Pasos de la Fase 5
+- [x] 27. Núcleo puro `src/lib/citaciones/`: armar los eventos de los tres tipos para un día (título, horario, invitados,
+  descripción), franjas ≤ 30 min, resumen/huella y qué cambió. Celular del monitor: campo nuevo y opcional `celular` en
+  `users`, editable en Usuarios → Editar (y columna opcional Celular en la carga por Excel). Pruebas puras de contenido,
+  invitados y privacidad (contactos solo en el evento del monitor de esa sala).
+- [x] 28. Cliente de Google con interfaz simulable (refresh del token, insertar / actualizar / cancelar, lotes con pausa
+  y reintentos ante 403-rate/429/5xx, modo correo de prueba) y servicio con base: citar, actualizar, cancelar, marcar
+  como citado (uno, o en bloque por día y pestaña), «citar pendientes» por lotes (uno falla → Error y sigue). Pruebas
+  con cliente simulado: no duplicar, desactualizadas, errores de la API, marcar; foto «como producción».
+- [x] 29. Rutas `/api/admin/citaciones/*` (solo admin, `exigir`, `sameOrigin`, Zod `.strict()`) y pantalla
+  /admin/citaciones: día, pestañas Participantes / Mentores / Monitores, estado por fila, Vista previa, Citar, Actualizar,
+  Cancelar, Marcar como citado, «Citar todos los pendientes de este día» (confirmación con cuántos y a quiénes; el
+  navegador envía lotes de 10 y muestra el avance), «Marcar todos como citados (sin evento)» y editor de «Ten en cuenta».
+  `docs/CITACIONES.md`: credenciales de Google, prueba con un proyecto y el correo propio, y publicación.
+
+### Respuestas y ajustes del usuario (plan aprobado)
+- Las 5 preguntas: sí a las respuestas por defecto. tocaunavida.org usa Google Workspace: consentimiento Interno.
+- Con `CITACIONES_CORREO_PRUEBA`: aviso grande y fijo «MODO PRUEBA: todas las invitaciones van a <correo>» y el
+  título de cada evento empieza con «[PRUEBA] ». En Preview la variable va siempre; en Production solo durante la
+  primera prueba, y luego se borra (con Redeploy). Va en DESPLIEGUE.md y CITACIONES.md.
+- Monitor sin celular: el evento del mentor dice «Celular: sin registrar» (no falla).
+
+### Preguntas para el usuario (respondidas)
+1. El celular del monitor no existe hoy en la app: ¿campo nuevo y opcional en Usuarios (editable a mano y por Excel)?
+2. Franja = desde el primer bloque con proyecto hasta el fin del último (no la hora completa de la sala). ¿Así?
+3. «Monitor a cargo» del participante = el monitor de su sala en esa hora (planSalas), no el monitor de inscripción.
+4. Integrante sin correo: se cita a los demás con aviso; si nadie tiene correo, la fila queda «No se puede citar».
+5. Lo marcado «como citado» (externo) no tiene evento en la app: si luego se desactualiza, «Actualizar» crea un evento
+   nuevo y avisa que el anterior se cancela a mano en Google Calendar.
