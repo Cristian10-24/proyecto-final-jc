@@ -1,35 +1,57 @@
 import { createHash } from "node:crypto";
-import { CIUDADES, horaCO, horaUY } from "../ciudades";
+import { horaCO } from "../ciudades";
 import { horaCOL, MINUTOS_BLOQUE } from "../edicion";
 
 // Fase 5 · Paso 27 · Contenido de las citaciones del calendario (funciones puras, sin base ni Google).
 // Tres tipos de evento por día:
-//  - participante: uno por proyecto en su bloque de 15 min; invitados = sus integrantes (nadie más).
+//  - participante: uno por proyecto en su bloque de 15 min; invitados = sus integrantes (nadie más); sin datos del
+//    monitor.
 //  - mentor: uno por franja (bloques con proyecto unidos si hay ≤ 30 min entre ellos); solo el mentor; sin contactos
 //    de estudiantes (solo nombres).
 //  - monitor: uno por franja de los bloques de SUS salas (planSalas); con nombre, celular y correo de esos integrantes.
 // La sala, el enlace y el monitor de cada bloque salen del plan de salas (día, hora, mentor).
+// Textos: los formatos exactos que pidió el usuario (ajuste del Paso 29), hora «8:00 a. m.» en hora Colombia.
 // El `resumen` guarda solo lo que decide si una citación quedó desactualizada (hora, sala, enlace, mentor, monitor,
-// proyectos e invitados), nunca datos de contacto (de cada invitado, solo una huella de su correo); su huella (sha256)
-// se compara con la de lo ya citado. Nombres y textos pasan por `limpio` (una línea, sin control ni < >).
+// proyectos e invitados), nunca datos de contacto (de cada invitado, solo una huella de su correo) ni el texto: cambiar
+// «Ten en cuenta» no marca desactualizado (DECISIONES). Su huella (sha256) se compara con la de lo ya citado. Nombres y
+// textos pasan por `limpio` (una línea, sin control ni < >).
 
-export const TITULO_BASE = "Proyecto Final JC 2026";
+export const TITULO_PARTICIPANTE = "Presentación de Proyecto Final · Jóvenes creaTIvos 2026";
+export const TITULO_MENTOR = "Calificación de proyectos · Proyecto Final Jóvenes creaTIvos 2026";
+export const TITULO_MONITOR = "Monitoría de salas · Proyecto Final Jóvenes creaTIvos 2026";
 export const ZONA = "America/Bogota";
 /** Dos bloques con proyecto quedan en la misma franja si entre el fin de uno y el inicio del otro hay ≤ 30 min. */
 export const UNIR_MINUTOS = 30;
 export const PREFIJO_PRUEBA = "[PRUEBA] ";
+export const SIN_REGISTRAR = "Sin registrar";
 
+/** Valor por defecto del texto editable «Ten en cuenta» (si ya se guardó otro, manda el guardado). */
 export const TEN_EN_CUENTA_DEFECTO = [
-  "Entra a la sala 5 minutos antes de tu hora. Tu monitor te admitirá.",
-  "Usa un computador con cámara y micrófono funcionando, y una conexión estable.",
-  "Ten tu proyecto abierto y listo para mostrar antes de entrar.",
-  "Tu presentación dura 15 minutos: organiza qué vas a mostrar y explicar.",
-  "Si presentas en pareja, ambos deben estar conectados y participar.",
-  "Si tienes algún inconveniente antes de tu hora, escríbele a tu monitor.",
-  "Las reprogramaciones no están permitidas; solo se consideran casos de calamidad o fuerza mayor.",
+  "Ten en cuenta estas recomendaciones para tu presentación:",
+  "• Ingresa a la sala 5 minutos antes de tu hora. Tu monitor te dará acceso.",
+  "• Conéctate desde un computador, con cámara, micrófono y conexión estable.",
+  "• Ten tu proyecto abierto y listo para compartir antes de ingresar.",
+  "• Dispones de 15 minutos para presentar tu proyecto. Organiza previamente lo que vas a mostrar y explicar.",
+  "• Si presentas en pareja, ambos deben conectarse y participar.",
+  "• Si tienes algún inconveniente antes de tu presentación, comunícate con tu monitor.",
 ].join("\n");
 
-export const CIERRE_MONITOR = "Las reprogramaciones no están permitidas; casos de calamidad o fuerza mayor se reportan a Astrid o Cristian.";
+export const CIERRE_PARTICIPANTE = "¡Estamos muy emocionados de conocer tu proyecto!";
+
+export const CIERRE_MONITOR = [
+  "Importante:",
+  "Asegúrate de estar en la sala antes de iniciar cada presentación y de acompañar el ingreso de los participantes y el mentor.",
+  "Las reprogramaciones no se pueden hacer de forma autónoma y deben ser aprobadas. Los casos de calamidad o fuerza mayor deben reportarse a Astrid o Cristian.",
+].join("\n");
+
+export const CIERRE_MENTOR = [
+  "Recomendaciones:",
+  "• Conéctate unos minutos antes del inicio de tu primera evaluación.",
+  "• Respeta los tiempos asignados para cada presentación (15 minutos).",
+  "• Asegúrate de evaluar cada proyecto según los criterios establecidos.",
+  "",
+  "¡Gracias por compartir tu experiencia y contribuir al crecimiento de nuestros jóvenes!",
+].join("\n");
 
 export type TipoCitacion = "participante" | "mentor" | "monitor";
 export const TIPOS_CITACION = ["participante", "mentor", "monitor"] as const satisfies readonly TipoCitacion[];
@@ -82,16 +104,36 @@ export type Citacion = {
 /* ------------------------------------------------------------------ utilidades */
 
 const fmtFecha = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: ZONA });
-/** «jueves 12 de noviembre». */
-export const fechaLarga = (d: Date) => fmtFecha.format(d).replace(/,/g, "");
+/** «Jueves 12 de noviembre». */
+export const fechaLarga = (d: Date) => { const t = fmtFecha.format(d).replace(/,/g, ""); return t.charAt(0).toUpperCase() + t.slice(1); };
 const finDe = (inicio: Date) => new Date(inicio.getTime() + MINUTOS_BLOQUE * 60_000);
-const paisDe = (ciudad: string) => CIUDADES.find((c) => c.nombre === ciudad)?.pais;
-const celularTxt = (p?: Persona) => p?.celular?.trim() || "sin registrar";
-/** Texto de una sola línea para el evento: sin saltos, sin caracteres de control y sin < > (Google muestra HTML). */
-export const limpio = (s: string) => s.replace(/[\u0000-\u001f\u007f-\u009f<>]/g, " ").replace(/\s+/g, " ").trim();
-const unirNombres = (ns: string[]) => ns.map(limpio).join(", ").replace(/, ([^,]*)$/, " y $1");
+/** «8:00 a. m. a 8:15 a. m.» */
+const rango = (a: Date, b: Date) => `${horaCO(a)} a ${horaCO(b)}`;
+/**
+ * Texto de una sola línea para el evento: sin saltos, sin caracteres de control ni invisibles o de dirección, y sin < >
+ * (Google muestra HTML).
+ */
+export const limpio = (s: string) => s.replace(/[\u0000-\u001f\u007f-\u009f<>​-‏‪-‮⁦-⁩]/g, " ").replace(/\s+/g, " ").trim();
+const oSinRegistrar = (s?: string) => limpio(s?.trim() || SIN_REGISTRAR);
+/** «A», «A y B», «A, B y C». */
+const unirConY = (ns: string[]) => ns.join(", ").replace(/, ([^,]*)$/, " y $1");
+export const primerNombre = (n: string) => limpio(n).split(" ")[0] ?? "";
 /** El resumen guardado no lleva correos: solo una huella de cada uno (basta para saber si cambiaron los invitados). */
 const huellaCorreo = (c: string) => createHash("sha256").update(c.trim().toLowerCase()).digest("hex").slice(0, 16);
+
+/** Una línea del «Ten en cuenta» que podría pasar por un dato del evento (sala, enlace, hora…) o trae una URL. */
+const PARECE_DATO = /^(sala|enlace|hora|horario|fecha|monitor|mentor|celular|correo|participantes?)\b|https?:\/\/|www\./i;
+
+/**
+ * Líneas del «Ten en cuenta»: un encabezado (termina en «:», sin URL ni forma de dato) va tal cual; todo lo demás, con
+ * viñeta «• » (sin duplicarla). Así el texto editable nunca imita las líneas de Sala, Enlace u Hora.
+ */
+export function lineasTenEnCuenta(texto: string): string[] {
+  return texto.split("\n").map(limpio).filter(Boolean).map((l) => {
+    if (!l.startsWith("•") && l.endsWith(":") && !PARECE_DATO.test(l)) return l;
+    return `• ${l.replace(/^•\s*/, "")}`;
+  });
+}
 
 /** Une los bloques ordenados en franjas: uno nuevo empieza si hay más de 30 min desde el fin del anterior. */
 export function franjas<T extends { inicio: Date }>(bloques: readonly T[], unirMin = UNIR_MINUTOS): { inicio: Date; fin: Date; bloques: T[] }[] {
@@ -129,7 +171,7 @@ export function queCambio(antes: Resumen, ahora: Resumen): string[] {
 
 /** Modo prueba: todo va solo al correo de prueba y el título empieza con «[PRUEBA] ». La descripción dice a quién iría. */
 export function enModoPrueba(e: Evento, correoPrueba: string): Evento {
-  const reales = e.invitados.map((i) => i.correo).join(", ") || "nadie";
+  const reales = e.invitados.map((i) => limpio(i.correo)).join(", ") || "nadie";
   return {
     ...e,
     titulo: PREFIJO_PRUEBA + e.titulo,
@@ -148,7 +190,8 @@ function conSala(d: DatosDia): BloqueSala[] {
     .map((b) => {
       const p = plan.get(`${horaCOL(b.inicio)}|${b.mentorId}`);
       const sala = p?.sala ?? null;
-      return { ...b, sala, enlace: sala !== null ? d.enlaces[sala] ?? "" : "", monitor: p?.monitor ?? null };
+      // El enlace también pasa por limpio (Google interpreta HTML en la descripción y en la ubicación).
+      return { ...b, sala, enlace: sala !== null ? limpio(d.enlaces[sala] ?? "") : "", monitor: p?.monitor ?? null };
     })
     .sort((a, b) => a.inicio.getTime() - b.inicio.getTime() || a.mentorId.localeCompare(b.mentorId));
 }
@@ -161,7 +204,8 @@ const resumenDe = (fs: { inicio: Date; fin: Date; bloques: BloqueSala[] }[], inv
   invitados: invitados.map((i) => huellaCorreo(i.correo)).sort(),
 });
 
-const salaTxt = (b: BloqueSala) => (b.sala !== null ? `Sala ${b.sala}` : "Sala por asignar");
+const salaTxt = (b: { sala: number | null }) => (b.sala !== null ? `Sala ${b.sala}` : "Sala por asignar");
+const enlaceTxt = (b: { enlace: string }) => b.enlace || "por confirmar";
 
 /** Faltantes que impiden citar un bloque (sin sala o sin enlace). */
 function faltaSala(bs: BloqueSala[]): string | undefined {
@@ -176,6 +220,13 @@ function cerrar(c: Omit<Citacion, "huella">): Citacion {
   return { ...c, huella: huella(c.resumen) };
 }
 
+/** Agrupa en orden de aparición (los bloques ya vienen en orden de hora). */
+function agrupar<T>(xs: T[], clave: (x: T) => string): T[][] {
+  const m = new Map<string, T[]>();
+  for (const x of xs) m.set(clave(x), [...(m.get(clave(x)) ?? []), x]);
+  return [...m.values()];
+}
+
 /* ------------------------------------------------------------------ participantes */
 
 export function citacionesParticipantes(d: DatosDia, tenEnCuenta: string): Citacion[] {
@@ -185,37 +236,37 @@ export function citacionesParticipantes(d: DatosDia, tenEnCuenta: string): Citac
     const sinCorreo = p.integrantes.filter((i) => !i.correo).map((i) => limpio(i.nombre));
     const monitor = b.monitor ? limpio(d.monitores[b.monitor]?.nombre ?? b.monitor) : null;
     const nombreProyecto = limpio(p.nombre);
-    const uy = paisDe(p.ciudad) === "UY";
-    const hora = `${horaCO(b.inicio)} a ${horaCO(fin)} (hora de Colombia)${uy ? ` · ${horaUY(b.inicio)} a ${horaUY(fin)} (hora de Uruguay)` : ""}`;
-    const items = tenEnCuenta.split("\n").map(limpio).filter(Boolean).map((l) => `• ${l}`);
+    // Sin datos del monitor en el evento del participante.
     const descripcion = [
+      "PRESENTACIÓN DE PROYECTO FINAL · Jóvenes creaTIvos 2026",
+      `Hola, ${unirConY(p.integrantes.map((i) => primerNombre(i.nombre)).filter(Boolean))}:`,
+      "¡Llegó el momento de presentar tu Proyecto Final!",
       `Fecha: ${fechaLarga(b.inicio)}`,
-      `Hora: ${hora}`,
-      `${salaTxt(b)}: ${b.enlace || "enlace por confirmar"}`,
-      `Monitor a cargo: ${monitor ?? "por asignar"}`,
+      `Hora: ${rango(b.inicio, fin)} (hora Colombia)`,
+      `Sala: ${salaTxt(b)}`,
+      `Enlace de conexión: ${enlaceTxt(b)}`,
       "",
-      "Ten en cuenta para tu presentación:",
-      ...items,
+      ...lineasTenEnCuenta(tenEnCuenta),
+      "",
+      CIERRE_PARTICIPANTE,
     ].join("\n");
-    const avisos = [
-      ...sinCorreo.map((n) => `${n} no tiene correo: no recibirá la invitación.`),
-      ...(monitor ? [] : ["La sala no tiene monitor asignado: el evento dirá «por asignar»."]),
-    ];
+    const avisos = sinCorreo.map((n) => `${n} no tiene correo: no recibirá la invitación.`);
     const bloqueo = faltaSala([b]) ?? (invitados.length ? undefined : "Ningún integrante tiene correo.");
+    const eventos: Evento[] = [{ titulo: TITULO_PARTICIPANTE, inicio: b.inicio, fin, ...(b.enlace ? { ubicacion: b.enlace } : {}), descripcion, invitados }];
     return cerrar({
       tipo: "participante", clave: p.id, dia: d.dia, nombre: nombreProyecto,
       detalle: `${horaCO(b.inicio)} · ${salaTxt(b)} · ${limpio(d.mentores[b.mentorId]?.nombre ?? b.mentorId)} · Monitor: ${monitor ?? "por asignar"}`,
-      eventos: [{ titulo: `${TITULO_BASE} · Presentación de ${nombreProyecto}`, inicio: b.inicio, fin, ...(b.enlace ? { ubicacion: b.enlace } : {}), descripcion, invitados }],
-      avisos, ...(bloqueo ? { bloqueo } : {}),
-      resumen: resumenDe([{ inicio: b.inicio, fin, bloques: [b] }], invitados),
+      eventos, avisos, ...(bloqueo ? { bloqueo } : {}),
+      // El evento del participante no muestra al monitor: cambiarlo no lo desactualiza.
+      resumen: resumenDe([{ inicio: b.inicio, fin, bloques: [{ ...b, monitor: null }] }], invitados),
     });
   });
 }
 
 /* ------------------------------------------------------------------ mentores */
 
-/** Tramos seguidos de una franja con la misma sala y el mismo monitor. */
-function tramos<T extends { sala: number | null; enlace: string; monitor: string | null; mentorId: string; inicio: Date }>(bs: T[], clave: (b: T) => string): T[][] {
+/** Tramos seguidos de una franja con la misma clave (p. ej. misma sala y mismo monitor). */
+function tramos<T>(bs: T[], clave: (b: T) => string): T[][] {
   const out: T[][] = [];
   for (const b of bs) {
     const ult = out[out.length - 1];
@@ -232,17 +283,36 @@ export function citacionesMentores(d: DatosDia): Citacion[] {
     const m0 = d.mentores[mentorId] ?? { nombre: mentorId }, m = { ...m0, nombre: limpio(m0.nombre) };
     const invitados = m.correo ? [{ correo: m.correo, nombre: m.nombre }] : [];
     const fs = franjas(bs);
-    const monitorTxt = (u: string | null) => (u ? `${limpio(d.monitores[u]?.nombre ?? u)} · Celular: ${limpio(celularTxt(d.monitores[u]))}` : "por asignar");
+    const monitorNombre = (u: string | null) => (u ? limpio(d.monitores[u]?.nombre ?? u) : "Por asignar");
+    const monitorCel = (u: string | null) => (u ? oSinRegistrar(d.monitores[u]?.celular) : SIN_REGISTRAR);
     const eventos: Evento[] = fs.map((f) => {
       const ts = tramos(f.bloques, (b) => `${b.sala}|${b.monitor}`);
-      const cabecera = ts.length === 1
-        ? [`${salaTxt(ts[0]![0]!)}: ${ts[0]![0]!.enlace || "enlace por confirmar"}`, `Monitor: ${monitorTxt(ts[0]![0]!.monitor)}`]
-        : ["Sala y monitor por hora:", ...ts.map((t) => `Desde las ${horaCO(t[0]!.inicio)}: ${salaTxt(t[0]!)} (${t[0]!.enlace || "enlace por confirmar"}) · Monitor: ${monitorTxt(t[0]!.monitor)}`)];
-      const proyectos = f.bloques.map((b) => `• ${horaCO(b.inicio)} · ${limpio(b.proyecto.nombre)} · ${unirNombres(b.proyecto.integrantes.map((i) => i.nombre))}`);
+      const varias = ts.length > 1;
+      // Una sola sala: sala, enlace y monitor una vez. Si cambia dentro de la franja: un bloque por sala (desde qué
+      // hora) y la sala junto a cada proyecto.
+      const cabecera = !varias
+        ? [`Sala: ${salaTxt(ts[0]![0]!)}`, `Enlace de conexión: ${enlaceTxt(ts[0]![0]!)}`, `Monitor a cargo: ${monitorNombre(ts[0]![0]!.monitor)}`, `Celular del monitor: ${monitorCel(ts[0]![0]!.monitor)}`]
+        : ts.flatMap((t) => [`Sala: ${salaTxt(t[0]!)} (desde las ${horaCO(t[0]!.inicio)})`, `Enlace de conexión: ${enlaceTxt(t[0]!)}`, `Monitor a cargo: ${monitorNombre(t[0]!.monitor)}`, `Celular del monitor: ${monitorCel(t[0]!.monitor)}`, ""]).slice(0, -1);
+      // Solo nombres de los participantes: el mentor nunca ve su celular ni su correo.
+      const proyectos = f.bloques.flatMap((b) => [
+        `${horaCO(b.inicio)} · ${limpio(b.proyecto.nombre)}${varias ? ` · ${salaTxt(b)}` : ""}`,
+        ...b.proyecto.integrantes.map((i) => `• Participante: ${limpio(i.nombre)}`),
+      ]);
       return {
-        titulo: `${TITULO_BASE} · Calificación de proyectos`, inicio: f.inicio, fin: f.fin,
-        ...(ts.length === 1 && ts[0]![0]!.enlace ? { ubicacion: ts[0]![0]!.enlace } : {}),
-        descripcion: [`Fecha: ${fechaLarga(f.inicio)}`, `Hora: ${horaCO(f.inicio)} a ${horaCO(f.fin)} (hora de Colombia)`, "", ...cabecera, "", "Tus proyectos:", ...proyectos].join("\n"),
+        titulo: TITULO_MENTOR, inicio: f.inicio, fin: f.fin,
+        ...(!varias && ts[0]![0]!.enlace ? { ubicacion: ts[0]![0]!.enlace } : {}),
+        descripcion: [
+          `Hola, ${primerNombre(m.nombre)}:`,
+          "Gracias por acompañarnos como mentor en las presentaciones de los Proyectos Finales de Jóvenes creaTIvos 2026.",
+          "Esta es tu programación:",
+          `Fecha: ${fechaLarga(f.inicio)}`,
+          `Horario: ${rango(f.inicio, f.fin)} (hora Colombia)`,
+          ...cabecera,
+          "Proyectos asignados para evaluación:",
+          ...proyectos,
+          "",
+          CIERRE_MENTOR,
+        ].join("\n"),
         invitados,
       };
     });
@@ -250,8 +320,8 @@ export function citacionesMentores(d: DatosDia): Citacion[] {
     const bloqueo = faltaSala(bs) ?? (invitados.length ? undefined : "El mentor no tiene correo (hoja Mentores o Usuarios).");
     return cerrar({
       tipo: "mentor", clave: mentorId, dia: d.dia, nombre: m.nombre,
-      detalle: `${fs.map((f) => `${horaCO(f.inicio)} a ${horaCO(f.fin)}`).join(" y ")} · ${bs.length} proyecto${bs.length === 1 ? "" : "s"}`,
-      eventos, avisos: sinMonitor ? ["Alguna sala no tiene monitor: el evento dirá «por asignar»."] : [], ...(bloqueo ? { bloqueo } : {}),
+      detalle: `${fs.map((f) => rango(f.inicio, f.fin)).join(" y ")} · ${bs.length} proyecto${bs.length === 1 ? "" : "s"}`,
+      eventos, avisos: sinMonitor ? ["Alguna sala no tiene monitor: el evento dirá «Por asignar»."] : [], ...(bloqueo ? { bloqueo } : {}),
       resumen: resumenDe(fs, invitados),
     });
   }).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
@@ -267,31 +337,41 @@ export function citacionesMonitores(d: DatosDia): Citacion[] {
     const invitados = yo.correo ? [{ correo: yo.correo, nombre: yo.nombre }] : [];
     const fs = franjas(bs);
     const eventos: Evento[] = fs.map((f) => {
-      // Por sala y hora: número, enlace y mentor; luego sus proyectos con el contacto de cada integrante.
-      const grupos = tramos(f.bloques, (b) => `${horaCOL(b.inicio)}|${b.sala}|${b.mentorId}`);
-      const lineas = grupos.flatMap((g) => {
+      // Por sala (y su mentor), en orden de hora; luego sus proyectos con el contacto de cada integrante.
+      const salas = agrupar(f.bloques, (b) => `${b.sala}|${b.mentorId}`).flatMap((g) => {
         const b0 = g[0]!, mentor = d.mentores[b0.mentorId];
         return [
-          `${salaTxt(b0)} · ${horaCO(b0.inicio)} a ${horaCO(finDe(g[g.length - 1]!.inicio))}`,
-          `Enlace: ${b0.enlace || "por confirmar"}`,
-          `Mentor: ${limpio(mentor?.nombre ?? b0.mentorId)} · Celular: ${limpio(celularTxt(mentor))}`,
-          ...g.flatMap((b) => [
-            `• ${horaCO(b.inicio)} · ${limpio(b.proyecto.nombre)}`,
-            ...b.proyecto.integrantes.map((i) => `   – ${limpio(i.nombre)} · Celular: ${limpio(i.celular || "sin registrar")} · Correo: ${limpio(i.correo || "sin registrar")}`),
-          ]),
           "",
+          b0.sala !== null ? `SALA ${b0.sala}` : "SALA POR ASIGNAR",
+          `Horario: ${rango(b0.inicio, finDe(g[g.length - 1]!.inicio))}`,
+          `Enlace de conexión: ${enlaceTxt(b0)}`,
+          `Mentor asignado: ${limpio(mentor?.nombre ?? b0.mentorId)}`,
+          `Celular: ${oSinRegistrar(mentor?.celular)}`,
+          "Participantes:",
+          ...g.flatMap((b) => [
+            `${horaCO(b.inicio)} · ${limpio(b.proyecto.nombre)}`,
+            ...b.proyecto.integrantes.flatMap((i) => [`• Participante: ${limpio(i.nombre)}`, `• Celular: ${oSinRegistrar(i.celular)}`, `• Correo: ${oSinRegistrar(i.correo)}`]),
+          ]),
         ];
       });
       return {
-        titulo: `${TITULO_BASE} · Monitoría de salas`, inicio: f.inicio, fin: f.fin,
-        descripcion: [`Fecha: ${fechaLarga(f.inicio)}`, `Hora: ${horaCO(f.inicio)} a ${horaCO(f.fin)} (hora de Colombia)`, "", ...lineas, CIERRE_MONITOR].join("\n"),
+        titulo: TITULO_MONITOR, inicio: f.inicio, fin: f.fin,
+        descripcion: [
+          `Hola, ${primerNombre(yo.nombre)}:`,
+          "Esta es tu programación para acompañar las presentaciones de los Proyectos Finales.",
+          `Fecha: ${fechaLarga(f.inicio)}`,
+          `Horario asignado: ${rango(f.inicio, f.fin)} (hora Colombia)`,
+          ...salas,
+          "",
+          CIERRE_MONITOR,
+        ].join("\n"),
         invitados,
       };
     });
     const bloqueo = faltaSala(bs) ?? (invitados.length ? undefined : "El monitor no tiene correo (Usuarios → Editar).");
     return cerrar({
       tipo: "monitor", clave: usuario, dia: d.dia, nombre: yo.nombre,
-      detalle: `${fs.map((f) => `${horaCO(f.inicio)} a ${horaCO(f.fin)}`).join(" y ")} · ${bs.length} proyecto${bs.length === 1 ? "" : "s"} · ${[...new Set(bs.map(salaTxt))].join(", ")}`,
+      detalle: `${fs.map((f) => rango(f.inicio, f.fin)).join(" y ")} · ${bs.length} proyecto${bs.length === 1 ? "" : "s"} · ${[...new Set(bs.map(salaTxt))].join(", ")}`,
       eventos, avisos: [], ...(bloqueo ? { bloqueo } : {}),
       resumen: resumenDe(fs, invitados),
     });

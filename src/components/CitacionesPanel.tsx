@@ -158,7 +158,7 @@ export default function CitacionesPanel({ user }: { user: SessionUser }) {
     setOcupado("texto"); setMsgTexto(null);
     const r = await api<{ ok?: boolean; texto?: string; mensaje?: string }>("/api/admin/citaciones/texto", { texto }).catch(() => null);
     setOcupado(null);
-    if (r?.ok && r.data?.texto) { setTexto(r.data.texto); setMsgTexto({ tipo: "ok", texto: "Guardado. Lo ya citado a participantes queda «Desactualizado» hasta que lo actualices." }); await cargar(dia, tipo); }
+    if (r?.ok && r.data?.texto) { setTexto(r.data.texto); setMsgTexto({ tipo: "ok", texto: "Guardado. Se usa en las próximas citaciones; lo ya enviado no cambia (no queda «Desactualizado»)." }); await cargar(dia, tipo); }
     else setMsgTexto({ tipo: "error", texto: r?.data?.mensaje ?? "No se pudo guardar." });
   }
 

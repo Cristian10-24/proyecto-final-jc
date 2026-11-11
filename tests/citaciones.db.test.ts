@@ -74,9 +74,10 @@ describe("citar participantes", () => {
     expect(s.llamadas).toHaveLength(1);
     const [l] = s.llamadas;
     expect(l!.existe).toBe(false);
-    expect(l!.evento!.titulo).toBe("Proyecto Final JC 2026 · Presentación de Proyecto A");
+    expect(l!.evento!.titulo).toBe("Presentación de Proyecto Final · Jóvenes creaTIvos 2026");
     expect(l!.evento!.invitados.map((i) => i.correo)).toEqual(["ana@correo.test", "beto@correo.test"]);
-    expect(l!.evento!.descripcion).toContain("Monitor a cargo: Monitor Uno");
+    expect(l!.evento!.descripcion).toContain("Hola, Ana y Beto:");
+    expect(l!.evento!.descripcion).not.toContain("Monitor Uno");
     const c = await db.collections();
     const doc = await c.citaciones.findOne({ tipo: "participante", clave: String(P.A), dia: D });
     expect(doc).toMatchObject({ estado: "citado", ids: [l!.id], citadoPor: "admin.p" });
@@ -111,17 +112,27 @@ describe("citar participantes", () => {
     expect(await fila("participante", String(P.S))).toMatchObject({ estado: "no_se_puede", bloqueo: "Ningún integrante tiene correo." });
   });
 
-  it("desactualizada si cambia el monitor de la sala; «Actualizar» reemplaza el mismo evento", async () => {
+  it("cambiar el monitor de la sala no desactualiza al participante (su evento no lo muestra)", async () => {
     const c = await db.collections();
     await c.planSalas.updateOne({ _id: `${D}|14|1` }, { $set: { monitor: "mon.tres" } });
-    expect(await fila("participante", String(P.A))).toMatchObject({ estado: "desactualizado", cambios: ["el monitor"] });
+    expect(await fila("participante", String(P.A))).toMatchObject({ estado: "citado" });
+    const v = await reg.vistaPrevia(D, "mentor", "m1", null);
+    expect(v!.eventos[0]!.descripcion).toContain("Monitor a cargo: Monitor Tres");
+    await c.planSalas.updateOne({ _id: `${D}|14|1` }, { $set: { monitor: "mon.uno" } });
+  });
+
+  it("desactualizada si cambia la sala; «Actualizar» reemplaza el mismo evento", async () => {
+    const c = await db.collections();
+    const antes = (await c.citaciones.findOne({ tipo: "participante", clave: String(P.A) }))!.ids[0];
+    await c.planSalas.updateOne({ _id: `${D}|14|1` }, { $set: { sala: 3 } });
+    expect(await fila("participante", String(P.A))).toMatchObject({ estado: "desactualizado", cambios: ["la sala", "el enlace"] });
     const s = simulado();
     expect(await reg.citar("participante", D, String(P.A), ADMIN, s.real)).toMatchObject({ ok: true, accion: "actualizado" });
-    expect(s.llamadas[0]!.evento!.descripcion).toContain("Monitor a cargo: Monitor Tres");
-    expect(await fila("participante", String(P.A))).toMatchObject({ estado: "citado" });
-    await c.planSalas.updateOne({ _id: `${D}|14|1` }, { $set: { monitor: "mon.uno" } });
-    expect((await fila("participante", String(P.A)))!.estado).toBe("desactualizado");
+    expect(s.llamadas).toEqual([expect.objectContaining({ op: "guardar", id: antes, existe: true })]);
+    expect(s.llamadas[0]!.evento!.descripcion).toContain("Sala: Sala 3\nEnlace de conexión: https://meet.google.com/tres");
+    await c.planSalas.updateOne({ _id: `${D}|14|1` }, { $set: { sala: 1 } });
     await reg.citar("participante", D, String(P.A), ADMIN, simulado().real);
+    expect(await fila("participante", String(P.A))).toMatchObject({ estado: "citado" });
   });
 
   it("desactualizada si cambia la hora; si pasa a otro día, la fila queda «sobra» para cancelarla", async () => {
@@ -142,7 +153,7 @@ describe("citar participantes", () => {
 
 describe("errores de la API y lotes", () => {
   it("si uno falla sigue con los demás y lo marca Error; el reintento usa el mismo evento", async () => {
-    const s = simulado({ falla: (_id, e) => !!e?.titulo.includes("Proyecto C") });
+    const s = simulado({ falla: (_id, e) => !!e?.invitados.some((i) => i.correo === "dani@correo.test") });
     const rs = await reg.citarVarias("participante", D, [String(P.C), String(P.E), String(P.B)], ADMIN, { ...s.real, pausaMs: 0 });
     expect(rs.map((r) => r.ok)).toEqual([false, true, true]);
     expect(rs[0]).toMatchObject({ error: "google", mensaje: "Google respondió 400 (invalid): Invalid attendee email." });
@@ -188,7 +199,7 @@ describe("mentores y monitores", () => {
     expect(r).toMatchObject({ ok: true, accion: "actualizado", aviso: expect.stringMatching(/cancela a mano/) });
     expect(s.llamadas).toHaveLength(2); // dos franjas: 14:00–14:30 y 16:00–16:15
     expect(s.llamadas.every((l) => l.existe === false && l.evento!.invitados.length === 1 && l.evento!.invitados[0]!.correo === "m1@correo.test")).toBe(true);
-    expect(s.llamadas[1]!.evento!.descripcion).toContain("Sala 3: https://meet.google.com/tres");
+    expect(s.llamadas[1]!.evento!.descripcion).toContain("Sala: Sala 3\nEnlace de conexión: https://meet.google.com/tres");
     // Con eventos de la app, marcar como citado ya no la toca.
     expect((await reg.marcarCitado("mentor", D, ["m1"], ADMIN, null)).omitidos[0]!.mensaje).toMatch(/Tiene eventos de la app/);
   });
@@ -208,7 +219,7 @@ describe("mentores y monitores", () => {
 
   it("el evento del monitor lleva el contacto de sus integrantes; el del mentor no", async () => {
     const pm = await reg.vistaPrevia(D, "monitor", "mon.uno", null);
-    expect(pm!.eventos[0]!.descripcion).toContain("Ana · Celular: +573001110001 · Correo: ana@correo.test");
+    expect(pm!.eventos[0]!.descripcion).toContain("• Participante: Ana\n• Celular: +573001110001\n• Correo: ana@correo.test");
     expect(pm!.eventos[0]!.descripcion).not.toContain("dani@correo.test"); // sala de otro monitor
     const pt = await reg.vistaPrevia(D, "mentor", "m1", null);
     expect(pt!.eventos.map((e) => e.descripcion).join()).not.toMatch(/(ana|beto|carla|eva)@correo\.test/);
@@ -219,7 +230,7 @@ describe("modo prueba", () => {
   it("todo va solo al correo de prueba con [PRUEBA]; en modo real cuenta como sin citar", async () => {
     const s = simulado();
     expect(await reg.citar("monitor", D, "mon.dos", ADMIN, s.prueba)).toMatchObject({ ok: true });
-    expect(s.llamadas[0]!.evento!.titulo).toBe("[PRUEBA] Proyecto Final JC 2026 · Monitoría de salas");
+    expect(s.llamadas[0]!.evento!.titulo).toBe("[PRUEBA] Monitoría de salas · Proyecto Final Jóvenes creaTIvos 2026");
     expect(s.llamadas[0]!.evento!.invitados).toEqual([{ correo: "yo@prueba.test", nombre: "Prueba" }]);
     expect(await fila("monitor", "mon.dos", "yo@prueba.test")).toMatchObject({ estado: "citado", prueba: "yo@prueba.test" });
     const real = await fila("monitor", "mon.dos");
@@ -285,7 +296,7 @@ describe("texto «Ten en cuenta»", () => {
     expect(await reg.guardarTenEnCuenta(" \n ", ADMIN)).toMatchObject({ ok: false });
     expect(await (await db.collections()).changeLog.countDocuments({ accion: "texto_citacion" })).toBe(1);
     const v = await reg.vistaPrevia(D, "participante", String(P.A), "yo@prueba.test");
-    expect(v!.eventos[0]!.descripcion).toMatch(/• Llega temprano\n• b Trae \/b tu proyecto$/);
+    expect(v!.eventos[0]!.descripcion).toMatch(/\n\n• Llega temprano\n• b Trae \/b tu proyecto\n\n¡Estamos muy emocionados de conocer tu proyecto!$/);
     expect(v!.eventos[0]!.titulo.startsWith("[PRUEBA] ")).toBe(true);
     expect(await fila("participante", String(P.A))).toMatchObject({ estado: "citado" });
   });

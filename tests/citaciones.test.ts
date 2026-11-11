@@ -60,27 +60,44 @@ describe("participantes", () => {
   const cs = citacionesParticipantes(datos(), TEN_EN_CUENTA_DEFECTO);
   const de = (id: string) => cs.find((c) => c.clave === id)!;
 
-  it("un evento por proyecto en su bloque exacto, con título, sala como ubicación y solo sus integrantes", () => {
+  it("un evento por proyecto en su bloque exacto, con el título y la descripción exactos y solo sus integrantes", () => {
     expect(cs).toHaveLength(5);
     const c = de("p1"), [e] = c.eventos;
     expect(c.eventos).toHaveLength(1);
-    expect(e!.titulo).toBe("Proyecto Final JC 2026 · Presentación de Robot Solar");
+    expect(e!.titulo).toBe("Presentación de Proyecto Final · Jóvenes creaTIvos 2026");
     expect(e!.inicio).toEqual(t(14));
     expect(e!.fin).toEqual(t(14, 15));
     expect(e!.ubicacion).toBe("https://meet.google.com/sala-uno");
     expect(e!.invitados.map((i) => i.correo)).toEqual(["ana@x.org", "beto@x.org"]);
-    expect(e!.descripcion).toContain("jueves 12 de noviembre");
-    expect(e!.descripcion).toContain(`${horaCO(t(14))} a ${horaCO(t(14, 15))} (hora de Colombia)`);
-    expect(e!.descripcion).toContain("Sala 1: https://meet.google.com/sala-uno");
-    expect(e!.descripcion).toContain("Monitor a cargo: Monitor Uno");
-    expect(e!.descripcion).toContain("Ten en cuenta para tu presentación:");
-    expect(e!.descripcion).toContain("• Entra a la sala 5 minutos antes de tu hora. Tu monitor te admitirá.");
+    expect(e!.descripcion).toBe([
+      "PRESENTACIÓN DE PROYECTO FINAL · Jóvenes creaTIvos 2026",
+      "Hola, Ana y Beto:",
+      "¡Llegó el momento de presentar tu Proyecto Final!",
+      "Fecha: Jueves 12 de noviembre",
+      "Hora: 2:00 p. m. a 2:15 p. m. (hora Colombia)",
+      "Sala: Sala 1",
+      "Enlace de conexión: https://meet.google.com/sala-uno",
+      "",
+      "Ten en cuenta estas recomendaciones para tu presentación:",
+      "• Ingresa a la sala 5 minutos antes de tu hora. Tu monitor te dará acceso.",
+      "• Conéctate desde un computador, con cámara, micrófono y conexión estable.",
+      "• Ten tu proyecto abierto y listo para compartir antes de ingresar.",
+      "• Dispones de 15 minutos para presentar tu proyecto. Organiza previamente lo que vas a mostrar y explicar.",
+      "• Si presentas en pareja, ambos deben conectarse y participar.",
+      "• Si tienes algún inconveniente antes de tu presentación, comunícate con tu monitor.",
+      "",
+      "¡Estamos muy emocionados de conocer tu proyecto!",
+    ].join("\n"));
     expect(c.bloqueo).toBeUndefined();
   });
 
-  it("el monitor a cargo es el de la sala en esa hora", () => {
-    expect(de("p3").eventos[0]!.descripcion).toContain("Monitor a cargo: Monitora Dos");
-    expect(de("p5").eventos[0]!.descripcion).toContain("Sala 3:");
+  it("sin datos del monitor (ni nombre ni celular); la sala es la de su hora", () => {
+    for (const c of cs) {
+      expect(c.eventos[0]!.descripcion).not.toMatch(/Monitor Uno|Monitora Dos|\+57300888/);
+      expect(c.eventos[0]!.titulo).not.toContain(c.nombre);
+    }
+    expect(de("p5").eventos[0]!.descripcion).toContain("Sala: Sala 3\nEnlace de conexión: https://meet.google.com/sala-tres");
+    expect(de("p2").eventos[0]!.descripcion).toContain("Hola, Carla:");
   });
 
   it("nunca lleva celulares ni correos (ni de su proyecto ni de otros) en la descripción", () => {
@@ -100,9 +117,9 @@ describe("participantes", () => {
     expect(c!.bloqueo).toBe("Ningún integrante tiene correo.");
   });
 
-  it("Uruguay: también la hora de Uruguay", () => {
-    expect(de("p4").eventos[0]!.descripcion).toContain("(hora de Uruguay)");
-    expect(de("p1").eventos[0]!.descripcion).not.toContain("Uruguay");
+  it("Uruguay: solo la hora de Colombia, como en el formato pedido", () => {
+    expect(de("p4").eventos[0]!.descripcion).toContain("Hora: 5:00 p. m. a 5:15 p. m. (hora Colombia)");
+    expect(de("p4").eventos[0]!.descripcion).not.toContain("Uruguay");
   });
 
   it("sin sala o sin enlace no se puede citar", () => {
@@ -112,9 +129,23 @@ describe("participantes", () => {
     expect(sinEnlace[0]!.bloqueo).toContain("Falta el enlace de la Sala 1");
   });
 
-  it("el texto «Ten en cuenta» editado sale tal cual, una viñeta por línea", () => {
-    const [c] = citacionesParticipantes(datos(), "Primera\n\n  Segunda  ");
-    expect(c!.eventos[0]!.descripcion).toMatch(/• Primera\n• Segunda$/);
+  it("el texto «Ten en cuenta» no puede imitar las líneas de Sala, Enlace u Hora ni meter enlaces sin viñeta", () => {
+    const [c] = citacionesParticipantes(datos(), "Sala: Sala 9:\nEnlace de conexión: https://otro.example/x:\nVisita https://otro.example:\nHora: 9:00 a. m.\n•Ya con viñeta\u200b");
+    const d = c!.eventos[0]!.descripcion;
+    expect(d).toContain("\n• Sala: Sala 9:\n• Enlace de conexión: https://otro.example/x:\n• Visita https://otro.example:\n• Hora: 9:00 a. m.\n• Ya con viñeta\n");
+    expect(d.match(/^Sala: /gm)).toEqual(["Sala: "]);
+    expect(d.match(/^Enlace de conexión: /gm)).toHaveLength(1);
+  });
+
+  it("el enlace de la sala pasa por limpio (sin < > en la descripción ni en la ubicación)", () => {
+    const [c] = citacionesParticipantes(datos({ enlaces: { 1: "https://x.co/\"><b>hola", 2: "", 3: "" } }), TEN_EN_CUENTA_DEFECTO);
+    expect(c!.eventos[0]!.descripcion).not.toMatch(/[<>]/);
+    expect(c!.eventos[0]!.ubicacion).not.toMatch(/[<>]/);
+  });
+
+  it("el texto «Ten en cuenta» editado: encabezados (con «:») tal cual, viñeta en lo demás sin duplicarla, y cierre fijo", () => {
+    const [c] = citacionesParticipantes(datos(), "Consejos:\nPrimera\n\n  • Segunda  ");
+    expect(c!.eventos[0]!.descripcion).toMatch(/\n\nConsejos:\n• Primera\n• Segunda\n\n¡Estamos muy emocionados de conocer tu proyecto!$/);
   });
 });
 
@@ -128,21 +159,44 @@ describe("mentores", () => {
     expect(m1.eventos[0]!.fin).toEqual(t(15, 15));
     expect(m1.eventos[1]!.inicio).toEqual(t(17));
     for (const e of m1.eventos) {
-      expect(e.titulo).toBe("Proyecto Final JC 2026 · Calificación de proyectos");
+      expect(e.titulo).toBe("Calificación de proyectos · Proyecto Final Jóvenes creaTIvos 2026");
       expect(e.invitados).toEqual([{ correo: "mentora1@x.org", nombre: "Mentora Uno" }]);
     }
   });
 
-  it("proyectos con hora, nombre e integrantes (solo nombres); cambio de sala y monitor por hora", () => {
-    const d = m1.eventos[0]!.descripcion;
-    expect(d).toContain(`• ${horaCO(t(14))} · Robot Solar · Ana Uno y Beto Dos`);
-    expect(d).toContain(`• ${horaCO(t(15))} · Huerta · Dani Cuatro y Eva Cinco`);
-    expect(d).toContain("Sala y monitor por hora:");
-    expect(d).toContain(`Desde las ${horaCO(t(14))}: Sala 1 (https://meet.google.com/sala-uno) · Monitor: Monitor Uno · Celular: +573008880001`);
-    expect(d).toContain(`Desde las ${horaCO(t(15))}: Sala 2 (https://meet.google.com/sala-dos) · Monitor: Monitora Dos · Celular: sin registrar`);
-    // Una sola sala y monitor en la franja: cabecera simple y ubicación = enlace.
-    expect(m1.eventos[1]!.descripcion).toContain("Sala 1: https://meet.google.com/sala-uno\nMonitor: Monitor Uno · Celular: +573008880001");
+  it("una sola sala en la franja: descripción exacta y ubicación = enlace", () => {
+    expect(m1.eventos[1]!.descripcion).toBe([
+      "Hola, Mentora:",
+      "Gracias por acompañarnos como mentor en las presentaciones de los Proyectos Finales de Jóvenes creaTIvos 2026.",
+      "Esta es tu programación:",
+      "Fecha: Jueves 12 de noviembre",
+      "Horario: 5:00 p. m. a 5:15 p. m. (hora Colombia)",
+      "Sala: Sala 1",
+      "Enlace de conexión: https://meet.google.com/sala-uno",
+      "Monitor a cargo: Monitor Uno",
+      "Celular del monitor: +573008880001",
+      "Proyectos asignados para evaluación:",
+      "5:00 p. m. · Juego Río",
+      "• Participante: Fito Seis",
+      "",
+      "Recomendaciones:",
+      "• Conéctate unos minutos antes del inicio de tu primera evaluación.",
+      "• Respeta los tiempos asignados para cada presentación (15 minutos).",
+      "• Asegúrate de evaluar cada proyecto según los criterios establecidos.",
+      "",
+      "¡Gracias por compartir tu experiencia y contribuir al crecimiento de nuestros jóvenes!",
+    ].join("\n"));
     expect(m1.eventos[1]!.ubicacion).toBe("https://meet.google.com/sala-uno");
+  });
+
+  it("si cambia de sala dentro de la franja: sala, enlace y monitor por tramo y la sala junto a cada proyecto", () => {
+    const d = m1.eventos[0]!.descripcion;
+    expect(d).toContain("Horario: 2:00 p. m. a 3:15 p. m. (hora Colombia)");
+    expect(d).toContain("Sala: Sala 1 (desde las 2:00 p. m.)\nEnlace de conexión: https://meet.google.com/sala-uno\nMonitor a cargo: Monitor Uno\nCelular del monitor: +573008880001");
+    expect(d).toContain("Sala: Sala 2 (desde las 3:00 p. m.)\nEnlace de conexión: https://meet.google.com/sala-dos\nMonitor a cargo: Monitora Dos\nCelular del monitor: Sin registrar");
+    expect(d).toContain("2:00 p. m. · Robot Solar · Sala 1\n• Participante: Ana Uno\n• Participante: Beto Dos\n2:30 p. m. · App Agua · Sala 1");
+    expect(d).toContain("3:00 p. m. · Huerta · Sala 2\n• Participante: Dani Cuatro\n• Participante: Eva Cinco");
+    expect(m1.eventos[0]!.ubicacion).toBeUndefined();
   });
 
   it("nunca lleva contactos de estudiantes", () => {
@@ -168,20 +222,49 @@ describe("monitores", () => {
     expect(mon2.eventos[0]!.inicio).toEqual(t(14, 15));
     expect(mon2.eventos[0]!.fin).toEqual(t(15, 15));
     for (const e of [...mon1.eventos, ...mon2.eventos]) {
-      expect(e.titulo).toBe("Proyecto Final JC 2026 · Monitoría de salas");
+      expect(e.titulo).toBe("Monitoría de salas · Proyecto Final Jóvenes creaTIvos 2026");
       expect(e.descripcion.endsWith(CIERRE_MONITOR)).toBe(true);
     }
     expect(mon1.eventos[0]!.invitados).toEqual([{ correo: "mon1@x.org", nombre: "Monitor Uno" }]);
   });
 
-  it("por sala y hora: enlace, mentor con celular y, por proyecto, contacto de cada integrante", () => {
-    const d = mon1.eventos[0]!.descripcion;
-    expect(d).toContain(`Sala 1 · ${horaCO(t(14))} a ${horaCO(t(14, 45))}`);
-    expect(d).toContain("Enlace: https://meet.google.com/sala-uno");
-    expect(d).toContain("Mentor: Mentora Uno · Celular: +573009990001");
-    expect(d).toContain("Ana Uno · Celular: +573001110001 · Correo: ana@x.org");
-    expect(d).toContain("Carla Tres · Celular: +573001110003 · Correo: carla@x.org");
-    expect(mon2.eventos[0]!.descripcion).toContain("Eva Cinco · Celular: +573001110005 · Correo: sin registrar");
+  it("descripción exacta: por sala, horario, enlace, mentor con celular y contacto de cada integrante", () => {
+    expect(mon1.eventos[0]!.descripcion).toBe([
+      "Hola, Monitor:",
+      "Esta es tu programación para acompañar las presentaciones de los Proyectos Finales.",
+      "Fecha: Jueves 12 de noviembre",
+      "Horario asignado: 2:00 p. m. a 2:45 p. m. (hora Colombia)",
+      "",
+      "SALA 1",
+      "Horario: 2:00 p. m. a 2:45 p. m.",
+      "Enlace de conexión: https://meet.google.com/sala-uno",
+      "Mentor asignado: Mentora Uno",
+      "Celular: +573009990001",
+      "Participantes:",
+      "2:00 p. m. · Robot Solar",
+      "• Participante: Ana Uno",
+      "• Celular: +573001110001",
+      "• Correo: ana@x.org",
+      "• Participante: Beto Dos",
+      "• Celular: +573001110002",
+      "• Correo: beto@x.org",
+      "2:30 p. m. · App Agua",
+      "• Participante: Carla Tres",
+      "• Celular: +573001110003",
+      "• Correo: carla@x.org",
+      "",
+      "Importante:",
+      "Asegúrate de estar en la sala antes de iniciar cada presentación y de acompañar el ingreso de los participantes y el mentor.",
+      "Las reprogramaciones no se pueden hacer de forma autónoma y deben ser aprobadas. Los casos de calamidad o fuerza mayor deben reportarse a Astrid o Cristian.",
+    ].join("\n"));
+  });
+
+  it("varias salas en la franja, en orden de hora; sin correo o celular: «Sin registrar»", () => {
+    const d = mon2.eventos[0]!.descripcion;
+    expect(d.indexOf("SALA 3")).toBeLessThan(d.indexOf("SALA 2"));
+    expect(d).toContain("SALA 3\nHorario: 2:15 p. m. a 2:30 p. m.\nEnlace de conexión: https://meet.google.com/sala-tres\nMentor asignado: Mentor Dos\nCelular: +573009990002");
+    expect(d).toContain("• Participante: Eva Cinco\n• Celular: +573001110005\n• Correo: Sin registrar");
+    expect(d).toContain("Hola, Monitora:");
   });
 
   it("solo los contactos de los proyectos de sus salas", () => {
@@ -215,8 +298,12 @@ describe("desactualizadas", () => {
     const sala = de(datos({ plan: base.plan.map((p) => (p.hora === 14 && p.mentorId === "m1" ? { ...p, sala: 2 } : p)) }));
     expect(queCambio(a.resumen, sala.resumen)).toEqual(["la sala", "el enlace"]);
     const monitor = de(datos({ plan: base.plan.map((p) => (p.hora === 14 && p.mentorId === "m1" ? { ...p, monitor: "mon2" } : p)) }));
-    expect(queCambio(a.resumen, monitor.resumen)).toEqual(["el monitor"]);
-    expect(monitor.huella).not.toBe(a.huella);
+    // El participante no ve al monitor: no se desactualiza. El mentor sí lo ve.
+    expect(queCambio(a.resumen, monitor.resumen)).toEqual([]);
+    expect(monitor.huella).toBe(a.huella);
+    const mA = citacionesMentores(base).find((c) => c.clave === "m1")!;
+    const mB = citacionesMentores(datos({ plan: base.plan.map((p) => (p.hora === 14 && p.mentorId === "m1" ? { ...p, monitor: "mon2" } : p)) })).find((c) => c.clave === "m1")!;
+    expect(queCambio(mA.resumen, mB.resumen)).toEqual(["el monitor"]);
     const mentor = de(datos({ bloques: base.bloques.map((b) => (b.proyecto.id === "p1" ? { ...b, mentorId: "m2" } : b)) }));
     expect(queCambio(a.resumen, mentor.resumen)).toContain("el mentor");
   });
@@ -239,12 +326,17 @@ describe("desactualizadas", () => {
   });
 
   it("nombres con saltos de línea o etiquetas no inventan líneas ni HTML en el evento", () => {
-    const raro = { ...p2, nombre: "App\nSala 9: https://malo.example\n<a href=x>clic</a>" };
-    const [c] = citacionesParticipantes(datos({ bloques: [{ inicio: t(14, 30), mentorId: "m1", proyecto: raro }] }), TEN_EN_CUENTA_DEFECTO);
-    const e = c!.eventos[0]!;
-    expect(e.titulo).toBe("Proyecto Final JC 2026 · Presentación de App Sala 9: https://malo.example a href=x clic /a");
-    expect(e.descripcion).not.toMatch(/^Sala 9/m);
-    expect(e.descripcion).not.toContain("<");
+    const raro = { ...p2, nombre: "App\nSala 9: https://malo.example\n<a href=x>clic</a>", integrantes: [{ nombre: "Carla\nSala: 9 <b>", correo: "carla@x.org" }] };
+    const d = datos({ bloques: [{ inicio: t(14, 30), mentorId: "m1", proyecto: raro }] });
+    const e = citacionesParticipantes(d, TEN_EN_CUENTA_DEFECTO)[0]!.eventos[0]!;
+    const em = citacionesMentores(d)[0]!.eventos[0]!;
+    expect(em.descripcion).toContain("2:30 p. m. · App Sala 9: https://malo.example a href=x clic /a\n• Participante: Carla Sala: 9 b");
+    for (const x of [e, em]) {
+      expect(x.descripcion).not.toMatch(/^Sala 9/m);
+      expect(x.descripcion).not.toMatch(/^Sala: 9/m);
+      expect(x.descripcion).not.toContain("<");
+    }
+    expect(e.descripcion).toContain("Hola, Carla:");
   });
 });
 
@@ -252,7 +344,7 @@ describe("modo prueba", () => {
   it("todo va solo al correo de prueba y el título empieza con [PRUEBA]", () => {
     const e = citacionesParticipantes(datos(), TEN_EN_CUENTA_DEFECTO)[0]!.eventos[0]!;
     const p = enModoPrueba(e, "yo@tocaunavida.org");
-    expect(p.titulo).toBe("[PRUEBA] Proyecto Final JC 2026 · Presentación de Robot Solar");
+    expect(p.titulo).toBe("[PRUEBA] Presentación de Proyecto Final · Jóvenes creaTIvos 2026");
     expect(p.invitados).toEqual([{ correo: "yo@tocaunavida.org", nombre: "Prueba" }]);
     expect(p.descripcion).toMatch(/^MODO PRUEBA · Invitados reales \(no se les envió\): ana@x\.org, beto@x\.org/);
   });

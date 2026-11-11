@@ -3,9 +3,13 @@
 La pantalla **Administración → Citaciones** (`/admin/citaciones`, solo admin) envía las invitaciones de calendario de las
 presentaciones desde la cuenta organizadora (jovenescreativos@tocaunavida.org), sobre su calendario principal:
 
-- **Participantes**: un evento por proyecto en su bloque de 15 min; invitados solo sus integrantes.
-- **Mentores**: un evento por franja (bloques con proyecto unidos si hay ≤ 30 min entre ellos); sin contactos de estudiantes.
-- **Monitores**: un evento por franja de SUS salas, con nombre, celular y correo de esos integrantes.
+- **Participantes** («Presentación de Proyecto Final · Jóvenes creaTIvos 2026»): un evento por proyecto en su bloque
+  de 15 min; invitados solo sus integrantes. Lleva fecha, hora (hora Colombia), sala, enlace y «Ten en cuenta». Sin datos
+  del monitor ni contactos de nadie.
+- **Mentores** («Calificación de proyectos · …»): un evento por franja (bloques con proyecto unidos si hay ≤ 30 min
+  entre ellos). Lleva sala, enlace, nombre y **celular del monitor** a cargo, y de los participantes solo los nombres.
+- **Monitores** («Monitoría de salas · …»): un evento por franja de SUS salas. Por sala: horario, enlace, nombre y
+  **celular del mentor**, y nombre, celular y correo de cada integrante.
 
 Los invitados no se ven entre sí ni pueden invitar ni editar. Todo deja registro (colección `citaciones` + changeLog).
 
@@ -49,8 +53,9 @@ La app nunca muestra ni registra los secretos. Si el token deja de servir (revoc
 3. Elige el día → pestaña **Participantes** → **Vista previa** de un proyecto: revisa título, hora, sala, enlace,
    mentor, monitor y «Ten en cuenta». El único invitado debe ser tu correo.
 4. **Citar** ese proyecto: te llega la invitación «[PRUEBA] …» y la fila pasa a «Citado · Prueba».
-5. Cambia algo (p. ej. el texto «Ten en cuenta» al final de la pantalla, o la hora del proyecto en Horarios): la fila
-   queda «Desactualizado» y dice qué cambió → **Actualizar**: te llega la actualización del MISMO evento (no uno nuevo).
+5. Cambia la hora del proyecto en Horarios (o su mentor, o la sala en Salas): la fila queda «Desactualizado» y dice
+   qué cambió → **Actualizar**: te llega la actualización del MISMO evento (no uno nuevo). El texto «Ten en cuenta» NO
+   marca desactualizado (decisión del Paso 27): solo se usa en las citaciones que se envíen después de guardarlo.
 6. Repite con una fila de **Mentores** y una de **Monitores** (la del monitor trae los contactos de los integrantes).
 7. **Cancelar** cada fila probada: te llega la cancelación y el evento sale del calendario de jovenescreativos@.
 
