@@ -80,10 +80,11 @@ describe("cronograma en Excel", () => {
   it("una hoja por día, con hora COL (y UY para Uruguay), mentor, monitor e integrantes", async () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load((await cronogramaExcel()) as unknown as ArrayBuffer);
-    expect(wb.worksheets.map((w) => w.name)).toEqual(["Jueves 12 de noviembre", "Martes 17 de noviembre"]);
+    // Sin plan de salas: Sala y Enlace vacíos y hoja final «Avisos».
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Jueves 12 de noviembre", "Martes 17 de noviembre", "Avisos"]);
     const fila = (n: number, w = 0) => (wb.worksheets[w]!.getRow(n).values as unknown[]).slice(1);
-    expect(fila(1)).toEqual(["Hora COL", "Hora UY", "Mentor (sala)", "Monitor", "Ciudad", "Proyecto", "Código", "Integrante 1", "Celular 1", "Integrante 2", "Celular 2"]);
-    expect(fila(2)).toEqual(["8:00 a. m.", "", "Mentor Uno", "Monitor Cali", "Cali", "Proyecto C1", "C1", "Estudiante C11", "+573000000001", "", ""]);
-    expect(fila(2, 1).slice(0, 5)).toEqual(["8:00 a. m.", "10:00 a. m.", "Mentor Uno", "Por asignar", "Paysandú"]);
+    expect(fila(1)).toEqual(["Día", "Hora COL", "Hora UY", "Mentor (sala)", "Sala", "Enlace de sala", "Monitor", "Ciudad", "Proyecto", "Código", "Integrante 1", "Celular 1", "Integrante 2", "Celular 2"]);
+    expect(fila(2)).toEqual(["Jueves 12 de noviembre", "8:00 a. m.", "", "Mentor Uno", "", "", "Monitor Cali", "Cali", "Proyecto C1", "C1", "Estudiante C11", "+573000000001", "", ""]);
+    expect(fila(2, 1).slice(0, 8)).toEqual(["Martes 17 de noviembre", "8:00 a. m.", "10:00 a. m.", "Mentor Uno", "", "", "Por asignar", "Paysandú"]);
   });
 });
