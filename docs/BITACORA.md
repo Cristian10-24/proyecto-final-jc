@@ -306,3 +306,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: formato exacto de las citaciones de participantes, mentores y monitores`. Títulos y descripciones con los textos pedidos (hora «8:00 a. m.», hora Colombia; Uruguay sin su hora aparte); participante sin datos del monitor (cambiar el monitor ya no lo desactualiza); mentor con sala/enlace/monitor por tramo si cambia de sala; «Sin registrar»; nuevo valor por defecto de «Ten en cuenta» (lo guardado no se toca). Corregido: el texto «Ten en cuenta» NO desactualiza (así lo decidió el Paso 27; la guía y la pantalla decían lo contrario). revisor-seguridad: 2 medios corregidos («Ten en cuenta» podía imitar líneas de Sala/Enlace; enlace de sala sin limpio) y 2 bajos (invisibles en limpio, correos en modo prueba); bajos aceptados: huella de correos sin sal, monitor no se desactualiza si cambia el contacto de un integrante. 397 unitarias y 331 con base; typecheck y build pasan.
 - Verificar: `npx vitest run tests/citaciones.test.ts`; Preview → Citaciones → Vista previa de cada pestaña.
 - Pendiente: push de feature/citaciones (cuando el usuario lo autorice) y probar en Preview.
+
+## Ajuste · Hora de Uruguay en la citación del participante
+- Commit: `feat: hora de Uruguay en la citación de participantes de Colonia y Paysandú`. Línea «Hora: 8:00 a. m. a 8:15 a. m. (hora Colombia) · 10:00 a. m. a 10:15 a. m. (hora Uruguay)» solo para esas ciudades; los demás, sin cambios. 397 unitarias y 331 con base; typecheck y build pasan.
+- Verificar: `npx vitest run tests/citaciones.test.ts` (prueba «Colonia y Paysandú»).
+- Pendiente: push de feature/citaciones (cuando el usuario lo autorice) y probar en Preview.

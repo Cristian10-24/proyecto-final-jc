@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { horaCO } from "../ciudades";
+import { CIUDADES, horaCO, horaUY } from "../ciudades";
 import { horaCOL, MINUTOS_BLOQUE } from "../edicion";
 
 // Fase 5 · Paso 27 · Contenido de las citaciones del calendario (funciones puras, sin base ni Google).
@@ -109,6 +109,8 @@ export const fechaLarga = (d: Date) => { const t = fmtFecha.format(d).replace(/,
 const finDe = (inicio: Date) => new Date(inicio.getTime() + MINUTOS_BLOQUE * 60_000);
 /** «8:00 a. m. a 8:15 a. m.» */
 const rango = (a: Date, b: Date) => `${horaCO(a)} a ${horaCO(b)}`;
+/** Colonia y Paysandú: también la hora de Uruguay en la misma línea. */
+const esUruguay = (ciudad: string) => CIUDADES.some((c) => c.nombre === ciudad && c.pais === "UY");
 /**
  * Texto de una sola línea para el evento: sin saltos, sin caracteres de control ni invisibles o de dirección, y sin < >
  * (Google muestra HTML).
@@ -242,7 +244,7 @@ export function citacionesParticipantes(d: DatosDia, tenEnCuenta: string): Citac
       `Hola, ${unirConY(p.integrantes.map((i) => primerNombre(i.nombre)).filter(Boolean))}:`,
       "¡Llegó el momento de presentar tu Proyecto Final!",
       `Fecha: ${fechaLarga(b.inicio)}`,
-      `Hora: ${rango(b.inicio, fin)} (hora Colombia)`,
+      `Hora: ${rango(b.inicio, fin)} (hora Colombia)${esUruguay(p.ciudad) ? ` · ${horaUY(b.inicio)} a ${horaUY(fin)} (hora Uruguay)` : ""}`,
       `Sala: ${salaTxt(b)}`,
       `Enlace de conexión: ${enlaceTxt(b)}`,
       "",

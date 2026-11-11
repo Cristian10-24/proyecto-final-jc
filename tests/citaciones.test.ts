@@ -117,9 +117,12 @@ describe("participantes", () => {
     expect(c!.bloqueo).toBe("Ningún integrante tiene correo.");
   });
 
-  it("Uruguay: solo la hora de Colombia, como en el formato pedido", () => {
-    expect(de("p4").eventos[0]!.descripcion).toContain("Hora: 5:00 p. m. a 5:15 p. m. (hora Colombia)");
-    expect(de("p4").eventos[0]!.descripcion).not.toContain("Uruguay");
+  it("Colonia y Paysandú: hora de Colombia y de Uruguay en la misma línea; los demás, solo Colombia", () => {
+    expect(de("p4").eventos[0]!.descripcion).toContain("Hora: 5:00 p. m. a 5:15 p. m. (hora Colombia) · 7:00 p. m. a 7:15 p. m. (hora Uruguay)\nSala:");
+    const pay = { ...p4, ciudad: "Paysandú" };
+    const [c] = citacionesParticipantes(datos({ bloques: [{ inicio: t(8), mentorId: "m1", proyecto: pay }] }), TEN_EN_CUENTA_DEFECTO);
+    expect(c!.eventos[0]!.descripcion).toContain("Hora: 8:00 a. m. a 8:15 a. m. (hora Colombia) · 10:00 a. m. a 10:15 a. m. (hora Uruguay)");
+    expect(de("p1").eventos[0]!.descripcion).not.toContain("Uruguay");
   });
 
   it("sin sala o sin enlace no se puede citar", () => {

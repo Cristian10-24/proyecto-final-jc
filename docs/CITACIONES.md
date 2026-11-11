@@ -4,7 +4,7 @@ La pantalla **Administración → Citaciones** (`/admin/citaciones`, solo admin)
 presentaciones desde la cuenta organizadora (jovenescreativos@tocaunavida.org), sobre su calendario principal:
 
 - **Participantes** («Presentación de Proyecto Final · Jóvenes creaTIvos 2026»): un evento por proyecto en su bloque
-  de 15 min; invitados solo sus integrantes. Lleva fecha, hora (hora Colombia), sala, enlace y «Ten en cuenta». Sin datos
+  de 15 min; invitados solo sus integrantes. Lleva fecha, hora (hora Colombia; Colonia y Paysandú también hora Uruguay), sala, enlace y «Ten en cuenta». Sin datos
   del monitor ni contactos de nadie.
 - **Mentores** («Calificación de proyectos · …»): un evento por franja (bloques con proyecto unidos si hay ≤ 30 min
   entre ellos). Lleva sala, enlace, nombre y **celular del monitor** a cargo, y de los participantes solo los nombres.
