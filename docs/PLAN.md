@@ -285,7 +285,7 @@ por la app: un reintento o un doble clic actualiza el mismo evento, nunca crea o
 5. Lo marcado «como citado» (externo) no tiene evento en la app: si luego se desactualiza, «Actualizar» crea un evento
    nuevo y avisa que el anterior se cancela a mano en Google Calendar.
 
-## Fase 6 · Vistas del monitor (rama feature/vistas-monitor) — PLAN POR APROBAR
+## Fase 6 · Vistas del monitor — PLAN APROBADO (dos entregas, ver abajo)
 Producción activa. SOLO VISUAL: mismas rutas de escritura, permisos y datos; cero migraciones, colecciones, campos o
 índices. Diseño: `docs/DISENO-VISTAS.md` (resumen de los prototipos 00–06).
 
@@ -318,23 +318,31 @@ cambio de EvalShell afecta al mentor → el cajón móvil solo se activa en esta
   evaluación guardada, «Evaluado»), y se conservan como chips extra los de hoy: «Sin motivo»/«Motivo: …», «Destacado»
   y «Cambio sugerido». El resultado (Excelente, Aprobado…) queda en el panel Gestionar. ← pregunta 1
 - Mi ciudad: «No se presentó» = el mentor lo marcó o el monitor marcó «No» sin evaluación guardada (como `estadoFila`).
-  Sin hora: texto del prototipo «Aún no elige día ni hora» + chip «Sin hora», en el bloque «Aún no eligen hora» con
-  «Copiar lista…» (solo copia al portapapeles). ← pregunta 2
+  Sin hora: no aparecen (respuesta 2).
 - Monitores: color del monitor por orden alfabético (m1..m7, se repite). «Sin margen» = último proyecto de un bloque a
   las :45 y el siguiente bloque del mismo monitor, en otra sala, empieza a la hora en punto siguiente. «Ver como» se
   recuerda en el navegador. ← pregunta 3 (botones del plan de salas)
 
-**Preguntas:**
-1. ¿En la fila de Mis proyectos va el chip de asistencia del prototipo y el resultado solo dentro de Gestionar?
-2. ¿Mi ciudad usa el texto del prototipo «Aún no elige día ni hora» (tú escribiste «Sin hora asignada») y su bloque
-   «Copiar lista de pendientes para WhatsApp»?
-3. «Descargar plan de salas» y «Cambiar en Salas» hoy son solo del admin. ¿Coordinación no los ve (recomendado, sin
-   tocar permisos) o se le abre la descarga del Excel (cambio de permiso)?
+**Respuestas del usuario (plan aprobado):**
+1. Sí: chip de asistencia del prototipo + motivo, Destacado y Cambio sugerido; el resultado solo dentro de Gestionar.
+2. CORRECCIÓN: los proyectos SIN HORA NO aparecen en Mi ciudad (ni bloque, ni copiar lista, ni chip, filtro o tarjeta
+   «Sin hora»). Tarjetas y barra cuentan solo proyectos con día y hora; la ruta no los devuelve; siguen fuera los «Sin
+   proyecto». Sin ninguno: «No hay proyectos con esos filtros». Quién no ha elegido hora sigue en el Panel.
+3. «Descargar plan de salas» y «Cambiar en Salas» solo los ve el admin. No se cambia ningún permiso.
+Lo demás, como se propuso (900 px, Ahora/Siguiente, ocultar salas vacías, color por monitor, «Ver como» recordado).
+
+**Dos entregas.** A (primero, rama `feature/vistas-nuevas` desde `feature/vistas-monitor`): Pasos 2 (solo lo que
+necesitan 4 y 5), 4 y 5, solo aditivo: no se tocan MonitorHoja, la ficha, Mis salas, Mis proyectos ni ningún
+componente, ruta o estilo usado hoy (variables nuevas del tema: solo agregar). Menú: monitor = Mis salas · Mis proyectos
+· Mi ciudad · Panel; coordinación y admin = las actuales + «Monitores»; el cajón ☰ móvil solo en Mi ciudad y Monitores.
+Cierre de A: permisos, privacidad, «como producción», npm test, typecheck, build y solo las pruebas con base nuevas y de
+permisos (una a la vez). B (después, rama `feature/vistas-monitor-fusion` desde main ya con A publicada): Pasos 3 y 6,
+con una prueba previa que fije las llamadas de asistencia, motivo, observación, reprogramar y sugerir.
 
 ### Pasos de la Fase 6
 - [x] 1. Lectura de prototipos, `docs/DISENO-VISTAS.md` y este plan.
-- [ ] 2. Componentes compartidos (vistas/), variables nuevas del tema y `formatoCelular`, con pruebas puras.
-- [ ] 3. «Mis proyectos» fusionada con Gestionar en la fila; `/monitor/salas` redirige; menú sin «Mis salas».
-- [ ] 4. «Mi ciudad»: ruta GET de solo lectura + pantalla; prueba de privacidad. revisor-seguridad.
-- [ ] 5. «Monitores»: ruta GET + pantalla (cuadrícula, por monitor, por sala, panel). revisor-seguridad.
-- [ ] 6. Cierre: menú, pruebas de permisos y «como producción», batería completa, build, revisores, guía de prueba.
+- [ ] 2. (A) Componentes nuevos en `evaluacion/vistas/`, variables nuevas del tema y `formatoCelular`, con pruebas puras.
+- [ ] 4. (A) «Mi ciudad»: ruta GET de solo lectura + pantalla; prueba de privacidad. revisor-seguridad.
+- [ ] 5. (A) «Monitores»: ruta GET + pantalla (cuadrícula, por monitor, por sala, panel). revisor-seguridad.
+- [ ] 3. (B) «Mis proyectos» fusionada con Gestionar en la fila; `/monitor/salas` redirige; menú sin «Mis salas».
+- [ ] 6. (B) Cierre: menú final, pruebas, batería completa, build, revisores, guía de prueba.

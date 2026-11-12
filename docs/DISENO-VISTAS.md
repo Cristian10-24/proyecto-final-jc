@@ -10,10 +10,9 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
 - Botones: «Abrir sala» (naranja, cámara), «Limpiar filtros» (borde), «Aplicar» (negro), íconos de 44 px Llamar y WhatsApp (verde).
 - Chips Mis proyectos: «Pendiente» (gris), «Se presentó» (verde), «No se presentó» (rojo), «Ahora» (naranja), «Siguiente»
   (borde naranja), «En pareja» (borde gris), «10:00 a. m. UY» (azul). Mi ciudad, «solo el estado, nunca la nota»:
-  «Evaluado» (verde), «Pendiente», «No se presentó» (rojo), «Sin hora» (amarillo).
+  «Evaluado» (verde), «Pendiente», «No se presentó» (rojo). (El chip «Sin hora» del prototipo NO se usa.)
 - Filas: fondo verde ~7 % / rojo ~6 % + chip con texto; fila «Ahora» con borde naranja interior de 2 px.
-- Estados: cargando = esqueletos que laten; vacío/error = ícono redondo de 56 px, título 20 px, texto gris y un botón
-  (error: ícono rojo y `role="alert"`).
+- Estados: cargando = esqueletos; vacío/error = ícono de 56 px, título 20 px, texto y botón (error: rojo, `role="alert"`).
 
 ## Barra superior
 - Web: la de EvalShell (logos, pestañas, luna/sol, nombre, «Salir»). Monitor: «Mis proyectos · Mi ciudad»; coordinación
@@ -61,9 +60,9 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
 - Tabla «Proyecto e integrantes · Día, hora y sala · Mentor · Estado»: proyecto (+«En pareja»), «Nombre · +57 …» (o «Sin
   registrar») con Llamar y WhatsApp; «3:30 p. m.» / «Jueves 12 de noviembre» / «Sala 3»; mentor sin celular; chip;
   en pareja, línea «Laura: Pendiente · Andrés: Pendiente».
-- Al final, bloque «Aún no eligen hora · 3 proyectos» / «Cuentan como pendientes. Escríbeles para que elijan día y
-  hora.» con botón «Copiar lista de pendientes para WhatsApp» (toast «Lista copiada · 3 proyectos sin hora»); sus filas
-  dicen «Aún no elige día ni hora» y «Sin mentor asignado».
+- SIN HORA = NO APARECE (decisión del usuario): se quitan el bloque «Aún no eligen hora», «Copiar lista de pendientes
+  para WhatsApp», «Aún no elige día ni hora», «Sin mentor asignado» y todo filtro o chip «Sin hora». Tarjetas y barra
+  cuentan solo proyectos con día y hora. Sin ninguno: «No hay proyectos con esos filtros».
 - Móvil: barra con buscador y «Filtros»; título + «Todos los días · Pendientes primero»; tarjetas 2×2; barra; una
   tarjeta por proyecto (proyecto + chip, «3:30 p. m. · Jue 12 · Sala 3», «Mentor · …», integrantes con íconos). Hoja
   «Filtros»: Ciudad, Estado (Todos/Pendientes/Evaluados/No se presentó), Día, Ordenar; «Limpiar» y «Aplicar».
@@ -96,5 +95,6 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
 ## Diferencias con la app (gana la app en lo funcional)
 1. Gestionar conserva lo que hoy muestra la ficha y el prototipo no: resultado por integrante y retroalimentación del
    mentor. «Tus sugerencias de cambio» se conserva al final. «Sin celular cargado» pasa a «Sin registrar».
-2. Coordinación y admin ven Mis proyectos sin Gestionar ni asistencia (hoy no tienen ese permiso ni esos datos).
-3. Pestañas de coordinación/admin: las actuales + «Monitores». Plan de salas (Excel y Salas) hoy es solo del admin.
+2. Coordinación y admin: Mis proyectos sin Gestionar ni asistencia (como hoy); pestañas actuales + «Monitores».
+3. Fila de Mis proyectos: chip de asistencia (Pendiente / Se presentó / No se presentó / Evaluado) + motivo, Destacado y
+   Cambio sugerido; el resultado solo en Gestionar. «Descargar plan de salas», «Cambiar en Salas» e «Ir a Salas»: solo admin.
