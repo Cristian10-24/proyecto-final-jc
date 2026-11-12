@@ -2,6 +2,7 @@ import { diaCOL, horaCOL } from "../edicion";
 import { estadoPersona, type Resultado } from "../evaluacion/criterios";
 import type { FilaSala, SalaMonitor } from "../evaluacion/monitor";
 import type { MiProyecto, MonitorRef } from "../misProyectos";
+import { puede } from "../permisos";
 import { coincide } from "./formato";
 
 // Fase 6 · Entrega B · «Mis proyectos» fusionada (lista). Funciones puras: une las dos lecturas que ya existen (la de
@@ -83,8 +84,8 @@ export function resumen(filas: readonly FilaLista[]) {
 // ---- Filtros (viven en la URL) ----
 
 export type EstadoFiltro = "" | "pendientes" | "presentes" | "ausentes" | "sinMotivo";
-export type Filtros = { dia: string; ciudad: string; sala: string; estado: EstadoFiltro; monitor: string; q: string };
-export const FILTROS_VACIOS: Filtros = { dia: "", ciudad: "", sala: "", estado: "", monitor: "", q: "" };
+export type Filtros = { dia: string; ciudad: string; sala: string; estado: EstadoFiltro; monitor: string; q: string; vista: "" | "todos" };
+export const FILTROS_VACIOS: Filtros = { dia: "", ciudad: "", sala: "", estado: "", monitor: "", q: "", vista: "" };
 const ESTADOS: readonly EstadoFiltro[] = ["", "pendientes", "presentes", "ausentes", "sinMotivo"];
 
 /** Lee los filtros de la query string (valores desconocidos se ignoran; texto acotado). */
@@ -98,12 +99,13 @@ export function leerFiltros(search: string): Filtros {
     dia: dia === "todos" || /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : "",
     ciudad: t("ciudad", 60), sala: /^\d{1,3}$/.test(sala) ? sala : "",
     estado: ESTADOS.includes(estado) ? estado : "", monitor: t("monitor", 80), q: t("q"),
+    vista: p.get("vista") === "todos" ? "todos" : "",
   };
 }
 /** Query string con solo los filtros no vacíos ("" si no hay ninguno). */
 export function escribirFiltros(f: Filtros): string {
   const p = new URLSearchParams();
-  for (const k of ["dia", "ciudad", "sala", "estado", "monitor", "q"] as const) if (f[k]) p.set(k, f[k]);
+  for (const k of ["vista", "dia", "ciudad", "sala", "estado", "monitor", "q"] as const) if (f[k]) p.set(k, f[k]);
   const s = p.toString();
   return s ? `?${s}` : "";
 }
@@ -144,4 +146,19 @@ export function agruparBloques(filas: readonly FilaLista[]): BloqueLista[] {
     out.push(nuevo);
   }
   return out.sort((a, b) => a.dia.localeCompare(b.dia) || a.desde - b.desde || (a.sala ?? 99) - (b.sala ?? 99));
+}
+
+// ---- Vista: monitor con coordinación (o admin) como rol adicional ----
+
+type ConRolesLista = Parameters<typeof puede>[0];
+/**
+ * Qué lista ve cada quien (solo pantalla; las lecturas y permisos son los de siempre):
+ * - solo monitor: sus salas con «Gestionar», sin selector;
+ * - coordinación o admin sin el rol monitor: todos los proyectos sin «Gestionar», sin selector;
+ * - monitor que además puede ver todas las ciudades: selector «Mis salas» (por defecto) / «Todos los proyectos».
+ */
+export function modoLista(user: ConRolesLista, vista: Filtros["vista"]): { selector: boolean; todos: boolean } {
+  const monitor = puede(user, "monitorear_salas"), todas = puede(user, "ver_todas_las_ciudades");
+  if (monitor && todas) return { selector: true, todos: vista === "todos" };
+  return { selector: false, todos: !monitor };
 }

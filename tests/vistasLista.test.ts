@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FilaSala, SalaMonitor } from "@/lib/evaluacion/monitor";
 import type { MiProyecto } from "@/lib/misProyectos";
 import {
-  agruparBloques, diaAplicado, escribirFiltros, estadoAsistencia, filtrarBase, filtrarEstado, FILTROS_VACIOS, leerFiltros, resumen, unirLecturas,
+  agruparBloques, diaAplicado, escribirFiltros, estadoAsistencia, filtrarBase, filtrarEstado, FILTROS_VACIOS, leerFiltros, modoLista, resumen, unirLecturas,
 } from "@/lib/vistas/listaProyectos";
 
 // Fase 6 · Entrega B · Paso 2: lista «Mis proyectos» fusionada (unir lecturas, estados, resumen, filtros y bloques).
@@ -88,5 +88,28 @@ describe("bloques de sala", () => {
     expect(agruparBloques(L).map((b) => [b.sala, b.desde, b.hasta, b.filas.map((f) => f.id).join("")])).toEqual([
       [2, 8, 10, "abc"], [5, 8, 9, "e"], [2, 11, 12, "d"],
     ]);
+  });
+});
+
+describe("vista de quien es monitor y además coordinación (selector)", () => {
+  type U = Parameters<typeof modoLista>[0];
+  const solo: U = { rol: "monitor" } as U, kamelia: U = { rol: "monitor", rolesExtra: ["coordinador"] } as U;
+  const coord: U = { rol: "coordinador" } as U, admin: U = { rol: "admin" } as U;
+  it("monitor + coordinación: selector; «Mis salas» por defecto (con Gestionar) y «Todos los proyectos» con ?vista=todos", () => {
+    expect(modoLista(kamelia, "")).toEqual({ selector: true, todos: false });
+    expect(modoLista(kamelia, "todos")).toEqual({ selector: true, todos: true });
+  });
+  it("solo monitor: sin selector y siempre sus salas (aunque la URL diga vista=todos)", () => {
+    expect(modoLista(solo, "")).toEqual({ selector: false, todos: false });
+    expect(modoLista(solo, "todos")).toEqual({ selector: false, todos: false });
+  });
+  it("coordinación y admin: sin selector, todos los proyectos (sin Gestionar)", () => {
+    expect(modoLista(coord, "")).toEqual({ selector: false, todos: true });
+    expect(modoLista(admin, "todos")).toEqual({ selector: false, todos: true });
+  });
+  it("la vista vive en la URL con los demás filtros", () => {
+    expect(escribirFiltros({ ...FILTROS_VACIOS, vista: "todos", sala: "3" })).toBe("?vista=todos&sala=3");
+    expect(leerFiltros("?vista=todos&sala=3")).toEqual({ ...FILTROS_VACIOS, vista: "todos", sala: "3" });
+    expect(leerFiltros("?vista=otra").vista).toBe("");
   });
 });

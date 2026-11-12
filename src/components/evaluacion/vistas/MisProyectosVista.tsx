@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { CIUDADES } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
-import { puede } from "@/lib/permisos";
 import { estadoFila, primerNombre } from "@/lib/evaluacion/criterios";
 import type { FilaSala, SalaMonitor } from "@/lib/evaluacion/monitor";
 import type { MonitorRef, VistaMisProyectos } from "@/lib/misProyectos";
@@ -12,10 +11,10 @@ import { rangoHoras } from "@/lib/vistas/bloques";
 import { plural } from "@/lib/vistas/formato";
 import {
   agruparBloques, comoPersona, desdeMisProyectos, diaAplicado, escribirFiltros, estadoAsistencia, filtrarBase, filtrarEstado,
-  FILTROS_VACIOS, leerFiltros, resumen, TEXTO_ASIS, unirLecturas, type BloqueLista, type EstadoAsis, type FilaLista, type Filtros,
+  FILTROS_VACIOS, leerFiltros, modoLista, resumen, TEXTO_ASIS, unirLecturas, type BloqueLista, type EstadoAsis, type FilaLista, type Filtros,
 } from "@/lib/vistas/listaProyectos";
 import { fechaLarga } from "../comun";
-import { BotonesLlamar, Buscador, Chip, ResumenBarra, Selector, Telefono, type Opcion, type Tono } from "./Basicos";
+import { BotonesLlamar, Buscador, Chip, ResumenBarra, Segmentado, Selector, Telefono, type Opcion, type Tono } from "./Basicos";
 import { BarraMovil, HojaFiltros, type CampoFiltro } from "./Dialogos";
 import { Cargando, ErrorCarga, Vacio } from "./Estados";
 import { IcoCamara } from "./Iconos";
@@ -45,8 +44,11 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
   const [hoja, setHoja] = useState(false);
-  // Quien es monitor (también como rol adicional) ve sus salas con «Gestionar»; coordinación y admin, todos sin él.
-  const todosRol = !puede(user, "monitorear_salas");
+  // Monitor: sus salas con «Gestionar»; coordinación y admin: todos sin él; monitor que además ve todas las ciudades
+  // (p. ej. con coordinación como rol adicional): selector «Mis salas» / «Todos los proyectos» (?vista=todos).
+  const modo = modoLista(user, f.vista);
+  const todosRol = modo.todos;
+  useEffect(() => { setDatos(null); setCarga("cargando"); }, [todosRol]);
 
   // Filtros: se leen de la URL al abrir y se escriben en ella al cambiar (para volver desde el detalle).
   useEffect(() => { setF(leerFiltros(window.location.search)); setListoUrl(true); }, []);
@@ -109,7 +111,11 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
   ];
   const poner = (k: keyof Filtros) => (x: string) => setF((y) => ({ ...y, [k]: x }));
   const activos = (["ciudad", "sala", "estado", "monitor"] as const).filter((k) => f[k]).length + (f.dia ? 1 : 0);
-  const limpiar = () => setF(FILTROS_VACIOS);
+  const limpiar = () => setF({ ...FILTROS_VACIOS, vista: f.vista });
+  const selector = modo.selector && (
+    <Segmentado<"" | "todos"> etiqueta="Ver" valor={f.vista} onCambio={(x) => setF({ ...FILTROS_VACIOS, vista: x, q: f.q })}
+      opciones={[{ id: "", texto: "Mis salas" }, { id: "todos", texto: "Todos los proyectos" }]} />
+  );
   const texto = datos?.todos
     ? "Todos los proyectos con hora, con su sala, integrantes y mentor. Hora Colombia (COL)."
     : "Tus salas y sus proyectos, de cualquier ciudad. Toca Gestionar para ver los datos y marcar asistencia.";
@@ -135,7 +141,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
         <>
           {/* ---- Web ---- */}
           <div className={v.soloWeb}>
-            <div className={v.cabeza}><div><h1>Hola, {primerNombre(user.nombre)}</h1><p>{texto}</p></div></div>
+            <div className={v.cabeza}><div><h1>Hola, {primerNombre(user.nombre)}</h1><p>{texto}</p></div>{selector}</div>
             {!datos?.todos && r.estudiantes > 0 && (
               <ResumenBarra total={r.estudiantes}
                 izquierda={<><b>{plural(r.proyectos, "proyecto", "proyectos")}</b> · {plural(r.estudiantes, "estudiante", "estudiantes")}: {r.presentes} se {r.presentes === 1 ? "presentó" : "presentaron"} · {r.ausentes} no se {r.ausentes === 1 ? "presentó" : "presentaron"} · {plural(r.pendientes, "pendiente", "pendientes")}</>}
@@ -160,6 +166,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
             <div className={l.movilCab}>
               <div><h1>Hola, {primerNombre(user.nombre)}</h1><p>{verTodos ? "Todos los días" : fechaLarga(dia)} · Hora COL</p></div>
             </div>
+            {selector && <div className={l.selectorMovil}>{selector}</div>}
             <div className={l.movilCuerpo}>
               {!datos?.todos && r.estudiantes > 0 && (
                 <ResumenBarra total={r.estudiantes}
@@ -172,7 +179,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
         </>
       )}
       {hoja && (
-        <HojaFiltros campos={campos} valores={{ ...f, dia }} porDefecto={{ ...FILTROS_VACIOS }} onCerrar={() => setHoja(false)}
+        <HojaFiltros campos={campos} valores={{ ...f, dia }} porDefecto={{ ...FILTROS_VACIOS, vista: f.vista }} onCerrar={() => setHoja(false)}
           onAplicar={(x) => setF({ ...f, dia: x.dia ?? "", ciudad: x.ciudad ?? "", sala: x.sala ?? "", estado: (x.estado ?? "") as Filtros["estado"], monitor: x.monitor ?? "" })} />
       )}
     </ShellVistas>
