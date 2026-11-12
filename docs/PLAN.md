@@ -344,5 +344,11 @@ con una prueba previa que fije las llamadas de asistencia, motivo, observación,
 - [x] 2. (A) Componentes nuevos en `evaluacion/vistas/`, variables nuevas del tema y `formatoCelular`, con pruebas puras.
 - [x] 4. (A) «Mi ciudad»: ruta GET de solo lectura + pantalla; prueba de privacidad. revisor-seguridad.
 - [x] 5. (A) «Monitores»: ruta GET + pantalla (cuadrícula, por monitor, por sala, panel). revisor-seguridad.
-- [ ] 3. (B) «Mis proyectos» fusionada con Gestionar en la fila; `/monitor/salas` redirige; menú sin «Mis salas».
-- [ ] 6. (B) Cierre: menú final, pruebas, batería completa, build, revisores, guía de prueba.
+- ~~3 y 6 (B)~~ reemplazados por B1–B4 (pedido del usuario, rama `feature/vistas-monitor-fusion` desde main con A):
+  «Gestionar» lleva a una página de detalle `/monitor/proyectos/[id]` (id del proyecto, el mismo de /api/evaluacion/salas/[id]);
+  enlace de la sesión con «Abrir sala» y «Copiar enlace»; SIN reloj (ni «Son las», «Ir a ahora», «Ahora», «Siguiente»);
+  ancho completo en las vistas nuevas.
+- [ ] B1. Ancho completo: contenedor fluido (márgenes clamp(16px, 2vw, 40px), tope 2560 px) en ShellVistas, Mi ciudad y Monitores; cortes <900 / 900–1439 / ≥1440.
+- [ ] B2. Lista «Mis proyectos» fusionada (filtros en la URL, Gestionar → detalle); `/monitor/salas` redirige; menú sin «Mis salas».
+- [ ] B3. Página de detalle con el cuerpo de MonitorHoja sin modal y las mismas llamadas (prueba previa que las fija).
+- [ ] B4. Cierre: pruebas, batería completa, build, revisores, guía de prueba.

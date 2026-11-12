@@ -21,31 +21,22 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
   enlaces con ícono (el activo resaltado), «Cambiar a modo oscuro»; X para cerrar.
 
 ## 01/02 · Mis proyectos (fusiona «Mis salas»)
-- Cabecera web: «Hola, {nombre}» + «Tus salas y sus proyectos, de cualquier ciudad. Toca **Gestionar** para ver los
-  datos, marcar asistencia o reprogramar. Hora Colombia (COL).»; «Son las **10:20 a. m.**» y botón naranja «Ir a ahora».
-- Resumen (tarjeta): «**15 proyectos** · 19 estudiantes: 4 se presentaron · 2 no se presentaron · 13 pendientes» y a la
-  derecha «32 % con asistencia»; barra verde (presentes) + roja (ausentes) sobre gris.
-- Filtros web (selects en fila + buscador debajo): «Hoy, jueves 12 de noviembre» / «Viernes 13 de noviembre»…;
-  «Todas las ciudades»; «Todas las salas»; «Todos los estados», «Pendientes», «Se presentaron», «No se presentaron»,
-  «Inasistencias sin motivo registrado»; buscador «Buscar por proyecto o integrante».
-- Grupo por sala y bloque: cabecera gris «Sala 2 · 8:00 a 9:00 a. m.», chip «4 proyectos», «Mentor · **Julián
-  Restrepo Gaviria** · +57 315 402 7781» (o «Sin registrar»), Llamar, WhatsApp y «Abrir sala» a la derecha.
-- Tabla: columnas «Acción · Hora · Proyecto · Integrantes · Asistencia». Fila: botón «Gestionar» (›) / «Cerrar» (˅,
-  negro); hora + chip UY debajo + «Ahora»/«Siguiente»; proyecto en negrita, «Ciudad · Ruta básica» (Colonia/Paysandú:
-  «Colonia · Uruguay · Ruta avanzada»), chip «En pareja»; integrantes: nombre, celular y los dos íconos (uno debajo de
-  otro en pareja); asistencia: un chip, o uno por integrante «Daniela: Se presentó».
-- Panel «Gestionar» dentro de la fila (acordeón), en dos columnas: «Datos de la presentación» (Día, Hora «8:45 a. m.
-  (COL) · 15 minutos», Sala «Sala 2 · Abrir sala», Mentor + celular, Proyecto, Ciudad, Ruta, Integrantes), «Sobre el
-  proyecto», una tarjeta por integrante (nombre + chip, «Doc. •••• 5701 · correo», «Cel. …», «Llamar», «WhatsApp»,
-  «¿Se presentó?» Sí/No, «Motivo de inasistencia» con «— Sin motivo —», aviso «Falta registrar el motivo de la
-  inasistencia.», «Observación del monitor», «Guardar observación»); «Reprogramar» (texto, Día «(54 libres)», «Cupo libre
-  (hora · mentor)», «Motivo del cambio», «Reprogramar en este cupo») y «Sugerir un cambio especial» («Qué cambio
-  sugieres», «Motivo», «Enviar sugerencia»). Móvil (390): barra fija con buscador «Proyecto o integrante» y botón «Filtros»; «Hola, Valeria», «Jueves 12 de
-  noviembre · Hora COL», «Ir a ahora» a la derecha; resumen corto «15 proyectos · 4 se presentaron · 2 no · 13
-  pendientes» + barra. Cabecera del bloque pegajosa (sala, rango, «4 proyectos», «Abrir sala», mentor, celular,
-  íconos). Una tarjeta por proyecto: hora (+UY, Ahora/Siguiente), proyecto, ciudad · ruta, «En pareja», chips «Sofía: Se
-  presentó», botón «Gestionar» → el mismo panel en una columna dentro de la tarjeta (sin el celular de los integrantes en
-  la tarjeta cerrada: va en el panel).
+- ENTREGA B (usuario): sin reloj (ni «Son las», «Ir a ahora», «Ahora», «Siguiente» ni fila resaltada); abre en hoy, por
+  hora; el chip UY sí. «Gestionar» lleva a una PÁGINA de detalle `/monitor/proyectos/[id]` (no acordeón). Ancho completo.
+- Cabecera: «Hola, {nombre}» + «Tus salas y sus proyectos, de cualquier ciudad. Toca Gestionar para ver los datos y
+  marcar asistencia.» Resumen: «N proyectos · N estudiantes: N se presentaron · N no se presentaron · N pendientes»,
+  «N % con asistencia» y barra verde + roja. Filtros (en la URL): día (hoy), ciudad, sala, estado («Pendientes», «Se
+  presentaron», «No se presentaron», «Inasistencias sin motivo registrado») y buscador.
+- Grupo por sala y bloque: «Sala 2 · 8:00 a 9:00 a. m.», chip «4 proyectos», «Mentor · Nombre · +57 …» (o «Sin
+  registrar»), Llamar, WhatsApp y «Abrir sala». Tabla «Acción · Hora · Proyecto · Integrantes · Asistencia»: «Gestionar»
+  (›), hora + chip UY, proyecto («Ciudad · Ruta básica», «En pareja»), integrantes con celular e íconos, chips de
+  asistencia (por integrante en pareja) + motivo, Destacado, Cambio sugerido; fondo verde/rojo con estadoFila.
+- Detalle: «← Volver a Mis proyectos», nombre y chips; tarjetas Sesión (Día, Hora COL · 15 minutos (+UY), Sala, enlace
+  visible, «Abrir sala», «Copiar enlace» → «Enlace copiado»), Mentor, Sobre el proyecto, una por integrante (contacto,
+  ¿Se presentó? Sí/No, motivo, observación, «Guardar observación», resultado y retroalimentación), Reprogramar, Sugerir
+  un cambio especial y Tus sugerencias. ≥1440: 3 columnas; 900–1439: 2; móvil: 1 (Sesión primero).
+- Móvil: barra fija con buscador y «Filtros», «Hola, …», resumen corto + barra; cabecera de bloque pegajosa; una
+  tarjeta por proyecto con chips y «Gestionar» → detalle.
 - Hoja inferior «Filtros» (asa, X): Día, Ciudad, Sala, Estado; «Limpiar» y «Aplicar». Estados: «Aún no tienes salas asignadas» / «Cuando coordinación te asigne salas, aquí verás sus proyectos de cualquier
   ciudad. Si crees que es un error, escríbele a coordinación.» [Ir a Mi ciudad] · «No hay proyectos con esos filtros» /
   «Prueba con otro nombre de proyecto o de integrante, o cambia el día, la ciudad, la sala o el estado.» [Limpiar filtros]
@@ -98,3 +89,9 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
 2. Coordinación y admin: Mis proyectos sin Gestionar ni asistencia (como hoy); pestañas actuales + «Monitores».
 3. Fila de Mis proyectos: chip de asistencia (Pendiente / Se presentó / No se presentó / Evaluado) + motivo, Destacado y
    Cambio sugerido; el resultado solo en Gestionar. «Descargar plan de salas», «Cambiar en Salas» e «Ir a Salas»: solo admin.
+
+## Ancho completo (entrega B)
+- Vistas nuevas (ShellVistas): contenedor fluido, márgenes laterales clamp(16px, 2vw, 40px); la barra superior usa los
+  mismos márgenes (logo alineado con el contenido); tope centrado de 2560 px. Cortes: <900 móvil, 900–1439 estándar,
+  ≥1440 ancho. Tablas con columnas flexibles (lo sobrante a Proyecto, Integrantes y Mentor; Día/hora y Estado con mínimo
+  y máximo), fila resaltada al pasar el cursor, Llamar/WhatsApp junto al celular desde 900 px, parejas en 2 columnas ≥1440.
