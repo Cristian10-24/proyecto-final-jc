@@ -17,7 +17,7 @@ import v from "./Vistas.module.css";
 // un cajón con nombre, rol, secciones, modo claro/oscuro y «Salir» (prototipo 02/04/06). EvalShell no cambia: las
 // vistas de hoy siguen igual.
 
-const ICONO: Partial<Record<SeccionEval | "panel", React.ReactNode>> = { proyectos: <IcoCarpeta />, salas: <IcoCarpeta />, ciudad: <IcoUbicacion />, monitores: <IcoCuadricula />, panel: <IcoLista /> };
+const ICONO: Partial<Record<SeccionEval | "panel", React.ReactNode>> = { proyectos: <IcoCarpeta />, ciudad: <IcoUbicacion />, monitores: <IcoCuadricula />, panel: <IcoLista /> };
 
 async function salir() {
   await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);

@@ -23,5 +23,7 @@ describe("pestañas nuevas", () => {
         const coordOAdmin = u.rol === "admin" || u.rol === "coordinador" || !!u.rolesExtra?.includes("coordinador");
         expect(ve(menu, u, "Mi ciudad")).toBe(monitor);
         expect(ve(menu, u, "Monitores")).toBe(coordOAdmin);
+        expect(ve(menu, u, "Mis salas")).toBe(false); // entrega B: se fusionó con «Mis proyectos»
+        expect(ve(menu, u, "Mis proyectos")).toBe(monitor || coordOAdmin);
       });
 });

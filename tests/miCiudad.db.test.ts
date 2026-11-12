@@ -176,7 +176,7 @@ describe("opción B: conteo por estudiante", () => {
     const yo = { id: ids.monA!.toHexString(), usuario: "mon.a", nombre: "Nombre monA", rol: "monitor" as const, ciudades: ["Cali", "Bogotá"] };
     const salas = (await listaSalas(yo)).filas.filter((f) => f.ciudad === "Cali");
     expect(salas.length).toBeGreaterThan(0);
-    // Resumen de «Mis salas» (MonitorPanel): una persona por integrante con estadoPersona.
+    // Resumen de «Mis salas» (hoy en la lista de Mis proyectos): una persona por integrante con estadoPersona.
     const ms = { presente: 0, ausente: 0, pendiente: 0 };
     for (const f of salas) for (const x of f.integrantes) ms[estadoPersona({ res: x.res, presente: x.asistencia === "si", ausente: x.asistencia === "no" })]++;
     const mismos = new Set(salas.map((f) => f.id));
