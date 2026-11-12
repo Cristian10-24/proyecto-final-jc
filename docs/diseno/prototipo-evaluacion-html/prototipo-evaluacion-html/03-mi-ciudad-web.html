@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2 · Mi ciudad · Web · Jóvenes creaTIvos 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>/* Sistema visual del módulo de evaluación (tema-evaluacion.css del repo) para los prototipos del lienzo. */
+.ev{--navy:#121212;--orange:#ea7307;--orange-ink:#b25700;--on-orange:#1b1200;--bg:#f4f4f4;--surface:#fff;--surface-2:#ececec;--line:#dcdcdc;--ink:#121212;--muted:#5e5e5e;--on-navy:#fff;--ok:#1e7b34;--ok-bg:#ddf3e2;--mid:#8a5a00;--mid-bg:#fff1c9;--bad:#b42318;--bad-bg:#fbe1df;--info:#1f4e99;--info-bg:#dfe9fb;--idle:#5e5e5e;--idle-bg:#e6e6e6;--overlay:rgba(0,0,0,.5);--hora:#121212;--sh:0 1px 2px rgba(0,0,0,.06);
+--m1:#d9480f;--m2:#1c7ed6;--m3:#2b8a3e;--m4:#9c36b5;--m5:#c2255c;--m6:#0c8599;--m7:#5f3dc4;--m1b:#ffe8dc;--m2b:#dcecfb;--m3b:#dff3e3;--m4b:#f3e2f8;--m5b:#fbe1ea;--m6b:#d8f1f4;--m7b:#e7e1fa;
+font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;box-sizing:border-box;position:relative;color-scheme:light}
+.ev.oscuro{--navy:#1e1e1e;--orange:#f28a2e;--orange-ink:#f7a25a;--bg:#0e0e0e;--surface:#181818;--surface-2:#232323;--line:#303030;--ink:#f2f2f2;--muted:#a8a8a8;--ok:#7ddb94;--ok-bg:#16351f;--mid:#f2c766;--mid-bg:#3a2e10;--bad:#ff9a8f;--bad-bg:#3d1916;--info:#9dbbf5;--info-bg:#1a2436;--idle:#a8a8a8;--idle-bg:#2a2a2a;--overlay:rgba(0,0,0,.7);--hora:#f28a2e;--sh:none;
+--m1:#ff8a5c;--m2:#74b6f2;--m3:#7ddb94;--m4:#d991ec;--m5:#f28bb0;--m6:#5fd0de;--m7:#ad9bf5;--m1b:#3d2216;--m2b:#16283b;--m3b:#16351f;--m4b:#33203b;--m5b:#3b1a27;--m6b:#123236;--m7b:#251f3f;color-scheme:dark}
+.ev *,.ev *::before,.ev *::after{box-sizing:border-box}
+.ev h1,.ev h2,.ev h3,.ev .tit{font-family:Lexend,Inter,system-ui,sans-serif;line-height:1.2;margin:0;font-weight:600}
+.ev p{margin:0}
+:where(.ev) :where(button,input,select,textarea){font:inherit;color:inherit}
+:where(.ev) a{color:inherit}
+.ev :focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.ev .muted{color:var(--muted)}.ev .small{font-size:13px}.ev .b{font-weight:600}
+.ev .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Barra superior */
+.ev-top{background:var(--navy);color:var(--on-navy);position:sticky;top:0;z-index:6}
+.ev-topin{max-width:1240px;margin:0 auto;padding:12px 20px 0;display:flex;align-items:flex-end;gap:10px 22px;flex-wrap:wrap}
+.ev-marca{display:flex;align-items:center;gap:12px;padding-bottom:10px;min-width:0}
+.ev-logo{width:52px;height:52px;flex:none;display:block}
+.ev-marcatxt{display:flex;flex-direction:column;line-height:1.25}
+.ev-marcatxt b{font-family:Lexend,Inter,sans-serif;font-size:18px;font-weight:600;letter-spacing:-.01em}
+.ev-marcatxt span{font-size:13px;opacity:.75}
+.ev-div{width:1px;align-self:stretch;margin:8px 2px;background:rgba(255,255,255,.28)}
+.ev-sofka{height:28px;width:auto;display:block}
+.ev-tabs{display:flex;gap:2px;margin-left:auto;align-items:flex-end}
+.ev-tab{display:flex;align-items:center;min-height:48px;padding:0 14px;border-bottom:3px solid transparent;color:var(--on-navy);opacity:.72;text-decoration:none;font-weight:500;white-space:nowrap}
+.ev-tab:hover{opacity:1}
+.ev-tab[aria-current="page"]{opacity:1;border-bottom-color:var(--orange);color:var(--orange)}
+.ev .ev-top a.ev-tab[aria-current="page"]{color:#f28a2e}
+.ev-yo{align-self:center;display:flex;align-items:center;gap:10px;padding:0 0 4px 12px;border-left:1px solid rgba(255,255,255,.3);font-size:13px;white-space:nowrap}
+.ev-tema{appearance:none;width:44px;height:44px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--on-navy);display:grid;place-items:center;cursor:pointer}
+.ev-salir{appearance:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--on-navy);font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.ev-tema:hover,.ev-salir:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.4)}
+/* móvil */
+.ev-topm{background:var(--navy);color:var(--on-navy)}
+.ev-topm .fila{display:flex;align-items:center;gap:8px;padding:10px 12px 4px 16px}
+.ev-topm .ev-logo{width:40px;height:40px}
+.ev-topm .ev-marcatxt b{font-size:14.5px}.ev-topm .ev-marcatxt span{font-size:12px}
+.ev-topm .ev-sofka{height:18px}
+.ev-topm .ev-div{margin:6px 2px}
+.ev-topm .ev-tabs{margin:0;overflow-x:auto;padding:0 8px;scrollbar-width:none}
+.ev-topm .ev-tab{padding:0 12px;font-size:14.5px}
+
+.ev-main{max-width:1240px;margin:0 auto;padding:24px 20px 48px}
+.ev-hello{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;margin-bottom:16px}
+.ev-hello h1{font-size:30px;letter-spacing:-.02em}
+.ev-hello p{color:var(--muted);margin-top:4px}
+
+/* Controles */
+.ev-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;cursor:pointer;white-space:nowrap}
+.ev-btn:hover{border-color:var(--muted)}
+.ev-btn-pri{background:var(--orange);border-color:var(--orange);color:var(--on-orange)}
+.ev-btn-pri:hover{filter:brightness(1.05);border-color:var(--orange)}
+.ev-btn-navy{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.ev-btn-sm{min-height:44px;padding:0 14px;font-size:13.5px}
+.ev-btn-link{border:0;background:none;padding:0 4px;text-decoration:underline;text-underline-offset:3px;color:var(--orange-ink)}
+.ev-ibtn{appearance:none;width:44px;height:44px;flex:none;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-grid;place-items:center;cursor:pointer;text-decoration:none}
+.ev-ibtn:hover{border-color:var(--muted);background:var(--surface-2)}
+.ev-ibtn.wa{color:var(--ok)}
+.ev-campo{min-height:44px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:0 12px;width:100%;color:var(--ink)}
+select.ev-campo{appearance:none;padding-right:34px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.ev-buscar{position:relative;flex:1 1 240px;min-width:0}
+.ev-buscar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.ev-buscar input{padding-left:38px}
+.ev-lbl{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px}
+
+/* chips */
+.ev-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;line-height:1.5}
+.ev-chip i{display:none}
+.c-ok{background:var(--ok-bg);color:var(--ok)}.c-bad{background:var(--bad-bg);color:var(--bad)}.c-idle{background:var(--idle-bg);color:var(--idle)}
+.c-mid{background:var(--mid-bg);color:var(--mid)}.c-info{background:var(--info-bg);color:var(--info)}
+.c-star{background:var(--orange);color:var(--on-orange)}
+.c-line{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.c-sig{background:transparent;border:1.5px solid var(--orange);color:var(--orange-ink)}
+.c-uy{background:var(--info-bg);color:var(--info)}
+/* chips de filtro (toggle) */
+.ev-fchips{display:flex;gap:8px;flex-wrap:wrap}
+.ev-fchip{appearance:none;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+.ev-fchip:hover{border-color:var(--muted)}
+.ev-fchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.ev-fchip .n{font-size:12px;opacity:.75}
+.ev-scrollx{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;padding-bottom:2px}
+.ev-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface-2);gap:2px}
+.ev-seg button{appearance:none;border:0;background:transparent;min-height:40px;padding:0 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
+.ev-seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+/* tarjetas y lista */
+.ev-tarjeta{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--sh)}
+.ev-avance{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--muted);flex-wrap:wrap}
+.ev-avance b{color:var(--ink)}
+.ev-barra{height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin-top:8px;display:flex}
+.ev-barra i{display:block;height:100%}
+.ev-barra .ok{background:var(--ok)}.ev-barra .bad{background:var(--bad)}.ev-barra .or{background:var(--orange)}
+.ev-grupo{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ev-ghead{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding:14px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.ev-ghead h2{font-size:17px}
+.ev-fila{display:grid;align-items:center;gap:14px;padding:12px 16px;border-top:1px solid var(--line)}
+.ev-fila:first-of-type{border-top:0}
+.f-pres{background:color-mix(in srgb,var(--ok) 7%,var(--surface))}
+.f-aus{background:color-mix(in srgb,var(--bad) 6%,var(--surface))}
+.f-ahora{box-shadow:inset 0 0 0 2px var(--orange)}
+.ev-hora{font-family:Lexend,Inter,sans-serif;font-weight:600;font-size:16px;color:var(--hora);white-space:nowrap}
+.ev-tel{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ev-sinreg{color:var(--muted);font-style:italic}
+.ev-int{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.ev-int + .ev-int{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.ev-acc{display:flex;gap:6px}
+.ev-thead{display:grid;gap:14px;padding:10px 16px;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--line)}
+
+/* estados */
+.ev-vacio{text-align:center;padding:48px 20px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.ev-vacio h2{font-size:20px}
+.ev-vacio p{color:var(--muted);max-width:440px}
+.ev-vacio .ico{width:56px;height:56px;border-radius:999px;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.ev-vacio.err .ico{background:var(--bad-bg);color:var(--bad)}
+.ev-skel{display:block;border-radius:9px;background:var(--surface-2);animation:evsh 1.2s ease-in-out infinite}
+@keyframes evsh{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+.ev-aviso{display:flex;gap:10px;align-items:center;font-size:13.5px;padding:10px 12px;border-radius:9px;background:var(--surface-2)}
+.ev-aviso.warn{background:var(--mid-bg);color:var(--mid);font-weight:600}
+.ev-aviso.err{background:var(--bad-bg);color:var(--bad);font-weight:600}
+
+/* hoja inferior / panel lateral / toast */
+.ev-velo{position:absolute;inset:0;background:var(--overlay);z-index:20}
+.ev-hoja{position:absolute;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-radius:22px 22px 0 0;padding:8px 16px 16px;max-height:86%;overflow-y:auto}
+.ev-asa{width:44px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 10px}
+.ev-lado{position:absolute;top:0;right:0;bottom:0;width:400px;max-width:100%;z-index:21;background:var(--surface);border-left:1px solid var(--line);padding:20px;overflow-y:auto;box-shadow:-20px 0 40px -20px rgba(0,0,0,.35)}
+.ev-toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--bg);border-radius:14px;padding:12px 18px;font-weight:600;font-size:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);white-space:nowrap}
+.ev-dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 12px;font-size:14px}
+.ev-dl dt{color:var(--muted)}.ev-dl dd{margin:0;font-weight:600}
+
+/* marco móvil */
+.ev-movil{width:390px;height:844px;overflow:hidden;display:flex;flex-direction:column}
+.ev-scroll{flex:1;overflow-y:auto;position:relative}
+.ev-fijo{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px;border-bottom:1px solid var(--line)}
+.ev-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--sh)}
+.ev details>summary{list-style:none;cursor:pointer}
+.ev details>summary::-webkit-details-marker{display:none}
+.ev-sum{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-weight:600;font-size:14px}
+.ev details[open] .rot{transform:rotate(180deg)}
+.rot{transition:transform .2s}
+
+/* cuadrícula de monitores */
+.ev-grid{display:grid;grid-template-columns:190px repeat(13,minmax(56px,1fr)) 120px;min-width:1100px}
+.ev-gcell{border-left:1px solid var(--line);min-height:76px}
+.ev-ghora{font-size:12px;font-weight:600;color:var(--muted);padding:8px 6px;border-left:1px solid var(--line)}
+.ev-gmon{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);min-width:0}
+.ev-av{width:36px;height:36px;border-radius:999px;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;font-family:Lexend,Inter,sans-serif}
+.ev-bar{appearance:none;text-align:left;margin:6px 3px;border-radius:9px;padding:6px 9px;border:1.5px solid;cursor:pointer;min-height:64px;display:flex;flex-direction:column;justify-content:center;gap:1px;overflow:hidden;color:var(--ink);font-size:12.5px;line-height:1.3;z-index:1}
+.ev-bar:hover{filter:brightness(.97)}
+.ev-bar b{font-family:Lexend,Inter,sans-serif;font-size:13px}
+.ev-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-bar.conf{outline:2.5px solid var(--bad);outline-offset:1px}
+.ev-sinmon{background:var(--mid-bg)}
+.ev-sinmon .ev-bar{background:var(--surface);border-style:dashed;border-color:var(--mid)}
+.ev-tl{position:relative;padding-left:22px}
+.ev-tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.ev-tli{position:relative;padding:4px 0 12px}
+.ev-tli::before{content:"";position:absolute;left:-20px;top:11px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:3px solid var(--dot,var(--orange))}
+
+/* filtros organizados */
+.ev-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.ev-filtros .ancho{grid-column:span 2}
+/* menú hamburguesa (móvil) */
+.ev-menu{position:absolute;top:0;right:0;bottom:0;width:300px;max-width:86%;z-index:41;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;gap:4px;padding:16px;box-shadow:-20px 0 40px -20px rgba(0,0,0,.45);overflow-y:auto}
+.ev-menu .item{appearance:none;display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border-radius:9px;border:0;background:none;width:100%;text-align:left;text-decoration:none;color:var(--ink);font-weight:600;font-size:15px;cursor:pointer}
+.ev-menu .item:hover{background:var(--surface-2)}
+.ev-menu .item[aria-current="page"]{background:var(--surface-2);color:var(--orange-ink)}
+.ev-menu .sep{height:1px;background:var(--line);margin:8px 0}
+</style>
+<style>
+body{margin:0;background:#d9d9d9;font-family:Inter,system-ui,sans-serif}
+.pv-barra{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 16px;background:#2a2a2a;color:#fff;font-size:14px}
+.pv-barra a{color:#ffb070;font-weight:600}
+.pv-barra b{font-family:Lexend,Inter,sans-serif;font-weight:600}
+.pv-barra label{display:flex;align-items:center;gap:6px}
+.pv-barra select{min-height:36px;border-radius:8px;border:1px solid #555;background:#1b1b1b;color:#fff;padding:0 8px;font:inherit}
+.pv-movil{display:flex;justify-content:center;padding:24px 16px}
+.pv-movil>div{box-shadow:0 20px 50px -20px rgba(0,0,0,.5);border-radius:28px;overflow:hidden;width:390px;height:844px}
+</style>
+</head>
+<body>
+<div class="pv-barra"><a href="index.html">← Índice</a><b>2 · Mi ciudad · Web</b><label>Tema <select id="pv-tema"><option value="claro">Claro</option><option value="oscuro">Oscuro</option></select></label><label>Estado <select id="pv-estado"><option value="normal">Normal (con datos)</option><option value="cargando">Cargando</option><option value="sinresultados">Sin resultados</option><option value="sinproyectos">Sin proyectos asignados</option><option value="error">Error</option></select></label><span style="opacity:.7">Prototipo con datos inventados</span></div>
+<div id="app"></div>
+<script>!function(n){"function"==typeof define&&define.amd?define(n):n()}(function(){var n,l,t,u,i,o,e,r,f,c,s,a,h,p=65536,v=1<<17,d={},y=[],w=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i,_=Array.isArray;function g(n,l){for(var t in l)n[t]=l[t];return n}function m(n){n&&n.parentNode&&n.parentNode.removeChild(n)}function b(l,t,u){var i,o,e,r={};for(e in t)"key"==e?i=t[e]:"ref"==e?o=t[e]:r[e]=t[e];if(arguments.length>2&&(r.children=arguments.length>3?n.call(arguments,2):u),"function"==typeof l&&null!=l.defaultProps)for(e in l.defaultProps)void 0===r[e]&&(r[e]=l.defaultProps[e]);return k(l,r,i,o,null)}function k(n,u,i,o,e){var r={type:n,props:u,key:i,ref:o,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,constructor:void 0,__v:null==e?++t:e,__i:-1,__u:0};return null==e&&null!=l.vnode&&l.vnode(r),r}function C(n){return n.children}function x(n,l){this.props=n,this.context=l}function S(n,l){if(null==l)return n.__?S(n.__,n.__i+1):null;for(var t;l<n.__k.length;l++)if(null!=(t=n.__k[l])&&null!=t.__e)return t.__e;return"function"==typeof n.type?S(n):null}function M(n){var l,t;if(null!=(n=n.__)&&null!=n.__c){for(n.__e=n.__c.base=null,l=0;l<n.__k.length;l++)if(null!=(t=n.__k[l])&&null!=t.__e){n.__e=n.__c.base=t.__e;break}return M(n)}}function P(n){(!n.__d&&(n.__d=!0)&&i.push(n)&&!$.__r++||o!==l.debounceRendering)&&((o=l.debounceRendering)||e)($)}function $(){var n,t,u,o,e,f,c,s;for(i.sort(r);n=i.shift();)n.__d&&(t=i.length,o=void 0,f=(e=(u=n).__v).__e,c=[],s=[],u.__P&&((o=g({},e)).__v=e.__v+1,l.vnode&&l.vnode(o),O(u.__P,o,e,u.__n,u.__P.namespaceURI,32&e.__u?[f]:null,c,null==f?S(e):f,!!(32&e.__u),s),o.__v=e.__v,o.__.__k[o.__i]=o,V(c,o,s),o.__e!=f&&M(o)),i.length>t&&i.sort(r));$.__r=0}function I(n,l,t,u,i,o,e,r,f,c,s){var a,h,v,w,_,g=u&&u.__k||y,m=l.length;for(t.__d=f,A(t,l,g),f=t.__d,a=0;a<m;a++)null!=(v=t.__k[a])&&(h=-1===v.__i?d:g[v.__i]||d,v.__i=a,O(n,v,h,i,o,e,r,f,c,s),w=v.__e,v.ref&&h.ref!=v.ref&&(h.ref&&z(h.ref,null,v),s.push(v.ref,v.__c||w,v)),null==_&&null!=w&&(_=w),v.__u&p||h.__k===v.__k?f=E(v,f,n):"function"==typeof v.type&&void 0!==v.__d?f=v.__d:w&&(f=w.nextSibling),v.__d=void 0,v.__u&=-196609);t.__d=f,t.__e=_}function A(n,l,t){var u,i,o,e,r,f=l.length,c=t.length,s=c,a=0;for(n.__k=[],u=0;u<f;u++)null!=(i=l[u])&&"boolean"!=typeof i&&"function"!=typeof i?(e=u+a,(i=n.__k[u]="string"==typeof i||"number"==typeof i||"bigint"==typeof i||i.constructor==String?k(null,i,null,null,null):_(i)?k(C,{children:i},null,null,null):void 0===i.constructor&&i.__b>0?k(i.type,i.props,i.key,i.ref?i.ref:null,i.__v):i).__=n,i.__b=n.__b+1,o=null,-1!==(r=i.__i=F(i,t,e,s))&&(s--,(o=t[r])&&(o.__u|=v)),null==o||null===o.__v?(-1==r&&a--,"function"!=typeof i.type&&(i.__u|=p)):r!==e&&(r==e-1?a--:r==e+1?a++:(r>e?a--:a++,i.__u|=p))):i=n.__k[u]=null;if(s)for(u=0;u<c;u++)null!=(o=t[u])&&0==(o.__u&v)&&(o.__e==n.__d&&(n.__d=S(o)),N(o,o))}function E(n,l,t){var u,i;if("function"==typeof n.type){for(u=n.__k,i=0;u&&i<u.length;i++)u[i]&&(u[i].__=n,l=E(u[i],l,t));return l}n.__e!=l&&(l&&n.type&&!t.contains(l)&&(l=S(n)),t.insertBefore(n.__e,l||null),l=n.__e);do{l=l&&l.nextSibling}while(null!=l&&8===l.nodeType);return l}function F(n,l,t,u){var i=n.key,o=n.type,e=t-1,r=t+1,f=l[t];if(null===f||f&&i==f.key&&o===f.type&&0==(f.__u&v))return t;if(u>(null!=f&&0==(f.__u&v)?1:0))for(;e>=0||r<l.length;){if(e>=0){if((f=l[e])&&0==(f.__u&v)&&i==f.key&&o===f.type)return e;e--}if(r<l.length){if((f=l[r])&&0==(f.__u&v)&&i==f.key&&o===f.type)return r;r++}}return-1}function H(n,l,t){"-"===l[0]?n.setProperty(l,null==t?"":t):n[l]=null==t?"":"number"!=typeof t||w.test(l)?t:t+"px"}function L(n,l,t,u,i){var o;n:if("style"===l)if("string"==typeof t)n.style.cssText=t;else{if("string"==typeof u&&(n.style.cssText=u=""),u)for(l in u)t&&l in t||H(n.style,l,"");if(t)for(l in t)u&&t[l]===u[l]||H(n.style,l,t[l])}else if("o"===l[0]&&"n"===l[1])o=l!==(l=l.replace(/(PointerCapture)$|Capture$/i,"$1")),l=l.toLowerCase()in n||"onFocusOut"===l||"onFocusIn"===l?l.toLowerCase().slice(2):l.slice(2),n.l||(n.l={}),n.l[l+o]=t,t?u?t.t=u.t:(t.t=f,n.addEventListener(l,o?s:c,o)):n.removeEventListener(l,o?s:c,o);else{if("http://www.w3.org/2000/svg"==i)l=l.replace(/xlink(H|:h)/,"h").replace(/sName$/,"s");else if("width"!=l&&"height"!=l&&"href"!=l&&"list"!=l&&"form"!=l&&"tabIndex"!=l&&"download"!=l&&"rowSpan"!=l&&"colSpan"!=l&&"role"!=l&&"popover"!=l&&l in n)try{n[l]=null==t?"":t;break n}catch(n){}"function"==typeof t||(null==t||!1===t&&"-"!==l[4]?n.removeAttribute(l):n.setAttribute(l,"popover"==l&&1==t?"":t))}}function T(n){return function(t){if(this.l){var u=this.l[t.type+n];if(null==t.u)t.u=f++;else if(t.u<u.t)return;return u(l.event?l.event(t):t)}}}function O(n,t,u,i,o,e,r,f,c,s){var a,h,p,v,d,y,w,m,b,k,S,M,P,$,A,E,F=t.type;if(void 0!==t.constructor)return null;128&u.__u&&(c=!!(32&u.__u),e=[f=t.__e=u.__e]),(a=l.__b)&&a(t);n:if("function"==typeof F)try{if(m=t.props,b="prototype"in F&&F.prototype.render,k=(a=F.contextType)&&i[a.__c],S=a?k?k.props.value:a.__:i,u.__c?w=(h=t.__c=u.__c).__=h.__E:(b?t.__c=h=new F(m,S):(t.__c=h=new x(m,S),h.constructor=F,h.render=R),k&&k.sub(h),h.props=m,h.state||(h.state={}),h.context=S,h.__n=i,p=h.__d=!0,h.__h=[],h._sb=[]),b&&null==h.__s&&(h.__s=h.state),b&&null!=F.getDerivedStateFromProps&&(h.__s==h.state&&(h.__s=g({},h.__s)),g(h.__s,F.getDerivedStateFromProps(m,h.__s))),v=h.props,d=h.state,h.__v=t,p)b&&null==F.getDerivedStateFromProps&&null!=h.componentWillMount&&h.componentWillMount(),b&&null!=h.componentDidMount&&h.__h.push(h.componentDidMount);else{if(b&&null==F.getDerivedStateFromProps&&m!==v&&null!=h.componentWillReceiveProps&&h.componentWillReceiveProps(m,S),!h.__e&&(null!=h.shouldComponentUpdate&&!1===h.shouldComponentUpdate(m,h.__s,S)||t.__v===u.__v)){for(t.__v!==u.__v&&(h.props=m,h.state=h.__s,h.__d=!1),t.__e=u.__e,t.__k=u.__k,t.__k.some(function(n){n&&(n.__=t)}),M=0;M<h._sb.length;M++)h.__h.push(h._sb[M]);h._sb=[],h.__h.length&&r.push(h);break n}null!=h.componentWillUpdate&&h.componentWillUpdate(m,h.__s,S),b&&null!=h.componentDidUpdate&&h.__h.push(function(){h.componentDidUpdate(v,d,y)})}if(h.context=S,h.props=m,h.__P=n,h.__e=!1,P=l.__r,$=0,b){for(h.state=h.__s,h.__d=!1,P&&P(t),a=h.render(h.props,h.state,h.context),A=0;A<h._sb.length;A++)h.__h.push(h._sb[A]);h._sb=[]}else do{h.__d=!1,P&&P(t),a=h.render(h.props,h.state,h.context),h.state=h.__s}while(h.__d&&++$<25);h.state=h.__s,null!=h.getChildContext&&(i=g(g({},i),h.getChildContext())),b&&!p&&null!=h.getSnapshotBeforeUpdate&&(y=h.getSnapshotBeforeUpdate(v,d)),I(n,_(E=null!=a&&a.type===C&&null==a.key?a.props.children:a)?E:[E],t,u,i,o,e,r,f,c,s),h.base=t.__e,t.__u&=-161,h.__h.length&&r.push(h),w&&(h.__E=h.__=null)}catch(n){if(t.__v=null,c||null!=e){for(t.__u|=c?160:128;f&&8===f.nodeType&&f.nextSibling;)f=f.nextSibling;e[e.indexOf(f)]=null,t.__e=f}else t.__e=u.__e,t.__k=u.__k;l.__e(n,t,u)}else null==e&&t.__v===u.__v?(t.__k=u.__k,t.__e=u.__e):t.__e=j(u.__e,t,u,i,o,e,r,c,s);(a=l.diffed)&&a(t)}function V(n,t,u){t.__d=void 0;for(var i=0;i<u.length;i++)z(u[i],u[++i],u[++i]);l.__c&&l.__c(t,n),n.some(function(t){try{n=t.__h,t.__h=[],n.some(function(n){n.call(t)})}catch(n){l.__e(n,t.__v)}})}function j(t,u,i,o,e,r,f,c,s){var a,h,p,v,y,w,g,b=i.props,k=u.props,C=u.type;if("svg"===C?e="http://www.w3.org/2000/svg":"math"===C?e="http://www.w3.org/1998/Math/MathML":e||(e="http://www.w3.org/1999/xhtml"),null!=r)for(a=0;a<r.length;a++)if((y=r[a])&&"setAttribute"in y==!!C&&(C?y.localName===C:3===y.nodeType)){t=y,r[a]=null;break}if(null==t){if(null===C)return document.createTextNode(k);t=document.createElementNS(e,C,k.is&&k),c&&(l.__m&&l.__m(u,r),c=!1),r=null}if(null===C)b===k||c&&t.data===k||(t.data=k);else{if(r=r&&n.call(t.childNodes),b=i.props||d,!c&&null!=r)for(b={},a=0;a<t.attributes.length;a++)b[(y=t.attributes[a]).name]=y.value;for(a in b)if(y=b[a],"children"==a);else if("dangerouslySetInnerHTML"==a)p=y;else if(!(a in k)){if("value"==a&&"defaultValue"in k||"checked"==a&&"defaultChecked"in k)continue;L(t,a,null,y,e)}for(a in k)y=k[a],"children"==a?v=y:"dangerouslySetInnerHTML"==a?h=y:"value"==a?w=y:"checked"==a?g=y:c&&"function"!=typeof y||b[a]===y||L(t,a,y,b[a],e);if(h)c||p&&(h.__html===p.__html||h.__html===t.innerHTML)||(t.innerHTML=h.__html),u.__k=[];else if(p&&(t.innerHTML=""),I(t,_(v)?v:[v],u,i,o,"foreignObject"===C?"http://www.w3.org/1999/xhtml":e,r,f,r?r[0]:i.__k&&S(i,0),c,s),null!=r)for(a=r.length;a--;)m(r[a]);c||(a="value","progress"===C&&null==w?t.removeAttribute("value"):void 0!==w&&(w!==t[a]||"progress"===C&&!w||"option"===C&&w!==b[a])&&L(t,a,w,b[a],e),a="checked",void 0!==g&&g!==t[a]&&L(t,a,g,b[a],e))}return t}function z(n,t,u){try{if("function"==typeof n){var i="function"==typeof n.__u;i&&n.__u(),i&&null==t||(n.__u=n(t))}else n.current=t}catch(n){l.__e(n,u)}}function N(n,t,u){var i,o;if(l.unmount&&l.unmount(n),(i=n.ref)&&(i.current&&i.current!==n.__e||z(i,null,t)),null!=(i=n.__c)){if(i.componentWillUnmount)try{i.componentWillUnmount()}catch(n){l.__e(n,t)}i.base=i.__P=null}if(i=n.__k)for(o=0;o<i.length;o++)i[o]&&N(i[o],t,u||"function"!=typeof n.type);u||m(n.__e),n.__c=n.__=n.__e=n.__d=void 0}function R(n,l,t){return this.constructor(n,t)}function q(t,u,i){var o,e,r,f;l.__&&l.__(t,u),e=(o="function"==typeof i)?null:i&&i.__k||u.__k,r=[],f=[],O(u,t=(!o&&i||u).__k=b(C,null,[t]),e||d,d,u.namespaceURI,!o&&i?[i]:e?null:u.firstChild?n.call(u.childNodes):null,r,!o&&i?i:e?e.__e:u.firstChild,o,f),V(r,t,f)}n=y.slice,l={__e:function(n,l,t,u){for(var i,o,e;l=l.__;)if((i=l.__c)&&!i.__)try{if((o=i.constructor)&&null!=o.getDerivedStateFromError&&(i.setState(o.getDerivedStateFromError(n)),e=i.__d),null!=i.componentDidCatch&&(i.componentDidCatch(n,u||{}),e=i.__d),e)return i.__E=i}catch(l){n=l}throw n}},t=0,u=function(n){return null!=n&&null==n.constructor},x.prototype.setState=function(n,l){var t;t=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=g({},this.state),"function"==typeof n&&(n=n(g({},t),this.props)),n&&g(t,n),null!=n&&this.__v&&(l&&this._sb.push(l),P(this))},x.prototype.forceUpdate=function(n){this.__v&&(this.__e=!0,n&&this.__h.push(n),P(this))},x.prototype.render=C,i=[],e="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,r=function(n,l){return n.__v.__b-l.__v.__b},$.__r=0,f=0,c=T(!1),s=T(!0),a=0,h={__proto__:null,render:q,hydrate:function n(l,t){q(l,t,n)},createElement:b,h:b,Fragment:C,createRef:function(){return{current:null}},isValidElement:u,Component:x,cloneElement:function(l,t,u){var i,o,e,r,f=g({},l.props);for(e in l.type&&l.type.defaultProps&&(r=l.type.defaultProps),t)"key"==e?i=t[e]:"ref"==e?o=t[e]:f[e]=void 0===t[e]&&void 0!==r?r[e]:t[e];return arguments.length>2&&(f.children=arguments.length>3?n.call(arguments,2):u),k(l.type,f,i||l.key,o||l.ref,null)},createContext:function(n,l){var t={__c:l="__cC"+a++,__:n,Consumer:function(n,l){return n.children(l)},Provider:function(n){var t,u;return this.getChildContext||(t=new Set,(u={})[l]=this,this.getChildContext=function(){return u},this.componentWillUnmount=function(){t=null},this.shouldComponentUpdate=function(n){this.props.value!==n.value&&t.forEach(function(n){n.__e=!0,P(n)})},this.sub=function(n){t.add(n);var l=n.componentWillUnmount;n.componentWillUnmount=function(){t&&t.delete(n),l&&l.call(n)}}),n.children}};return t.Provider.__=t.Consumer.contextType=t},toChildArray:function n(l,t){return t=t||[],null==l||"boolean"==typeof l||(_(l)?l.some(function(l){n(l,t)}):t.push(l)),t},options:l},typeof module<"u"?module.exports=h:self.preact=h});
+
+</script>
+<script>/* Mini motor para mostrar los prototipos .dc.html fuera del lienzo (usa Preact). */
+(function () {
+  var h = preact.h;
+  function DCLogic(props) { this.props = props || {}; this.state = null; }
+  DCLogic.prototype.setState = function (p) {
+    var prev = this.state || {};
+    var add = typeof p === 'function' ? p(prev, this.props) : p;
+    this.state = Object.assign({}, prev, add);
+    if (this.__draw) this.__draw();
+  };
+  DCLogic.prototype.forceUpdate = function () { if (this.__draw) this.__draw(); };
+  window.DCLogic = DCLogic;
+
+  function resolve(path, scope) {
+    path = path.trim();
+    if (path === 'true') return true;
+    if (path === 'false') return false;
+    if (path === 'null') return null;
+    if (/^-?\d+(\.\d+)?$/.test(path)) return Number(path);
+    if (/^'.*'$/.test(path)) return path.slice(1, -1);
+    var parts = path.split('.'), v = scope;
+    for (var i = 0; i < parts.length; i++) { if (v == null) return undefined; v = v[parts[i]]; }
+    return v;
+  }
+  var SOLO = /^\s*\{\{([^}]+)\}\}\s*$/;
+  function interp(str, scope) {
+    return str.replace(/\{\{([^}]+)\}\}/g, function (_, p) { var v = resolve(p, scope); return v == null ? '' : String(v); });
+  }
+  function val(str, scope) { var m = str.match(SOLO); return m ? resolve(m[1], scope) : interp(str, scope); }
+
+  function kids(node, scope) {
+    var out = [];
+    for (var c = node.firstChild; c; c = c.nextSibling) {
+      var r = conv(c, scope);
+      if (Array.isArray(r)) out.push.apply(out, r); else if (r != null) out.push(r);
+    }
+    return out;
+  }
+  function conv(node, scope) {
+    if (node.nodeType === 3) return interp(node.nodeValue, scope);
+    if (node.nodeType !== 1) return null;
+    var tag = node.localName;
+    if (tag === 'helmet') return null;
+    if (tag === 'sc-for') {
+      var list = val(node.getAttribute('list') || '', scope) || [];
+      var as = node.getAttribute('as') || 'item', res = [];
+      for (var i = 0; i < list.length; i++) {
+        var s = Object.create(scope); s[as] = list[i]; s.$index = i;
+        res.push.apply(res, kids(node, s));
+      }
+      return res;
+    }
+    if (tag === 'sc-if') return val(node.getAttribute('value') || '', scope) ? kids(node, scope) : null;
+    var props = {};
+    for (var a = 0; a < node.attributes.length; a++) {
+      var at = node.attributes[a], name = at.name;
+      if (name.indexOf('hint-') === 0) continue;
+      var v = val(at.value, scope);
+      if (/^on/.test(name)) {
+        var ev = name.slice(2).toLowerCase();
+        if (ev === 'change' && (tag === 'input' || tag === 'textarea')) ev = 'input';
+        if (typeof v === 'function') props['on' + ev] = v;
+        continue;
+      }
+      if (v === undefined) continue;
+      if (name === 'value' && (tag === 'select' || tag === 'input' || tag === 'textarea')) { props.value = v == null ? '' : v; continue; }
+      if (name === 'disabled' || name === 'open' || name === 'checked') { props[name] = v === true || v === 'true' || v === ''; continue; }
+      props[name] = v;
+    }
+    var ch = kids(node, scope);
+    if (tag === 'select') {
+      // tras pintar las opciones, Preact vuelve a fijar el valor
+      var vv = props.value;
+      props.ref = function (el) { if (el && vv != null) el.value = vv; };
+    }
+    return h(tag, props, ch);
+  }
+
+  window.montarDC = function (opts) {
+    var tpl = document.createElement('template');
+    tpl.innerHTML = opts.plantilla;
+    var Clase = opts.clase;
+    var inst, mount = opts.mount;
+    function draw() { preact.render(h(preact.Fragment, null, kids(tpl.content, Object.create(inst.renderVals()))), mount); }
+    function crear(props) {
+      if (inst && inst._t) clearTimeout(inst._t);
+      inst = new Clase(props); inst.__draw = function () { requestAnimationFrame(draw); };
+      preact.render(null, mount); draw();
+    }
+    crear(opts.props);
+    return { cambiar: crear };
+  };
+})();
+</script>
+<script>
+(function () {
+
+class Component extends DCLogic {
+  hh(m) { const h = Math.floor(m / 60); return (((h + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0'); }
+  fmt(m) { return this.hh(m) + (m < 720 ? ' a. m.' : ' p. m.'); }
+  norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  persona(nombre, raw) {
+    const tel = raw ? '+57 ' + raw.slice(2, 5) + ' ' + raw.slice(5, 8) + ' ' + raw.slice(8) : null;
+    return { nombre, tel, tiene: !!raw, falta: !raw, telHref: 'tel:+' + raw, waHref: 'https://wa.me/' + raw, aLlamar: 'Llamar a ' + nombre, aWa: 'Escribir por WhatsApp a ' + nombre };
+  }
+  datos() {
+    if (this._d) return this._d;
+    const M = ['Julián Restrepo Gaviria', 'Paola Andrea Lozano', 'Laura Camila Vargas', 'Camila Herrera Díaz', 'Andrés Felipe Mejía'];
+    const P = (n, dia, m, sala, mi, ints) => ({ n, dia, m, sala, mentor: mi == null ? null : M[mi], ints });
+    this._d = {
+      dias: [{ id: 'jue12', t: 'Jueves 12 de noviembre', c: 'Jue 12' }, { id: 'vie13', t: 'Viernes 13 de noviembre', c: 'Vie 13' }, { id: 'mar17', t: 'Martes 17 de noviembre', c: 'Mar 17' }],
+      Barranquilla: [
+        P('EcoRuta', 'jue12', 480, 'Sala 2', 0, [['Sofía Mendoza Ariza', '573004118250', 'ev']]),
+        P('Recicla y gana', 'jue12', 495, 'Sala 2', 0, [['Daniela Rojas Pinto', '573017745210', 'ev'], ['Mateo Charris Ruiz', '573205531904', 'ns']]),
+        P('Bici segura', 'jue12', 510, 'Sala 2', 0, [['Andrés Polo Fontalvo', '573043321876', 'ev']]),
+        P('Tienda del barrio', 'jue12', 525, 'Sala 2', 0, [['Karen Pacheco Lobo', '573008812345', 'ns']]),
+        P('Agua limpia ya', 'jue12', 600, 'Sala 5', 1, [['Luis Ángel Vides', '573114456789', 'ev'], ['Ana Lucía Barros', '573026671234', 'ev']]),
+        P('Cuida tu planta', 'jue12', 615, 'Sala 5', 1, [['Yuliana Ariza Coll', null, 'ev']]),
+        P('Música para todos', 'jue12', 630, 'Sala 5', 1, [['Jesús David Orozco', '573157723456', 'ev']]),
+        P('Huellitas', 'jue12', 645, 'Sala 5', 1, [['María José Cantillo', '573215564321', 'ev']]),
+        P('Ahorro joven', 'jue12', 900, 'Sala 3', 2, [['Brayan Escorcia Paz', '573182234567', 'ev']]),
+        P('Turismo verde', 'jue12', 915, 'Sala 3', 2, [['Natalia Olivo Peña', '573043345678', 'ev'], ['Kevin Manjarrés Leal', '573125567890', 'ev']]),
+        P('Aula sin papel', 'jue12', 930, 'Sala 3', 2, [['Camila Fontalvo Rey', '573004456712', 'pe']]),
+        P('Cocina saludable', 'jue12', 945, 'Sala 3', 2, [['Sebastián Rada Gil', '573168890123', 'ev']]),
+        P('Moda circular', 'vie13', 540, 'Sala 4', 3, [['Gabriela Navarro Torres', '573026614590', 'ev']]),
+        P('Barrio seguro', 'vie13', 555, 'Sala 4', 3, [['Diego Armando Ruiz', '573117781234', 'ev']]),
+        P('Lee conmigo', 'vie13', 570, 'Sala 4', 3, [['Paula Charris Vega', '573209987654', 'ns'], ['Esteban Molina Rojas', '573012213456', 'ns']]),
+        P('Mercado campesino', 'vie13', 585, 'Sala 4', 3, [['Ángela Pérez Lora', '573145598765', 'ev']]),
+        P('Arte urbano', 'vie13', 840, 'Sala 1', 4, [['Juan Pablo Arrieta', '573006671234', 'ev']]),
+        P('Energía solar casera', 'vie13', 855, 'Sala 1', 4, [['Valeria Mercado Sanjuán', '573177743210', 'ev'], ['Óscar Ibáñez Lara', null, 'ev']]),
+        P('Mi huerta escolar', 'vie13', 870, 'Sala 1', 4, [['Daniel Gómez Díaz', '573224456789', 'pe']]),
+        P('Reto deportivo', 'vie13', 885, 'Sala 1', 4, [['Melissa Torres Caro', '573131123456', 'ev']]),
+        P('Ruta segura al colegio', 'mar17', 600, 'Sala 2', 0, [['Isaac Barrios Mejía', '573046678901', 'pe']]),
+        P('Banco de tiempo', 'mar17', 615, 'Sala 2', 0, [['Laura Vanegas Polo', '573187789012', 'pe'], ['Andrés Cueto Lugo', '573005590123', 'pe']]),
+        P('Cine en casa', 'mar17', 630, 'Sala 2', 0, [['Sharon De la Hoz', '573128801234', 'pe']]),
+        P('Club de robótica', 'mar17', 645, 'Sala 2', 0, [['Miguel Ángel Sarmiento', '573159912345', 'pe']]),
+        P('Recetario costeño', 'mar17', 960, 'Sala 6', 1, [['Daniela Jiménez Ortiz', '573212223456', 'pe']]),
+        P('Guía de becas', null, null, null, null, [['Cristina Rosado Mena', '573016634567', 'pe']]),
+        P('Mascotas en adopción', null, null, null, null, [['Jhon Fredy Padilla', null, 'pe'], ['Lina Marcela Ochoa', '573172245678', 'pe']]),
+        P('Taller de reciclaje', null, null, null, null, [['Andrea Carolina Bolaño', '573103356789', 'pe']])
+      ],
+      'Santa Marta': [
+        P('Playa limpia', 'vie13', 600, 'Sala 7', 2, [['Ana Sofía Daza', '573014456123', 'ev']]),
+        P('Guía turística', 'vie13', 615, 'Sala 7', 2, [['Esteban Pineda Lara', '573137788012', 'ev'], ['Laura Sofía Gil', '573209981234', 'pe']]),
+        P('Café de la Sierra', 'vie13', 630, 'Sala 7', 2, [['Ricardo Pinto Mozo', '573145567234', 'pe']]),
+        P('Pesca responsable', 'vie13', 645, 'Sala 7', 2, [['Mónica Ibarra Daza', '573006678345', 'ns']]),
+        P('Barrio limpio', 'mar17', 900, 'Sala 7', 3, [['Mariana Ospino Díaz', '573235570014', 'pe']]),
+        P('Apps para el agua', 'mar17', 915, 'Sala 7', 3, [['Felipe Noguera Díaz', '573187789456', 'pe']]),
+        P('Ruta histórica', null, null, null, null, [['Carlos Mario Lacouture', '573114456567', 'pe']])
+      ]
+    };
+    return this._d;
+  }
+  estadoDe(p) {
+    if (!p.dia) return 'sh';
+    const e = p.ints.map((i) => i[2]);
+    if (e.every((x) => x === 'ns')) return 'ns';
+    if (e.every((x) => x !== 'pe')) return 'ev';
+    return 'pe';
+  }
+  renderVals() {
+    const s = this.state || {};
+    const tema = s.tema || this.props.tema || 'claro';
+    const estado = s.estado || this.props.estado || 'normal';
+    const D = this.datos();
+    const ciudad = s.ciudad || 'Barranquilla';
+    const filtro = s.filtro || 'todos';
+    const dia = s.dia || 'todos';
+    const sala = s.sala || 'todas';
+    const orden = s.orden || 'pend';
+    const busqueda = s.busqueda !== undefined ? s.busqueda : (estado === 'sinresultados' ? 'Robótica submarina' : '');
+    const q = this.norm(busqueda.trim());
+    const NOM = { ev: 'Evaluado', pe: 'Pendiente', ns: 'No se presentó', sh: 'Sin hora' };
+    const CH = { ev: 'ev-chip c-ok', pe: 'ev-chip c-idle', ns: 'ev-chip c-bad', sh: 'ev-chip c-mid' };
+    const todos = D[ciudad].map((p) => Object.assign({}, p, { est: this.estadoDe(p) }));
+    const cuenta = { total: todos.length, ev: 0, pe: 0, ns: 0, sh: 0 };
+    todos.forEach((p) => { cuenta[p.est === 'sh' ? 'pe' : p.est]++; });
+    const diaIdx = (d) => D.dias.findIndex((x) => x.id === d);
+    const vis = todos.filter((p) => (filtro === 'todos' || p.est === filtro || (filtro === 'pe' && p.est === 'sh'))
+      && (dia === 'todos' || p.dia === dia)
+      && (sala === 'todas' || p.sala === sala)
+      && (!q || this.norm(p.n).includes(q) || p.ints.some((i) => this.norm(i[0]).includes(q))));
+    const conHora = vis.filter((p) => p.dia).sort((a, b) => {
+      if (orden === 'pend') { const ra = a.est === 'pe' ? 0 : 1, rb = b.est === 'pe' ? 0 : 1; if (ra !== rb) return ra - rb; }
+      return diaIdx(a.dia) - diaIdx(b.dia) || a.m - b.m;
+    });
+    const sinHoraP = vis.filter((p) => !p.dia);
+    const fila = (p) => ({
+      nombre: p.n, pareja: p.ints.length > 1,
+      integrantes: p.ints.map((i) => this.persona(i[0], i[1])),
+      hora: p.dia ? this.fmt(p.m) : '', dia: p.dia ? D.dias[diaIdx(p.dia)].t : '', sala: p.sala, mentor: p.mentor,
+      estado: NOM[p.est], chip: CH[p.est],
+      porInt: p.ints.map((i) => i[0].split(' ')[0] + ': ' + NOM[i[2]]).join(' · ')
+    });
+    const cargando = estado === 'cargando', esSinAsignar = estado === 'sinproyectos', esError = estado === 'error';
+    const normal = !cargando && !esSinAsignar && !esError;
+    const T = cuenta.total || 1;
+    const tileDef = [['todos', 'Total', cuenta.total, 'var(--ink)'], ['ev', 'Evaluados', cuenta.ev, 'var(--ok)'], ['pe', 'Pendientes', cuenta.pe, 'var(--idle)'], ['ns', 'No se presentó', cuenta.ns, 'var(--bad)']];
+    const chipDef = [['todos', 'Todos'], ['pe', 'Pendientes'], ['ev', 'Evaluados'], ['ns', 'No se presentó'], ['sh', 'Sin hora']];
+    const salasSet = Array.from(new Set(todos.filter((p) => p.sala).map((p) => p.sala))).sort();
+    const toastMsg = s.toast || '';
+    return {
+      rootClase: tema === 'oscuro' ? 'ev oscuro' : 'ev',
+      esOscuro: tema === 'oscuro', esClaro: tema !== 'oscuro',
+      temaLabel: tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+      alternarTema: () => this.setState({ tema: tema === 'oscuro' ? 'claro' : 'oscuro' }),
+      titulo: esSinAsignar ? 'Mi ciudad' : ciudad,
+      verCiudad: normal || cargando, ciudad,
+      onCiudad: (e) => this.setState({ ciudad: e.target.value, sala: 'todas' }),
+      esSinAsignar, esError, cargando, conFiltros: !esSinAsignar && !esError, listo: normal,
+      reintentar: () => this.setState({ estado: 'normal' }),
+      tiles: tileDef.map((t) => ({ label: t[1], n: t[2], pressed: filtro === t[0] ? 'true' : 'false',
+        estilo: 'text-align: left; cursor: pointer; padding: 14px 16px; min-height: 88px; ' + (filtro === t[0] ? 'border: 2px solid var(--ink);' : ''),
+        punto: 'width: 9px; height: 9px; border-radius: 50%; background: ' + t[3] + ';',
+        elegir: () => this.setState({ filtro: t[0] }) })),
+      chipsEstado: chipDef.map((c) => ({ label: c[1], pressed: filtro === c[0] ? 'true' : 'false', elegir: () => this.setState({ filtro: c[0] }) })),
+      res: { ev: cuenta.ev, total: cuenta.total, ns: cuenta.ns, pe: cuenta.pe, sh: cuenta.sh, pct: Math.round((cuenta.ev / T) * 100), wEv: (cuenta.ev / T) * 100, wNs: (cuenta.ns / T) * 100, aria: cuenta.ev + ' de ' + cuenta.total + ' evaluados' },
+      dia, sala, busqueda,
+      dias: [{ v: 'todos', t: 'Todos los días' }].concat(D.dias.map((d) => ({ v: d.id, t: d.t }))),
+      salas: [{ v: 'todas', t: 'Todas las salas' }].concat(salasSet.map((x) => ({ v: x, t: x }))),
+      onDia: (e) => this.setState({ dia: e.target.value }),
+      onSala: (e) => this.setState({ sala: e.target.value }),
+      onBuscar: (e) => this.setState({ busqueda: e.target.value }),
+      orden, onOrden: (e) => this.setState({ orden: e.target.value }),
+      limpiar: () => this.setState({ busqueda: '', filtro: 'todos', dia: 'todos', sala: 'todas' }),
+      sinResultados: normal && conHora.length === 0 && sinHoraP.length === 0,
+      hayLista: normal && conHora.length > 0, lista: conHora.map(fila),
+      haySinHora: normal && sinHoraP.length > 0, sinHora: sinHoraP.map(fila),
+      sinHoraTxt: sinHoraP.length + (sinHoraP.length === 1 ? ' proyecto' : ' proyectos'),
+      copiar: () => {
+        const txt = 'Proyectos sin hora · ' + ciudad + '\n' + sinHoraP.map((p) => '• ' + p.n + ': ' + p.ints.map((i) => i[0] + (i[1] ? ' (' + this.persona(i[0], i[1]).tel + ')' : ' (sin celular)')).join(', ')).join('\n');
+        try { navigator.clipboard && navigator.clipboard.writeText(txt); } catch (e) {}
+        this.setState({ toast: 'Lista copiada · ' + sinHoraP.length + ' proyectos sin hora' });
+        clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+      },
+      toast: toastMsg
+    };
+  }
+}
+
+var dc = montarDC({ plantilla: "\n\n<div class=\"{{rootClase}}\" style=\"min-height: 100%; width: 100%;\">\n<header class=\"ev-top\">\n<div class=\"ev-topin\">\n<div class=\"ev-marca\">\n<img class=\"ev-logo\" src=\"data:image/webp;base64,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\" alt=\"Jóvenes creaTIvos\">\n<div class=\"ev-marcatxt\"><b>Jóvenes creaTIvos 2026<\/b><span>Evaluación del proyecto final<\/span><\/div>\n<span class=\"ev-div\" aria-hidden=\"true\"><\/span>\n<img class=\"ev-sofka\" src=\"data:image/webp;base64,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\" alt=\"Sofka\">\n<\/div>\n<nav class=\"ev-tabs\" aria-label=\"Secciones del monitor\">\n<a class=\"ev-tab\" href=\"#\">Mis proyectos<\/a>\n<a class=\"ev-tab\" href=\"#\" aria-current=\"page\">Mi ciudad<\/a>\n<\/nav>\n<div class=\"ev-yo\">\n<button class=\"ev-tema\" type=\"button\" onClick=\"{{alternarTema}}\" aria-label=\"{{temaLabel}}\" title=\"{{temaLabel}}\">\n<sc-if value=\"{{esOscuro}}\" hint-placeholder-val=\"{{ false }}\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"><\/circle><path d=\"M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4\"><\/path><\/svg><\/sc-if>\n<sc-if value=\"{{esClaro}}\" hint-placeholder-val=\"{{ true }}\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z\"><\/path><\/svg><\/sc-if>\n<\/button>\n<span>Valeria<\/span>\n<button class=\"ev-salir\" type=\"button\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"><\/path><path d=\"m16 17 5-5-5-5\"><\/path><path d=\"M21 12H9\"><\/path><\/svg>Salir<\/button>\n<\/div>\n<\/div>\n<\/header>\n\n<main class=\"ev-main\">\n<div class=\"ev-hello\">\n<div>\n<h1>{{titulo}}<\/h1>\n<p>Todos los proyectos de tu ciudad, de todos los días. Aquí solo ves el estado, nunca la nota.<\/p>\n<\/div>\n<sc-if value=\"{{verCiudad}}\" hint-placeholder-val=\"{{ true }}\">\n<label style=\"min-width: 240px;\"><span class=\"ev-lbl\">Ciudad<\/span>\n<select class=\"ev-campo\" value=\"{{ciudad}}\" onChange=\"{{onCiudad}}\" disabled=\"{{cargando}}\">\n<option value=\"Barranquilla\">Barranquilla<\/option>\n<option value=\"Santa Marta\">Santa Marta<\/option>\n<\/select><\/label>\n<\/sc-if>\n<\/div>\n\n<sc-if value=\"{{esSinAsignar}}\" hint-placeholder-val=\"{{ false }}\">\n<div class=\"ev-tarjeta ev-vacio\">\n<div class=\"ico\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M22 12h-6l-2 3h-4l-2-3H2\"><\/path><path d=\"M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z\"><\/path><\/svg><\/div>\n<h2>Aún no tienes una ciudad asignada<\/h2>\n<p>Cuando coordinación te asigne una ciudad, aquí verás todos sus proyectos y cuáles ya están evaluados. Si crees que es un error, escríbele a coordinación.<\/p>\n<a class=\"ev-btn\" href=\"#\">Ir a Mis proyectos<\/a>\n<\/div>\n<\/sc-if>\n\n<sc-if value=\"{{esError}}\" hint-placeholder-val=\"{{ false }}\">\n<div class=\"ev-tarjeta ev-vacio err\" role=\"alert\">\n<div class=\"ico\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z\"><\/path><path d=\"M12 9v4M12 17h.01\"><\/path><\/svg><\/div>\n<h2>No pudimos cargar los proyectos de tu ciudad<\/h2>\n<p>Revisa tu conexión e intenta otra vez. Los datos no se perdieron.<\/p>\n<button class=\"ev-btn ev-btn-pri\" type=\"button\" onClick=\"{{reintentar}}\">Intentar de nuevo<\/button>\n<\/div>\n<\/sc-if>\n\n<sc-if value=\"{{conFiltros}}\" hint-placeholder-val=\"{{ true }}\">\n<div style=\"display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;\">\n<sc-if value=\"{{cargando}}\" hint-placeholder-val=\"{{ false }}\">\n<div style=\"display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;\" aria-live=\"polite\">\n<span class=\"ev-skel\" style=\"height: 88px;\"><\/span><span class=\"ev-skel\" style=\"height: 88px;\"><\/span><span class=\"ev-skel\" style=\"height: 88px;\"><\/span><span class=\"ev-skel\" style=\"height: 88px;\"><\/span>\n<\/div>\n<p class=\"b\">Cargando los proyectos de tu ciudad…<\/p>\n<\/sc-if>\n<sc-if value=\"{{listo}}\" hint-placeholder-val=\"{{ true }}\">\n<div style=\"display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;\" role=\"group\" aria-label=\"Resumen: toca un indicador para filtrar\">\n<sc-for list=\"{{tiles}}\" as=\"t\" hint-placeholder-count=\"4\">\n<button class=\"ev-tarjeta\" type=\"button\" aria-pressed=\"{{t.pressed}}\" onClick=\"{{t.elegir}}\" style=\"{{t.estilo}}\">\n<span class=\"small muted b\" style=\"display: block;\">{{t.label}}<\/span>\n<span class=\"tit\" style=\"font-size: 30px; display: block; margin-top: 4px;\">{{t.n}}<\/span>\n<\/button>\n<\/sc-for>\n<\/div>\n<div class=\"ev-tarjeta\" style=\"padding: 12px 18px;\">\n<div class=\"ev-avance\"><span><b>{{res.ev}} de {{res.total}} evaluados<\/b> · {{res.pct}} %<\/span><span>{{res.ns}} no se presentaron · {{res.pe}} pendientes<\/span><\/div>\n<div class=\"ev-barra\" role=\"img\" aria-label=\"{{res.aria}}\"><i class=\"ok\" style=\"width: {{res.wEv}}%;\"><\/i><i class=\"bad\" style=\"width: {{res.wNs}}%;\"><\/i><\/div>\n<\/div>\n<\/sc-if>\n<div class=\"ev-filtros\">\n<label><span class=\"ev-lbl\">Día<\/span>\n<select class=\"ev-campo\" value=\"{{dia}}\" onChange=\"{{onDia}}\" disabled=\"{{cargando}}\"><sc-for list=\"{{dias}}\" as=\"o\" hint-placeholder-count=\"4\"><option value=\"{{o.v}}\">{{o.t}}<\/option><\/sc-for><\/select><\/label>\n<label><span class=\"ev-lbl\">Sala<\/span>\n<select class=\"ev-campo\" value=\"{{sala}}\" onChange=\"{{onSala}}\" disabled=\"{{cargando}}\"><sc-for list=\"{{salas}}\" as=\"o\" hint-placeholder-count=\"4\"><option value=\"{{o.v}}\">{{o.t}}<\/option><\/sc-for><\/select><\/label>\n<label><span class=\"ev-lbl\">Ordenar<\/span>\n<select class=\"ev-campo\" value=\"{{orden}}\" onChange=\"{{onOrden}}\" disabled=\"{{cargando}}\"><option value=\"pend\">Pendientes primero<\/option><option value=\"hora\">Por fecha y hora<\/option><\/select><\/label>\n<label class=\"ev-buscar ancho\"><span class=\"sr\">Buscar por proyecto o integrante<\/span>\n<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"><\/circle><path d=\"m21 21-4.3-4.3\"><\/path><\/svg>\n<input class=\"ev-campo\" type=\"search\" placeholder=\"Buscar por proyecto o integrante\" value=\"{{busqueda}}\" onChange=\"{{onBuscar}}\" disabled=\"{{cargando}}\"><\/label>\n<\/div>\n<\/div>\n<\/sc-if>\n\n<sc-if value=\"{{cargando}}\" hint-placeholder-val=\"{{ false }}\">\n<div class=\"ev-grupo\" style=\"padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;\">\n<span class=\"ev-skel\" style=\"height: 64px;\"><\/span><span class=\"ev-skel\" style=\"height: 64px;\"><\/span><span class=\"ev-skel\" style=\"height: 64px;\"><\/span><span class=\"ev-skel\" style=\"height: 64px;\"><\/span>\n<\/div>\n<\/sc-if>\n\n<sc-if value=\"{{sinResultados}}\" hint-placeholder-val=\"{{ false }}\">\n<div class=\"ev-tarjeta ev-vacio\">\n<div class=\"ico\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"><\/circle><path d=\"m21 21-4.3-4.3\"><\/path><\/svg><\/div>\n<h2>No hay proyectos con esos filtros<\/h2>\n<p>Prueba con otro nombre de proyecto o de integrante, o cambia el estado, el día o la sala.<\/p>\n<button class=\"ev-btn\" type=\"button\" onClick=\"{{limpiar}}\">Limpiar filtros<\/button>\n<\/div>\n<\/sc-if>\n\n<sc-if value=\"{{hayLista}}\" hint-placeholder-val=\"{{ true }}\">\n<div class=\"ev-grupo\">\n<div class=\"ev-thead\" style=\"grid-template-columns: minmax(0, 1.6fr) 190px minmax(0, 0.9fr) 220px;\"><span>Proyecto e integrantes<\/span><span>Día, hora y sala<\/span><span>Mentor<\/span><span>Estado<\/span><\/div>\n<sc-for list=\"{{lista}}\" as=\"p\" hint-placeholder-count=\"5\">\n<div class=\"ev-fila\" style=\"grid-template-columns: minmax(0, 1.6fr) 190px minmax(0, 0.9fr) 220px; align-items: start;\">\n<div style=\"min-width: 0;\">\n<p class=\"b\">{{p.nombre}} <sc-if value=\"{{p.pareja}}\" hint-placeholder-val=\"{{ false }}\"><span class=\"ev-chip c-line\" style=\"margin-left: 4px;\">En pareja<\/span><\/sc-if><\/p>\n<sc-for list=\"{{p.integrantes}}\" as=\"i\" hint-placeholder-count=\"1\">\n<div class=\"ev-int\" style=\"margin-top: 6px;\">\n<span class=\"small\"><span>{{i.nombre}}<\/span> · <sc-if value=\"{{i.tiene}}\" hint-placeholder-val=\"{{ true }}\"><span class=\"ev-tel muted\">{{i.tel}}<\/span><\/sc-if><sc-if value=\"{{i.falta}}\" hint-placeholder-val=\"{{ false }}\"><span class=\"ev-sinreg\">Sin registrar<\/span><\/sc-if><\/span>\n<sc-if value=\"{{i.tiene}}\" hint-placeholder-val=\"{{ true }}\">\n<span class=\"ev-acc\">\n<a class=\"ev-ibtn\" href=\"{{i.telHref}}\" aria-label=\"{{i.aLlamar}}\" title=\"Llamar\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z\"><\/path><\/svg><\/a>\n<a class=\"ev-ibtn wa\" href=\"{{i.waHref}}\" aria-label=\"{{i.aWa}}\" title=\"WhatsApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z\"><\/path><\/svg><\/a>\n<\/span>\n<\/sc-if>\n<\/div>\n<\/sc-for>\n<\/div>\n<div class=\"small\">\n<p class=\"ev-hora\" style=\"font-size: 15px;\">{{p.hora}}<\/p>\n<p class=\"muted\">{{p.dia}}<\/p>\n<p class=\"muted\">{{p.sala}}<\/p>\n<\/div>\n<div class=\"small\" style=\"min-width: 0;\"><p>{{p.mentor}}<\/p><\/div>\n<div style=\"display: flex; flex-direction: column; align-items: flex-start; gap: 6px;\">\n<span class=\"{{p.chip}}\"><i><\/i>{{p.estado}}<\/span>\n<sc-if value=\"{{p.pareja}}\" hint-placeholder-val=\"{{ false }}\"><span class=\"small muted\">{{p.porInt}}<\/span><\/sc-if>\n<\/div>\n<\/div>\n<\/sc-for>\n<\/div>\n<\/sc-if>\n\n<sc-if value=\"{{haySinHora}}\" hint-placeholder-val=\"{{ true }}\">\n<section class=\"ev-grupo\" aria-label=\"Proyectos sin hora\">\n<div class=\"ev-ghead\" style=\"background: var(--mid-bg);\">\n<div style=\"flex: 1; min-width: 0;\">\n<h2 style=\"color: var(--mid);\">Aún no eligen hora · {{sinHoraTxt}}<\/h2>\n<p class=\"small\" style=\"color: var(--mid);\">Cuentan como pendientes. Escríbeles para que elijan día y hora.<\/p>\n<\/div>\n<button class=\"ev-btn ev-btn-navy\" type=\"button\" onClick=\"{{copiar}}\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"><\/rect><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"><\/path><\/svg>Copiar lista de pendientes para WhatsApp<\/button>\n<\/div>\n<sc-for list=\"{{sinHora}}\" as=\"p\" hint-placeholder-count=\"3\">\n<div class=\"ev-fila\" style=\"grid-template-columns: minmax(0, 1.6fr) 190px minmax(0, 0.9fr) 220px; align-items: start;\">\n<div style=\"min-width: 0;\">\n<p class=\"b\">{{p.nombre}} <sc-if value=\"{{p.pareja}}\" hint-placeholder-val=\"{{ false }}\"><span class=\"ev-chip c-line\" style=\"margin-left: 4px;\">En pareja<\/span><\/sc-if><\/p>\n<sc-for list=\"{{p.integrantes}}\" as=\"i\" hint-placeholder-count=\"1\">\n<div class=\"ev-int\" style=\"margin-top: 6px;\">\n<span class=\"small\"><span>{{i.nombre}}<\/span> · <sc-if value=\"{{i.tiene}}\" hint-placeholder-val=\"{{ true }}\"><span class=\"ev-tel muted\">{{i.tel}}<\/span><\/sc-if><sc-if value=\"{{i.falta}}\" hint-placeholder-val=\"{{ false }}\"><span class=\"ev-sinreg\">Sin registrar<\/span><\/sc-if><\/span>\n<sc-if value=\"{{i.tiene}}\" hint-placeholder-val=\"{{ true }}\">\n<span class=\"ev-acc\">\n<a class=\"ev-ibtn\" href=\"{{i.telHref}}\" aria-label=\"{{i.aLlamar}}\" title=\"Llamar\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z\"><\/path><\/svg><\/a>\n<a class=\"ev-ibtn wa\" href=\"{{i.waHref}}\" aria-label=\"{{i.aWa}}\" title=\"WhatsApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z\"><\/path><\/svg><\/a>\n<\/span>\n<\/sc-if>\n<\/div>\n<\/sc-for>\n<\/div>\n<div class=\"small muted\"><p>Aún no elige día ni hora<\/p><\/div>\n<div class=\"small muted\">Sin mentor asignado<\/div>\n<div><span class=\"ev-chip c-idle\">Pendiente<\/span><\/div>\n<\/div>\n<\/sc-for>\n<\/section>\n<\/sc-if>\n<\/main>\n<sc-if value=\"{{toast}}\" hint-placeholder-val=\"{{ false }}\"><div class=\"ev-toast\" role=\"status\" style=\"position: fixed;\">{{toast}}<\/div><\/sc-if>\n<\/div>\n", clase: Component, mount: document.getElementById('app'), props: { tema: 'claro', estado: 'normal' } });
+var t = document.getElementById('pv-tema'), e = document.getElementById('pv-estado');
+function cambiar() { dc.cambiar({ tema: t.value, estado: e.value }); }
+if (t) { t.onchange = cambiar; e.onchange = cambiar; }
+})();
+</script>
+</body>
+</html>

@@ -326,3 +326,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: pestaña Mis proyectos (solo lectura) para monitor, coordinación y admin`. GET `/api/monitor/mis-proyectos` (Zod `.strict()`) y `/monitor/proyectos`: día y hora (UY para Colonia/Paysandú), sala con «Abrir sala», ciudad, proyecto, integrantes y mentor con celular («Sin registrar») y Llamar/WhatsApp (componente `BotonesContacto`, también en «Mis salas»). Filtros día (hoy o el primero), ciudad, sala, monitor (solo coordinación/admin) y búsqueda; tabla ancha y tarjetas a 375 px. Sin colecciones, campos ni índices nuevos. revisor-seguridad: sin altos ni medios; bajo corregido (solo arma el día pedido). 398 unitarias; nuevas 18/18; typecheck y build pasan (test:db completo no corrido, a pedido).
 - Verificar: `npx vitest run --config vitest.db.config.mts tests/misProyectos.db.test.ts` (18/18).
 - Pendiente: push y deploy cuando el usuario lo autorice.
+
+## Fase 6 · Paso 1 · Lectura de prototipos y plan (vistas del monitor)
+- Commit: `docs: resumen de prototipos de vistas del monitor y plan de la Fase 6`. `docs/DISENO-VISTAS.md` (100 líneas: pantallas 00–06, textos, estados, web vs. móvil, diferencias con la app) y Fase 6 en PLAN.md (reutilizar/crear, riesgos, propuestas y 3 preguntas). Prototipos versionados en `docs/diseno/prototipo-evaluacion-html/`. Sin código.
+- Verificar: leer `docs/DISENO-VISTAS.md` y PLAN.md → «Fase 6».
+- Pendiente: aprobación del plan y respuesta a las 3 preguntas antes del Paso 2.
