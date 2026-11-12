@@ -3,7 +3,21 @@
 .selCiudad { flex: 0 1 260px; min-width: 200px; }
 .tabla { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; overflow: hidden; box-shadow: var(--ev-sombra); }
 /* Entrega B: el espacio sobrante va a Proyecto e integrantes y a Mentor; Día/hora/sala y Estado con mínimo y máximo. */
-.thead, .fila { display: grid; grid-template-columns: minmax(0, 3fr) minmax(170px, 230px) minmax(150px, 1fr) minmax(200px, 300px); gap: 16px 24px; padding: 12px 16px; }
+/* Proyecto 2 partes y Mentor 1; desde 2200 px la columna Proyecto se limita a 900 px y el sobrante lo toman Mentor,
+   Día/hora/sala (con su máximo) y Estado (última, sin huecos entre columnas). */
+.thead, .fila { display: grid; grid-template-columns: minmax(0, 2fr) minmax(170px, 230px) minmax(150px, 1fr) minmax(200px, 300px); gap: 16px 24px; padding: 12px 16px; }
+@media (min-width: 2200px) {
+  .thead, .fila { grid-template-columns: minmax(0, 900px) minmax(170px, 280px) minmax(150px, 420px) minmax(200px, 1fr); }
+}
+/* Desde 1440 px: en la celda Proyecto, subcolumna izquierda con el nombre (y «En pareja») y derecha con los integrantes. */
+/* Solo si la celda tiene espacio (≥ 600 px): a 1440 px la columna mide ~490 px y se queda como antes. */
+@media (min-width: 1440px) {
+  .celdaProy { container-type: inline-size; }
+  @container (min-width: 600px) {
+    .subcols { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(0, 3fr); gap: 0 20px; align-items: start; }
+    .subcols .integrantes > .int:first-child { margin-top: 0; }
+  }
+}
 .fila:hover { background: var(--ev-surface-2); }
 .thead { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); padding-top: 10px; padding-bottom: 10px; }
 .fila { border-top: 1px solid var(--ev-line); align-items: start; }
