@@ -348,7 +348,7 @@ con una prueba previa que fije las llamadas de asistencia, motivo, observación,
   «Gestionar» lleva a una página de detalle `/monitor/proyectos/[id]` (id del proyecto, el mismo de /api/evaluacion/salas/[id]);
   enlace de la sesión con «Abrir sala» y «Copiar enlace»; SIN reloj (ni «Son las», «Ir a ahora», «Ahora», «Siguiente»);
   ancho completo en las vistas nuevas.
-- [ ] B1. Ancho completo: contenedor fluido (márgenes clamp(16px, 2vw, 40px), tope 2560 px) en ShellVistas, Mi ciudad y Monitores; cortes <900 / 900–1439 / ≥1440.
+- [x] B1. Ancho completo: contenedor fluido (márgenes clamp(16px, 2vw, 40px), tope 2560 px) en ShellVistas, Mi ciudad y Monitores; cortes <900 / 900–1439 / ≥1440.
 - [ ] B2. Lista «Mis proyectos» fusionada (filtros en la URL, Gestionar → detalle); `/monitor/salas` redirige; menú sin «Mis salas».
 - [ ] B3. Página de detalle con el cuerpo de MonitorHoja sin modal y las mismas llamadas (prueba previa que las fija).
 - [ ] B4. Cierre: pruebas, batería completa, build, revisores, guía de prueba.

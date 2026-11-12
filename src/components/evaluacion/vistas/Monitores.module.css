@@ -34,6 +34,10 @@
 /* Por monitor */
 .tarjetas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 @media (max-width: 1100px) { .tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Entrega B · ancho completo: más tarjetas por fila en pantallas anchas. */
+@media (min-width: 1440px) { .tarjetas { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 1920px) { .tarjetas { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.salaFila:hover { background: var(--ev-surface-2); }
 .tarjeta { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 16px; box-shadow: var(--ev-sombra); }
 .tarjetaSin { background: var(--ev-mid-bg); }
 .tCab { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }

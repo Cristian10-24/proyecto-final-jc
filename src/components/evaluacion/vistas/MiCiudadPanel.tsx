@@ -173,7 +173,7 @@ function FilaWeb({ x }: { x: FilaMiCiudad }) {
     <div className={m.fila} role="row">
       <div role="cell">
         <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
-        {x.integrantes.map((i, k) => <Integrante key={k} i={i} />)}
+        <div className={m.integrantes}>{x.integrantes.map((i, k) => <Integrante key={k} i={i} />)}</div>
       </div>
       <div role="cell" className={m.cuando}><b>{x.hora}</b><span>{fechaLarga(x.dia)}</span><span>{salaTxt(x.sala)}</span></div>
       <div role="cell" className={m.mentor}>{x.mentor}</div>

@@ -2,8 +2,12 @@
    --ev-* de tema-evaluacion.css; no cambia ninguna regla existente. Corte web/móvil: 900 px. */
 
 /* ---- Marco (ShellVistas): en web, igual a EvalShell; en móvil, cabecera no fija y menú ☰ ---- */
-.main { max-width: 1240px; margin: 0 auto; padding: 24px 20px 48px; }
-.shell .cabeceraIn { max-width: 1240px; }
+/* Entrega B · ancho completo: contenedor fluido con márgenes laterales clamp(16px, 2vw, 40px); la barra superior usa los
+   mismos márgenes (logo alineado con el contenido). Solo por encima de 2560 px se centra y limita. Cortes: <900 móvil,
+   900–1439 estándar, ≥1440 ancho. EvalShell (mentor), el Panel y el admin no usan estas reglas. */
+.shell { --ev-margen: clamp(16px, 2vw, 40px); }
+.main { width: 100%; max-width: 2560px; margin: 0 auto; padding: 24px var(--ev-margen) 48px; box-sizing: border-box; }
+.shell .cabeceraIn { max-width: 2560px; padding-left: var(--ev-margen); padding-right: var(--ev-margen); box-sizing: border-box; }
 .menuBtn { display: none; appearance: none; width: 44px; height: 44px; margin-left: auto; align-self: center; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--ev-on-navy); cursor: pointer; place-items: center; }
 .menuBtn:hover { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .4); }
 @media (max-width: 899px) {
