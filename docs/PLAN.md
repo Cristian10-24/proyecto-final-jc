@@ -341,7 +341,7 @@ con una prueba previa que fije las llamadas de asistencia, motivo, observación,
 
 ### Pasos de la Fase 6
 - [x] 1. Lectura de prototipos, `docs/DISENO-VISTAS.md` y este plan.
-- [ ] 2. (A) Componentes nuevos en `evaluacion/vistas/`, variables nuevas del tema y `formatoCelular`, con pruebas puras.
+- [x] 2. (A) Componentes nuevos en `evaluacion/vistas/`, variables nuevas del tema y `formatoCelular`, con pruebas puras.
 - [ ] 4. (A) «Mi ciudad»: ruta GET de solo lectura + pantalla; prueba de privacidad. revisor-seguridad.
 - [ ] 5. (A) «Monitores»: ruta GET + pantalla (cuadrícula, por monitor, por sala, panel). revisor-seguridad.
 - [ ] 3. (B) «Mis proyectos» fusionada con Gestionar en la fila; `/monitor/salas` redirige; menú sin «Mis salas».

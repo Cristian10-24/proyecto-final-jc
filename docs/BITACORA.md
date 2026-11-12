@@ -331,3 +331,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `docs: resumen de prototipos de vistas del monitor y plan de la Fase 6`. `docs/DISENO-VISTAS.md` (100 líneas: pantallas 00–06, textos, estados, web vs. móvil, diferencias con la app) y Fase 6 en PLAN.md (reutilizar/crear, riesgos, propuestas y 3 preguntas). Prototipos versionados en `docs/diseno/prototipo-evaluacion-html/`. Sin código.
 - Verificar: leer `docs/DISENO-VISTAS.md` y PLAN.md → «Fase 6».
 - Pendiente: aprobación del plan y respuesta a las 3 preguntas antes del Paso 2.
+
+## Fase 6 · Paso 2 (entrega A) · Componentes nuevos de las vistas
+- Commit: `feat: componentes nuevos de las vistas del monitor (entrega A)`. Rama `feature/vistas-nuevas` (desde feature/vistas-monitor; antes, commit de docs con tus 3 respuestas en DECISIONES, DISENO-VISTAS y PLAN). Nuevo `src/components/evaluacion/vistas/`: ShellVistas (web = barra de EvalShell; < 900 px cabecera no fija y cajón ☰), chips con texto, avatar, Telefono («Sin registrar»), Llamar/WhatsApp de 44 px, resumen con barra, tarjetas-filtro, selects, buscador, «Ver como», acordeón, hoja «Filtros» (Limpiar/Aplicar), panel lateral y estados cargando/vacío/error. `src/lib/vistas/formato.ts` (formatoCelular, iniciales, color por monitor, buscar). tema-evaluacion.css: solo variables nuevas (`--ev-hora`, `--ev-sombra`, `--ev-m1..m7(b)`, con oscuro). Único toque a lo existente: `export` en `TABS` de EvalShell (sin cambio de comportamiento). Aún no se usan en ninguna pantalla.
+- Verificar: `npx vitest run tests/vistasFormato.test.ts` (7/7) y `npm run typecheck`.
+- Pendiente: Paso 4 («Mi ciudad»), donde se ven por primera vez y se comparan con el prototipo a 1280 y 375 px.

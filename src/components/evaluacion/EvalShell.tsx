@@ -12,7 +12,7 @@ import s from "./Evaluacion.module.css";
 
 export type SeccionEval = "evaluaciones" | "salas" | "proyectos" | "seguimiento";
 
-const TABS: { key: SeccionEval; label: string; href: string; permiso: Permiso | Permiso[] }[] = [
+export const TABS: { key: SeccionEval; label: string; href: string; permiso: Permiso | Permiso[] }[] = [
   { key: "evaluaciones", label: "Mis evaluaciones", href: "/mentor", permiso: "evaluar" },
   { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "salas", label: "Mis salas", href: "/monitor/salas", permiso: "monitorear_salas" },
