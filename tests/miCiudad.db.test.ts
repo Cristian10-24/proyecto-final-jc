@@ -157,6 +157,34 @@ describe("quién ve qué", () => {
     });
 });
 
+describe("opción B: conteo por estudiante", () => {
+  it("con la ruta: la pareja Evaluado + No se presentó suma 1 y 1, sale en los dos filtros y Total = suma", async () => {
+    const { contarEstudiantes, filtrarPorEstado } = await import("@/lib/vistas/conteoCiudad");
+    const { body } = await pedir("monA", "ciudad=Cali");
+    const filas = body.filas as unknown as import("@/lib/vistas/miCiudad").FilaMiCiudad[];
+    const n = contarEstudiantes(filas);
+    expect(n).toEqual({ total: 5, evaluado: 1, pendiente: 2, ausente: 2, proyectos: 4 });
+    expect(n.evaluado + n.pendiente + n.ausente).toBe(n.total);
+    expect(filtrarPorEstado(filas, "evaluado").map((f) => f.proyecto)).toEqual(["Recicla y gana"]);
+    expect(filtrarPorEstado(filas, "ausente").map((f) => f.proyecto)).toEqual(["Recicla y gana", "Bici segura"]);
+  });
+
+  it("coincide con el resumen de «Mis salas» (mismas reglas) para los mismos proyectos", async () => {
+    const { listaSalas } = await import("@/lib/evaluacion/monitor");
+    const { estadoPersona } = await import("@/lib/evaluacion/criterios");
+    const { contarEstudiantes } = await import("@/lib/vistas/conteoCiudad");
+    const yo = { id: ids.monA!.toHexString(), usuario: "mon.a", nombre: "Nombre monA", rol: "monitor" as const, ciudades: ["Cali", "Bogotá"] };
+    const salas = (await listaSalas(yo)).filas.filter((f) => f.ciudad === "Cali");
+    expect(salas.length).toBeGreaterThan(0);
+    // Resumen de «Mis salas» (MonitorPanel): una persona por integrante con estadoPersona.
+    const ms = { presente: 0, ausente: 0, pendiente: 0 };
+    for (const f of salas) for (const x of f.integrantes) ms[estadoPersona({ res: x.res, presente: x.asistencia === "si", ausente: x.asistencia === "no" })]++;
+    const mismos = new Set(salas.map((f) => f.id));
+    const mc = contarEstudiantes((await pedir("monA", "ciudad=Cali")).body.filas.filter((f) => mismos.has(f.id)) as never);
+    expect({ evaluado: mc.evaluado, ausente: mc.ausente, pendiente: mc.pendiente }).toEqual({ evaluado: ms.presente, ausente: ms.ausente, pendiente: ms.pendiente });
+  });
+});
+
 describe("privacidad", () => {
   it("solo los campos permitidos: nada de notas, resultado, retroalimentación, porcentajes, observaciones, documento ni correo", async () => {
     for (const q of ["", "ciudad=Cali", "ciudad=Bogotá"]) {

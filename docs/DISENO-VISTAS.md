@@ -53,16 +53,16 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
 
 ## 03/04 · Mi ciudad (solo lectura)
 - Título = ciudad («Barranquilla»), «Todos los proyectos de tu ciudad, de todos los días. Aquí solo ves el estado, nunca
-  la nota.» Selector «Ciudad» arriba a la derecha (solo con varias). Cuatro tarjetas-filtro «Total · Evaluados · Pendientes · No se presentó» (la elegida con borde negro); barra «16 de 28
-  evaluados · 57 %» y a la derecha «2 no se presentaron · 10 pendientes».
-- Filtros: Día («Todos los días»…), Sala («Todas las salas»), Ordenar («Pendientes primero» / «Por fecha y hora»),
-  buscador «Buscar por proyecto o integrante».
+  la nota.» Selector «Ciudad» arriba a la derecha (solo con varias). Bajo el título «N proyectos · N estudiantes». Tarjetas-filtro
+  «Total · Evaluados · Pendientes · No se presentó» que cuentan ESTUDIANTES (opción B; «estudiantes» en gris bajo el número;
+  la elegida con borde negro); barra «N de N estudiantes evaluados · %». Al tocar una tarjeta se listan los proyectos con
+  algún integrante en ese estado; pareja mixta con chip extra «1 ausente» / «1 pendiente». «Pendientes primero» = algún pendiente.
+- Filtros: Día, Sala, Ordenar («Pendientes primero» / «Por fecha y hora»), buscador «Buscar por proyecto o integrante».
 - Tabla «Proyecto e integrantes · Día, hora y sala · Mentor · Estado»: proyecto (+«En pareja»), «Nombre · +57 …» (o «Sin
   registrar») con Llamar y WhatsApp; «3:30 p. m.» / «Jueves 12 de noviembre» / «Sala 3»; mentor sin celular; chip;
   en pareja, línea «Laura: Pendiente · Andrés: Pendiente».
-- SIN HORA = NO APARECE (decisión del usuario): se quitan el bloque «Aún no eligen hora», «Copiar lista de pendientes
-  para WhatsApp», «Aún no elige día ni hora», «Sin mentor asignado» y todo filtro o chip «Sin hora». Tarjetas y barra
-  cuentan solo proyectos con día y hora. Sin ninguno: «No hay proyectos con esos filtros».
+- SIN HORA = NO APARECE (usuario): sin bloque «Aún no eligen hora», «Copiar lista…» ni chip o filtro «Sin hora»; tarjetas
+  y barra solo con proyectos con día y hora. Sin ninguno: «No hay proyectos con esos filtros».
 - Móvil: barra con buscador y «Filtros»; título + «Todos los días · Pendientes primero»; tarjetas 2×2; barra; una
   tarjeta por proyecto (proyecto + chip, «3:30 p. m. · Jue 12 · Sala 3», «Mentor · …», integrantes con íconos). Hoja
   «Filtros»: Ciudad, Estado (Todos/Pendientes/Evaluados/No se presentó), Día, Ordenar; «Limpiar» y «Aplicar».

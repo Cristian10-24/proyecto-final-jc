@@ -31,3 +31,8 @@
 .contenido { min-width: 0; }
 .envoltura { min-width: 0; }
 @media (max-width: 899px) { .envoltura { padding: 0 16px; } }
+
+/* Opción B: conteo bajo el título y chips extra de parejas mixtas. */
+.conteo { color: var(--ev-ink) !important; font-weight: 600; font-size: 14px; margin: 2px 0 0 !important; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chipsMovil { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }

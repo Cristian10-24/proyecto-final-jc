@@ -60,14 +60,16 @@ export function ResumenBarra({ izquierda, derecha, partes, total }: {
 }
 
 /** Tarjetas que funcionan como filtro (Total · Evaluados · Pendientes · No se presentó). */
-export function TarjetasFiltro<T extends string>({ opciones, valor, onCambio, etiqueta }: {
+export function TarjetasFiltro<T extends string>({ opciones, valor, onCambio, etiqueta, unidad }: {
   opciones: { id: T; texto: string; n: number }[]; valor: T; onCambio: (id: T) => void; etiqueta: string;
+  /** Palabra gris bajo cada número, en singular y plural (p. ej. «estudiante», «estudiantes»). */
+  unidad?: [string, string];
 }) {
   return (
     <div className={v.tarjetasF} role="group" aria-label={etiqueta}>
       {opciones.map((o) => (
         <button key={o.id} type="button" className={v.tarjetaF} aria-pressed={o.id === valor} onClick={() => onCambio(o.id)}>
-          <span>{o.texto}</span><b>{o.n}</b>
+          <span>{o.texto}</span><b>{o.n}</b>{unidad && <small>{o.n === 1 ? unidad[0] : unidad[1]}</small>}
         </button>
       ))}
     </div>
