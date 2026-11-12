@@ -13,7 +13,8 @@
         "rule": "overused-font",
         "value": "*",
         "files": [
-          "src/components/evaluacion/EvalShell.tsx"
+          "src/components/evaluacion/EvalShell.tsx",
+          "src/components/evaluacion/vistas/ShellVistas.tsx"
         ],
         "createdAt": "2026-11-03T18:57:29.770Z",
         "reason": "EvalShell solo carga Lexend e Inter, las tipografías del prototipo aprobado (confirmado por el usuario)"

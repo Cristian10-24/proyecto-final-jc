@@ -1,0 +1,78 @@
+/* Fase 6 · «Monitores» (prototipos 05 web y 06 móvil). Solo variables --ev-*. */
+
+.botones { display: flex; gap: 10px; flex-wrap: wrap; }
+.alertas { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 18px; }
+.vista { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.vista h2 { font-size: 20px; }
+
+/* Cuadrícula */
+.scroll { overflow-x: auto; background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; box-shadow: var(--ev-sombra); }
+.fila { display: grid; grid-template-columns: 190px repeat(var(--n), minmax(56px, 1fr)) 120px; min-width: calc(310px + var(--n) * 56px); }
+.fila + .fila { border-top: 1px solid var(--ev-line); }
+.cab { font-size: 12px; font-weight: 600; color: var(--ev-muted); }
+.cab > span { padding: 8px 6px; }
+.cab > span + span { border-left: 1px solid var(--ev-line); }
+.celda { grid-row: 1; border-left: 1px solid var(--ev-line); min-height: 76px; }
+.quien { grid-row: 1; grid-column: 1; display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-width: 0; }
+.quien > div b { display: block; font-size: 14px; line-height: 1.25; }
+.quien > div span { font-size: 12.5px; color: var(--ev-muted); }
+.total { grid-row: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px 12px; border-left: 1px solid var(--ev-line); font-size: 12.5px; color: var(--ev-muted); }
+.total b { font-size: 15px; color: var(--ev-ink); font-family: var(--ev-font-titulo); }
+.filaSin { background: var(--ev-mid-bg); }
+.barra { grid-row: 1; appearance: none; text-align: left; margin: 6px 3px; border-radius: 9px; padding: 6px 9px; border: 1.5px solid; cursor: pointer; min-height: 64px; display: flex; flex-direction: column; justify-content: center; gap: 1px; overflow: hidden; font-size: 12.5px; line-height: 1.3; z-index: 1; }
+.barra:hover { filter: brightness(.97); }
+.barra b { font-size: 13px; }
+.barra .chipMini { align-self: flex-start; margin-top: 2px; }
+.b1 { border-color: var(--ev-m1); background: var(--ev-m1b); } .b2 { border-color: var(--ev-m2); background: var(--ev-m2b); }
+.b3 { border-color: var(--ev-m3); background: var(--ev-m3b); } .b4 { border-color: var(--ev-m4); background: var(--ev-m4b); }
+.b5 { border-color: var(--ev-m5); background: var(--ev-m5b); } .b6 { border-color: var(--ev-m6); background: var(--ev-m6b); }
+.b7 { border-color: var(--ev-m7); background: var(--ev-m7b); }
+.bSin { border-color: var(--ev-mid); background: var(--ev-surface); }
+/* Botones dentro de .tema-evaluacion heredan color: se fija aquí con más especificidad. */
+.fila .barra { color: var(--ev-ink); }
+
+/* Por monitor */
+.tarjetas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1100px) { .tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tarjeta { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 16px; box-shadow: var(--ev-sombra); }
+.tarjetaSin { background: var(--ev-mid-bg); }
+.tCab { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.tCab > div b { display: block; }
+.tCab > div span { font-size: 13px; color: var(--ev-muted); }
+.linea { list-style: none; margin: 0; padding: 0 0 0 4px; }
+.linea li { position: relative; padding: 0 0 14px 20px; border-left: 2px solid var(--ev-line); margin-left: 5px; }
+.linea li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.linea li::before { content: ""; position: absolute; left: -7px; top: 3px; width: 12px; height: 12px; border-radius: 999px; background: var(--ev-surface); border: 2px solid var(--punto, var(--ev-muted)); }
+.linea b { display: block; font-family: var(--ev-font-titulo); font-weight: 600; font-size: 14.5px; }
+.linea span { font-size: 13.5px; color: var(--ev-muted); }
+.p1 { --punto: var(--ev-m1); } .p2 { --punto: var(--ev-m2); } .p3 { --punto: var(--ev-m3); } .p4 { --punto: var(--ev-m4); }
+.p5 { --punto: var(--ev-m5); } .p6 { --punto: var(--ev-m6); } .p7 { --punto: var(--ev-m7); } .pSin { --punto: var(--ev-mid); }
+
+/* Por sala */
+.salas { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; overflow: hidden; box-shadow: var(--ev-sombra); }
+.salasCab, .salaFila { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 10px 16px; }
+.salasCab { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); }
+.salaFila + .salaFila { border-top: 1px solid var(--ev-line); }
+.salaFila > b { align-self: center; font-family: var(--ev-font-titulo); }
+.salaBloques { display: flex; flex-direction: column; gap: 6px; }
+.salaBloque { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--ev-line); border-radius: 9px; padding: 8px 12px; font-size: 14px; }
+.salaBloque > b { font-family: var(--ev-font-titulo); font-weight: 600; }
+
+/* Panel lateral */
+.dl { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px 12px; font-size: 14px; margin: 0 0 18px; }
+.dl dt { color: var(--ev-muted); }
+.dl dd { margin: 0; font-weight: 600; }
+.dl dd span { display: block; font-weight: 400; }
+.listaProy { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.listaProy b { font-family: var(--ev-font-titulo); font-weight: 600; color: var(--ev-hora); }
+
+/* Móvil */
+.movilCab h1 { font-size: 22px; letter-spacing: -.02em; font-weight: 600; }
+.movilCab p { color: var(--ev-muted); font-size: 13.5px; margin: 2px 0 10px; }
+.chipsAlerta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.resumenAcc { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.resumenAcc > span > b { display: block; font-size: 15px; }
+.resumenAcc > span > span { font-size: 13px; color: var(--ev-muted); }
+.botonesMovil { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.envoltura { min-width: 0; }
+@media (max-width: 899px) { .envoltura { padding: 12px 16px 0; } }

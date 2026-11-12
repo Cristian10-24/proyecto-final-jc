@@ -85,3 +85,19 @@
   --ev-parcial: #e0a43a; --ev-overlay: rgba(0, 0, 0, .7);
   color-scheme: dark;
 }
+
+/* Fase 6 · Vistas nuevas (Mi ciudad y Monitores, prototipos docs/diseno/prototipo-evaluacion-html). Solo variables
+   NUEVAS: ninguna de arriba cambia. --ev-hora: color de las horas (negro en claro, naranja en oscuro); --ev-sombra:
+   sombra de tarjeta; --ev-m1..m7 y --ev-m1b..m7b: color y fondo de cada monitor en «Monitores». */
+.tema-evaluacion {
+  --ev-hora: #121212;
+  --ev-sombra: 0 1px 2px rgba(0, 0, 0, .06);
+  --ev-m1: #d9480f; --ev-m2: #1c7ed6; --ev-m3: #2b8a3e; --ev-m4: #9c36b5; --ev-m5: #c2255c; --ev-m6: #0c8599; --ev-m7: #5f3dc4;
+  --ev-m1b: #ffe8dc; --ev-m2b: #dcecfb; --ev-m3b: #dff3e3; --ev-m4b: #f3e2f8; --ev-m5b: #fbe1ea; --ev-m6b: #d8f1f4; --ev-m7b: #e7e1fa;
+}
+:root[data-theme="dark"] .tema-evaluacion {
+  --ev-hora: #f28a2e;
+  --ev-sombra: none;
+  --ev-m1: #ff8a5c; --ev-m2: #74b6f2; --ev-m3: #7ddb94; --ev-m4: #d991ec; --ev-m5: #f28bb0; --ev-m6: #5fd0de; --ev-m7: #ad9bf5;
+  --ev-m1b: #3d2216; --ev-m2b: #16283b; --ev-m3b: #16351f; --ev-m4b: #33203b; --ev-m5b: #3b1a27; --ev-m6b: #123236; --ev-m7b: #251f3f;
+}

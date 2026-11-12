@@ -284,3 +284,65 @@ por la app: un reintento o un doble clic actualiza el mismo evento, nunca crea o
 4. Integrante sin correo: se cita a los demás con aviso; si nadie tiene correo, la fila queda «No se puede citar».
 5. Lo marcado «como citado» (externo) no tiene evento en la app: si luego se desactualiza, «Actualizar» crea un evento
    nuevo y avisa que el anterior se cancela a mano en Google Calendar.
+
+## Fase 6 · Vistas del monitor — PLAN APROBADO (dos entregas, ver abajo)
+Producción activa. SOLO VISUAL: mismas rutas de escritura, permisos y datos; cero migraciones, colecciones, campos o
+índices. Diseño: `docs/DISENO-VISTAS.md` (resumen de los prototipos 00–06).
+
+**Se reutiliza:** `EvalShell` y `tema-evaluacion.css` (se agregan `--ev-m1..m7`, `--ev-hora` y lo que falte, con
+oscuro), `BotonesContacto`, `estadoFila`/`estadoPersona`, `horaTxt`/`fechaLarga`, la lógica de `MonitorHoja` (mismos
+fetch: GET/POST `/api/evaluacion/salas/[id]` y GET `…/cupos`), `listaSalas` (GET `/api/evaluacion/salas`),
+`misProyectos` (GET `/api/monitor/mis-proyectos`), el alcance `scopeFilter` del seguimiento y `planSalas`.
+**Se crea:** `src/components/evaluacion/vistas/` (chips, cabecera de bloque, resumen con barra, filtros web + hoja
+inferior, buscador, estados, cajón de menú móvil, `formatoCelular`), `GestionPanel` (cuerpo de MonitorHoja sin el modal,
+para usarlo en la fila), `MiCiudadPanel` + GET `/api/monitor/mi-ciudad`, `MonitoresPanel` + GET
+`/api/evaluacion/monitores` y funciones puras (`src/lib/vistas/`: agrupar bloques, «sin margen», salas sin monitor, filtros).
+**Mis proyectos (monitor):** une en el navegador las dos lecturas que ya existen (salas = asistencia/estado;
+mis-proyectos = celulares, mentor, sala, hora UY) por id de proyecto. Coordinación/admin: solo mis-proyectos, como hoy.
+`/monitor/salas` → `redirect("/monitor/proyectos")`.
+
+**Riesgos:** (1) romper anotar/reprogramar/sugerir al pasar la ficha del modal a la fila → se extrae el cuerpo sin
+tocar sus llamadas y se prueba igual que hoy; (2) el refresco pisando lo escrito → se pausa mientras haya un panel
+abierto y se avisa al cerrar con cambios; (3) mezcla de dos lecturas que no coinciden un instante → la fila sale de
+salas y lo que falte de mis-proyectos queda «Sin registrar»; (4) privacidad de Mi ciudad y Monitores → la ruta arma un
+objeto nuevo campo por campo (nunca un spread) y una prueba revisa que no salgan notas, documento ni correo; (5) el
+cambio de EvalShell afecta al mentor → el cajón móvil solo se activa en estas vistas.
+
+**Lo que el prototipo no define (propuesta):**
+- Corte web/móvil: 900 px (como el portal). Bloque = horas seguidas de la misma sala y mentor («8:00 a 10:00 a. m.»).
+- «Ahora» = el proyecto cuyo bloque de 15 min contiene la hora actual; «Siguiente» = el próximo de ese día. «Ir a
+  ahora» abre el día de hoy, quita filtros que lo oculten y baja hasta ese proyecto (o el siguiente); sin
+  presentaciones hoy, se desactiva con «Hoy no tienes presentaciones».
+- Salas sin proyectos (hoy se ven con un día elegido): se ocultan, como en el prototipo.
+- Chip de la fila en Mis proyectos: el de asistencia del prototipo (Pendiente / Se presentó / No se presentó; con
+  evaluación guardada, «Evaluado»), y se conservan como chips extra los de hoy: «Sin motivo»/«Motivo: …», «Destacado»
+  y «Cambio sugerido». El resultado (Excelente, Aprobado…) queda en el panel Gestionar. ← pregunta 1
+- Mi ciudad: «No se presentó» = el mentor lo marcó o el monitor marcó «No» sin evaluación guardada (como `estadoFila`).
+  Sin hora: no aparecen (respuesta 2).
+- Monitores: color del monitor por orden alfabético (m1..m7, se repite). «Sin margen» = último proyecto de un bloque a
+  las :45 y el siguiente bloque del mismo monitor, en otra sala, empieza a la hora en punto siguiente. «Ver como» se
+  recuerda en el navegador. ← pregunta 3 (botones del plan de salas)
+
+**Respuestas del usuario (plan aprobado):**
+1. Sí: chip de asistencia del prototipo + motivo, Destacado y Cambio sugerido; el resultado solo dentro de Gestionar.
+2. CORRECCIÓN: los proyectos SIN HORA NO aparecen en Mi ciudad (ni bloque, ni copiar lista, ni chip, filtro o tarjeta
+   «Sin hora»). Tarjetas y barra cuentan solo proyectos con día y hora; la ruta no los devuelve; siguen fuera los «Sin
+   proyecto». Sin ninguno: «No hay proyectos con esos filtros». Quién no ha elegido hora sigue en el Panel.
+3. «Descargar plan de salas» y «Cambiar en Salas» solo los ve el admin. No se cambia ningún permiso.
+Lo demás, como se propuso (900 px, Ahora/Siguiente, ocultar salas vacías, color por monitor, «Ver como» recordado).
+
+**Dos entregas.** A (primero, rama `feature/vistas-nuevas` desde `feature/vistas-monitor`): Pasos 2 (solo lo que
+necesitan 4 y 5), 4 y 5, solo aditivo: no se tocan MonitorHoja, la ficha, Mis salas, Mis proyectos ni ningún
+componente, ruta o estilo usado hoy (variables nuevas del tema: solo agregar). Menú: monitor = Mis salas · Mis proyectos
+· Mi ciudad · Panel; coordinación y admin = las actuales + «Monitores»; el cajón ☰ móvil solo en Mi ciudad y Monitores.
+Cierre de A: permisos, privacidad, «como producción», npm test, typecheck, build y solo las pruebas con base nuevas y de
+permisos (una a la vez). B (después, rama `feature/vistas-monitor-fusion` desde main ya con A publicada): Pasos 3 y 6,
+con una prueba previa que fije las llamadas de asistencia, motivo, observación, reprogramar y sugerir.
+
+### Pasos de la Fase 6
+- [x] 1. Lectura de prototipos, `docs/DISENO-VISTAS.md` y este plan.
+- [x] 2. (A) Componentes nuevos en `evaluacion/vistas/`, variables nuevas del tema y `formatoCelular`, con pruebas puras.
+- [x] 4. (A) «Mi ciudad»: ruta GET de solo lectura + pantalla; prueba de privacidad. revisor-seguridad.
+- [x] 5. (A) «Monitores»: ruta GET + pantalla (cuadrícula, por monitor, por sala, panel). revisor-seguridad.
+- [ ] 3. (B) «Mis proyectos» fusionada con Gestionar en la fila; `/monitor/salas` redirige; menú sin «Mis salas».
+- [ ] 6. (B) Cierre: menú final, pruebas, batería completa, build, revisores, guía de prueba.

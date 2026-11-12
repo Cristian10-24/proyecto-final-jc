@@ -10,14 +10,18 @@ import s from "./Evaluacion.module.css";
 // creaTIvos, "Evaluación del proyecto final", el logo de Sofka y las pestañas. Aplica el tema .tema-evaluacion
 // (Lexend + Inter y colores --ev-*); el resto de la app sigue con AppShell y tokens.css.
 
-export type SeccionEval = "evaluaciones" | "salas" | "proyectos" | "seguimiento";
+export type SeccionEval = "evaluaciones" | "salas" | "proyectos" | "ciudad" | "seguimiento" | "monitores";
 
-const TABS: { key: SeccionEval; label: string; href: string; permiso: Permiso | Permiso[] }[] = [
+export const TABS: { key: SeccionEval; label: string; href: string; permiso: Permiso | Permiso[] }[] = [
   { key: "evaluaciones", label: "Mis evaluaciones", href: "/mentor", permiso: "evaluar" },
   { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "salas", label: "Mis salas", href: "/monitor/salas", permiso: "monitorear_salas" },
   { key: "proyectos", label: "Mis proyectos", href: "/monitor/proyectos", permiso: ["monitorear_salas", "ver_todas_las_ciudades"] },
+  // Fase 6 · solo lectura, solo para monitores (vista nueva con ShellVistas).
+  { key: "ciudad", label: "Mi ciudad", href: "/monitor/ciudad", permiso: "monitorear_salas" },
   { key: "seguimiento", label: "Seguimiento general", href: "/evaluacion/seguimiento", permiso: "ver_evaluaciones" },
+  // Fase 6 · solo lectura, coordinación y admin (vista nueva con ShellVistas).
+  { key: "monitores", label: "Monitores", href: "/evaluacion/monitores", permiso: "ver_todas_las_ciudades" },
 ];
 
 export default function EvalShell({ user, active, children }: { user: SessionUser; active: SeccionEval; children: React.ReactNode }) {
