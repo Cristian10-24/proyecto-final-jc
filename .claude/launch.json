@@ -37,6 +37,22 @@
         "PORT": "3005"
       },
       "port": 3005
+    },
+    {
+      "name": "dev-pruebas",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "-p",
+        "3002"
+      ],
+      "env": {
+        "MONGODB_URI": "mongodb://127.0.0.1:27018/?replicaSet=rs0",
+        "MONGODB_DB": "proyecto_final_jc_pruebas",
+        "SESSION_SECRET": "solo-para-ver-en-local-0123456789"
+      },
+      "port": 3002
     }
   ]
 }

@@ -1,0 +1,33 @@
+/* Fase 6 · «Mi ciudad» (prototipos 03 web y 04 móvil). Solo variables --ev-*. */
+
+.selCiudad { flex: 0 1 260px; min-width: 200px; }
+.tabla { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; overflow: hidden; box-shadow: var(--ev-sombra); }
+.thead, .fila { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.1fr) minmax(0, 1.1fr) 190px; gap: 16px; padding: 12px 16px; }
+.thead { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); padding-top: 10px; padding-bottom: 10px; }
+.fila { border-top: 1px solid var(--ev-line); align-items: start; }
+.fila:first-of-type { border-top: 0; }
+.proy { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.int { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px; font-size: 14px; }
+.fila .int + .int { padding-top: 8px; border-top: 1px dashed var(--ev-line); }
+.intNombre { min-width: 0; }
+.cuando { display: flex; flex-direction: column; gap: 1px; font-size: 13.5px; color: var(--ev-muted); }
+.cuando b { font-family: var(--ev-font-titulo); font-weight: 600; font-size: 16px; color: var(--ev-hora); }
+.mentor { font-size: 14px; }
+.estado { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.porPersona { font-size: 12.5px; color: var(--ev-muted); }
+
+/* Móvil */
+.movilCab h1 { font-size: 24px; letter-spacing: -.02em; font-weight: 600; }
+.movilCab p { color: var(--ev-muted); font-size: 13.5px; margin: 2px 0 12px; }
+.tarjetas { display: flex; flex-direction: column; gap: 10px; }
+.tarjeta { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 14px; box-shadow: var(--ev-sombra); }
+.tarjetaCab { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.meta { font-size: 13.5px; color: var(--ev-muted); margin-top: 2px; }
+.meta b { font-family: var(--ev-font-titulo); font-weight: 600; color: var(--ev-hora); }
+.ints { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--ev-line); }
+.ints .int { margin-top: 8px; flex-direction: row; align-items: center; justify-content: space-between; }
+.ints .int b { display: block; font-size: 14px; }
+
+.contenido { min-width: 0; }
+.envoltura { min-width: 0; }
+@media (max-width: 899px) { .envoltura { padding: 0 16px; } }

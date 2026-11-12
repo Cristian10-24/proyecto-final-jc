@@ -6,7 +6,7 @@ import { etiquetaRoles, puede, type Permiso } from "@/lib/permisos";
 import BotonTema from "./BotonTema";
 import s from "./AppShell.module.css";
 
-export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "misproyectos" | "segGeneral" | "tablero" | "franjas" | "reglas" | "cargaMentores" | "horarios" | "sinProyecto" | "salas" | "citaciones" | "importar" | "usuarios";
+export type Seccion = "evaluaciones" | "resumen" | "seguimiento" | "missalas" | "misproyectos" | "miciudad" | "segGeneral" | "tablero" | "franjas" | "reglas" | "cargaMentores" | "horarios" | "sinProyecto" | "salas" | "citaciones" | "importar" | "usuarios";
 
 // Cada sección aparece solo si el rol tiene el permiso (el servidor lo vuelve a validar).
 const NAV: { key: Seccion; label: string; href: string; permiso: Permiso | Permiso[] }[] = [
@@ -15,6 +15,7 @@ const NAV: { key: Seccion; label: string; href: string; permiso: Permiso | Permi
   { key: "seguimiento", label: "Seguimiento", href: "/monitor", permiso: "ver_seguimiento" },
   { key: "missalas", label: "Mis salas", href: "/monitor/salas", permiso: "monitorear_salas" },
   { key: "misproyectos", label: "Mis proyectos", href: "/monitor/proyectos", permiso: ["monitorear_salas", "ver_todas_las_ciudades"] },
+  { key: "miciudad", label: "Mi ciudad", href: "/monitor/ciudad", permiso: "monitorear_salas" },
   { key: "evaluaciones", label: "Evaluaciones", href: "/mentor", permiso: "ver_evaluaciones" },
   { key: "segGeneral", label: "Seguimiento general", href: "/evaluacion/seguimiento", permiso: "ver_evaluaciones" },
   { key: "tablero", label: "Tablero", href: "/admin/tablero", permiso: "ver_resumen" },

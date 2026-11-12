@@ -9,7 +9,7 @@ import BotonTema from "../../BotonTema";
 import { TABS, type SeccionEval } from "../EvalShell";
 import s from "../Evaluacion.module.css";
 import { useDialogo } from "./Dialogos";
-import { IcoCarpeta, IcoCerrar, IcoCuadricula, IcoLista, IcoLuna, IcoMenu, IcoSalir, IcoSol } from "./Iconos";
+import { IcoCarpeta, IcoCerrar, IcoCuadricula, IcoLista, IcoLuna, IcoMenu, IcoSalir, IcoSol, IcoUbicacion } from "./Iconos";
 import v from "./Vistas.module.css";
 
 // Fase 6 · Marco de las vistas nuevas (Mi ciudad y Monitores). En web es la misma barra de EvalShell (mismas clases,
@@ -17,7 +17,7 @@ import v from "./Vistas.module.css";
 // un cajón con nombre, rol, secciones, modo claro/oscuro y «Salir» (prototipo 02/04/06). EvalShell no cambia: las
 // vistas de hoy siguen igual.
 
-const ICONO: Partial<Record<SeccionEval | "panel", React.ReactNode>> = { proyectos: <IcoCarpeta />, salas: <IcoCarpeta />, panel: <IcoCuadricula /> };
+const ICONO: Partial<Record<SeccionEval | "panel", React.ReactNode>> = { proyectos: <IcoCarpeta />, salas: <IcoCarpeta />, ciudad: <IcoUbicacion />, panel: <IcoCuadricula /> };
 
 async function salir() {
   await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
@@ -42,7 +42,7 @@ export default function ShellVistas({ user, active, children }: { user: SessionU
             <div className={s.marcaTxt}><b>Jóvenes creaTIvos 2026</b><span>Evaluación del proyecto final</span></div>
             <span className={s.divisor} aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={s.logoSofka} src="/logo-sofka.webp" alt="Sofka" width={98} height={28} />
+            <img className={`${s.logoSofka} ${v.sofka}`} src="/logo-sofka.webp" alt="Sofka" width={98} height={28} />
           </div>
           <nav className={`${s.tabs} ${v.tabsWeb}`} aria-label="Secciones">
             {tabs.map((t) => <a key={t.href + t.label} className={s.tab} href={t.href} aria-current={t.key === active ? "page" : undefined}>{t.label}</a>)}
@@ -71,7 +71,12 @@ function Cajon({ user, onCerrar, children }: { user: SessionUser; onCerrar: () =
   const ref = useRef<HTMLDivElement>(null);
   const [tema, setTema] = useState<Tema | null>(null);
   useDialogo(ref, onCerrar);
-  useEffect(() => { setTema(temaActual()); }, []);
+  useEffect(() => {
+    setTema(temaActual());
+    const o = new MutationObserver(() => setTema(temaActual()));
+    o.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => o.disconnect();
+  }, []);
   const oscuro = tema === "dark";
   return (
     <>
