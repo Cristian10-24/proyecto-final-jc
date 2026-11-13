@@ -148,3 +148,9 @@ select.control { appearance: none; padding-right: 34px; background-image: linear
 
 /* Ajuste 2 · «Salir» con ícono y área táctil de 44 px (solo en las vistas nuevas). */
 .shell .salir { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; }
+
+/* Ajuste 4 · En el celular el panel lateral es una hoja inferior casi a pantalla completa (prototipo 06). */
+@media (max-width: 899px) {
+  .lado { top: auto; left: 0; width: 100%; max-height: 92vh; border-left: 0; border-radius: 22px 22px 0 0; padding: 8px 16px 20px; box-shadow: 0 -20px 40px -20px rgba(0, 0, 0, .35); }
+  .lado::before { content: ""; display: block; width: 44px; height: 5px; border-radius: 9px; background: var(--ev-line); margin: 0 auto 12px; }
+}

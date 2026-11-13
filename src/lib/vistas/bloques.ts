@@ -85,3 +85,48 @@ export function bloqueDeSala(salas: readonly { dia: string; hora: number; sala: 
   while (horas.has(hasta)) hasta++;
   return { desde, hasta };
 }
+
+// ---- Ajuste 4 · Una sola lista de bloques del día para Cuadrícula, Por monitor y Por sala, y un solo panel ----
+
+/** Estado del panel: día + sala + hora de inicio del bloque (como el diseño 3a). */
+export type ClaveBloque = { dia: string; sala: number; desde: number };
+export const claveBloque = (dia: string, b: Pick<Bloque, "sala" | "desde">): ClaveBloque => ({ dia, sala: b.sala, desde: b.desde });
+/** El bloque de esa clave en la lista visible del día (null si no está: otro día o un filtro lo ocultó). */
+export const buscarBloque = (bloques: readonly Bloque[], dia: string, c: ClaveBloque | null): Bloque | null =>
+  c && c.dia === dia ? bloques.find((b) => b.sala === c.sala && b.desde === c.desde) ?? null : null;
+
+export type FiltroBloques = { monitor: string; sala: string; mentor: string };
+/**
+ * Bloques visibles: se unen las horas del día (una sola vez) y se filtran BLOQUES enteros, así un bloque es el mismo
+ * desde cualquier vista. `coincide(b)` decide la búsqueda (monitor, mentor, sala o algún proyecto del bloque).
+ */
+export function bloquesVisibles(celdas: readonly Celda[], f: FiltroBloques, coincide: (b: Bloque) => boolean): Bloque[] {
+  return unirBloques(celdas).filter((b) =>
+    (!f.monitor || (f.monitor === "sin" ? b.monitor === null : b.monitor === f.monitor))
+    && (!f.sala || String(b.sala) === f.sala) && (!f.mentor || b.mentorId === f.mentor) && coincide(b));
+}
+
+/** «Sala 5, 10:00 a 11:00 a. m., mentor Paola Andrea Lozano, 4 proyectos[, sin margen][, sin monitor]. Ver detalle». */
+export function ariaBloque(b: Bloque, mentor: string, sinMargen: boolean): string {
+  const n = b.proyectos.length;
+  return `Sala ${b.sala}, ${rangoHoras(b.desde, b.hasta)}, mentor ${mentor}, ${n} ${n === 1 ? "proyecto" : "proyectos"}${sinMargen ? ", sin margen" : ""}${b.monitor === null ? ", sin monitor" : ""}. Ver detalle`;
+}
+
+type PersonaPanel = { nombre: string; celular: string | null };
+export type ContenidoPanel = {
+  titulo: string; rango: string; enlace: string | null; enlaceTxt: string | null; sinMargen: boolean;
+  mentor: PersonaPanel; monitor: PersonaPanel | null; proyectos: { hora: string; nombre: string }[];
+};
+/** Lo que muestra el panel de un bloque. Sin integrantes ni contacto de estudiantes: solo hora y nombre del proyecto. */
+export function contenidoPanel(b: Bloque, ctx: {
+  enlace?: string | null; mentor?: PersonaPanel; monitor?: PersonaPanel | null; sinMargen: boolean;
+}): ContenidoPanel {
+  return {
+    titulo: `Sala ${b.sala}`, rango: rangoHoras(b.desde, b.hasta),
+    enlace: ctx.enlace ?? null, enlaceTxt: ctx.enlace ? ctx.enlace.replace(/^https?:\/\//, "") : null,
+    sinMargen: ctx.sinMargen,
+    mentor: { nombre: ctx.mentor?.nombre ?? b.mentorId, celular: ctx.mentor?.celular ?? null },
+    monitor: b.monitor === null ? null : { nombre: ctx.monitor?.nombre ?? b.monitor, celular: ctx.monitor?.celular ?? null },
+    proyectos: b.proyectos.map((p) => ({ hora: horaLarga(p.hora, p.minuto), nombre: p.nombre })),
+  };
+}

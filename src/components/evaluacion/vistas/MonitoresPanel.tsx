@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import {
-  cambiosSinMargen, horaCorta, horaLarga, porMonitor, rangoHoras, salasSinMonitor, totales, unirBloques, type Bloque, type Celda,
+  ariaBloque, bloquesVisibles, buscarBloque, cambiosSinMargen, claveBloque, contenidoPanel, horaCorta, horaLarga, porMonitor, rangoHoras,
+  salasSinMonitor, totales, unirBloques, type Bloque, type ClaveBloque, type ContenidoPanel,
 } from "@/lib/vistas/bloques";
 import { coincide, coloresMonitores, plural } from "@/lib/vistas/formato";
 import type { Persona, VistaMonitores } from "@/lib/vistas/monitores";
 import { fechaLarga } from "../comun";
-import { Acordeon, Avatar, Buscador, Chip, Segmentado, Selector, Telefono, type Opcion } from "./Basicos";
+import { Acordeon, Avatar, BotonesLlamar, Buscador, Chip, Segmentado, Selector, Telefono, type Opcion } from "./Basicos";
 import { BarraMovil, HojaFiltros, PanelLateral, type CampoFiltro } from "./Dialogos";
 import { Cargando, ErrorCarga, Vacio } from "./Estados";
 import { IcoAlerta, IcoDescargar, IcoReloj } from "./Iconos";
@@ -34,12 +35,13 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
   const [q, setQ] = useState("");
   const [ver, setVerEstado] = useState<Ver>("cuadricula");
   const [hoja, setHoja] = useState(false);
-  const [panel, setPanel] = useState<Bloque | null>(null);
+  // Ajuste 4: un solo estado del panel (día + sala + hora de inicio), como el diseño 3a.
+  const [abierto, setAbierto] = useState<ClaveBloque | null>(null);
 
   useEffect(() => {
     try { const x = localStorage.getItem(CLAVE_VER); if (x === "cuadricula" || x === "monitor" || x === "sala") setVerEstado(x); } catch { /* sin almacenamiento */ }
   }, []);
-  const setVer = (x: Ver) => { setVerEstado(x); try { localStorage.setItem(CLAVE_VER, x); } catch { /* sin almacenamiento */ } };
+  const setVer = (x: Ver) => { setVerEstado(x); setAbierto(null); try { localStorage.setItem(CLAVE_VER, x); } catch { /* sin almacenamiento */ } };
 
   const cargar = useCallback(async (d: string | null) => {
     try {
@@ -54,10 +56,11 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
   }, []);
   useEffect(() => { void cargar(dia); }, [cargar, dia]);
   useEffect(() => {
-    if (hoja || panel) return;
+    // El refresco no cierra el panel: el bloque se vuelve a buscar por su clave en los datos nuevos.
+    if (hoja) return;
     const t = setInterval(() => void cargar(dia), 60_000);
     return () => clearInterval(t);
-  }, [cargar, dia, hoja, panel]);
+  }, [cargar, dia, hoja]);
 
   const celdas = useMemo(() => datos?.celdas ?? [], [datos]);
   const mon = useMemo(() => new Map((datos?.monitores ?? []).map((x) => [x.id, x])), [datos]);
@@ -77,11 +80,9 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
   const destinoSinMargen = new Set(sinMargen.map((x) => `${x.a.monitor}|${x.a.sala}|${x.a.desde}`));
   const esSinMargen = (b: Bloque) => destinoSinMargen.has(`${b.monitor}|${b.sala}|${b.desde}`);
 
-  const filtradas = celdas.filter((c: Celda) =>
-    (!f.monitor || (f.monitor === "sin" ? c.monitor === null : c.monitor === f.monitor))
-    && (!f.sala || String(c.sala) === f.sala) && (!f.mentor || c.mentorId === f.mentor)
-    && coincide([nombreMon(c.monitor), nombreMen(c.mentorId), `Sala ${c.sala}`, ...c.proyectos.map((p) => p.nombre)], q));
-  const bloques = unirBloques(filtradas);
+  // Una sola lista de bloques visibles del día para las tres vistas (bloques enteros, nunca partidos por un filtro).
+  const bloques = bloquesVisibles(celdas, { monitor: f.monitor ?? "", sala: f.sala ?? "", mentor: f.mentor ?? "" },
+    (b) => coincide([nombreMon(b.monitor), nombreMen(b.mentorId), `Sala ${b.sala}`, ...b.proyectos.map((p) => p.nombre)], q));
   const grupos = porMonitor(bloques);
   const ordenMon = [...grupos.keys()].filter((k): k is string => k !== null).sort((a, b) => nombreMon(a).localeCompare(nombreMon(b), "es"));
   const horas = celdas.length ? range(Math.min(...celdas.map((c) => c.hora)), Math.max(...celdas.map((c) => c.hora))) : [];
@@ -98,7 +99,12 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
   ];
   const activos = (["monitor", "sala", "mentor"] as const).filter((k) => f[k]).length;
   const limpiar = () => { setF(POR_DEFECTO); setQ(""); };
-  const cambiarDia = (d: string) => { if (d && d !== diaSel) { setF(POR_DEFECTO); setPanel(null); setDia(d); } };
+  const cambiarDia = (d: string) => { if (d && d !== diaSel) { setF(POR_DEFECTO); setAbierto(null); setDia(d); } };
+  const abrirBloque = (b: Bloque) => { if (diaSel) setAbierto(claveBloque(diaSel, b)); };
+  const bloqueAbierto = buscarBloque(bloques, diaSel ?? "", abierto);
+  // Otro día o un filtro que lo oculta: se cierra (y no reaparece al quitar el filtro).
+  const perdido = carga === "listo" && !!abierto && !bloqueAbierto;
+  useEffect(() => { if (perdido) setAbierto(null); }, [perdido]);
 
   const txtSinMon = sinMon.length ? `${plural(sinMon.length, "sala sin monitor", "salas sin monitor")} · ${sinMon.map((b) => `Sala ${b.sala} ${horaLarga(b.desde)}`).join(", ")}` : "";
   const nMonSm = new Set(sinMargen.map((x) => x.monitor)).size;
@@ -171,23 +177,23 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
                   {ordenMon.map((id) => (
                     <FilaCuadricula key={id} horas={horas} bloques={grupos.get(id)!} color={colorDe(id)}
                       quien={<><b>{nombreMon(id)}</b><span><Telefono celular={mon.get(id)?.celular} /></span></>}
-                      nombre={nombreMon(id)} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={setPanel} />
+                      nombre={nombreMon(id)} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />
                   ))}
                   {grupos.get(null) && (
                     <FilaCuadricula horas={horas} bloques={grupos.get(null)!} color="sin" sin
                       quien={<><b>Sin monitor</b><span>{plural(grupos.get(null)!.length, "sala por cubrir", "salas por cubrir")}</span></>}
-                      nombre="Sin monitor" nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={setPanel} />
+                      nombre="Sin monitor" nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />
                   )}
                 </div>
               ) : ver === "monitor" ? (
                 <div className={m.tarjetas}>
                   {ordenMon.map((id) => (
-                    <TarjetaMonitor key={id} nombre={nombreMon(id)} color={colorDe(id)} bloques={grupos.get(id)!} nombreMen={nombreMen} esSinMargen={esSinMargen} />
+                    <TarjetaMonitor key={id} nombre={nombreMon(id)} color={colorDe(id)} bloques={grupos.get(id)!} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />
                   ))}
-                  {grupos.get(null) && <TarjetaMonitor nombre="Sin monitor" color="sin" bloques={grupos.get(null)!} nombreMen={nombreMen} esSinMargen={esSinMargen} />}
+                  {grupos.get(null) && <TarjetaMonitor nombre="Sin monitor" color="sin" bloques={grupos.get(null)!} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />}
                 </div>
               ) : (
-                <PorSala bloques={bloques} nombreMon={nombreMon} nombreMen={nombreMen} />
+                <PorSala bloques={bloques} nombreMon={nombreMon} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />
               )
             )}
           </div>
@@ -208,7 +214,7 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
               <>
                 {grupos.get(null) && (
                   <Acordeon aviso abierto titulo={<span className={m.resumenAcc}><Avatar nombre="" color="sin" /><span><b>Sin monitor</b><span>{plural(grupos.get(null)!.length, "sala por cubrir", "salas por cubrir")}</span></span></span>}>
-                    <Linea bloques={grupos.get(null)!} color="sin" nombreMen={nombreMen} esSinMargen={esSinMargen} />
+                    <Linea bloques={grupos.get(null)!} color="sin" nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />
                   </Acordeon>
                 )}
                 {ordenMon.map((id) => {
@@ -217,7 +223,7 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
                   return (
                     <Acordeon key={id} titulo={<span className={m.resumenAcc}><Avatar nombre={nombreMon(id)} color={colorDe(id)} /><span><b>{nombreMon(id)}</b><span>{t.horas} h · {plural(t.proyectos, "proyecto", "proyectos")}</span></span>{sm && <Chip tono="bad">Sin margen</Chip>}</span>}>
                       <div className={`${v.small} ${v.muted}`} style={{ marginBottom: 10 }}>Celular: <Telefono celular={mon.get(id)?.celular} /></div>
-                      <Linea bloques={grupos.get(id)!} color={colorDe(id)} nombreMen={nombreMen} esSinMargen={esSinMargen} />
+                      <Linea bloques={grupos.get(id)!} color={colorDe(id)} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={abrirBloque} />
                     </Acordeon>
                   );
                 })}
@@ -232,10 +238,9 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
         <HojaFiltros campos={campos} valores={{ ...f, dia: diaSel ?? "" }} porDefecto={{ ...POR_DEFECTO, dia: diaSel ?? "" }} onCerrar={() => setHoja(false)}
           onAplicar={({ dia: d, ...resto }) => { setF({ ...POR_DEFECTO, ...resto }); if (d && d !== diaSel) cambiarDia(d); }} />
       )}
-      {panel && diaSel && (
-        <PanelLateral subtitulo={fechaLarga(diaSel)} titulo={`Sala ${panel.sala}`} onCerrar={() => setPanel(null)}>
-          <DetalleBloque b={panel} enlace={enlace.get(panel.sala)} mentor={men.get(panel.mentorId)} monitor={panel.monitor ? mon.get(panel.monitor) ?? { id: panel.monitor, nombre: panel.monitor, celular: null } : null} />
-        </PanelLateral>
+      {bloqueAbierto && diaSel && (
+        <PanelBloque dia={diaSel} admin={admin} onCerrar={() => setAbierto(null)}
+          c={contenidoPanel(bloqueAbierto, { enlace: enlace.get(bloqueAbierto.sala), mentor: men.get(bloqueAbierto.mentorId), monitor: bloqueAbierto.monitor ? mon.get(bloqueAbierto.monitor) : null, sinMargen: esSinMargen(bloqueAbierto) })} />
       )}
     </ShellVistas>
   );
@@ -257,7 +262,7 @@ function FilaCuadricula({ horas, bloques, color, quien, nombre, nombreMen, esSin
       {bloques.map((b) => (
         <button key={`${b.sala}|${b.desde}`} type="button" className={`${m.barra} ${claseColor(color, "b")}`}
           style={{ gridColumn: `${b.desde - h0 + 2} / span ${b.hasta - b.desde}` }}
-          aria-label={`${nombre}: Sala ${b.sala}, ${rangoHoras(b.desde, b.hasta)}, ${nombreMen(b.mentorId)}, ${plural(b.proyectos.length, "proyecto", "proyectos")}${esSinMargen(b) ? ", sin margen" : ""}. Ver detalle`}
+          aria-label={ariaBloque(b, nombreMen(b.mentorId), esSinMargen(b))}
           onClick={() => onAbrir(b)}>
           <b>Sala {b.sala}</b><span>{dosNombres(nombreMen(b.mentorId))}</span><span>{plural(b.proyectos.length, "proyecto", "proyectos")}</span>
           {esSinMargen(b) && <span className={m.chipMini}><Chip tono="bad">Sin margen</Chip></span>}
@@ -268,21 +273,23 @@ function FilaCuadricula({ horas, bloques, color, quien, nombre, nombreMen, esSin
   );
 }
 
-function Linea({ bloques, color, nombreMen, esSinMargen }: { bloques: Bloque[]; color: number | "sin"; nombreMen: (id: string) => string; esSinMargen: (b: Bloque) => boolean }) {
+function Linea({ bloques, color, nombreMen, esSinMargen, onAbrir }: { bloques: Bloque[]; color: number | "sin"; nombreMen: (id: string) => string; esSinMargen: (b: Bloque) => boolean; onAbrir: (b: Bloque) => void }) {
   return (
     <ul className={m.linea}>
       {bloques.map((b) => (
         <li key={`${b.sala}|${b.desde}`} className={claseColor(color, "p")}>
-          <b>{rangoHoras(b.desde, b.hasta)}</b>
-          <span><strong>Sala {b.sala}</strong> · {nombreMen(b.mentorId)} · {plural(b.proyectos.length, "proyecto", "proyectos")}</span>
-          {esSinMargen(b) && <div style={{ marginTop: 4 }}><Chip tono="bad">Sin margen</Chip></div>}
+          <button type="button" className={m.itemBtn} aria-label={ariaBloque(b, nombreMen(b.mentorId), esSinMargen(b))} onClick={() => onAbrir(b)}>
+            <b>{rangoHoras(b.desde, b.hasta)}</b>
+            <span><strong>Sala {b.sala}</strong> · {nombreMen(b.mentorId)} · {plural(b.proyectos.length, "proyecto", "proyectos")}</span>
+            {esSinMargen(b) && <span className={m.chipBloque}><Chip tono="bad">Sin margen</Chip></span>}
+          </button>
         </li>
       ))}
     </ul>
   );
 }
 
-function TarjetaMonitor({ nombre, color, bloques, nombreMen, esSinMargen }: { nombre: string; color: number | "sin"; bloques: Bloque[]; nombreMen: (id: string) => string; esSinMargen: (b: Bloque) => boolean }) {
+function TarjetaMonitor({ nombre, color, bloques, nombreMen, esSinMargen, onAbrir }: { nombre: string; color: number | "sin"; bloques: Bloque[]; nombreMen: (id: string) => string; esSinMargen: (b: Bloque) => boolean; onAbrir: (b: Bloque) => void }) {
   const t = totales(bloques);
   return (
     <section className={`${m.tarjeta} ${color === "sin" ? m.tarjetaSin : ""}`} aria-label={nombre}>
@@ -290,12 +297,12 @@ function TarjetaMonitor({ nombre, color, bloques, nombreMen, esSinMargen }: { no
         <Avatar nombre={nombre} color={color} />
         <div><b>{nombre}</b><span>{color === "sin" ? plural(bloques.length, "sala por cubrir", "salas por cubrir") : `${t.horas} h · ${plural(t.proyectos, "proyecto", "proyectos")}`}</span></div>
       </div>
-      <Linea bloques={bloques} color={color} nombreMen={nombreMen} esSinMargen={esSinMargen} />
+      <Linea bloques={bloques} color={color} nombreMen={nombreMen} esSinMargen={esSinMargen} onAbrir={onAbrir} />
     </section>
   );
 }
 
-function PorSala({ bloques, nombreMon, nombreMen }: { bloques: Bloque[]; nombreMon: (id: string | null) => string; nombreMen: (id: string) => string }) {
+function PorSala({ bloques, nombreMon, nombreMen, esSinMargen, onAbrir }: { bloques: Bloque[]; nombreMon: (id: string | null) => string; nombreMen: (id: string) => string; esSinMargen: (b: Bloque) => boolean; onAbrir: (b: Bloque) => void }) {
   const salas = [...new Set(bloques.map((b) => b.sala))].sort((a, b) => a - b);
   return (
     <div className={m.salas}>
@@ -305,10 +312,11 @@ function PorSala({ bloques, nombreMon, nombreMen }: { bloques: Bloque[]; nombreM
           <b>Sala {s}</b>
           <div className={m.salaBloques}>
             {bloques.filter((b) => b.sala === s).sort((a, b) => a.desde - b.desde).map((b) => (
-              <div key={b.desde} className={m.salaBloque}>
+              <button key={b.desde} type="button" className={m.salaBloque} aria-label={ariaBloque(b, nombreMen(b.mentorId), esSinMargen(b))} onClick={() => onAbrir(b)}>
                 <b>{rangoHoras(b.desde, b.hasta)}</b><span>{nombreMen(b.mentorId)}</span>
                 {b.monitor ? <Chip tono="borde">Monitor · {nombreMon(b.monitor)}</Chip> : <Chip tono="mid">Sin monitor</Chip>}
-              </div>
+                {esSinMargen(b) && <Chip tono="bad">Sin margen</Chip>}
+              </button>
             ))}
           </div>
         </div>
@@ -317,24 +325,44 @@ function PorSala({ bloques, nombreMon, nombreMen }: { bloques: Bloque[]; nombreM
   );
 }
 
-function DetalleBloque({ b, enlace, mentor, monitor }: { b: Bloque; enlace?: string; mentor?: Persona; monitor: Persona | null }) {
-  let corto = "";
-  try { if (enlace) { const u = new URL(enlace); corto = u.host + u.pathname; } } catch { /* enlace inválido: no se muestra */ }
+/** Ajuste 4 · Panel único del bloque (diseño 3a): el mismo desde Cuadrícula, Por monitor y Por sala. En el celular es
+ *  una hoja inferior (prototipo 06). Cierra con la X, Escape o el fondo; el foco vuelve al botón que lo abrió. */
+function PanelBloque({ c, dia, admin, onCerrar }: { c: ContenidoPanel; dia: string; admin: boolean; onCerrar: () => void }) {
   return (
-    <>
-      <p className={v.muted} style={{ margin: "-6px 0 16px" }}>{rangoHoras(b.desde, b.hasta)}</p>
-      <dl className={m.dl}>
-        <dt>Enlace de la sala</dt>
-        <dd>{enlace && corto ? <a href={enlace} target="_blank" rel="noopener noreferrer">Abrir {corto}</a> : <span className={v.sinReg}>Sin enlace</span>}</dd>
-        <dt>Mentor</dt>
-        <dd>{mentor?.nombre ?? b.mentorId}<span><Telefono celular={mentor?.celular} /></span></dd>
-        <dt>Monitor</dt>
-        <dd>{monitor ? <>{monitor.nombre}<span><Telefono celular={monitor.celular} /></span></> : <Chip tono="mid">Sin monitor</Chip>}</dd>
-      </dl>
-      <h3 style={{ fontSize: 15 }}>{plural(b.proyectos.length, "proyecto del bloque", "proyectos del bloque")}</h3>
-      <ul className={m.listaProy}>
-        {b.proyectos.map((p, i) => <li key={i}><b>{horaLarga(p.hora, p.minuto)}</b> · {p.nombre}</li>)}
-      </ul>
-    </>
+    <PanelLateral subtitulo={fechaLarga(dia)} titulo={c.titulo} onCerrar={onCerrar}>
+      <p className={m.rangoPanel}>{c.rango}</p>
+      <div className={m.panel}>
+        {c.sinMargen && <div className={`${v.aviso} ${v.avisoErr}`}>El monitor llega de otra sala sin margen: su bloque anterior termina con un turno a las :45.</div>}
+        {!c.monitor && <div className={`${v.aviso} ${v.avisoWarn}`}>Esta sala no tiene monitor.{admin ? " Asígnalo en Salas." : ""}</div>}
+        <div>
+          <span className={v.lbl}>Enlace de la sala</span>
+          {c.enlace ? <a className={`${v.btn} ${v.btnPri} ${m.enlacePanel}`} href={c.enlace} target="_blank" rel="noopener noreferrer">Abrir {c.enlaceTxt}</a> : <span className={v.sinReg}>Sin enlace</span>}
+        </div>
+        <div>
+          <span className={v.lbl}>Mentor</span>
+          <div className={m.personaPanel}>
+            <span><b>{c.mentor.nombre}</b><span><Telefono celular={c.mentor.celular} /></span></span>
+            <span className={m.iconosPanel}><BotonesLlamar celular={c.mentor.celular} nombre={c.mentor.nombre} /></span>
+          </div>
+        </div>
+        <div>
+          <span className={v.lbl}>Monitor</span>
+          {c.monitor ? (
+            <div className={m.personaPanel}>
+              <span><b>{c.monitor.nombre}</b><span><Telefono celular={c.monitor.celular} /></span></span>
+              <span className={m.iconosPanel}><BotonesLlamar celular={c.monitor.celular} nombre={c.monitor.nombre} /></span>
+            </div>
+          ) : (
+            <div className={m.sinMonitor}><Chip tono="mid">Sin monitor asignado</Chip>{admin && <a className={v.btn} href="/admin/salas">Asignar en Salas</a>}</div>
+          )}
+        </div>
+        <div>
+          <span className={v.lbl}>{plural(c.proyectos.length, "proyecto del bloque", "proyectos del bloque")}</span>
+          <ul className={m.listaProy}>
+            {c.proyectos.map((p, i) => <li key={i}><b>{p.hora}</b><span>{p.nombre}</span></li>)}
+          </ul>
+        </div>
+      </div>
+    </PanelLateral>
   );
 }

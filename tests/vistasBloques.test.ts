@@ -65,3 +65,44 @@ describe("bloqueDeSala (tarjeta Mentor del detalle)", async () => {
     expect(bloqueDeSala(S, "2026-11-14", 2, "Julián", 8)).toBeNull();
   });
 });
+
+describe("ajuste 4: un mismo bloque y un mismo panel desde las tres vistas", async () => {
+  const B = await import("@/lib/vistas/bloques");
+  const D = "2026-11-12";
+  const celdas = [c(8, 4, "m4", "san"), c(9, 4, "m4", "san"), c(10, 5, "m5", null, p(0, 30)), c(11, 6, "m6", "san", p(0))];
+  const todo = () => true;
+  const sinFiltro = { monitor: "", sala: "", mentor: "" };
+  it("la lista visible une las horas y filtra bloques enteros", () => {
+    expect(B.bloquesVisibles(celdas, sinFiltro, todo).map((b) => [b.sala, b.desde, b.hasta])).toEqual([[4, 8, 10], [5, 10, 11], [6, 11, 12]]);
+    expect(B.bloquesVisibles(celdas, { ...sinFiltro, monitor: "sin" }, todo).map((b) => b.sala)).toEqual([5]);
+    expect(B.bloquesVisibles(celdas, { ...sinFiltro, mentor: "m6" }, todo).map((b) => b.sala)).toEqual([6]);
+    // La búsqueda nunca parte un bloque: o entra entero o no entra.
+    expect(B.bloquesVisibles(celdas, sinFiltro, (b) => b.proyectos.some((x) => x.hora === 9))[0]).toMatchObject({ sala: 4, desde: 8, hasta: 10 });
+  });
+  it("Cuadrícula, Por monitor y Por sala abren el MISMO panel para la misma clave", () => {
+    const vis = B.bloquesVisibles(celdas, sinFiltro, todo);
+    const grid = vis.find((b) => b.sala === 4)!; // lo que pinta la cuadrícula
+    const porMon = B.porMonitor(vis).get("san")!.find((b) => b.sala === 4)!; // tarjeta del monitor
+    const porSala = vis.filter((b) => b.sala === 4)[0]!; // fila de la sala
+    const ctx = { enlace: "https://meet.google.com/abc-defg-hij", mentor: { nombre: "Mentora Cuatro", celular: "+573000000004" }, monitor: { nombre: "Santiago", celular: null }, sinMargen: false };
+    const [a, b, c2] = [grid, porMon, porSala].map((x) => B.contenidoPanel(B.buscarBloque(vis, D, B.claveBloque(D, x))!, ctx));
+    expect(a).toEqual(b);
+    expect(b).toEqual(c2);
+    expect(a).toMatchObject({ titulo: "Sala 4", rango: "8:00 a 10:00 a. m.", enlaceTxt: "meet.google.com/abc-defg-hij" });
+    expect(a.proyectos[0]).toEqual({ hora: "8:00 a. m.", nombre: "P0" });
+    // Solo hora y nombre del proyecto: nada de integrantes ni contacto de estudiantes.
+    for (const p of a.proyectos) expect(Object.keys(p).sort()).toEqual(["hora", "nombre"]);
+  });
+  it("otro día o un filtro que lo oculta: no hay panel", () => {
+    const vis = B.bloquesVisibles(celdas, sinFiltro, todo);
+    const k = B.claveBloque(D, vis[0]!);
+    expect(B.buscarBloque(vis, "2026-11-13", k)).toBeNull();
+    expect(B.buscarBloque(B.bloquesVisibles(celdas, { ...sinFiltro, sala: "5" }, todo), D, k)).toBeNull();
+  });
+  it("sin monitor y aria-label", () => {
+    const sm = B.bloquesVisibles(celdas, sinFiltro, todo).find((b) => b.sala === 5)!;
+    expect(B.contenidoPanel(sm, { sinMargen: false }).monitor).toBeNull();
+    expect(B.ariaBloque(sm, "Paola Andrea Lozano", false)).toBe("Sala 5, 10:00 a 11:00 a. m., mentor Paola Andrea Lozano, 2 proyectos, sin monitor. Ver detalle");
+    expect(B.ariaBloque(sm, "Paola", true)).toContain(", sin margen, sin monitor. Ver detalle");
+  });
+});
