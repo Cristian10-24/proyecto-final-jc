@@ -197,7 +197,6 @@ function Mentor({ b }: { b: BloqueLista }) {
   return (
     <span className={l.gmentor}>
       <span>Mentor · <b>{b.mentor.nombre}</b> · <Telefono celular={b.mentor.celular} /></span>
-      <BotonesLlamar celular={b.mentor.celular} nombre={b.mentor.nombre} />
     </span>
   );
 }
@@ -207,10 +206,13 @@ function GrupoWeb({ b, todos, verDia }: { b: BloqueLista; todos: boolean; verDia
   return (
     <section className={l.grupo} aria-label={tituloBloque(b, verDia)}>
       <div className={l.ghead}>
-        <h2>{tituloBloque(b, verDia)}</h2>
-        <Chip tono="borde">{plural(b.filas.length, "proyecto", "proyectos")}</Chip>
-        <Mentor b={b} />
-        {todos && <span className={l.sub}>Monitor · {b.monitor?.nombre ?? "Por asignar"}</span>}
+        <div className={l.gtitulo}>
+          <h2>{tituloBloque(b, verDia)}</h2>
+          <Chip tono="borde">{plural(b.filas.length, "proyecto", "proyectos")}</Chip>
+          <Mentor b={b} />
+          {todos && <span className={l.sub}>Monitor · {b.monitor?.nombre ?? "Por asignar"}</span>}
+        </div>
+        <span className={l.iconos}><BotonesLlamar celular={b.mentor.celular} nombre={b.mentor.nombre} /></span>
         <span className={l.gacc}><AbrirSala enlace={b.enlace} /></span>
       </div>
       <div className={`${l.thead} ${cols}`} aria-hidden="true">
@@ -256,7 +258,7 @@ function FilaWeb({ x, todos, cols }: { x: FilaLista; todos: boolean; cols: strin
           <div><div className={l.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div><Lugar x={x} /></div>
           <div className={l.ints}>
             {x.integrantes.map((i, k) => (
-              <div key={k} className={l.int}><span>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} /></span></span><BotonesLlamar celular={i.celular} nombre={i.nombre} /></div>
+              <div key={k} className={l.int}><span>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} /></span></span><span className={l.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span></div>
             ))}
           </div>
         </div>
@@ -286,7 +288,7 @@ function GrupoMovil({ b, todos, verDia }: { b: BloqueLista; todos: boolean; verD
             <Lugar x={x} />
             {x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}
             {todos
-              ? x.integrantes.map((i, k) => <div key={k} className={l.int}><span>{i.nombre} · <Telefono celular={i.celular} /></span><BotonesLlamar celular={i.celular} nombre={i.nombre} /></div>)
+              ? x.integrantes.map((i, k) => <div key={k} className={l.int}><span>{i.nombre} · <Telefono celular={i.celular} /></span><span className={l.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span></div>)
               : <><Chips x={x} /><a className={`${v.btn} ${l.gestionar}`} href={`/monitor/proyectos/${x.id}`} aria-label={`Gestionar ${x.proyecto}`}>Gestionar ›</a></>}
           </article>
         ))}

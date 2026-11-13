@@ -3,11 +3,12 @@
    ≤ 900 px y Asistencia toma el resto. Subcolumnas (proyecto | integrantes) cuando la celda mide ≥ 720 px. */
 
 .grupo { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; margin-bottom: 16px; box-shadow: var(--ev-sombra); }
-.ghead { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 12px 16px; background: var(--ev-surface-2); border-bottom: 1px solid var(--ev-line); border-radius: 14px 14px 0 0; }
+.ghead { display: grid; grid-template-columns: minmax(0, 1fr) 96px 150px; align-items: center; gap: 10px 18px; padding: 12px 16px; background: var(--ev-surface-2); border-bottom: 1px solid var(--ev-line); border-radius: 14px 14px 0 0; }
 .ghead h2 { font-size: 17px; }
 .gmentor { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; font-size: 14px; color: var(--ev-muted); }
 .gmentor b { color: var(--ev-ink); }
-.gacc { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.gacc { display: flex; justify-content: flex-end; }
+.gtitulo { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; min-width: 0; }
 
 .thead, .fila { display: grid; gap: 12px 20px; padding: 12px 16px; align-items: center; }
 .conGestion { grid-template-columns: 140px minmax(110px, 150px) minmax(0, 2fr) minmax(220px, 1fr); }
@@ -16,13 +17,17 @@
 .thead { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); padding-top: 9px; padding-bottom: 9px; }
 .fila { border-top: 1px solid var(--ev-line); }
 .fila:first-of-type { border-top: 0; }
-.fila:hover { background: var(--ev-surface-2); }
+/* Al pasar el cursor, una capa sutil encima: no tapa el color de fondo por estado. */
+.fila:hover { background-image: linear-gradient(color-mix(in srgb, var(--ev-ink) 5%, transparent), color-mix(in srgb, var(--ev-ink) 5%, transparent)); }
 .presente { background: var(--ev-fila-presente); }
 .ausente { background: var(--ev-fila-ausente); }
 .horaCel { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .proy { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sub { font-size: 13px; color: var(--ev-muted); }
-.int { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 14px; }
+/* Ajuste 2: texto flexible | columna fija de 96 px con Llamar y WhatsApp pegados a la derecha (misma x en todas las filas). */
+.int { display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 4px 12px; font-size: 14px; }
+.int > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.iconos { display: flex; justify-content: flex-end; }
 .int + .int { margin-top: 6px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .gestionar { white-space: nowrap; }

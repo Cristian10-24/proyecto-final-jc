@@ -145,3 +145,6 @@ select.control { appearance: none; padding-right: 34px; background-image: linear
 .soloMovilIn { display: none; }
 @media (max-width: 899px) { .soloWeb { display: none !important; } .soloMovil { display: block; } .soloMovilIn { display: inline; } }
 .pad { padding: 12px 16px 0; }
+
+/* Ajuste 2 · «Salir» con ícono y área táctil de 44 px (solo en las vistas nuevas). */
+.shell .salir { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; }

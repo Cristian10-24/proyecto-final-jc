@@ -18,19 +18,20 @@
     .subcols .integrantes > .int:first-child { margin-top: 0; }
   }
 }
-.fila:hover { background: var(--ev-surface-2); }
+/* Al pasar el cursor, una capa sutil encima: no tapa el color de fondo por estado. */
+.fila:hover { background-image: linear-gradient(color-mix(in srgb, var(--ev-ink) 5%, transparent), color-mix(in srgb, var(--ev-ink) 5%, transparent)); }
+.presente { background-color: var(--ev-fila-presente); }
+.ausente { background-color: var(--ev-fila-ausente); }
 .thead { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); padding-top: 10px; padding-bottom: 10px; }
 .fila { border-top: 1px solid var(--ev-line); align-items: start; }
 .fila:first-of-type { border-top: 0; }
 .proy { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* Desde 900 px (solo la tabla web): Llamar y WhatsApp en la misma línea que el celular. ≥1440: pareja en 2 columnas. */
-.int { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; font-size: 14px; }
+/* Ajuste 2: texto flexible | columna fija de 96 px con Llamar y WhatsApp a la derecha (misma x en todas las filas). */
+.int { display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 4px 12px; margin-top: 8px; font-size: 14px; }
+.iconos { display: flex; justify-content: flex-end; }
 .fila .int + .int { padding-top: 8px; border-top: 1px dashed var(--ev-line); }
-@media (min-width: 1440px) {
-  .integrantes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 24px; }
-  .fila .integrantes .int + .int { padding-top: 0; border-top: 0; }
-}
-.intNombre { min-width: 0; }
+.intNombre { min-width: 0; overflow-wrap: anywhere; }
 .cuando { display: flex; flex-direction: column; gap: 1px; font-size: 13.5px; color: var(--ev-muted); }
 .cuando b { font-family: var(--ev-font-titulo); font-weight: 600; font-size: 16px; color: var(--ev-hora); }
 .mentor { font-size: 14px; }
@@ -46,7 +47,7 @@
 .meta { font-size: 13.5px; color: var(--ev-muted); margin-top: 2px; }
 .meta b { font-family: var(--ev-font-titulo); font-weight: 600; color: var(--ev-hora); }
 .ints { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--ev-line); }
-.ints .int { margin-top: 8px; flex-direction: row; align-items: center; justify-content: space-between; }
+.ints .int { margin-top: 8px; }
 .ints .int b { display: block; font-size: 14px; }
 
 .contenido { min-width: 0; }
@@ -57,3 +58,6 @@
 .conteo { color: var(--ev-ink) !important; font-weight: 600; font-size: 14px; margin: 2px 0 0 !important; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chipsMovil { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+
+.tarjeta.presente { background-color: var(--ev-fila-presente); }
+.tarjeta.ausente { background-color: var(--ev-fila-ausente); }

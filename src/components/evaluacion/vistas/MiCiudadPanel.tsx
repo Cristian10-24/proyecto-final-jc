@@ -5,6 +5,7 @@ import type { SessionUser } from "@/lib/auth";
 import { coincide, plural, porcentaje } from "@/lib/vistas/formato";
 import { chipsExtra, contarEstudiantes, filtrarPorEstado, ordenar, type FiltroEstado } from "@/lib/vistas/conteoCiudad";
 import type { FilaMiCiudad, VistaMiCiudad } from "@/lib/vistas/miCiudad";
+import { estadoFila } from "@/lib/evaluacion/criterios";
 import { fechaLarga } from "../comun";
 import { BotonesLlamar, Buscador, Chip, ChipEstado, ResumenBarra, Selector, TarjetasFiltro, Telefono, type Opcion } from "./Basicos";
 import { BarraMovil, HojaFiltros, type CampoFiltro } from "./Dialogos";
@@ -153,7 +154,7 @@ function Integrante({ i }: { i: FilaMiCiudad["integrantes"][number] }) {
   return (
     <div className={m.int}>
       <span className={m.intNombre}>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} /></span></span>
-      <BotonesLlamar celular={i.celular} nombre={i.nombre} />
+      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span>
     </div>
   );
 }
@@ -168,9 +169,13 @@ function Extras({ x }: { x: FilaMiCiudad }) {
   return <>{chipsExtra(x).map((t) => <Chip key={t} tono={t.includes("ausente") ? "bad" : "borde"}>{t}</Chip>)}</>;
 }
 
+/** Fondo por estado, con la misma función y colores que «Mis proyectos» (evaluado = se presentó). */
+const FONDO = { presente: m.presente, ausente: m.ausente, pendiente: "" } as const;
+const fondo = (x: FilaMiCiudad) => FONDO[estadoFila(x.integrantes.map((i) => ({ res: "Pendiente" as const, presente: i.estado === "evaluado", ausente: i.estado === "ausente" })))];
+
 function FilaWeb({ x }: { x: FilaMiCiudad }) {
   return (
-    <div className={m.fila} role="row">
+    <div className={`${m.fila} ${fondo(x)}`} role="row">
       <div role="cell" className={m.celdaProy}>
         <div className={m.subcols}>
           <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
@@ -186,7 +191,7 @@ function FilaWeb({ x }: { x: FilaMiCiudad }) {
 
 function TarjetaMovil({ x }: { x: FilaMiCiudad }) {
   return (
-    <article className={m.tarjeta}>
+    <article className={`${m.tarjeta} ${fondo(x)}`}>
       <div className={m.tarjetaCab}>
         <div>
           <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
@@ -205,7 +210,7 @@ function IntegranteMovil({ i }: { i: FilaMiCiudad["integrantes"][number] }) {
   return (
     <div className={m.int}>
       <span className={m.intNombre}><b>{i.nombre}</b><Telefono celular={i.celular} /></span>
-      <BotonesLlamar celular={i.celular} nombre={i.nombre} />
+      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span>
     </div>
   );
 }
