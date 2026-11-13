@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FilaSala, SalaMonitor } from "@/lib/evaluacion/monitor";
 import type { MiProyecto } from "@/lib/misProyectos";
 import {
-  agruparBloques, diaAplicado, escribirFiltros, estadoAsistencia, filtrarBase, filtrarEstado, FILTROS_VACIOS, leerFiltros, modoLista, resumen, unirLecturas,
+  agruparBloques, diaAplicado, escribirFiltros, estadoAsistencia, filtrarBase, filtrarEstado, FILTROS_VACIOS, leerFiltros, mentoresDisponibles, modoLista, resumen, unirLecturas,
 } from "@/lib/vistas/listaProyectos";
 
 // Fase 6 · Entrega B · Paso 2: lista «Mis proyectos» fusionada (unir lecturas, estados, resumen, filtros y bloques).
@@ -57,10 +57,10 @@ describe("estados y resumen (reglas de «Mis salas»)", () => {
 
 describe("filtros", () => {
   it("en la URL: ida y vuelta, y valores raros se ignoran", () => {
-    const f = { ...FILTROS_VACIOS, dia: D, sala: "2", estado: "ausentes" as const, q: "café" };
+    const f = { ...FILTROS_VACIOS, dia: D, mentor: "Mentor Uno", estado: "ausentes" as const, q: "café" };
     expect(leerFiltros(escribirFiltros(f))).toEqual(f);
     expect(escribirFiltros(FILTROS_VACIOS)).toBe("");
-    expect(leerFiltros("?dia=hoy&estado=borrar&sala=x&ciudad=Cali")).toEqual({ ...FILTROS_VACIOS, ciudad: "Cali" });
+    expect(leerFiltros("?dia=hoy&estado=borrar&sala=2&ciudad=Cali")).toEqual({ ...FILTROS_VACIOS, ciudad: "Cali" }); // «sala» viejo se ignora
   });
   it("día por defecto: hoy si hay presentaciones hoy; si no, el primero", () => {
     expect(diaAplicado(FILTROS_VACIOS, [D, "2026-11-13"], D)).toBe(D);
@@ -108,8 +108,8 @@ describe("vista de quien es monitor y además coordinación (selector)", () => {
     expect(modoLista(admin, "todos")).toEqual({ selector: false, todos: true });
   });
   it("la vista vive en la URL con los demás filtros", () => {
-    expect(escribirFiltros({ ...FILTROS_VACIOS, vista: "todos", sala: "3" })).toBe("?vista=todos&sala=3");
-    expect(leerFiltros("?vista=todos&sala=3")).toEqual({ ...FILTROS_VACIOS, vista: "todos", sala: "3" });
+    expect(escribirFiltros({ ...FILTROS_VACIOS, vista: "todos", mentor: "Mentor Dos" })).toBe("?vista=todos&mentor=Mentor+Dos");
+    expect(leerFiltros("?vista=todos&mentor=Mentor+Dos")).toEqual({ ...FILTROS_VACIOS, vista: "todos", mentor: "Mentor Dos" });
     expect(leerFiltros("?vista=otra").vista).toBe("");
   });
 });
@@ -120,5 +120,23 @@ describe("volver desde el detalle", () => {
     expect(urlVolver("/monitor/proyectos?estado=ausentes&dia=2026-11-12")).toBe("/monitor/proyectos?estado=ausentes&dia=2026-11-12");
     for (const malo of [null, "", "https://otro.example", "//otro.example/x", "javascript:alert(1)", "/admin", "/monitor/proyectos/../admin"])
       expect(urlVolver(malo)).toBe("/monitor/proyectos");
+  });
+});
+
+describe("filtro «Mentor» (ajuste 3)", () => {
+  it("opciones: mentores de los bloques del día y de la ciudad, en orden alfabético", () => {
+    expect(mentoresDisponibles(L, D, "")).toEqual(["Mentor Dos", "Mentor Uno"]);
+    expect(mentoresDisponibles(L, D, "Paysandú")).toEqual(["Mentor Uno"]);
+    expect(mentoresDisponibles(L, "2026-11-13", "")).toEqual([]);
+  });
+  it("filtra por el mentor elegido; vacío = todos", () => {
+    expect(filtrarBase(L, { ...FILTROS_VACIOS, mentor: "Mentor Dos" }, D).map((f) => f.id)).toEqual(["e"]);
+    expect(filtrarBase(L, { ...FILTROS_VACIOS, mentor: "Mentor Uno", ciudad: "Cali" }, D).map((f) => f.id)).toEqual(["a", "b", "d"]);
+    expect(filtrarBase(L, FILTROS_VACIOS, D)).toHaveLength(5);
+  });
+  it("la URL usa «mentor» y deja de usar «sala»", () => {
+    expect(escribirFiltros({ ...FILTROS_VACIOS, mentor: "Mentor Uno" })).toBe("?mentor=Mentor+Uno");
+    expect(leerFiltros("?sala=2").mentor).toBe("");
+    expect(Object.keys(leerFiltros("?sala=2"))).not.toContain("sala");
   });
 });

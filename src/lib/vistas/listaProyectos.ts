@@ -84,8 +84,9 @@ export function resumen(filas: readonly FilaLista[]) {
 // ---- Filtros (viven en la URL) ----
 
 export type EstadoFiltro = "" | "pendientes" | "presentes" | "ausentes" | "sinMotivo";
-export type Filtros = { dia: string; ciudad: string; sala: string; estado: EstadoFiltro; monitor: string; q: string; vista: "" | "todos" };
-export const FILTROS_VACIOS: Filtros = { dia: "", ciudad: "", sala: "", estado: "", monitor: "", q: "", vista: "" };
+/** Ajuste 3: «Mentor» (nombre) reemplaza a «Sala»; un `sala` viejo en la URL se ignora. */
+export type Filtros = { dia: string; ciudad: string; mentor: string; estado: EstadoFiltro; monitor: string; q: string; vista: "" | "todos" };
+export const FILTROS_VACIOS: Filtros = { dia: "", ciudad: "", mentor: "", estado: "", monitor: "", q: "", vista: "" };
 const ESTADOS: readonly EstadoFiltro[] = ["", "pendientes", "presentes", "ausentes", "sinMotivo"];
 
 /** Lee los filtros de la query string (valores desconocidos se ignoran; texto acotado). */
@@ -94,10 +95,9 @@ export function leerFiltros(search: string): Filtros {
   const t = (k: string, max = 80) => (p.get(k) ?? "").slice(0, max);
   const dia = t("dia", 10);
   const estado = t("estado", 12) as EstadoFiltro;
-  const sala = t("sala", 3);
   return {
     dia: dia === "todos" || /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : "",
-    ciudad: t("ciudad", 60), sala: /^\d{1,3}$/.test(sala) ? sala : "",
+    ciudad: t("ciudad", 60), mentor: t("mentor", 80),
     estado: ESTADOS.includes(estado) ? estado : "", monitor: t("monitor", 80), q: t("q"),
     vista: p.get("vista") === "todos" ? "todos" : "",
   };
@@ -105,7 +105,7 @@ export function leerFiltros(search: string): Filtros {
 /** Query string con solo los filtros no vacíos ("" si no hay ninguno). */
 export function escribirFiltros(f: Filtros): string {
   const p = new URLSearchParams();
-  for (const k of ["vista", "dia", "ciudad", "sala", "estado", "monitor", "q"] as const) if (f[k]) p.set(k, f[k]);
+  for (const k of ["vista", "dia", "ciudad", "mentor", "estado", "monitor", "q"] as const) if (f[k]) p.set(k, f[k]);
   const s = p.toString();
   return s ? `?${s}` : "";
 }
@@ -113,10 +113,10 @@ export function escribirFiltros(f: Filtros): string {
 /** Día aplicado: el de la URL; si no, hoy si hay presentaciones hoy; si no, el primer día. */
 export const diaAplicado = (f: Filtros, dias: readonly string[], hoy = diaCOL(new Date())) => f.dia || (dias.includes(hoy) ? hoy : dias[0] ?? "todos");
 
-/** Día, ciudad, sala, monitor y búsqueda (nombre, código, proyecto y ciudad, como «Mis salas»). Sin el estado. */
+/** Día, ciudad, mentor, monitor y búsqueda (nombre, código, proyecto y ciudad, como «Mis salas»). Sin el estado. */
 export function filtrarBase(filas: readonly FilaLista[], f: Filtros, dia: string): FilaLista[] {
   return filas.filter((x) => (dia === "todos" || x.dia === dia) && (!f.ciudad || x.ciudad === f.ciudad)
-    && (!f.sala || String(x.sala) === f.sala)
+    && (!f.mentor || x.mentor.nombre === f.mentor)
     && (!f.monitor || (f.monitor === "sin" ? !x.monitor : x.monitor?.usuario === f.monitor))
     && coincide([...x.integrantes.map((i) => i.nombre), x.proyecto, x.codigo, x.ciudad], f.q));
 }
@@ -161,4 +161,10 @@ export function modoLista(user: ConRolesLista, vista: Filtros["vista"]): { selec
   const monitor = puede(user, "monitorear_salas"), todas = puede(user, "ver_todas_las_ciudades");
   if (monitor && todas) return { selector: true, todos: vista === "todos" };
   return { selector: false, todos: !monitor };
+}
+
+/** Mentores de los bloques visibles del día (y de la ciudad elegida), en orden alfabético: opciones del filtro «Mentor». */
+export function mentoresDisponibles(filas: readonly FilaLista[], dia: string, ciudad: string): string[] {
+  const n = filas.filter((x) => (dia === "todos" || x.dia === dia) && (!ciudad || x.ciudad === ciudad)).map((x) => x.mentor.nombre);
+  return [...new Set(n)].sort((a, b) => a.localeCompare(b, "es"));
 }

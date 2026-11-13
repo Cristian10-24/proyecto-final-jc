@@ -46,8 +46,8 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Carga de mentores: el plan solo usa asientos que hoy están libres; después de aplicar, los asientos liberados pueden dar nuevas propuestas en el siguiente cálculo (cada proyecto se mueve a lo sumo una vez por cálculo).
 - Horarios: el botón «Revertir este cambio» se muestra según el permiso de ver el historial (que también tiene coordinación), sin revisar en pantalla el permiso de cambiar hora; para coordinación el botón aparece pero el servidor lo rechaza (403). No es un hueco de seguridad, solo un botón que falla en silencio para ese rol.
 
-- Fase 6 (bajo): `miCiudad` lee `evaluacion_resultados` completo (sin projection) para calcular el estado; no sale en la respuesta, pero conviene pedir solo los campos que usa `calc`.
-- Fase 6 (bajo): si falta el nombre, «Mi ciudad» muestra el `mentorId` y «Monitores» el usuario del monitor (ya visible en el plan de salas para el admin).
+- ~~Fase 6 (bajo): `miCiudad` sin projection en evaluaciones~~ — resuelto en el Ajuste 3 (projection { a, b, noPresento }).
+- Fase 6 (bajo): si falta el nombre, «Monitores» muestra el usuario del monitor (ya visible en el plan de salas para el admin). En «Mi ciudad» quedó resuelto en el Ajuste 3 (sale «Sin monitor»).
 - Fase 6 (bajo): «Monitores» no filtra `activo: true` al leer los monitores del plan: uno desactivado que siga en el plan muestra nombre y celular.
 - Fase 6 (bajo): un admin con «monitor» como rol adicional vería «Mi ciudad» (suma de roles); hoy la app no deja dar roles adicionales a Administración, así que no ocurre.
 

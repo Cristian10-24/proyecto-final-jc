@@ -132,7 +132,7 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
                 <div className={`${m.tabla} ${v.soloWeb}`} role="table" aria-label={`Proyectos de ${datos!.ciudad}`}>
                   <div className={m.thead} role="row">
                     <span role="columnheader">Proyecto e integrantes</span><span role="columnheader">Día, hora y sala</span>
-                    <span role="columnheader">Mentor</span><span role="columnheader">Estado</span>
+                    <span role="columnheader">Monitor</span><span role="columnheader">Estado</span>
                   </div>
                   {lista.map((x) => <FilaWeb key={x.id} x={x} />)}
                 </div>
@@ -183,7 +183,7 @@ function FilaWeb({ x }: { x: FilaMiCiudad }) {
         </div>
       </div>
       <div role="cell" className={m.cuando}><b>{x.hora}</b><span>{fechaLarga(x.dia)}</span><span>{salaTxt(x.sala)}</span></div>
-      <div role="cell" className={m.mentor}>{x.mentor}</div>
+      <div role="cell" className={m.mentor}>{x.monitor ?? <span className={v.muted}>Sin monitor</span>}</div>
       <div role="cell" className={m.estado}><span className={m.chips}><ChipEstado estado={x.estado} /><Extras x={x} /></span><PorPersona x={x} /></div>
     </div>
   );
@@ -196,7 +196,7 @@ function TarjetaMovil({ x }: { x: FilaMiCiudad }) {
         <div>
           <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
           <div className={m.meta}><b>{x.hora}</b> · {diaCorto(x.dia)} · {salaTxt(x.sala)}</div>
-          <div className={m.meta}>Mentor · {x.mentor}</div>
+          <div className={m.meta}>Monitor · {x.monitor ?? "Sin monitor"}</div>
         </div>
         <span className={m.chipsMovil}><ChipEstado estado={x.estado} /><Extras x={x} /></span>
       </div>

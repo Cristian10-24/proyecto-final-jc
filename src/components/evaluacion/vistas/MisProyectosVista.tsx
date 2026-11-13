@@ -11,7 +11,7 @@ import { rangoHoras } from "@/lib/vistas/bloques";
 import { plural } from "@/lib/vistas/formato";
 import {
   agruparBloques, comoPersona, desdeMisProyectos, diaAplicado, escribirFiltros, estadoAsistencia, filtrarBase, filtrarEstado,
-  FILTROS_VACIOS, leerFiltros, modoLista, resumen, TEXTO_ASIS, unirLecturas, type BloqueLista, type EstadoAsis, type FilaLista, type Filtros,
+  FILTROS_VACIOS, leerFiltros, mentoresDisponibles, modoLista, resumen, TEXTO_ASIS, unirLecturas, type BloqueLista, type EstadoAsis, type FilaLista, type Filtros,
 } from "@/lib/vistas/listaProyectos";
 import { fechaLarga } from "../comun";
 import { BotonesLlamar, Buscador, Chip, ResumenBarra, Segmentado, Selector, Telefono, type Opcion, type Tono } from "./Basicos";
@@ -103,15 +103,20 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
 
   const opDia: Opcion[] = [{ valor: "todos", texto: "Todos los días" }, ...dias.map((d) => ({ valor: d, texto: `${d === hoy ? "Hoy, " : ""}${d === hoy ? fechaLarga(d).toLowerCase() : fechaLarga(d)}` }))];
   const opCiudad: Opcion[] = [{ valor: "", texto: "Todas las ciudades" }, ...[...new Set(filas.map((x) => x.ciudad))].sort((a, b) => a.localeCompare(b, "es")).map((c) => ({ valor: c, texto: c }))];
-  const opSala: Opcion[] = [{ valor: "", texto: "Todas las salas" }, ...[...new Set(filas.flatMap((x) => (x.sala === null ? [] : [x.sala])))].sort((a, b) => a - b).map((s) => ({ valor: String(s), texto: `Sala ${s}` }))];
+  // Ajuste 3: «Mentor» en lugar de «Sala»: los mentores de los bloques del día y de la ciudad elegida.
+  const mentores = mentoresDisponibles(filas, dia, f.ciudad);
+  const opMentor: Opcion[] = [{ valor: "", texto: "Todos los mentores" }, ...mentores.map((m) => ({ valor: m, texto: m }))];
   const opMon: Opcion[] = [{ valor: "", texto: "Todos los monitores" }, { valor: "sin", texto: "Sin monitor" }, ...(datos?.monitores ?? []).map((m) => ({ valor: m.usuario, texto: m.nombre }))];
   const campos: CampoFiltro[] = [
-    { id: "dia", etiqueta: "Día", opciones: opDia }, { id: "ciudad", etiqueta: "Ciudad", opciones: opCiudad }, { id: "sala", etiqueta: "Sala", opciones: opSala },
+    { id: "dia", etiqueta: "Día", opciones: opDia }, { id: "ciudad", etiqueta: "Ciudad", opciones: opCiudad }, { id: "mentor", etiqueta: "Mentor", opciones: opMentor },
     datos?.todos ? { id: "monitor", etiqueta: "Monitor", opciones: opMon } : { id: "estado", etiqueta: "Estado", opciones: ESTADOS },
   ];
   const poner = (k: keyof Filtros) => (x: string) => setF((y) => ({ ...y, [k]: x }));
-  const activos = (["ciudad", "sala", "estado", "monitor"] as const).filter((k) => f[k]).length + (f.dia ? 1 : 0);
+  const activos = (["ciudad", "mentor", "estado", "monitor"] as const).filter((k) => f[k]).length + (f.dia ? 1 : 0);
   const limpiar = () => setF({ ...FILTROS_VACIOS, vista: f.vista });
+  // Si el mentor elegido no existe al cambiar de día o de ciudad, vuelve a «Todos los mentores».
+  const mentorInvalido = !!datos && !!f.mentor && !mentores.includes(f.mentor);
+  useEffect(() => { if (mentorInvalido) setF((y) => ({ ...y, mentor: "" })); }, [mentorInvalido]);
   const selector = modo.selector && (
     <Segmentado<"" | "todos"> etiqueta="Ver" valor={f.vista} onCambio={(x) => setF({ ...FILTROS_VACIOS, vista: x, q: f.q })}
       opciones={[{ id: "", texto: "Mis salas" }, { id: "todos", texto: "Todos los proyectos" }]} />
@@ -151,7 +156,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
             <div className={`${v.tarjeta} ${v.filtros}`}>
               <Selector id="mp-dia" etiqueta="Día" valor={dia} opciones={opDia} onCambio={poner("dia")} />
               <Selector id="mp-ciudad" etiqueta="Ciudad" valor={f.ciudad} opciones={opCiudad} onCambio={poner("ciudad")} />
-              <Selector id="mp-sala" etiqueta="Sala" valor={f.sala} opciones={opSala} onCambio={poner("sala")} />
+              <Selector id="mp-mentor" etiqueta="Mentor" valor={f.mentor} opciones={opMentor} onCambio={poner("mentor")} />
               {datos?.todos
                 ? <Selector id="mp-mon" etiqueta="Monitor" valor={f.monitor} opciones={opMon} onCambio={poner("monitor")} />
                 : <Selector id="mp-estado" etiqueta="Estado" valor={f.estado} opciones={ESTADOS} onCambio={poner("estado")} />}
@@ -180,7 +185,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
       )}
       {hoja && (
         <HojaFiltros campos={campos} valores={{ ...f, dia }} porDefecto={{ ...FILTROS_VACIOS, vista: f.vista }} onCerrar={() => setHoja(false)}
-          onAplicar={(x) => setF({ ...f, dia: x.dia ?? "", ciudad: x.ciudad ?? "", sala: x.sala ?? "", estado: (x.estado ?? "") as Filtros["estado"], monitor: x.monitor ?? "" })} />
+          onAplicar={(x) => setF({ ...f, dia: x.dia ?? "", ciudad: x.ciudad ?? "", mentor: x.mentor ?? "", estado: (x.estado ?? "") as Filtros["estado"], monitor: x.monitor ?? "" })} />
       )}
     </ShellVistas>
   );
