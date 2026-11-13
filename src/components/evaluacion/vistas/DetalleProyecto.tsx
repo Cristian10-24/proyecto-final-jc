@@ -8,7 +8,7 @@ import { estadoFila, MOTIVOS_INASISTENCIA, primerNombre, type MotivoInasistencia
 import type { CupoLibre, DetalleSala, MiSugerencia, VistaSugerencia } from "@/lib/evaluacion/monitor";
 import type { VistaMisProyectos } from "@/lib/misProyectos";
 import {
-  cuerpoAnotar, cuerpoReprogramar, cuerpoSugerir, faltaMotivo, mismaNota, urlCupos, urlFicha, urlSalas, type Nota,
+  cuerpoAnotar, cuerpoReprogramar, cuerpoSugerir, faltaMotivo, mismaNota, urlCupos, urlFicha, urlSalas, urlVolver, type Nota,
 } from "@/lib/vistas/fichaLlamadas";
 import { claseResultado, fechaLarga } from "../comun";
 import { BotonesLlamar, Chip, Telefono, type Tono } from "./Basicos";
@@ -48,7 +48,7 @@ async function post(id: string, body: unknown): Promise<{ status: number; data: 
   const res = await fetch(urlFicha(id), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   return { status: res.status, data: await res.json().catch(() => null) };
 }
-const volverUrl = () => { try { return sessionStorage.getItem(CLAVE_VOLVER) || "/monitor/proyectos"; } catch { return "/monitor/proyectos"; } };
+const volverUrl = () => { try { return urlVolver(sessionStorage.getItem(CLAVE_VOLVER)); } catch { return "/monitor/proyectos"; } };
 
 export default function DetalleProyecto({ user, id }: { user: SessionUser; id: string }) {
   const [det, setDet] = useState<DetalleSala | null>(null);
@@ -140,7 +140,6 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
 
   async function guardarNota(i: number) {
     const n = notas[i]!;
-    if (faltaMotivo(n)) return preguntar("Elige el motivo de la inasistencia para guardar.", "Entendido", null);
     setOcupado(true);
     const r = await post(id, cuerpoAnotar(i, n)).catch(() => null);
     setOcupado(false);
@@ -200,7 +199,7 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
     const [txt, tono] = ASIS[estadoFila(x.integrantes.map((i) => ({ res: i.res, presente: i.asistencia === "si", ausente: i.asistencia === "no" })))];
     const diasCupo = [...new Set((cupos ?? []).map((c) => diaCOL(new Date(c.inicio))))];
     return (
-      <>
+      <div className={d.pagina}>
         <div className={d.top}>
           {volverBoton}
           <h1>{x.proyecto}</h1>
@@ -267,7 +266,7 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
                   </div>
                   {n.asistencia !== "si" && (
                     <div className={d.campo}>
-                      <label htmlFor={`motivo-${i}`}>Motivo de inasistencia{n.asistencia === "no" ? " (obligatorio)" : " (si no se presentó)"}</label>
+                      <label htmlFor={`motivo-${i}`}>Motivo de inasistencia (si no se presentó)</label>
                       <select id={`motivo-${i}`} className={d.control} value={n.motivo ?? ""} onChange={(e) => setNota(i, { motivo: (e.target.value || null) as MotivoInasistencia | null })}>
                         <option value="">— Sin motivo —</option>
                         {MOTIVOS_INASISTENCIA.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -353,7 +352,7 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
             )}
           </div>
         </div>
-      </>
+      </div>
     );
   }
 

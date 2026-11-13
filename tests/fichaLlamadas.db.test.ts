@@ -130,3 +130,22 @@ describe("la página de detalle usa las mismas llamadas", () => {
     expect(f.faltaMotivo({ asistencia: null, motivo: null, observacion: "" })).toBe(false);
   });
 });
+
+describe("ajustes del usuario (entrega B)", () => {
+  it("«No» SIN motivo se guarda, como siempre (solo se avisa en pantalla)", async () => {
+    const f = await import("@/lib/vistas/fichaLlamadas");
+    const nota = { asistencia: "no" as const, motivo: null, observacion: "" };
+    expect(f.faltaMotivo(nota)).toBe(true); // muestra «Falta registrar el motivo…», no bloquea
+    expect(await post("monA", P.sug, f.cuerpoAnotar(0, nota))).toEqual({ status: 200, body: { ok: true } });
+    const r = await get("monA", P.sug);
+    expect(r.body.integrantes[0]).toMatchObject({ asistencia: "no", observacion: "" });
+    expect(r.body.integrantes[0].motivo ?? null).toBeNull();
+  });
+  it("«No tienes acceso» viene del servidor: otro monitor, mentor y coordinación reciben 403 al pedir la ficha, los cupos o escribir", async () => {
+    for (const k of ["monB", "mentor", "coord"]) {
+      const ficha = await get(k, P.sug), cup = await get(k, P.sug, true), esc = await post(k, P.sug, CUERPOS.anotarSi);
+      expect([k, ficha.status, cup.status, esc.status]).toEqual([k, 403, 403, 403]);
+      expect(JSON.stringify(ficha.body)).not.toContain("Dario Tres"); // sin datos del proyecto
+    }
+  });
+});

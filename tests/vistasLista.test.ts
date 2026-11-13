@@ -113,3 +113,12 @@ describe("vista de quien es monitor y además coordinación (selector)", () => {
     expect(leerFiltros("?vista=otra").vista).toBe("");
   });
 });
+
+describe("volver desde el detalle", () => {
+  it("solo acepta la lista con sus filtros", async () => {
+    const { urlVolver } = await import("@/lib/vistas/fichaLlamadas");
+    expect(urlVolver("/monitor/proyectos?estado=ausentes&dia=2026-11-12")).toBe("/monitor/proyectos?estado=ausentes&dia=2026-11-12");
+    for (const malo of [null, "", "https://otro.example", "//otro.example/x", "javascript:alert(1)", "/admin", "/monitor/proyectos/../admin"])
+      expect(urlVolver(malo)).toBe("/monitor/proyectos");
+  });
+});

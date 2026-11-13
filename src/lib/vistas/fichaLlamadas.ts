@@ -17,6 +17,11 @@ export const cuerpoAnotar = (i: number, n: Nota) =>
 export const cuerpoReprogramar = (asiento: string, motivo: string) => ({ accion: "reprogramar", asiento, motivo });
 export const cuerpoSugerir = (detalle: string, motivo: string) => ({ accion: "sugerir", detalle, motivo });
 
-/** Motivo obligatorio solo al marcar «No» (la ficha nueva no deja guardar sin él). */
+/** Marcó «No» sin motivo: solo se muestra el aviso «Falta registrar el motivo…»; se puede guardar igual (como siempre). */
 export const faltaMotivo = (n: Nota) => n.asistencia === "no" && !n.motivo;
 export const mismaNota = (a: Nota, b: Nota) => a.asistencia === b.asistencia && a.motivo === b.motivo && a.observacion.trim() === b.observacion.trim();
+
+/** «Volver»: la lista con sus filtros; solo acepta una ruta propia de la lista (nunca otro dominio ni «javascript:»). */
+export function urlVolver(guardada: string | null): string {
+  return guardada && /^\/monitor\/proyectos(\?[^#]*)?$/.test(guardada) && !guardada.startsWith("//") ? guardada : "/monitor/proyectos";
+}

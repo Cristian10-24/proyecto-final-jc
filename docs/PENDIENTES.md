@@ -57,3 +57,4 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
   Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".
 - Paso 26 (bajo, auditoría): el actor del historial, de las evaluaciones y de los comentarios guarda solo el rol principal (p. ej. una evaluación de coordinación + mentor queda como «coordinador»).
+- Pruebas con base con fecha fija del 12-nov (admin, cambioMentor, cargaMentores, estudiante, ordenLlegadaAdmin, seguimiento, tablero): 13 fallan porque ese día ya pasó («en_curso», reservas y portal cerrados). Hay que moverlas a fechas relativas (como monitor.db.test.ts).
