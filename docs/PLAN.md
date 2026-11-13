@@ -352,3 +352,4 @@ con una prueba previa que fije las llamadas de asistencia, motivo, observación,
 - [x] B2. Lista «Mis proyectos» fusionada (filtros en la URL, Gestionar → detalle); `/monitor/salas` redirige; menú sin «Mis salas».
 - [x] B3. Página de detalle con el cuerpo de MonitorHoja sin modal y las mismas llamadas (prueba previa que las fija).
 - [x] B4. Cierre: pruebas, batería completa, build, revisores, guía de prueba.
+- [x] B5. Ajustes 1–4 (diseños 1m, 1n y 3a) y cierre final de la entrega B (sin push; no preparada para publicar).

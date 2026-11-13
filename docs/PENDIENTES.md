@@ -50,6 +50,10 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Fase 6 (bajo): si falta el nombre, «Monitores» muestra el usuario del monitor (ya visible en el plan de salas para el admin). En «Mi ciudad» quedó resuelto en el Ajuste 3 (sale «Sin monitor»).
 - Fase 6 (bajo): «Monitores» no filtra `activo: true` al leer los monitores del plan: uno desactivado que siga en el plan muestra nombre y celular.
 - Fase 6 (bajo): un admin con «monitor» como rol adicional vería «Mi ciudad» (suma de roles); hoy la app no deja dar roles adicionales a Administración, así que no ocurre.
+- Fase 6 (bajo, cierre B): el detalle arma `/api/monitor/mis-proyectos?dia=${data.dia}` sin `encodeURIComponent` (el día viene del servidor en AAAA-MM-DD y la ruta valida con Zod; no explotable).
+- Fase 6 (bajo, cierre B): `urlVolver` (fichaLlamadas.ts) acepta espacios y caracteres de control en la query (`[^#]*`), siempre en el mismo origen; endurecer a `[^#\s]*`.
+- Fase 6 (nota, cierre B): el detalle muestra al monitor documento y correo de los integrantes, como la ficha anterior (misma ruta GET /api/evaluacion/salas/[id]); confirmar que se quiere así.
+- Fase 6 (demo): la semilla demo no trae proyectos de Uruguay (Colonia/Paysandú) ni un monitor con coordinación como rol adicional; para probarlos en el Preview hay que crearlos a mano.
 
 ## Más adelante
 - Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.
