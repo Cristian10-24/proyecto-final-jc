@@ -116,3 +116,17 @@ describe("escrituras de la ficha (mismos cuerpos de hoy)", () => {
     expect((await post("monA", P.sug, CUERPOS.anotarSi, { host: "localhost:3000", origin: "https://otro.example" })).status).toBe(403);
   });
 });
+
+describe("la página de detalle usa las mismas llamadas", () => {
+  it("URLs y cuerpos de src/lib/vistas/fichaLlamadas.ts = los de la ficha de antes", async () => {
+    const f = await import("@/lib/vistas/fichaLlamadas");
+    expect(f.urlFicha("abc")).toBe("/api/evaluacion/salas/abc");
+    expect(f.urlCupos("abc")).toBe("/api/evaluacion/salas/abc/cupos");
+    expect(f.cuerpoAnotar(1, { asistencia: "no", motivo: "Salud", observacion: "Avisó por WhatsApp." })).toEqual(CUERPOS.anotarNo);
+    expect(f.cuerpoAnotar(0, { asistencia: "si", motivo: "Salud", observacion: "" })).toEqual(CUERPOS.anotarSi);
+    expect(f.cuerpoReprogramar("x1", "Cita médica")).toEqual(CUERPOS.reprogramar("x1"));
+    expect(f.cuerpoSugerir("Pasarlo al lunes", "Viaja esa semana")).toEqual(CUERPOS.sugerir);
+    expect(f.faltaMotivo({ asistencia: "no", motivo: null, observacion: "" })).toBe(true);
+    expect(f.faltaMotivo({ asistencia: null, motivo: null, observacion: "" })).toBe(false);
+  });
+});
