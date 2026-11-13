@@ -5,6 +5,7 @@ import type { SessionUser } from "@/lib/auth";
 import { coincide, plural, porcentaje } from "@/lib/vistas/formato";
 import { chipsExtra, contarEstudiantes, filtrarPorEstado, ordenar, type FiltroEstado } from "@/lib/vistas/conteoCiudad";
 import type { FilaMiCiudad, VistaMiCiudad } from "@/lib/vistas/miCiudad";
+import { estadoFila } from "@/lib/evaluacion/criterios";
 import { fechaLarga } from "../comun";
 import { BotonesLlamar, Buscador, Chip, ChipEstado, ResumenBarra, Selector, TarjetasFiltro, Telefono, type Opcion } from "./Basicos";
 import { BarraMovil, HojaFiltros, type CampoFiltro } from "./Dialogos";
@@ -131,7 +132,7 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
                 <div className={`${m.tabla} ${v.soloWeb}`} role="table" aria-label={`Proyectos de ${datos!.ciudad}`}>
                   <div className={m.thead} role="row">
                     <span role="columnheader">Proyecto e integrantes</span><span role="columnheader">Día, hora y sala</span>
-                    <span role="columnheader">Mentor</span><span role="columnheader">Estado</span>
+                    <span role="columnheader">Monitor</span><span role="columnheader">Estado</span>
                   </div>
                   {lista.map((x) => <FilaWeb key={x.id} x={x} />)}
                 </div>
@@ -153,7 +154,7 @@ function Integrante({ i }: { i: FilaMiCiudad["integrantes"][number] }) {
   return (
     <div className={m.int}>
       <span className={m.intNombre}>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} /></span></span>
-      <BotonesLlamar celular={i.celular} nombre={i.nombre} />
+      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span>
     </div>
   );
 }
@@ -168,15 +169,21 @@ function Extras({ x }: { x: FilaMiCiudad }) {
   return <>{chipsExtra(x).map((t) => <Chip key={t} tono={t.includes("ausente") ? "bad" : "borde"}>{t}</Chip>)}</>;
 }
 
+/** Fondo por estado, con la misma función y colores que «Mis proyectos» (evaluado = se presentó). */
+const FONDO = { presente: m.presente, ausente: m.ausente, pendiente: "" } as const;
+const fondo = (x: FilaMiCiudad) => FONDO[estadoFila(x.integrantes.map((i) => ({ res: "Pendiente" as const, presente: i.estado === "evaluado", ausente: i.estado === "ausente" })))];
+
 function FilaWeb({ x }: { x: FilaMiCiudad }) {
   return (
-    <div className={m.fila} role="row">
-      <div role="cell">
-        <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
-        {x.integrantes.map((i, k) => <Integrante key={k} i={i} />)}
+    <div className={`${m.fila} ${fondo(x)}`} role="row">
+      <div role="cell" className={m.celdaProy}>
+        <div className={m.subcols}>
+          <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
+          <div className={m.integrantes}>{x.integrantes.map((i, k) => <Integrante key={k} i={i} />)}</div>
+        </div>
       </div>
       <div role="cell" className={m.cuando}><b>{x.hora}</b><span>{fechaLarga(x.dia)}</span><span>{salaTxt(x.sala)}</span></div>
-      <div role="cell" className={m.mentor}>{x.mentor}</div>
+      <div role="cell" className={m.mentor}>{x.monitor ?? <span className={v.muted}>Sin monitor</span>}</div>
       <div role="cell" className={m.estado}><span className={m.chips}><ChipEstado estado={x.estado} /><Extras x={x} /></span><PorPersona x={x} /></div>
     </div>
   );
@@ -184,12 +191,12 @@ function FilaWeb({ x }: { x: FilaMiCiudad }) {
 
 function TarjetaMovil({ x }: { x: FilaMiCiudad }) {
   return (
-    <article className={m.tarjeta}>
+    <article className={`${m.tarjeta} ${fondo(x)}`}>
       <div className={m.tarjetaCab}>
         <div>
           <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
           <div className={m.meta}><b>{x.hora}</b> · {diaCorto(x.dia)} · {salaTxt(x.sala)}</div>
-          <div className={m.meta}>Mentor · {x.mentor}</div>
+          <div className={m.meta}>Monitor · {x.monitor ?? "Sin monitor"}</div>
         </div>
         <span className={m.chipsMovil}><ChipEstado estado={x.estado} /><Extras x={x} /></span>
       </div>
@@ -203,7 +210,7 @@ function IntegranteMovil({ i }: { i: FilaMiCiudad["integrantes"][number] }) {
   return (
     <div className={m.int}>
       <span className={m.intNombre}><b>{i.nombre}</b><Telefono celular={i.celular} /></span>
-      <BotonesLlamar celular={i.celular} nombre={i.nombre} />
+      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span>
     </div>
   );
 }

@@ -2,14 +2,36 @@
 
 .selCiudad { flex: 0 1 260px; min-width: 200px; }
 .tabla { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; overflow: hidden; box-shadow: var(--ev-sombra); }
-.thead, .fila { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.1fr) minmax(0, 1.1fr) 190px; gap: 16px; padding: 12px 16px; }
+/* Entrega B: el espacio sobrante va a Proyecto e integrantes y a Mentor; Día/hora/sala y Estado con mínimo y máximo. */
+/* Proyecto 2 partes y Mentor 1; desde 2200 px la columna Proyecto se limita a 900 px y el sobrante lo toman Mentor,
+   Día/hora/sala (con su máximo) y Estado (última, sin huecos entre columnas). */
+.thead, .fila { display: grid; grid-template-columns: minmax(0, 2fr) minmax(170px, 230px) minmax(150px, 1fr) minmax(200px, 300px); gap: 16px 24px; padding: 12px 16px; }
+@media (min-width: 2200px) {
+  .thead, .fila { grid-template-columns: minmax(0, 900px) minmax(170px, 280px) minmax(150px, 420px) minmax(200px, 1fr); }
+}
+/* Desde 1440 px: en la celda Proyecto, subcolumna izquierda con el nombre (y «En pareja») y derecha con los integrantes. */
+/* Solo si la celda tiene espacio (≥ 600 px): a 1440 px la columna mide ~490 px y se queda como antes. */
+@media (min-width: 1440px) {
+  .celdaProy { container-type: inline-size; }
+  @container (min-width: 600px) {
+    .subcols { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(0, 3fr); gap: 0 20px; align-items: start; }
+    .subcols .integrantes > .int:first-child { margin-top: 0; }
+  }
+}
+/* Al pasar el cursor, una capa sutil encima: no tapa el color de fondo por estado. */
+.fila:hover { background-image: linear-gradient(color-mix(in srgb, var(--ev-ink) 5%, transparent), color-mix(in srgb, var(--ev-ink) 5%, transparent)); }
+.presente { background-color: var(--ev-fila-presente); }
+.ausente { background-color: var(--ev-fila-ausente); }
 .thead { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); padding-top: 10px; padding-bottom: 10px; }
 .fila { border-top: 1px solid var(--ev-line); align-items: start; }
 .fila:first-of-type { border-top: 0; }
 .proy { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.int { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px; font-size: 14px; }
+/* Desde 900 px (solo la tabla web): Llamar y WhatsApp en la misma línea que el celular. ≥1440: pareja en 2 columnas. */
+/* Ajuste 2: texto flexible | columna fija de 96 px con Llamar y WhatsApp a la derecha (misma x en todas las filas). */
+.int { display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 4px 12px; margin-top: 8px; font-size: 14px; }
+.iconos { display: flex; justify-content: flex-end; }
 .fila .int + .int { padding-top: 8px; border-top: 1px dashed var(--ev-line); }
-.intNombre { min-width: 0; }
+.intNombre { min-width: 0; overflow-wrap: anywhere; }
 .cuando { display: flex; flex-direction: column; gap: 1px; font-size: 13.5px; color: var(--ev-muted); }
 .cuando b { font-family: var(--ev-font-titulo); font-weight: 600; font-size: 16px; color: var(--ev-hora); }
 .mentor { font-size: 14px; }
@@ -25,7 +47,7 @@
 .meta { font-size: 13.5px; color: var(--ev-muted); margin-top: 2px; }
 .meta b { font-family: var(--ev-font-titulo); font-weight: 600; color: var(--ev-hora); }
 .ints { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--ev-line); }
-.ints .int { margin-top: 8px; flex-direction: row; align-items: center; justify-content: space-between; }
+.ints .int { margin-top: 8px; }
 .ints .int b { display: block; font-size: 14px; }
 
 .contenido { min-width: 0; }
@@ -36,3 +58,6 @@
 .conteo { color: var(--ev-ink) !important; font-weight: 600; font-size: 14px; margin: 2px 0 0 !important; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chipsMovil { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+
+.tarjeta.presente { background-color: var(--ev-fila-presente); }
+.tarjeta.ausente { background-color: var(--ev-fila-ausente); }

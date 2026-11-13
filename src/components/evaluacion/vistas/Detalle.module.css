@@ -1,0 +1,98 @@
+/* Fase 6 · Entrega B · Página de detalle «Gestionar» según los diseños 1m (claro, pareja) y 1n (oscuro, individual,
+   Uruguay) de docs/diseno/vistas-2. Solo variables --ev-*. Contenedor fluido con tope de 1680 px centrado (es un
+   formulario). Móvil (< 900 px): una columna en el orden encabezado, Sesión, integrantes, Mentor, Proyecto, plegable. */
+
+.pagina { max-width: 1680px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.volverFila { display: flex; }
+.volver { gap: 6px; }
+
+/* Encabezado: kicker, título, chips y «Abrir sala» a la derecha en la misma fila. */
+.cabeza { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.titulo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.kicker { margin: 0; font-size: 13px; font-weight: 600; color: var(--ev-muted); }
+.titulo h1 { font-size: 30px; letter-spacing: -.02em; font-weight: 600; overflow-wrap: anywhere; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Cuerpo: fila de tres tarjetas, asistencia y plegable. */
+.cuerpo { display: flex; flex-direction: column; gap: 20px; }
+.tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.card { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 18px; box-shadow: var(--ev-sombra); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card h2 { font-size: 16px; }
+.dl { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px 12px; font-size: 14px; margin: 0; }
+.dlAncho { grid-template-columns: 92px minmax(0, 1fr); }
+.dl dt { color: var(--ev-muted); }
+.dl dd { margin: 0; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.uy { display: block; color: var(--ev-muted); font-weight: 500; }
+.enlace { display: inline-flex; align-items: center; min-height: 44px; color: var(--ev-orange-ink) !important; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; word-break: break-all; }
+.sinDato { color: var(--ev-muted); font-weight: 400; }
+.pie { margin: auto 0 0; }
+.gris { margin: 0; font-size: 13px; color: var(--ev-muted); }
+.desc { margin: 0; white-space: pre-wrap; }
+
+/* Persona (mentor e integrante): texto flexible | columna fija de 96 px con Llamar y WhatsApp pegados a la derecha. */
+.persona { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; }
+.personaTxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.tel { font-variant-numeric: tabular-nums; }
+.iconos { display: flex; justify-content: flex-end; }
+.contacto { background: var(--ev-surface-2); border-radius: 9px; padding: 12px; }
+
+/* Asistencia y observaciones */
+.asis { display: flex; flex-direction: column; gap: 12px; }
+.asisCab { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.asisCab h2 { font-size: 20px; }
+.ints { display: grid; gap: 16px; align-items: stretch; }
+.intsPareja { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.intsUno { grid-template-columns: minmax(0, calc(50% - 8px)); }
+.personaHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.personaHead h3 { font-size: 17px; }
+.evaluacion { border: 1px solid var(--ev-line); border-radius: 9px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.evaluacion p { margin: 0; }
+.sePresento { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.etiqueta, .campo label { font-size: 13px; font-weight: 600; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.control { min-height: 44px; background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 9px; padding: 0 12px; width: 100%; color: var(--ev-ink); }
+textarea.control { min-height: 72px; padding: 10px 12px; resize: vertical; }
+.falta { margin: 0; font-size: 13px; color: var(--ev-mid); font-weight: 600; }
+.sino { display: inline-flex; border: 1px solid var(--ev-line); border-radius: 999px; padding: 3px; background: var(--ev-surface-2); gap: 2px; }
+.sino button { appearance: none; border: 0; background: transparent; min-width: 64px; min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ev-muted); }
+.sino button[data-v="si"][aria-pressed="true"] { background: var(--ev-ok); color: var(--ev-surface); }
+.sino button[data-v="no"][aria-pressed="true"] { background: var(--ev-bad); color: var(--ev-surface); }
+.card button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Plegable «¿Hay que cambiar la hora?» */
+.plegable { padding: 4px 18px; gap: 0; }
+.plegable > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; font-weight: 600; font-size: 14px; }
+.plegable > summary::-webkit-details-marker { display: none; }
+.sumTxt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sumTxt .gris { font-size: 14px; font-weight: 500; }
+.rot { display: inline-grid; transition: transform .2s; flex: none; }
+.plegable[open] .rot { transform: rotate(180deg); }
+.cambio { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 6px 0 18px; }
+@media (min-width: 1280px) { .cambio { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bloqueCambio { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bloqueCambio h3 { font-size: 15px; }
+.ancho { grid-column: 1 / -1; }
+.dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.sugs { display: flex; flex-direction: column; gap: 10px; }
+.sug { border-top: 1px solid var(--ev-line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.sug:first-child { border-top: 0; padding-top: 0; }
+.sugOk { background: var(--ev-ok-bg); color: var(--ev-ok); font-weight: 600; }
+
+/* Móvil: una columna con el orden pedido (las tarjetas de .tres se reparten con order). */
+@media (max-width: 899px) {
+  .pagina { padding: 12px 16px 0; gap: 14px; }
+  .titulo h1 { font-size: 22px; }
+  .cuerpo { gap: 14px; }
+  .tres { display: contents; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; }
+  .intsPareja, .intsUno { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Confirmaciones y aviso */
+.confirmarBox { position: fixed; z-index: 42; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 32px)); background: var(--ev-surface); color: var(--ev-ink); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px -20px rgba(0, 0, 0, .5); }
+.confirmarBox p { margin: 0; }
+.confirmarActs { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; background: var(--ev-ink); color: var(--ev-bg); border-radius: 14px; padding: 12px 18px; font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .4); }
+
+/* Ajuste 2: el mentor deja el mismo margen derecho que la caja de contacto, para que sus íconos queden en la misma x. */
+.card > .persona:not(.contacto) { padding-right: 12px; }

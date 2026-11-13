@@ -47,3 +47,6 @@ export const plural = (n: number, uno: string, varios: string) => `${n} ${n === 
 
 /** Porcentaje entero (0 si no hay total). */
 export const porcentaje = (parte: number, total: number) => (total > 0 ? Math.round((parte / total) * 100) : 0);
+
+/** Primer nombre para el menú: "Danna Belén Buendía Vega" → "Danna". Vacío o solo espacios → "". */
+export const primerNombre = (nombre: string | null | undefined) => (nombre ?? "").trim().split(/\s+/)[0] ?? "";

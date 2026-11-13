@@ -23,9 +23,9 @@ const D1 = "2026-11-12", D2 = "2026-11-13";
 const ids: Record<string, ObjectId> = {};
 const P = { pareja: new ObjectId(), ausente: new ObjectId(), pend: new ObjectId(), incompleto: new ObjectId(), sinHora: new ObjectId(), sinProy: new ObjectId(), bogota: new ObjectId(), medellin: new ObjectId() };
 // Lo que NUNCA puede salir en la respuesta.
-const PROHIBIDO = ["1000000001", "1000000002", "1000000003", "@x.test", "FORTALEZA-SECRETA", "MEJORA-SECRETA", "PERCEPCION-SECRETA", "OBS-SECRETA", "Salud", "Excelente", "Aprobado", "Incompleto", "Medellín", "Proyecto Medellín", "Sin Hora", "Marcado Sin Proyecto"];
+const PROHIBIDO = ["1000000001", "1000000002", "1000000003", "@x.test", "FORTALEZA-SECRETA", "MEJORA-SECRETA", "PERCEPCION-SECRETA", "OBS-SECRETA", "Salud", "Excelente", "Aprobado", "Incompleto", "Medellín", "Proyecto Medellín", "Sin Hora", "Marcado Sin Proyecto", "Mentor Uno", "Mentor Dos", "+573110000001", "mon.a", "mon.coord", "mon.fantasma", "+573101112233", "@monitores.test"];
 
-type Vista = { ciudades: string[]; ciudad: string | null; filas: { id: string; proyecto: string; dia: string; hora: string; sala: number | null; mentor: string; estado: string; integrantes: { nombre: string; celular: string | null; estado: string }[] }[]; error?: string };
+type Vista = { ciudades: string[]; ciudad: string | null; filas: { id: string; proyecto: string; dia: string; hora: string; sala: number | null; monitor: string | null; estado: string; integrantes: { nombre: string; celular: string | null; estado: string }[] }[]; error?: string };
 async function pedir(quien: string | null, q = ""): Promise<{ status: number; body: Vista; texto: string }> {
   estado.token = quien ? createToken(ids[quien]!.toHexString(), 0) : "";
   const res = await ruta.GET(new Request(`http://localhost/api/monitor/mi-ciudad${q ? `?${q}` : ""}`));
@@ -43,7 +43,7 @@ beforeAll(async () => {
     ({ _id: ids[k]!, usuario, nombre: `Nombre ${k}`, rol, ciudades, activo: true, passwordHash: "x", creadoEn: now, tokenVersion: 0, ...extra });
   await c.users.insertMany([
     u("admin", "admin.p", "admin", []), u("coord", "coord.p", "coordinador", []),
-    u("monA", "mon.a", "monitor", ["Cali", "Bogotá"]), u("monSin", "mon.sin", "monitor", []),
+    u("monA", "mon.a", "monitor", ["Cali", "Bogotá"], { celular: "+573101112233", correo: "mon.a@monitores.test" }), u("monSin", "mon.sin", "monitor", []),
     // Monitor que además es coordinación: en Mi ciudad igual ve solo SUS ciudades.
     u("monCoord", "mon.coord", "monitor", ["Cali"], { rolesExtra: ["coordinador"] }),
     u("mentor", "mentor.uno", "mentor", ["Cali"], { mentorId: "m1" }),
@@ -119,12 +119,14 @@ describe("quién ve qué", () => {
       ["Recicla y gana", "evaluado"], ["Bici segura", "ausente"], ["Huerta en casa", "pendiente"], ["Aula sin papel", "pendiente"],
     ]);
     const pareja = r.body.filas[0]!;
-    expect(pareja).toMatchObject({ dia: D1, hora: "8:00 a. m.", sala: 3, mentor: "Mentor Uno" });
+    // Ajuste 3: el monitor de la sala a esa hora (plan de salas), solo su nombre; nunca el mentor.
+    expect(pareja).toMatchObject({ dia: D1, hora: "8:00 a. m.", sala: 3, monitor: "Nombre monA" });
+    expect(r.body.filas[1]).toMatchObject({ hora: "8:15 a. m.", monitor: "Nombre monA" }); // misma sala y hora (8)
     expect(pareja.integrantes).toEqual([
       { nombre: "Ana Uno", celular: "+573000000001", estado: "evaluado" },
       { nombre: "Beto Dos", celular: null, estado: "ausente" },
     ]);
-    expect(r.body.filas[3]).toMatchObject({ dia: D2, sala: null, mentor: "Mentor Dos" }); // sin plan de salas ese día
+    expect(r.body.filas[3]).toMatchObject({ dia: D2, sala: null, monitor: null }); // sin plan de salas ese día: «Sin monitor»
   });
 
   it("una ciudad que no es suya: 403", async () => {
@@ -176,12 +178,55 @@ describe("opción B: conteo por estudiante", () => {
     const yo = { id: ids.monA!.toHexString(), usuario: "mon.a", nombre: "Nombre monA", rol: "monitor" as const, ciudades: ["Cali", "Bogotá"] };
     const salas = (await listaSalas(yo)).filas.filter((f) => f.ciudad === "Cali");
     expect(salas.length).toBeGreaterThan(0);
-    // Resumen de «Mis salas» (MonitorPanel): una persona por integrante con estadoPersona.
+    // Resumen de «Mis salas» (hoy en la lista de Mis proyectos): una persona por integrante con estadoPersona.
     const ms = { presente: 0, ausente: 0, pendiente: 0 };
     for (const f of salas) for (const x of f.integrantes) ms[estadoPersona({ res: x.res, presente: x.asistencia === "si", ausente: x.asistencia === "no" })]++;
     const mismos = new Set(salas.map((f) => f.id));
     const mc = contarEstudiantes((await pedir("monA", "ciudad=Cali")).body.filas.filter((f) => mismos.has(f.id)) as never);
     expect({ evaluado: mc.evaluado, ausente: mc.ausente, pendiente: mc.pendiente }).toEqual({ evaluado: ms.presente, ausente: ms.ausente, pendiente: ms.pendiente });
+  });
+});
+
+describe("ajuste 3: monitor por sala y hora", () => {
+  it("misma hora, otra sala: cada proyecto con el monitor de su sala; desactivado = «Sin monitor»; sin usuario, celular ni correo del monitor", async () => {
+    const c = await db.collections();
+    const P2 = new ObjectId(), A2 = new ObjectId();
+    await c.proyectos.insertOne({ _id: P2, codigo: "BO2", ciudad: "Bogotá", nombre: "Otro Bogotá", monitor: null, creadoEn: new Date(), actualizadoEn: new Date(), integrantes: [{ documento: "1000000077", nombre: "Juan Siete" }] } as never);
+    await c.asientos.insertOne({ _id: A2, dia: D1, inicio: inicioUTC(D1, 10, 15), mentorId: "m1", ciudades: ["Bogotá"], proyectoId: P2 });
+    await c.planSalas.insertMany([
+      { _id: `${D1}|10|3`, dia: D1, hora: 10, sala: 3, mentorId: "m1", monitor: "mon.a", origen: null },
+      { _id: `${D1}|10|4`, dia: D1, hora: 10, sala: 4, mentorId: "m2", monitor: "mon.coord", origen: null },
+    ]);
+    try {
+      const r = await pedir("monA", "ciudad=Bogotá");
+      expect(r.body.filas.map((f) => [f.proyecto, f.hora, f.sala, f.monitor])).toEqual([
+        ["Mascotas felices", "10:00 a. m.", 4, "Nombre monCoord"], ["Otro Bogotá", "10:15 a. m.", 3, "Nombre monA"],
+      ]);
+      for (const x of ["mon.a", "mon.coord", "+573101112233", "@monitores.test", "Mentor Uno", "Mentor Dos"]) expect(r.texto).not.toContain(x);
+      await c.users.updateOne({ _id: ids.monCoord }, { $set: { activo: false } });
+      expect((await pedir("monA", "ciudad=Bogotá")).body.filas[0]!.monitor).toBeNull();
+    } finally {
+      await c.users.updateOne({ _id: ids.monCoord }, { $set: { activo: true } });
+      await c.planSalas.deleteMany({ _id: { $in: [`${D1}|10|3`, `${D1}|10|4`] } });
+      await c.asientos.deleteOne({ _id: A2 });
+      await c.proyectos.deleteOne({ _id: P2 });
+    }
+  });
+
+  it("un monitor del plan sin usuario sale como «Sin monitor»; con usuario, su nombre", async () => {
+    const c = await db.collections();
+    await c.planSalas.insertOne({ _id: `${D2}|9|5`, dia: D2, hora: 9, sala: 5, mentorId: "m2", monitor: "mon.fantasma", origen: null });
+    try {
+      const r = await pedir("monA", "ciudad=Cali");
+      expect(r.body.filas.find((f) => f.proyecto === "Aula sin papel")).toMatchObject({ sala: 5, monitor: null });
+      await c.users.updateOne({ _id: ids.monSin }, { $set: { usuario: "mon.fantasma", nombre: "Monitor Fantasma" } });
+      const r2 = await pedir("monA", "ciudad=Cali");
+      expect(r2.body.filas.find((f) => f.proyecto === "Aula sin papel")).toMatchObject({ sala: 5, monitor: "Monitor Fantasma" });
+      expect(r2.texto).not.toContain("Mentor Dos");
+    } finally {
+      await c.planSalas.deleteOne({ _id: `${D2}|9|5` });
+      await c.users.updateOne({ _id: ids.monSin }, { $set: { usuario: "mon.sin", nombre: "Nombre monSin" } });
+    }
   });
 });
 
@@ -191,7 +236,7 @@ describe("privacidad", () => {
       const r = await pedir("monA", q);
       expect(Object.keys(r.body).sort()).toEqual(["ciudad", "ciudades", "filas"]);
       for (const f of r.body.filas) {
-        expect(Object.keys(f).sort()).toEqual(["dia", "estado", "hora", "id", "inicio", "integrantes", "mentor", "proyecto", "sala"]);
+        expect(Object.keys(f).sort()).toEqual(["dia", "estado", "hora", "id", "inicio", "integrantes", "monitor", "proyecto", "sala"]);
         for (const i of f.integrantes) expect(Object.keys(i).sort()).toEqual(["celular", "estado", "nombre"]);
         expect(["evaluado", "pendiente", "ausente"]).toContain(f.estado);
       }

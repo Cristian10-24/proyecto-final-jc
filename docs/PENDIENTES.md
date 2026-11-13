@@ -46,10 +46,14 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Carga de mentores: el plan solo usa asientos que hoy están libres; después de aplicar, los asientos liberados pueden dar nuevas propuestas en el siguiente cálculo (cada proyecto se mueve a lo sumo una vez por cálculo).
 - Horarios: el botón «Revertir este cambio» se muestra según el permiso de ver el historial (que también tiene coordinación), sin revisar en pantalla el permiso de cambiar hora; para coordinación el botón aparece pero el servidor lo rechaza (403). No es un hueco de seguridad, solo un botón que falla en silencio para ese rol.
 
-- Fase 6 (bajo): `miCiudad` lee `evaluacion_resultados` completo (sin projection) para calcular el estado; no sale en la respuesta, pero conviene pedir solo los campos que usa `calc`.
-- Fase 6 (bajo): si falta el nombre, «Mi ciudad» muestra el `mentorId` y «Monitores» el usuario del monitor (ya visible en el plan de salas para el admin).
+- ~~Fase 6 (bajo): `miCiudad` sin projection en evaluaciones~~ — resuelto en el Ajuste 3 (projection { a, b, noPresento }).
+- Fase 6 (bajo): si falta el nombre, «Monitores» muestra el usuario del monitor (ya visible en el plan de salas para el admin). En «Mi ciudad» quedó resuelto en el Ajuste 3 (sale «Sin monitor»).
 - Fase 6 (bajo): «Monitores» no filtra `activo: true` al leer los monitores del plan: uno desactivado que siga en el plan muestra nombre y celular.
 - Fase 6 (bajo): un admin con «monitor» como rol adicional vería «Mi ciudad» (suma de roles); hoy la app no deja dar roles adicionales a Administración, así que no ocurre.
+- Fase 6 (bajo, cierre B): el detalle arma `/api/monitor/mis-proyectos?dia=${data.dia}` sin `encodeURIComponent` (el día viene del servidor en AAAA-MM-DD y la ruta valida con Zod; no explotable).
+- Fase 6 (bajo, cierre B): `urlVolver` (fichaLlamadas.ts) acepta espacios y caracteres de control en la query (`[^#]*`), siempre en el mismo origen; endurecer a `[^#\s]*`.
+- Fase 6 (nota, cierre B): el detalle muestra al monitor documento y correo de los integrantes, como la ficha anterior (misma ruta GET /api/evaluacion/salas/[id]); confirmar que se quiere así.
+- Fase 6 (demo): la semilla demo no trae proyectos de Uruguay (Colonia/Paysandú) ni un monitor con coordinación como rol adicional; para probarlos en el Preview hay que crearlos a mano.
 
 ## Más adelante
 - Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.
@@ -57,3 +61,4 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
   Más adelante, un número consecutivo propio que no dependa del documento.
 - Correos a estudiantes (resultado y retroalimentación): el Excel de resultados ya trae "Asunto del correo" y "Mensaje para el estudiante". Mientras no haya correos, la pantalla del mentor dice "Guarda la evaluación".
 - Paso 26 (bajo, auditoría): el actor del historial, de las evaluaciones y de los comentarios guarda solo el rol principal (p. ej. una evaluación de coordinación + mentor queda como «coordinador»).
+- Pruebas con base con fecha fija del 12-nov (admin, cambioMentor, cargaMentores, estudiante, ordenLlegadaAdmin, seguimiento, tablero): 13 fallan porque ese día ya pasó («en_curso», reservas y portal cerrados). Hay que moverlas a fechas relativas (como monitor.db.test.ts).

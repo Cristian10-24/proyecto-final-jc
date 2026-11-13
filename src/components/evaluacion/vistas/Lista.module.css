@@ -1,0 +1,58 @@
+/* Fase 6 · Entrega B · «Mis proyectos» fusionada (prototipos 01/02, sin reloj). Solo variables --ev-*.
+   Misma regla de columnas que «Mi ciudad»: Proyecto e integrantes 2 partes y Asistencia 1; desde 2200 px Proyecto
+   ≤ 900 px y Asistencia toma el resto. Subcolumnas (proyecto | integrantes) cuando la celda mide ≥ 720 px. */
+
+.grupo { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; margin-bottom: 16px; box-shadow: var(--ev-sombra); }
+.ghead { display: grid; grid-template-columns: minmax(0, 1fr) 96px 150px; align-items: center; gap: 10px 18px; padding: 12px 16px; background: var(--ev-surface-2); border-bottom: 1px solid var(--ev-line); border-radius: 14px 14px 0 0; }
+.ghead h2 { font-size: 17px; }
+.gmentor { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; font-size: 14px; color: var(--ev-muted); }
+.gmentor b { color: var(--ev-ink); }
+.gacc { display: flex; justify-content: flex-end; }
+.gtitulo { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; min-width: 0; }
+
+.thead, .fila { display: grid; gap: 12px 20px; padding: 12px 16px; align-items: center; }
+.conGestion { grid-template-columns: 140px minmax(110px, 150px) minmax(0, 2fr) minmax(220px, 1fr); }
+.sinGestion { grid-template-columns: minmax(110px, 150px) minmax(0, 1fr); }
+@media (min-width: 2200px) { .conGestion { grid-template-columns: 140px 160px minmax(0, 900px) minmax(220px, 1fr); } }
+.thead { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); border-bottom: 1px solid var(--ev-line); padding-top: 9px; padding-bottom: 9px; }
+.fila { border-top: 1px solid var(--ev-line); }
+.fila:first-of-type { border-top: 0; }
+/* Al pasar el cursor, una capa sutil encima: no tapa el color de fondo por estado. */
+.fila:hover { background-image: linear-gradient(color-mix(in srgb, var(--ev-ink) 5%, transparent), color-mix(in srgb, var(--ev-ink) 5%, transparent)); }
+.presente { background: var(--ev-fila-presente); }
+.ausente { background: var(--ev-fila-ausente); }
+.horaCel { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.proy { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sub { font-size: 13px; color: var(--ev-muted); }
+/* Ajuste 2: texto flexible | columna fija de 96 px con Llamar y WhatsApp pegados a la derecha (misma x en todas las filas). */
+.int { display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 4px 12px; font-size: 14px; }
+.int > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.iconos { display: flex; justify-content: flex-end; }
+.int + .int { margin-top: 6px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.gestionar { white-space: nowrap; }
+
+.celdaProy { container-type: inline-size; min-width: 0; }
+.subcols > .ints { margin-top: 8px; }
+@container (min-width: 720px) {
+  .subcols { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(0, 3fr); gap: 0 20px; align-items: start; }
+  .subcols > .ints { margin-top: 0; }
+}
+
+/* Móvil */
+.movilCab { padding: 12px 16px 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.movilCab h1 { font-size: 22px; letter-spacing: -.02em; font-weight: 600; }
+.movilCab p { color: var(--ev-muted); font-size: 13.5px; margin: 2px 0 0; }
+.movilCuerpo { padding: 12px 16px 0; }
+.grupoMovil { margin-bottom: 14px; }
+.gheadMovil { position: sticky; top: 64px; z-index: 3; background: var(--ev-surface-2); border: 1px solid var(--ev-line); border-radius: 14px; padding: 10px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; margin-bottom: 10px; }
+.gheadMovil h2 { font-size: 15.5px; }
+.tarjetas { display: flex; flex-direction: column; gap: 10px; }
+.tarjeta { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 14px; box-shadow: var(--ev-sombra); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.tarjeta.presente { background: var(--ev-fila-presente); }
+.tarjeta.ausente { background: var(--ev-fila-ausente); }
+.tarjetaHora { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gheadMovil h2 { line-height: 1.25; }
+.gheadMovil b { color: var(--ev-ink); }
+.gaccMovil { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.selectorMovil { padding: 10px 16px 0; overflow-x: auto; }

@@ -4,6 +4,7 @@ import "@/app/tema-evaluacion.css";
 import { useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { inicioPorRol, puede, ROL_TXT } from "@/lib/permisos";
+import { primerNombre } from "@/lib/vistas/formato";
 import { elegirTema, temaActual, type Tema } from "@/lib/tema";
 import BotonTema from "../../BotonTema";
 import { TABS, type SeccionEval } from "../EvalShell";
@@ -17,7 +18,7 @@ import v from "./Vistas.module.css";
 // un cajón con nombre, rol, secciones, modo claro/oscuro y «Salir» (prototipo 02/04/06). EvalShell no cambia: las
 // vistas de hoy siguen igual.
 
-const ICONO: Partial<Record<SeccionEval | "panel", React.ReactNode>> = { proyectos: <IcoCarpeta />, salas: <IcoCarpeta />, ciudad: <IcoUbicacion />, monitores: <IcoCuadricula />, panel: <IcoLista /> };
+const ICONO: Partial<Record<SeccionEval | "panel", React.ReactNode>> = { proyectos: <IcoCarpeta />, ciudad: <IcoUbicacion />, monitores: <IcoCuadricula />, panel: <IcoLista /> };
 
 async function salir() {
   await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
@@ -47,7 +48,7 @@ export default function ShellVistas({ user, active, children }: { user: SessionU
           <nav className={`${s.tabs} ${v.tabsWeb}`} aria-label="Secciones">
             {tabs.map((t) => <a key={t.href + t.label} className={s.tab} href={t.href} aria-current={t.key === active ? "page" : undefined}>{t.label}</a>)}
             {panel && <a className={s.tab} href={panel}>Panel</a>}
-            <div className={s.yo}><BotonTema className={s.temaTop} /><span>{user.nombre}</span><button type="button" className={s.salir} onClick={salir}>Salir</button></div>
+            <div className={s.yo}><BotonTema className={s.temaTop} /><span title={user.nombre}>{primerNombre(user.nombre)}</span><button type="button" className={`${s.salir} ${v.salir}`} aria-label="Salir" onClick={salir}><IcoSalir size={16} />Salir</button></div>
           </nav>
           <button ref={boton} type="button" className={v.menuBtn} aria-label="Abrir menú" aria-haspopup="dialog" aria-expanded={menu} onClick={() => setMenu(true)}><IcoMenu /></button>
         </div>
@@ -83,7 +84,7 @@ function Cajon({ user, onCerrar, children }: { user: SessionUser; onCerrar: () =
       <div className={v.velo} onClick={onCerrar} aria-hidden="true" />
       <div ref={ref} className={v.cajon} role="dialog" aria-modal="true" aria-label="Menú">
         <div className={v.cajonHead}>
-          <div><b>{user.nombre}</b><span>{ROL_TXT[user.rol]}</span></div>
+          <div><b title={user.nombre}>{primerNombre(user.nombre)}</b><span>{ROL_TXT[user.rol]}</span></div>
           <button type="button" className={v.ibtn} aria-label="Cerrar menú" onClick={onCerrar}><IcoCerrar /></button>
         </div>
         <nav aria-label="Secciones" className={v.hojaCampos} style={{ gap: 4 }}>{children}</nav>
@@ -91,7 +92,7 @@ function Cajon({ user, onCerrar, children }: { user: SessionUser; onCerrar: () =
         <button type="button" className={v.cajonItem} onClick={() => { const t = oscuro ? "light" : "dark"; elegirTema(t); setTema(t); }}>
           {oscuro ? <IcoSol /> : <IcoLuna />}{oscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
         </button>
-        <button type="button" className={v.cajonItem} onClick={salir}><IcoSalir />Salir</button>
+        <button type="button" className={v.cajonItem} aria-label="Salir" onClick={salir}><IcoSalir />Salir</button>
       </div>
     </>
   );

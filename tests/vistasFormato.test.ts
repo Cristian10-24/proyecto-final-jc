@@ -54,3 +54,15 @@ describe("buscar y textos", () => {
     expect(porcentaje(0, 0)).toBe(0);
   });
 });
+
+describe("primerNombre (menú de las vistas)", async () => {
+  const { primerNombre } = await import("@/lib/vistas/formato");
+  it("nombre compuesto, uno solo, vacío y espacios de más", () => {
+    expect(primerNombre("Danna Belén Buendía Vega")).toBe("Danna");
+    expect(primerNombre("Valeria")).toBe("Valeria");
+    expect(primerNombre("")).toBe("");
+    expect(primerNombre("   ")).toBe("");
+    expect(primerNombre(null)).toBe("");
+    expect(primerNombre("   María   José  ")).toBe("María");
+  });
+});

@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Asignaciones de monitores · coordinación · web</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./assets/67c3652d9b912a625ce48755c9564ae7.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootClase}}" style="min-height: 100%; width: 100%;">
+<header class="ev-top">
+<div class="ev-topin">
+<div class="ev-marca">
+<img class="ev-logo" src="./assets/b6212046a9a9bd034e7451ccac2e9b23.webp" alt="Jóvenes creaTIvos">
+<div class="ev-marcatxt"><b>Jóvenes creaTIvos 2026</b><span>Evaluación del proyecto final</span></div>
+<span class="ev-div" aria-hidden="true"></span>
+<img class="ev-sofka" src="./assets/92bf81b1c6fb724544b2e89e39beb4cc.webp" alt="Sofka">
+</div>
+<nav class="ev-tabs" aria-label="Secciones de coordinación">
+<a class="ev-tab" href="#">Panel</a>
+<a class="ev-tab" href="#">Evaluaciones</a>
+<a class="ev-tab" href="#" aria-current="page">Monitores</a>
+</nav>
+<div class="ev-yo">
+<button class="ev-tema" type="button" onClick="{{alternarTema}}" aria-label="{{temaLabel}}" title="{{temaLabel}}">
+<sc-if value="{{esOscuro}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+<sc-if value="{{esClaro}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+</button>
+<span>Mónica · Coordinación</span>
+<button class="ev-salir" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>Salir</button>
+</div>
+</div>
+</header>
+
+<main class="ev-main">
+<div class="ev-hello">
+<div>
+<h1>Asignaciones de monitores</h1>
+<p>En qué sala está cada monitor, con qué mentor y a qué hora. Solo lectura · Hora COL.</p>
+</div>
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+<a class="ev-btn" href="#">Cambiar en Salas</a>
+<button class="ev-btn ev-btn-navy" type="button" onClick="{{descargar}}" disabled="{{noListo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>Descargar plan de salas</button>
+</div>
+</div>
+
+<div class="ev-filtros" style="margin-bottom: 14px;">
+<label><span class="ev-lbl">Día</span><select class="ev-campo" value="{{dia}}" onChange="{{onDia}}" disabled="{{cargandoOErr}}"><sc-for list="{{optDias}}" as="o" hint-placeholder-count="5"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+<label><span class="ev-lbl">Monitor</span><select class="ev-campo" value="{{fMon}}" onChange="{{onMon}}" disabled="{{noListo}}"><sc-for list="{{optMon}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+<label><span class="ev-lbl">Sala</span><select class="ev-campo" value="{{fSala}}" onChange="{{onSala}}" disabled="{{noListo}}"><sc-for list="{{optSala}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+<label><span class="ev-lbl">Mentor</span><select class="ev-campo" value="{{fMen}}" onChange="{{onMen}}" disabled="{{noListo}}"><sc-for list="{{optMen}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+<label class="ev-buscar ancho"><span class="sr">Buscar</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+<input class="ev-campo" type="search" placeholder="Buscar monitor, mentor, sala o proyecto" value="{{busqueda}}" onChange="{{onBuscar}}" disabled="{{noListo}}"></label>
+</div>
+
+<sc-if value="{{esError}}" hint-placeholder-val="{{ false }}">
+<div class="ev-tarjeta ev-vacio err" role="alert">
+<div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg></div>
+<h2>No pudimos cargar las asignaciones</h2>
+<p>Revisa tu conexión e intenta otra vez. Los datos no se perdieron.</p>
+<button class="ev-btn ev-btn-pri" type="button" onClick="{{reintentar}}">Intentar de nuevo</button>
+</div>
+</sc-if>
+
+<sc-if value="{{cargando}}" hint-placeholder-val="{{ false }}">
+<div class="ev-tarjeta" aria-live="polite" style="display: flex; flex-direction: column; gap: 12px;">
+<p class="b">Cargando las asignaciones del día…</p>
+<span class="ev-skel" style="height: 44px;"></span>
+<span class="ev-skel" style="height: 76px;"></span><span class="ev-skel" style="height: 76px;"></span><span class="ev-skel" style="height: 76px;"></span><span class="ev-skel" style="height: 76px;"></span>
+</div>
+</sc-if>
+
+<sc-if value="{{sinDia}}" hint-placeholder-val="{{ false }}">
+<div class="ev-tarjeta ev-vacio">
+<div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"></path></svg></div>
+<h2>No hay salas con proyectos este día</h2>
+<p>{{diaLargo}} todavía no tiene salas armadas ni monitores asignados. Cuando se armen en Salas, aparecerán aquí.</p>
+<a class="ev-btn" href="#">Ir a Salas</a>
+</div>
+</sc-if>
+
+<sc-if value="{{conDatos}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+<sc-if value="{{alertaSinMon}}" hint-placeholder-val="{{ true }}"><div class="ev-aviso warn" style="min-height: 44px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>{{txtSinMon}}</div></sc-if>
+<sc-if value="{{alertaConf}}" hint-placeholder-val="{{ true }}"><div class="ev-aviso err" style="min-height: 44px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>{{txtConf}}</div></sc-if>
+<sc-if value="{{todoBien}}" hint-placeholder-val="{{ false }}"><div class="ev-aviso" style="min-height: 44px; background: var(--ok-bg); color: var(--ok); font-weight: 600;">Todas las salas tienen monitor y nadie cambia de sala sin margen.</div></sc-if>
+</div>
+
+<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+<h2 style="font-size: 18px;">{{diaLargo}}</h2>
+<div style="display: flex; align-items: center; gap: 10px;">
+<span class="small muted b">Ver como</span>
+<div class="ev-seg" role="group" aria-label="Ver como">
+<button type="button" aria-pressed="{{vGrid}}" onClick="{{verGrid}}">Cuadrícula</button>
+<button type="button" aria-pressed="{{vMon}}" onClick="{{verMon}}">Por monitor</button>
+<button type="button" aria-pressed="{{vSala}}" onClick="{{verSala}}">Por sala</button>
+</div>
+</div>
+</div>
+
+<sc-if value="{{sinResultados}}" hint-placeholder-val="{{ false }}">
+<div class="ev-tarjeta ev-vacio">
+<div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div>
+<h2>Nada coincide con esos filtros</h2>
+<p>Prueba con otro nombre de monitor, mentor, sala o proyecto, o cambia de día.</p>
+<button class="ev-btn" type="button" onClick="{{limpiar}}">Limpiar filtros</button>
+</div>
+</sc-if>
+
+<sc-if value="{{verGridV}}" hint-placeholder-val="{{ true }}">
+<div class="ev-grupo" style="overflow-x: auto;">
+<div class="ev-grid" role="table" aria-label="Cuadrícula de monitores por hora">
+<div class="ev-ghora" style="grid-row: 1; grid-column: 1; border-left: 0;">Monitor</div>
+<sc-for list="{{horas}}" as="h" hint-placeholder-count="13"><div class="ev-ghora" style="grid-row: 1; grid-column: {{h.col}};">{{h.t}}</div></sc-for>
+<div class="ev-ghora" style="grid-row: 1; grid-column: 15;">Total</div>
+<sc-for list="{{filas}}" as="r" hint-placeholder-count="6">
+<div class="{{r.claseMon}}" style="grid-row: {{r.fila}}; grid-column: 1;">
+<sc-if value="{{r.esMon}}" hint-placeholder-val="{{ true }}"><span class="ev-av" style="{{r.avEstilo}}" aria-hidden="true">{{r.ini}}</span></sc-if>
+<sc-if value="{{r.esSin}}" hint-placeholder-val="{{ false }}"><span class="ev-av" style="background: var(--mid); color: var(--surface);" aria-hidden="true">!</span></sc-if>
+<span style="min-width: 0;"><span class="b small" style="display: block;">{{r.nombre}}</span><span class="small muted">{{r.sub}}</span></span>
+</div>
+<sc-for list="{{r.celdas}}" as="c" hint-placeholder-count="13"><div class="{{c.clase}}" style="grid-row: {{c.fila}}; grid-column: {{c.col}}; border-top: 1px solid var(--line);"></div></sc-for>
+<sc-for list="{{r.barras}}" as="b" hint-placeholder-count="2">
+<button class="{{b.clase}}" type="button" style="{{b.estilo}}" onClick="{{b.abrir}}" aria-label="{{b.aria}}">
+<b>{{b.sala}}</b><span>{{b.mentorCorto}}</span><span class="muted">{{b.nTxt}}</span>
+<sc-if value="{{b.conf}}" hint-placeholder-val="{{ false }}"><span style="color: var(--bad); font-weight: 700;">Sin margen</span></sc-if>
+</button>
+</sc-for>
+<div class="{{r.claseTot}}" style="grid-row: {{r.fila}}; grid-column: 15; border-top: 1px solid var(--line); border-left: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; justify-content: center;"><span class="b small">{{r.totH}}</span><span class="small muted">{{r.totP}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{verMonV}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+<sc-for list="{{tarjetasMon}}" as="r" hint-placeholder-count="6">
+<div class="ev-tarjeta" style="{{r.borde}}">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+<span class="ev-av" style="{{r.avEstilo}}" aria-hidden="true">{{r.ini}}</span>
+<span style="min-width: 0; flex: 1;"><span class="b" style="display: block;">{{r.nombre}}</span><span class="small muted">{{r.totH}} · {{r.totP}}</span></span>
+</div>
+<div class="ev-tl">
+<sc-for list="{{r.barras}}" as="b" hint-placeholder-count="2">
+<div class="ev-tli" style="{{b.dot}}">
+<button type="button" onClick="{{b.abrir}}" style="appearance: none; border: 0; background: none; text-align: left; padding: 0; cursor: pointer; min-height: 44px; width: 100%;">
+<span class="ev-hora" style="font-size: 14px; display: block;">{{b.rango}}</span>
+<span class="small"><b>{{b.sala}}</b> · {{b.mentor}} · {{b.nTxt}}</span>
+<sc-if value="{{b.conf}}" hint-placeholder-val="{{ false }}"><span class="ev-chip c-bad" style="margin-top: 4px;">Sin margen</span></sc-if>
+</button>
+</div>
+</sc-for>
+<sc-if value="{{r.vacio}}" hint-placeholder-val="{{ false }}"><p class="small muted">Sin salas este día</p></sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{verSalaV}}" hint-placeholder-val="{{ false }}">
+<div class="ev-grupo">
+<div class="ev-thead" style="grid-template-columns: 120px minmax(0, 1fr);"><span>Sala</span><span>Horas · mentor · monitor</span></div>
+<sc-for list="{{porSala}}" as="s" hint-placeholder-count="8">
+<div class="ev-fila" style="grid-template-columns: 120px minmax(0, 1fr);">
+<span class="tit" style="font-size: 16px;">{{s.sala}}</span>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<sc-for list="{{s.barras}}" as="b" hint-placeholder-count="2">
+<button type="button" onClick="{{b.abrir}}" class="ev-btn" style="justify-content: flex-start; border-radius: 9px; font-weight: 500; gap: 10px; flex-wrap: wrap; height: auto; padding: 8px 12px;">
+<span class="ev-hora" style="font-size: 14px;">{{b.rango}}</span><span>{{b.mentor}}</span>
+<sc-if value="{{b.tieneMon}}" hint-placeholder-val="{{ true }}"><span class="ev-chip c-line">Monitor · {{b.monitor}}</span></sc-if>
+<sc-if value="{{b.sinMon}}" hint-placeholder-val="{{ false }}"><span class="ev-chip c-mid"><i></i>Sin monitor</span></sc-if>
+<sc-if value="{{b.conf}}" hint-placeholder-val="{{ false }}"><span class="ev-chip c-bad">Sin margen</span></sc-if>
+</button>
+</sc-for>
+<sc-if value="{{s.vacia}}" hint-placeholder-val="{{ false }}"><span class="small muted">Sin proyectos este día</span></sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</main>
+
+<sc-if value="{{panelAbierto}}" hint-placeholder-val="{{ false }}">
+<div class="ev-velo" onClick="{{cerrar}}" aria-hidden="true" style="position: fixed;"></div>
+<aside class="ev-lado" role="dialog" aria-modal="true" aria-label="{{pan.titulo}}" style="position: fixed;">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px;">
+<div><p class="small muted">{{diaLargo}}</p><h2 style="font-size: 22px;">{{pan.titulo}}</h2><p class="ev-hora" style="font-size: 15px;">{{pan.rango}}</p></div>
+<button class="ev-ibtn" type="button" onClick="{{cerrar}}" aria-label="Cerrar detalle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<sc-if value="{{pan.conf}}" hint-placeholder-val="{{ false }}"><div class="ev-aviso err" style="margin-bottom: 12px;">El monitor llega de otra sala sin margen: su bloque anterior termina con un turno a las :45.</div></sc-if>
+<sc-if value="{{pan.sinMon}}" hint-placeholder-val="{{ false }}"><div class="ev-aviso warn" style="margin-bottom: 12px;">Esta sala no tiene monitor. Asígnalo en Salas.</div></sc-if>
+<div style="display: flex; flex-direction: column; gap: 14px;">
+<div><span class="ev-lbl">Enlace de la sala</span><a class="ev-btn ev-btn-pri" href="{{pan.enlace}}" style="width: 100%;">{{pan.enlaceTxt}}</a></div>
+<div><span class="ev-lbl">Mentor</span>
+<div class="ev-int"><span><span class="b">{{pan.mentor.nombre}}</span><br><sc-if value="{{pan.mentor.tiene}}" hint-placeholder-val="{{ true }}"><span class="ev-tel small muted">{{pan.mentor.tel}}</span></sc-if><sc-if value="{{pan.mentor.falta}}" hint-placeholder-val="{{ false }}"><span class="ev-sinreg small">Sin registrar</span></sc-if></span>
+<sc-if value="{{pan.mentor.tiene}}" hint-placeholder-val="{{ true }}"><span class="ev-acc"><a class="ev-ibtn" href="{{pan.mentor.telHref}}" aria-label="{{pan.mentor.aLlamar}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"></path></svg></a><a class="ev-ibtn wa" href="{{pan.mentor.waHref}}" aria-label="{{pan.mentor.aWa}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"></path></svg></a></span></sc-if>
+</div></div>
+<div><span class="ev-lbl">Monitor</span>
+<sc-if value="{{pan.sinMon}}" hint-placeholder-val="{{ false }}"><span class="ev-chip c-mid"><i></i>Sin monitor</span></sc-if>
+<sc-if value="{{pan.tieneMon}}" hint-placeholder-val="{{ true }}">
+<div class="ev-int"><span><span class="b">{{pan.monitor.nombre}}</span><br><span class="ev-tel small muted">{{pan.monitor.tel}}</span></span>
+<span class="ev-acc"><a class="ev-ibtn" href="{{pan.monitor.telHref}}" aria-label="{{pan.monitor.aLlamar}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"></path></svg></a><a class="ev-ibtn wa" href="{{pan.monitor.waHref}}" aria-label="{{pan.monitor.aWa}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"></path></svg></a></span>
+</div>
+</sc-if>
+</div>
+<div><span class="ev-lbl">{{pan.nTxt}} del bloque</span>
+<div class="ev-grupo" style="margin: 0;">
+<sc-for list="{{pan.proyectos}}" as="p" hint-placeholder-count="4"><div class="ev-fila" style="grid-template-columns: 96px minmax(0, 1fr); padding: 10px 12px;"><span class="ev-hora" style="font-size: 14px;">{{p.hora}}</span><span class="small b">{{p.nombre}}</span></div></sc-for>
+</div>
+</div>
+</div>
+</aside>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="ev-toast" role="status" style="position: fixed;">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["claro","oscuro"],"default":"claro"},"estado":{"editor":"enum","options":["normal","cargando","sinresultados","sinproyectos","error"],"default":"normal"},"$preview":{"width":1280,"height":1200}}'>
+class Component extends DCLogic {
+  hh(m) { const h = Math.floor(m / 60); return (((h + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0'); }
+  fmt(m) { return this.hh(m) + (m < 720 ? ' a. m.' : ' p. m.'); }
+  rango(a, b) { return (a < 720) === (b < 720) ? this.hh(a) + ' a ' + this.fmt(b) : this.fmt(a) + ' a ' + this.fmt(b); }
+  norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  persona(nombre, raw) {
+    const tel = raw ? '+57 ' + raw.slice(2, 5) + ' ' + raw.slice(5, 8) + ' ' + raw.slice(8) : null;
+    return { nombre, tel, tiene: !!raw, falta: !raw, telHref: 'tel:+' + raw, waHref: 'https://wa.me/' + raw, aLlamar: 'Llamar a ' + nombre, aWa: 'Escribir por WhatsApp a ' + nombre };
+  }
+  base() {
+    if (this._b) return this._b;
+    this._b = {
+      mon: [
+        { id: 'vo', n: 'Valeria Ocampo Ríos', ini: 'VO', c: 1, tel: '573104456789' },
+        { id: 'sl', n: 'Santiago Lemus Cárdenas', ini: 'SL', c: 2, tel: '573157781200' },
+        { id: 'dq', n: 'Daniela Quiroga Pardo', ini: 'DQ', c: 3, tel: '573006612398' },
+        { id: 'js', n: 'Jorge Iván Salcedo', ini: 'JS', c: 4, tel: '573205564410' },
+        { id: 'nb', n: 'Natalia Bernal Ochoa', ini: 'NB', c: 5, tel: '573018893377' },
+        { id: 'fa', n: 'Felipe Aranda Torres', ini: 'FA', c: 6, tel: '573142276654' },
+        { id: 'lg', n: 'Lorena Gil Mosquera', ini: 'LG', c: 7, tel: '573177745219' }
+      ],
+      men: { ju: ['Julián Restrepo Gaviria', '573154027781'], pa: ['Paola Andrea Lozano', '573015562290'], an: ['Andrés Felipe Mejía', null], la: ['Laura Camila Vargas', '573178809123'], ca: ['Camila Herrera Díaz', '573192215560'], ri: ['Ricardo Peña Salas', '573126654401'], jo: ['Juliana Ortiz Mora', '573047782210'], ma: ['Mauricio Lara Prieto', '573165543321'] },
+      enl: ['', 'wsx-edcr-fvt', 'qwe-rtyu-iop', 'zxc-vbnm-qaz', 'tgb-yhnu-jmi', 'asd-fghj-klz', 'plm-okni-juh', 'ygv-tfcr-dxe', 'mnb-vcxz-lkj'],
+      nombres: ['EcoRuta', 'Huerta en casa', 'Mi tienda en línea', 'Recicla y gana', 'Agenda Salud', 'Cuentos sonoros', 'Ruta del café', 'Tutor de inglés', 'Mascotas felices', 'Recetas del Caribe', 'Bici segura', 'Mi primer ahorro', 'Barrio limpio', 'Estudia conmigo', 'App de turnos', 'Moda circular', 'Guía turística', 'Agua para todos', 'Ahorra energía', 'Lectores en red', 'Arte urbano', 'Cine en casa', 'Club de robótica', 'Banco de tiempo', 'Playa limpia', 'Café de la Sierra', 'Mercado campesino', 'Reto deportivo', 'Turismo verde', 'Aula sin papel', 'Cocina saludable', 'Huellitas', 'Música para todos', 'Cuida tu planta', 'Taller de reciclaje', 'Guía de becas', 'Pesca responsable', 'Apps para el agua', 'Ruta histórica', 'Energía solar casera'],
+      dias: [
+        { id: 'jue12', c: 'Jue 12', t: 'Jueves 12 de noviembre' }, { id: 'vie13', c: 'Vie 13', t: 'Viernes 13 de noviembre' },
+        { id: 'mar17', c: 'Mar 17', t: 'Martes 17 de noviembre' }, { id: 'mie18', c: 'Mié 18', t: 'Miércoles 18 de noviembre' },
+        { id: 'jue19', c: 'Jue 19', t: 'Jueves 19 de noviembre' }
+      ],
+      bloques: {
+        jue12: [['vo', 2, 8, 'ju', 4], ['vo', 5, 10, 'pa', 4], ['vo', 3, 16, 'an', 4], ['vo', 1, 18, 'la', 3],
+          ['sl', 4, 8, 'ca', 4], ['sl', 4, 9, 'ca', 4], ['sl', 4, 10, 'ca', 4], ['sl', 6, 11, 'ri', 3],
+          ['dq', 6, 8, 'ri', 4], ['dq', 6, 9, 'ri', 3], ['dq', 7, 14, 'jo', 4], ['dq', 7, 15, 'jo', 4],
+          ['js', 7, 9, 'jo', 4], ['js', 7, 10, 'jo', 2], ['js', 8, 13, 'ma', 4], ['js', 8, 14, 'ma', 4], ['js', 8, 19, 'ma', 4], ['js', 8, 20, 'ma', 3],
+          ['nb', 1, 8, 'la', 4], ['nb', 1, 9, 'la', 4], ['nb', 2, 14, 'ju', 4], ['nb', 2, 15, 'ju', 4], ['nb', 2, 16, 'ju', 2],
+          ['fa', 3, 9, 'an', 4], ['fa', 3, 10, 'an', 4], ['fa', 3, 11, 'an', 4],
+          ['lg', 5, 15, 'pa', 4], ['lg', 5, 16, 'pa', 4], ['lg', 5, 17, 'pa', 3], ['lg', 4, 18, 'ca', 4], ['lg', 4, 19, 'ca', 4],
+          [null, 8, 8, 'ma', 3], [null, 1, 20, 'la', 2]],
+        vie13: [['vo', 4, 9, 'ca', 3], ['sl', 1, 14, 'an', 4], ['sl', 1, 15, 'an', 4], ['dq', 7, 10, 'la', 4], ['nb', 2, 8, 'ju', 4], ['nb', 2, 9, 'ju', 4]],
+        mar17: [['vo', 2, 14, 'ju', 2], ['js', 3, 9, 'pa', 4], ['js', 3, 10, 'pa', 4], ['fa', 5, 9, 'ri', 4], ['fa', 6, 10, 'jo', 4], [null, 8, 15, 'ma', 2]],
+        mie18: [['sl', 1, 8, 'la', 4], ['sl', 1, 9, 'la', 4], ['sl', 1, 10, 'la', 4], ['sl', 1, 11, 'la', 4], ['lg', 3, 13, 'an', 4], ['lg', 3, 14, 'an', 3]],
+        jue19: []
+      }
+    };
+    return this._b;
+  }
+  barrasDe(dia) {
+    const B = this.base();
+    let k = 0;
+    const lista = B.bloques[dia].slice().sort((x, y) => String(x[0]).localeCompare(String(y[0])) || x[2] - y[2]);
+    const barras = [];
+    lista.forEach((bl) => {
+      const prev = barras[barras.length - 1];
+      const proys = [];
+      for (let i = 0; i < bl[4]; i++) proys.push({ m: bl[2] * 60 + i * 15, nombre: B.nombres[(k++) % B.nombres.length] });
+      if (prev && prev.mon === bl[0] && prev.sala === bl[1] && prev.men === bl[3] && prev.b === bl[2]) {
+        prev.b = bl[2] + 1; prev.proys = prev.proys.concat(proys); prev.last = proys[proys.length - 1].m % 60;
+      } else {
+        barras.push({ mon: bl[0], sala: bl[1], a: bl[2], b: bl[2] + 1, men: bl[3], proys, last: proys[proys.length - 1].m % 60, conf: false });
+      }
+    });
+    const conflictos = [];
+    B.mon.forEach((m) => {
+      const mb = barras.filter((x) => x.mon === m.id).sort((x, y) => x.a - y.a);
+      for (let i = 0; i + 1 < mb.length; i++) {
+        if (mb[i].b === mb[i + 1].a && mb[i].sala !== mb[i + 1].sala && mb[i].last === 45) { mb[i + 1].conf = true; conflictos.push({ m, de: mb[i], a: mb[i + 1] }); }
+      }
+    });
+    return { barras, conflictos };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const tema = s.tema || this.props.tema || 'claro';
+    const estado = s.estado || this.props.estado || 'normal';
+    const B = this.base();
+    const dia = s.dia || (estado === 'sinproyectos' ? 'jue19' : 'jue12');
+    const fMon = s.fMon || 'todos', fSala = s.fSala || 'todas', fMen = s.fMen || 'todos';
+    const vista = s.vista || 'grid';
+    const busqueda = s.busqueda !== undefined ? s.busqueda : (estado === 'sinresultados' ? 'Robótica submarina' : '');
+    const q = this.norm(busqueda.trim());
+    const diaObj = B.dias.find((d) => d.id === dia);
+    const { barras, conflictos } = this.barrasDe(dia);
+    const monById = {}; B.mon.forEach((m) => { monById[m.id] = m; });
+    const pasa = (x) => (fSala === 'todas' || String(x.sala) === fSala) && (fMen === 'todos' || x.men === fMen)
+      && (!q || this.norm(B.men[x.men][0]).includes(q) || this.norm('sala ' + x.sala).includes(q) || (x.mon && this.norm(monById[x.mon].n).includes(q)) || x.proys.some((p) => this.norm(p.nombre).includes(q)));
+    const filtrosActivos = fSala !== 'todas' || fMen !== 'todos' || !!q;
+    const vb = (x) => {
+      const m = x.mon ? monById[x.mon] : null;
+      const n = x.proys.length;
+      return {
+        sala: 'Sala ' + x.sala, mentor: B.men[x.men][0], mentorCorto: B.men[x.men][0].split(' ').slice(0, 2).join(' '),
+        nTxt: n + (n === 1 ? ' proyecto' : ' proyectos'), conf: x.conf, rango: this.rango(x.a * 60, x.b * 60),
+        monitor: m ? m.n : '', tieneMon: !!m, sinMon: !m,
+        dot: '--dot: ' + (m ? 'var(--m' + m.c + ')' : 'var(--mid)') + ';',
+        clase: 'ev-bar' + (x.conf ? ' conf' : ''),
+        estilo: 'grid-row: ' + x._fila + '; grid-column: ' + (x.a - 6) + ' / ' + (x.b - 6) + '; ' + (m ? 'background: var(--m' + m.c + 'b); border-color: var(--m' + m.c + ');' : ''),
+        aria: 'Sala ' + x.sala + ', ' + this.rango(x.a * 60, x.b * 60) + ', mentor ' + B.men[x.men][0] + ', ' + n + ' proyectos' + (x.conf ? ', sin margen' : '') + '. Ver detalle',
+        abrir: () => this.setState({ panel: { dia, sala: x.sala, a: x.a } })
+      };
+    };
+    const monsVis = B.mon.filter((m) => fMon === 'todos' || m.id === fMon);
+    const filas = [];
+    let fila = 2;
+    monsVis.forEach((m) => {
+      const mb = barras.filter((x) => x.mon === m.id);
+      const mbv = mb.filter(pasa);
+      if (filtrosActivos && mbv.length === 0) return;
+      const horas = mb.reduce((t, x) => t + (x.b - x.a), 0), pr = mb.reduce((t, x) => t + x.proys.length, 0);
+      mbv.forEach((x) => { x._fila = fila; });
+      filas.push({ fila, esMon: true, esSin: false, ini: m.ini, nombre: m.n, sub: '+57 ' + m.tel.slice(2, 5) + ' ' + m.tel.slice(5, 8) + ' ' + m.tel.slice(8),
+        avEstilo: 'background: var(--m' + m.c + 'b); color: var(--m' + m.c + ');', claseMon: 'ev-gmon', claseTot: '',
+        celdas: Array.from({ length: 13 }, (_, i) => ({ fila, col: i + 2, clase: 'ev-gcell' })),
+        barras: mbv.map(vb), totH: horas ? horas + ' h' : 'Sin salas', totP: pr + ' proyectos' });
+      fila++;
+    });
+    const sinMon = barras.filter((x) => !x.mon);
+    const sinMonV = sinMon.filter(pasa);
+    if (fMon === 'todos' && sinMonV.length > 0) {
+      sinMonV.forEach((x) => { x._fila = fila; });
+      filas.push({ fila, esMon: false, esSin: true, nombre: 'Sin monitor', sub: sinMon.length + (sinMon.length === 1 ? ' sala' : ' salas') + ' por cubrir', claseMon: 'ev-gmon ev-sinmon', claseTot: 'ev-sinmon',
+        celdas: Array.from({ length: 13 }, (_, i) => ({ fila, col: i + 2, clase: 'ev-gcell ev-sinmon' })),
+        barras: sinMonV.map(vb), totH: sinMon.reduce((t, x) => t + (x.b - x.a), 0) + ' h', totP: sinMon.reduce((t, x) => t + x.proys.length, 0) + ' proyectos' });
+    }
+    const tarjetasMon = monsVis.map((m) => {
+      const mb = barras.filter((x) => x.mon === m.id).sort((x, y) => x.a - y.a);
+      const mbv = mb.filter(pasa);
+      return { ok: !(filtrosActivos && mbv.length === 0), ini: m.ini, nombre: m.n, avEstilo: 'background: var(--m' + m.c + 'b); color: var(--m' + m.c + ');', borde: '',
+        totH: mb.reduce((t, x) => t + (x.b - x.a), 0) + ' h', totP: mb.reduce((t, x) => t + x.proys.length, 0) + ' proyectos', barras: mbv.map(vb), vacio: mbv.length === 0 };
+    }).filter((t) => t.ok);
+    if (fMon === 'todos' && sinMonV.length) tarjetasMon.push({ ini: '!', nombre: 'Sin monitor', avEstilo: 'background: var(--mid); color: var(--surface);', borde: 'background: var(--mid-bg); border-color: var(--mid);', totH: sinMon.length + ' salas', totP: 'por cubrir', barras: sinMonV.sort((x, y) => x.a - y.a).map(vb), vacio: false });
+    const porSala = [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => fSala === 'todas' || String(n) === fSala).map((n) => {
+      const sb = barras.filter((x) => x.sala === n && (fMon === 'todos' || x.mon === fMon) && pasa(x)).sort((x, y) => x.a - y.a);
+      return { sala: 'Sala ' + n, barras: sb.map(vb), vacia: sb.length === 0, n: sb.length };
+    }).filter((x) => !filtrosActivos || x.n > 0);
+    const cargando = estado === 'cargando', esError = estado === 'error';
+    const ok = !cargando && !esError;
+    const sinDia = ok && barras.length === 0;
+    const conDatos = ok && !sinDia;
+    const hayAlgo = vista === 'grid' ? filas.some((f) => f.barras.length) : vista === 'mon' ? tarjetasMon.some((t) => t.barras.length) : porSala.some((x) => x.n);
+    let pan = null;
+    if (s.panel && s.panel.dia === dia) {
+      const x = barras.find((y) => y.sala === s.panel.sala && y.a === s.panel.a);
+      if (x) {
+        const m = x.mon ? monById[x.mon] : null;
+        pan = { titulo: 'Sala ' + x.sala, rango: this.rango(x.a * 60, x.b * 60), enlace: 'https://meet.google.com/' + B.enl[x.sala], enlaceTxt: 'Abrir meet.google.com/' + B.enl[x.sala],
+          mentor: this.persona(B.men[x.men][0], B.men[x.men][1]), monitor: m ? this.persona(m.n, m.tel) : this.persona('', null), tieneMon: !!m, sinMon: !m, conf: x.conf,
+          nTxt: x.proys.length + ' proyectos', proyectos: x.proys.map((p) => ({ hora: this.fmt(p.m), nombre: p.nombre })) };
+      }
+    }
+    const mensOpts = Object.keys(B.men).map((k) => ({ v: k, t: B.men[k][0] })).sort((a, b) => a.t.localeCompare(b.t));
+    const c0 = conflictos[0];
+    return {
+      rootClase: tema === 'oscuro' ? 'ev oscuro' : 'ev',
+      esOscuro: tema === 'oscuro', esClaro: tema !== 'oscuro',
+      temaLabel: tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+      alternarTema: () => this.setState({ tema: tema === 'oscuro' ? 'claro' : 'oscuro' }),
+      dias: B.dias.map((d) => ({ c: d.c, pressed: d.id === dia ? 'true' : 'false', elegir: () => this.setState({ dia: d.id, panel: null }) })),
+      diaLargo: diaObj.t, cargando, esError, cargandoOErr: cargando || esError, noListo: !conDatos, sinDia, conDatos,
+      dia, optDias: B.dias.map((d) => ({ v: d.id, t: d.t })), onDia: (e) => this.setState({ dia: e.target.value, panel: null }),
+      reintentar: () => this.setState({ estado: 'normal' }),
+      alertaSinMon: sinMon.length > 0, txtSinMon: sinMon.length + (sinMon.length === 1 ? ' sala sin monitor' : ' salas sin monitor') + ' · ' + sinMon.map((x) => 'Sala ' + x.sala + ' ' + this.fmt(x.a * 60)).join(', '),
+      alertaConf: conflictos.length > 0,
+      txtConf: conflictos.length + (conflictos.length === 1 ? ' monitor cambia' : ' monitores cambian') + ' de sala sin margen' + (c0 ? ' · ' + c0.m.n.split(' ').slice(0, 2).join(' ') + ': Sala ' + c0.de.sala + ' (último turno ' + this.fmt(c0.de.b * 60 - 15) + ') → Sala ' + c0.a.sala + ' a las ' + this.fmt(c0.a.a * 60) : ''),
+      todoBien: sinMon.length === 0 && conflictos.length === 0,
+      fMon, fSala, fMen, busqueda,
+      optMon: [{ v: 'todos', t: 'Todos los monitores' }].concat(B.mon.map((m) => ({ v: m.id, t: m.n }))),
+      optSala: [{ v: 'todas', t: 'Todas las salas' }].concat([1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({ v: String(n), t: 'Sala ' + n }))),
+      optMen: [{ v: 'todos', t: 'Todos los mentores' }].concat(mensOpts),
+      onMon: (e) => this.setState({ fMon: e.target.value }), onSala: (e) => this.setState({ fSala: e.target.value }),
+      onMen: (e) => this.setState({ fMen: e.target.value }), onBuscar: (e) => this.setState({ busqueda: e.target.value }),
+      limpiar: () => this.setState({ fMon: 'todos', fSala: 'todas', fMen: 'todos', busqueda: '' }),
+      vGrid: vista === 'grid' ? 'true' : 'false', vMon: vista === 'mon' ? 'true' : 'false', vSala: vista === 'sala' ? 'true' : 'false',
+      verGrid: () => this.setState({ vista: 'grid' }), verMon: () => this.setState({ vista: 'mon' }), verSala: () => this.setState({ vista: 'sala' }),
+      sinResultados: conDatos && !hayAlgo,
+      verGridV: conDatos && hayAlgo && vista === 'grid', verMonV: conDatos && hayAlgo && vista === 'mon', verSalaV: conDatos && hayAlgo && vista === 'sala',
+      horas: Array.from({ length: 13 }, (_, i) => ({ col: i + 2, t: (((i + 8 + 11) % 12) + 1) + (i + 8 < 12 ? ' a. m.' : ' p. m.') })),
+      filas, tarjetasMon, porSala,
+      panelAbierto: !!pan, pan: pan || { mentor: {}, monitor: {}, proyectos: [] },
+      cerrar: () => this.setState({ panel: null }),
+      descargar: () => { this.setState({ toast: 'Descargando plan de salas · ' + diaObj.t }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600); },
+      toast: s.toast || ''
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gestionar proyecto · monitor · web</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./assets/67c3652d9b912a625ce48755c9564ae7.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootClase}}" style="min-height: 100%; width: 100%;">
+<header class="ev-top">
+<div class="ev-topin">
+<div class="ev-marca">
+<img class="ev-logo" src="./assets/b6212046a9a9bd034e7451ccac2e9b23.webp" alt="Jóvenes creaTIvos">
+<div class="ev-marcatxt"><b>Jóvenes creaTIvos 2026</b><span>Evaluación del proyecto final</span></div>
+<span class="ev-div" aria-hidden="true"></span>
+<img class="ev-sofka" src="./assets/92bf81b1c6fb724544b2e89e39beb4cc.webp" alt="Sofka">
+</div>
+<nav class="ev-tabs" aria-label="Secciones del monitor">
+<a class="ev-tab" href="MisProyectosWeb.dc.html" aria-current="page">Mis proyectos</a>
+<a class="ev-tab" href="MiCiudadWeb.dc.html">Mi ciudad</a>
+</nav>
+<div class="ev-yo">
+<button class="ev-tema" type="button" onClick="{{alternarTema}}" aria-label="{{temaLabel}}" title="{{temaLabel}}">
+<sc-if value="{{esOscuro}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+<sc-if value="{{esClaro}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+</button>
+<span>Valeria</span>
+<button class="ev-salir" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>Salir</button>
+</div>
+</div>
+</header>
+
+<main class="ev-main" style="display: flex; flex-direction: column; gap: 20px;">
+<div><a class="ev-btn ev-btn-sm" href="MisProyectosWeb.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>Volver a Mis proyectos</a></div>
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<p class="small muted b">{{p.kicker}}</p>
+<h1 style="font-size: 30px; letter-spacing: -.02em;">{{p.nombre}}</h1>
+<div style="display: flex; gap: 6px; flex-wrap: wrap;">
+<span class="ev-chip c-line">{{p.ciudad}}</span>
+<span class="ev-chip c-line">{{p.ruta}}</span>
+<sc-if value="{{p.pareja}}" hint-placeholder-val="{{ true }}"><span class="ev-chip c-line">En pareja</span></sc-if>
+<sc-if value="{{p.uy}}" hint-placeholder-val="{{ false }}"><span class="ev-chip c-uy">{{p.horaUy}}</span></sc-if>
+</div>
+</div>
+<a class="ev-btn ev-btn-pri" href="{{p.enlace}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 8-6 4 6 4V8z"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg>Abrir sala</a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch;">
+<section class="ev-tarjeta" aria-labelledby="t-sesion" style="display: flex; flex-direction: column; gap: 14px;">
+<h2 id="t-sesion" style="font-size: 16px;">Sesión</h2>
+<dl class="ev-dl" style="margin: 0; grid-template-columns: 72px minmax(0, 1fr);">
+<dt>Día</dt><dd>{{p.dia}}</dd>
+<dt>Hora</dt><dd>{{p.hora}} (COL) · 15 minutos<sc-if value="{{p.uy}}" hint-placeholder-val="{{ false }}"><br><span class="muted" style="font-weight: 500;">{{p.horaUy}}</span></sc-if></dd>
+<dt>Sala</dt><dd>{{p.sala}}</dd>
+<dt>Enlace</dt><dd style="overflow-wrap: anywhere;"><a href="{{p.enlace}}" style="color: var(--orange-ink);">{{p.enlaceTxt}}</a></dd>
+</dl>
+<div style="margin-top: auto;"><button class="ev-btn ev-btn-sm" type="button" onClick="{{copiarEnlace}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>Copiar enlace</button></div>
+</section>
+
+<section class="ev-tarjeta" aria-labelledby="t-mentor" style="display: flex; flex-direction: column; gap: 14px;">
+<h2 id="t-mentor" style="font-size: 16px;">Mentor</h2>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center;">
+<div style="min-width: 0;"><p class="b">{{p.mentor.nombre}}</p><sc-if value="{{p.mentor.tiene}}" hint-placeholder-val="{{ true }}"><p class="ev-tel muted small">{{p.mentor.tel}}</p></sc-if><sc-if value="{{p.mentor.falta}}" hint-placeholder-val="{{ false }}"><p class="ev-sinreg small">Sin registrar</p></sc-if></div>
+<div class="ev-acc" style="justify-content: flex-end;">
+<sc-if value="{{p.mentor.tiene}}" hint-placeholder-val="{{ true }}">
+<a class="ev-ibtn" href="{{p.mentor.telHref}}" aria-label="{{p.mentor.aLlamar}}" title="Llamar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"></path></svg></a>
+<a class="ev-ibtn wa" href="{{p.mentor.waHref}}" aria-label="{{p.mentor.aWa}}" title="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"></path></svg></a>
+</sc-if>
+</div>
+</div>
+<p class="small muted" style="margin-top: auto;">Evalúa el bloque {{p.bloque}} en {{p.sala}}.</p>
+</section>
+
+<section class="ev-tarjeta" aria-labelledby="t-proy" style="display: flex; flex-direction: column; gap: 14px;">
+<h2 id="t-proy" style="font-size: 16px;">Proyecto</h2>
+<p>{{p.desc}}</p>
+<dl class="ev-dl" style="margin: 0; grid-template-columns: 92px minmax(0, 1fr);">
+<dt>Ciudad</dt><dd>{{p.ciudad}}</dd>
+<dt>Ruta</dt><dd>{{p.ruta}}</dd>
+<dt>Integrantes</dt><dd>{{p.intNombres}}</dd>
+</dl>
+</section>
+</div>
+
+<section aria-labelledby="t-asis" style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+<h2 id="t-asis" style="font-size: 20px;">Asistencia y observaciones</h2>
+<p class="small muted">Marca si cada integrante se presentó. Tocar otra vez Sí o No lo deja en Pendiente.</p>
+</div>
+<div style="{{gridInt}}">
+<sc-for list="{{p.integrantes}}" as="i" hint-placeholder-count="2">
+<article class="ev-tarjeta" style="display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+<h3 style="font-size: 17px;">{{i.nombre}}</h3>
+<span class="{{i.chip}}">{{i.estadoTxt}}</span>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; background: var(--surface-2); border-radius: 9px; padding: 12px;">
+<div style="min-width: 0;">
+<sc-if value="{{i.tiene}}" hint-placeholder-val="{{ true }}"><p class="b ev-tel">{{i.tel}}</p></sc-if>
+<sc-if value="{{i.falta}}" hint-placeholder-val="{{ false }}"><p class="ev-sinreg">Celular sin registrar</p></sc-if>
+<p class="small muted" style="overflow-wrap: anywhere;">Doc. {{i.doc}} · {{i.email}}</p>
+</div>
+<div class="ev-acc" style="justify-content: flex-end;">
+<sc-if value="{{i.tiene}}" hint-placeholder-val="{{ true }}">
+<a class="ev-ibtn" href="{{i.telHref}}" aria-label="{{i.aLlamar}}" title="Llamar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"></path></svg></a>
+<a class="ev-ibtn wa" href="{{i.waHref}}" aria-label="{{i.aWa}}" title="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"></path></svg></a>
+</sc-if>
+</div>
+</div>
+<sc-if value="{{i.evaluado}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+<p class="small"><span class="muted">Evaluación del mentor · </span><span class="ev-chip c-info">{{i.resultado}}</span></p>
+<p class="small">{{i.retro}}</p>
+</div>
+</sc-if>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+<span class="b small">¿Se presentó?</span>
+<div class="ev-seg" role="group" aria-label="{{i.aSePresento}}">
+<button type="button" aria-pressed="{{i.siP}}" onClick="{{i.marcarSi}}" style="{{i.siEst}}">Sí</button>
+<button type="button" aria-pressed="{{i.noP}}" onClick="{{i.marcarNo}}" style="{{i.noEst}}">No</button>
+</div>
+</div>
+<sc-if value="{{i.esAus}}" hint-placeholder-val="{{ false }}">
+<label><span class="b small" style="display: block; margin-bottom: 6px;">Motivo de inasistencia</span>
+<select class="ev-campo" value="{{i.motivo}}" onChange="{{i.onMotivo}}"><sc-for list="{{motivos}}" as="o" hint-placeholder-count="8"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+<sc-if value="{{i.sinMotivo}}" hint-placeholder-val="{{ false }}"><p class="small" style="color: var(--mid); font-weight: 600;">Falta registrar el motivo de la inasistencia.</p></sc-if>
+</sc-if>
+<label><span class="b small" style="display: block; margin-bottom: 6px;">Observación del monitor</span>
+<textarea class="ev-campo" style="padding: 10px 12px; min-height: 72px; resize: vertical;" placeholder="Ej.: avisó que estaba enfermo; se reprograma para el jueves." value="{{i.obs}}" onChange="{{i.onObs}}"></textarea></label>
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+<button class="ev-btn ev-btn-sm" type="button" onClick="{{i.guardar}}" disabled="{{i.guardarDis}}" style="{{i.guardarEst}}">Guardar observación</button>
+<sc-if value="{{i.hayGuardada}}" hint-placeholder-val="{{ false }}"><span class="small muted">Guardada: «{{i.guardada}}»</span></sc-if>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+
+<details class="ev-tarjeta" style="padding: 4px 18px;">
+<summary class="ev-sum" style="min-height: 52px;">
+<span style="display: flex; align-items: center; gap: 10px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>¿Hay que cambiar la hora? <span class="muted" style="font-weight: 500;">Reprogramar o sugerir un cambio especial</span></span>
+<svg class="rot" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+</summary>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding: 6px 0 18px;">
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<h3 style="font-size: 15px;">Reprogramar</h3>
+<p class="small muted">Elige un cupo libre de {{p.ciudadSola}}. El cupo actual queda libre y, si estaba «No se presentó», vuelve a Pendiente. Queda registrado con tu nombre.</p>
+<sc-if value="{{p.bloqueado}}" hint-placeholder-val="{{ true }}"><div class="ev-aviso">Ya hay una evaluación guardada en este proyecto: no se puede reprogramar. Usa «Sugerir un cambio especial».</div></sc-if>
+<sc-if value="{{p.libre}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<label><span class="ev-lbl">Día</span><select class="ev-campo" value="{{rp.dia}}" onChange="{{rp.onDia}}"><sc-for list="{{rpDias}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+<label><span class="ev-lbl">Cupo libre (hora · mentor)</span><select class="ev-campo" value="{{rp.cupo}}" onChange="{{rp.onCupo}}"><sc-for list="{{rp.cupos}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+</div>
+<label><span class="ev-lbl">Motivo del cambio</span><input class="ev-campo" type="text" placeholder="Ej.: cita médica el día asignado" value="{{rp.motivo}}" onChange="{{rp.onMotivo}}"></label>
+<div><button class="ev-btn ev-btn-sm" type="button" onClick="{{rp.enviar}}" disabled="{{rp.dis}}" style="{{rp.est}}">Reprogramar en este cupo</button></div>
+</sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<h3 style="font-size: 15px;">Sugerir un cambio especial</h3>
+<p class="small muted">Para otro día, otra ciudad o una fecha después de la clausura de {{p.ciudadSola}}. Administración lo aprueba o lo rechaza; mientras tanto la hora no cambia.</p>
+<label><span class="ev-lbl">Qué cambio sugieres</span><input class="ev-campo" type="text" placeholder="Ej.: pasarlo al lunes 16 con Cartagena" value="{{sg.cambio}}" onChange="{{sg.onCambio}}"></label>
+<label><span class="ev-lbl">Motivo</span><input class="ev-campo" type="text" placeholder="Ej.: viaja esa semana por trabajo" value="{{sg.motivo}}" onChange="{{sg.onMotivo}}"></label>
+<div><button class="ev-btn ev-btn-sm" type="button" onClick="{{sg.enviar}}" disabled="{{sg.dis}}" style="{{sg.est}}">Enviar sugerencia</button></div>
+</div>
+</div>
+</details>
+</main>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="ev-toast" role="status" style="position: fixed;">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["claro","oscuro"],"default":"claro"},"caso":{"editor":"enum","options":["pareja","individual"],"default":"pareja"},"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+  fmt(m) { const h = Math.floor(m / 60); return (((h + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0') + (m < 720 ? ' a. m.' : ' p. m.'); }
+  norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  persona(nombre, raw) {
+    let tel = null;
+    if (raw) tel = raw.startsWith('598') ? '+598 ' + raw.slice(3, 5) + ' ' + raw.slice(5, 8) + ' ' + raw.slice(8) : '+57 ' + raw.slice(2, 5) + ' ' + raw.slice(5, 8) + ' ' + raw.slice(8);
+    return { nombre, tel, tiene: !!raw, falta: !raw, telHref: 'tel:+' + raw, waHref: 'https://wa.me/' + raw, aLlamar: 'Llamar a ' + nombre, aWa: 'Escribir por WhatsApp a ' + nombre };
+  }
+  setMap(n, k, v) { const m = Object.assign({}, ((this.state || {})[n]) || {}); m[k] = v; this.setState({ [n]: m }); }
+  aviso(t) { this.setState({ toast: t }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600); }
+  caso(c) {
+    if (c === 'individual') return {
+      nombre: 'Cuentos sonoros', ciudad: 'Paysandú', pais: 'Uruguay', ruta: 'Ruta básica', m: 615, dia: 'Jueves 12 de noviembre', sala: 'Sala 5', bloque: '10:00 a 11:00 a. m.',
+      enlace: 'asd-fghj-klz', mentor: ['Paola Andrea Lozano', '573015562290'],
+      desc: 'Audiocuentos grabados por jóvenes para niños de primaria, con guías para leer en familia.',
+      ints: [{ n: 'Lucía Fernández Acosta', tel: '59898557102', doc: '6603', asis: 'pend', mot: '', res: '', retro: '' }]
+    };
+    return {
+      nombre: 'Recicla y gana', ciudad: 'Barranquilla', pais: '', ruta: 'Ruta básica', m: 525, dia: 'Jueves 12 de noviembre', sala: 'Sala 2', bloque: '8:00 a 9:00 a. m.',
+      enlace: 'qwe-rtyu-iop', mentor: ['Julián Restrepo Gaviria', '573154027781'],
+      desc: 'Puntos de reciclaje que dan puntos canjeables en las tiendas del barrio.',
+      ints: [
+        { n: 'Daniela Rojas Pinto', tel: '573017745210', doc: '5701', asis: 'pres', mot: '', res: 'Aprobado', retro: 'Explicó con claridad cómo se canjean los puntos. Sugerencia: mostrar el mapa de puntos en el celular.' },
+        { n: 'Mateo Charris Ruiz', tel: '573205531904', doc: '3306', asis: 'aus', mot: '', res: '', retro: '' }
+      ]
+    };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const tema = s.tema || this.props.tema || 'claro';
+    const c = this.caso(this.props.caso || 'pareja');
+    const NOM = { pend: 'Pendiente', pres: 'Se presentó', aus: 'No se presentó' };
+    const CH = { pend: 'ev-chip c-idle', pres: 'ev-chip c-ok', aus: 'ev-chip c-bad' };
+    const off = 'opacity: .5; cursor: not-allowed;';
+    const uy = !!c.pais;
+    const integrantes = c.ints.map((x, j) => {
+      const key = c.nombre + j;
+      const asis = (s.asis && s.asis[key]) || x.asis;
+      const motivo = (s.mot && s.mot[key] !== undefined) ? s.mot[key] : x.mot;
+      const obs = (s.obs && s.obs[key]) || '';
+      const guardada = (s.obsG && s.obsG[key]) || '';
+      return Object.assign(this.persona(x.n, x.tel), {
+        doc: '•••• ' + x.doc, email: this.norm(x.n).split(' ').slice(0, 2).join('.') + '@correo.com',
+        chip: CH[asis], estadoTxt: NOM[asis], evaluado: !!x.res, resultado: x.res, retro: x.retro,
+        aSePresento: '¿' + x.n + ' se presentó?',
+        siP: asis === 'pres' ? 'true' : 'false', noP: asis === 'aus' ? 'true' : 'false',
+        siEst: asis === 'pres' ? 'background: var(--ok); color: var(--surface);' : '',
+        noEst: asis === 'aus' ? 'background: var(--bad); color: var(--surface);' : '',
+        marcarSi: () => this.setMap('asis', key, asis === 'pres' ? 'pend' : 'pres'),
+        marcarNo: () => this.setMap('asis', key, asis === 'aus' ? 'pend' : 'aus'),
+        esAus: asis === 'aus', sinMotivo: asis === 'aus' && !motivo, motivo,
+        onMotivo: (e) => this.setMap('mot', key, e.target.value),
+        obs, onObs: (e) => this.setMap('obs', key, e.target.value),
+        guardarDis: !obs.trim(), guardarEst: obs.trim() ? '' : off,
+        guardar: () => { this.setMap('obsG', key, obs.trim()); this.aviso('Observación guardada · ' + x.n.split(' ')[0]); },
+        hayGuardada: !!guardada, guardada
+      });
+    });
+    const bloqueado = c.ints.some((x) => x.res);
+    const DIAS = [
+      { v: 'jue12', t: 'Jueves 12 de noviembre (54 libres)', cupos: ['11:00 a. m. · Paola Andrea Lozano', '2:30 p. m. · Laura Camila Vargas', '5:15 p. m. · Andrés Felipe Mejía'] },
+      { v: 'vie13', t: 'Viernes 13 de noviembre (31 libres)', cupos: ['9:45 a. m. · Camila Herrera Díaz', '3:00 p. m. · Julián Restrepo Gaviria'] },
+      { v: 'mar17', t: 'Martes 17 de noviembre (22 libres)', cupos: ['10:00 a. m. · Paola Andrea Lozano', '3:15 p. m. · Julián Restrepo Gaviria'] }
+    ];
+    const rpS = s.rp || { dia: 'jue12', cupo: '0', motivo: '' };
+    const sgS = s.sg || { cambio: '', motivo: '' };
+    const cupos = DIAS.find((d) => d.v === rpS.dia).cupos;
+    const sgOk = !!(sgS.cambio.trim() && sgS.motivo.trim());
+    return {
+      rootClase: tema === 'oscuro' ? 'ev oscuro' : 'ev',
+      esOscuro: tema === 'oscuro', esClaro: tema !== 'oscuro',
+      temaLabel: tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+      alternarTema: () => this.setState({ tema: tema === 'oscuro' ? 'claro' : 'oscuro' }),
+      p: {
+        nombre: c.nombre, kicker: c.sala + ' · ' + c.dia + ' · ' + this.fmt(c.m) + ' (COL)',
+        ciudad: uy ? c.ciudad + ' · ' + c.pais : c.ciudad, ciudadSola: c.ciudad, ruta: c.ruta, pareja: c.ints.length > 1,
+        uy, horaUy: this.fmt(c.m + 120) + ' UY', dia: c.dia, hora: this.fmt(c.m), sala: c.sala, bloque: c.bloque,
+        enlace: 'https://meet.google.com/' + c.enlace, enlaceTxt: 'meet.google.com/' + c.enlace,
+        mentor: this.persona(c.mentor[0], c.mentor[1]), desc: c.desc, intNombres: c.ints.map((x) => x.n).join(' y '),
+        integrantes, bloqueado, libre: !bloqueado
+      },
+      gridInt: 'display: grid; gap: 16px; grid-template-columns: ' + (c.ints.length > 1 ? 'repeat(2, minmax(0, 1fr));' : 'minmax(0, 620px);'),
+      motivos: [{ v: '', t: '— Sin motivo —' }].concat(['Salud', 'Conexión o equipo', 'Trabajo o estudio', 'Calamidad familiar', 'Se retiró del programa', 'No avisó', 'Otro'].map((m) => ({ v: m, t: m }))),
+      copiarEnlace: () => { try { navigator.clipboard && navigator.clipboard.writeText('https://meet.google.com/' + c.enlace); } catch (e) {} this.aviso('Enlace copiado'); },
+      rpDias: DIAS.map((d) => ({ v: d.v, t: d.t })),
+      rp: {
+        dia: rpS.dia, cupo: rpS.cupo, motivo: rpS.motivo, cupos: cupos.map((t, k) => ({ v: String(k), t })),
+        onDia: (e) => this.setState({ rp: Object.assign({}, rpS, { dia: e.target.value, cupo: '0' }) }),
+        onCupo: (e) => this.setState({ rp: Object.assign({}, rpS, { cupo: e.target.value }) }),
+        onMotivo: (e) => this.setState({ rp: Object.assign({}, rpS, { motivo: e.target.value }) }),
+        dis: !rpS.motivo.trim(), est: rpS.motivo.trim() ? '' : off,
+        enviar: () => { this.setState({ rp: null }); this.aviso('Reprogramado · ' + cupos[Number(rpS.cupo)]); }
+      },
+      sg: {
+        cambio: sgS.cambio, motivo: sgS.motivo,
+        onCambio: (e) => this.setState({ sg: Object.assign({}, sgS, { cambio: e.target.value }) }),
+        onMotivo: (e) => this.setState({ sg: Object.assign({}, sgS, { motivo: e.target.value }) }),
+        dis: !sgOk, est: sgOk ? '' : off,
+        enviar: () => { this.setState({ sg: null }); this.aviso('Sugerencia enviada a administración'); }
+      },
+      toast: s.toast || ''
+    };
+  }
+}
+</script>
+</body>
+</html>
