@@ -72,3 +72,16 @@ export function rangoHoras(desde: number, hasta: number): string {
   const a = `${desde % 12 || 12}:00`, b = `${hasta % 12 || 12}:00`;
   return p(desde) === p(hasta) ? `${a} a ${b} ${p(hasta)}` : `${a} ${p(desde)} a ${b} ${p(hasta)}`;
 }
+
+/**
+ * Bloque de la sala donde está el proyecto: las horas seguidas del mismo día, sala y mentor alrededor de `hora`
+ * (de la lista de salas del monitor). null si esa hora no está en la lista.
+ */
+export function bloqueDeSala(salas: readonly { dia: string; hora: number; sala: number; mentor: string }[], dia: string, sala: number, mentor: string, hora: number): { desde: number; hasta: number } | null {
+  const horas = new Set(salas.filter((s) => s.dia === dia && s.sala === sala && s.mentor === mentor).map((s) => s.hora));
+  if (!horas.has(hora)) return null;
+  let desde = hora, hasta = hora + 1;
+  while (horas.has(desde - 1)) desde--;
+  while (horas.has(hasta)) hasta++;
+  return { desde, hasta };
+}

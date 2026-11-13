@@ -95,3 +95,43 @@ Fuente: `docs/diseno/prototipo-evaluacion-html/prototipo-evaluacion-html/` (00�
   mismos márgenes (logo alineado con el contenido); tope centrado de 2560 px. Cortes: <900 móvil, 900–1439 estándar,
   ≥1440 ancho. Tablas con columnas flexibles (lo sobrante a Proyecto, Integrantes y Mentor; Día/hora y Estado con mínimo
   y máximo), fila resaltada al pasar el cursor, Llamar/WhatsApp junto al celular desde 900 px, parejas en 2 columnas ≥1440.
+
+## Gestionar (detalle) — diseños 1m (claro, pareja) y 1n (oscuro, individual, Uruguay), en docs/diseno/vistas-2/
+- Columna única en `ev-main` (gap 20 px). «← Volver a Mis proyectos» (ev-btn-sm, ícono chevron). Kicker gris y en negrita
+  «Sala 2 · Jueves 12 de noviembre · 8:45 a. m. (COL)»; h1 30 px (letter-spacing −.02em) y, en la misma fila a la derecha
+  (flex, align-items flex-end, wrap), «Abrir sala» naranja (ícono de cámara). Chips c-line: ciudad («Paysandú · Uruguay»),
+  ruta, «En pareja»; Uruguay: chip azul c-uy «12:15 p. m. UY».
+- Fila de 3 tarjetas iguales (grid 3 × 1fr, gap 16, stretch; ev-tarjeta: padding 18, radio 14), h2 16 px, gap interno 14:
+  · Sesión: dl 72 px | 1fr: Día; Hora «8:45 a. m. (COL) · 15 minutos» (+ línea gris 500 «12:15 p. m. UY»); Sala; Enlace =
+    «meet.google.com/…» en naranja (--orange-ink) que abre la sala. Al pie (margin-top auto) «Copiar enlace» (ev-btn-sm,
+    ícono copiar) → aviso «Enlace copiado».
+  · Mentor: grid 1fr | 96 px: nombre en negrita y celular gris (o «Sin registrar»); Llamar/WhatsApp a la derecha (columna
+    fija de 96 px). Al pie gris «Evalúa el bloque 8:00 a 9:00 a. m. en Sala 2.»
+  · Proyecto: descripción y dl 92 px | 1fr: Ciudad, Ruta, Integrantes («A y B»).
+- «Asistencia y observaciones» (h2 20 px) con ayuda gris a la derecha «Marca si cada integrante se presentó. Tocar otra
+  vez Sí o No lo deja en Pendiente.» Pareja: 2 columnas iguales; individual: una columna de máx. 620 px.
+  · Tarjeta por integrante (gap 14): h3 17 px + chip (Pendiente c-idle, Se presentó c-ok, No se presentó c-bad). Caja de
+    contacto (fondo surface-2, radio 9, padding 12, grid 1fr | 96 px): celular en negrita (o «Celular sin registrar»),
+    «Doc. •••• 5701 · correo» gris; Llamar/WhatsApp a la derecha. Si el mentor evaluó: recuadro con borde (radio 9,
+    padding 10/12) «Evaluación del mentor · [chip resultado]» y la retroalimentación.
+  · «¿Se presentó?» (negrita, 13 px) con segmentado Sí/No a la derecha; activo: Sí fondo --ok, No fondo --bad, texto
+    surface. Con «No»: «Motivo de inasistencia» (select «— Sin motivo —») y aviso --mid 600 «Falta registrar el motivo de
+    la inasistencia.» «Observación del monitor» (textarea min 72 px) y «Guardar observación» (ev-btn-sm).
+- Al pie, `details` ev-tarjeta (padding 4/18), summary 52 px: reloj + «¿Hay que cambiar la hora?» + gris «Reprogramar o
+  sugerir un cambio especial» + flecha que gira. Abierto: 2 columnas (gap 24): Reprogramar (h3 15 px; Día y Cupo en 2
+  columnas; Motivo; botón) y Sugerir un cambio especial.
+- Funcional (gana la app): el diseño deshabilita «Guardar» hasta escribir observación; la app lo habilita ante cualquier
+  cambio (asistencia, motivo u observación). El texto de «Reprogramar» y el aviso de evaluado conservan los de la app.
+
+## Monitores: ventana de detalle — diseño 3a (claro, interactivo)
+- Cuadrícula, Por monitor y Por sala usan el mismo `abrir` → estado `panel = { día, sala, hora de inicio }`; el panel se
+  busca en las barras del día (si no existe, no se muestra). Cambiar de día lo cierra.
+- Cada barra/ítem es un botón con aria-label «Sala 5, 10:00 a 11:00 a. m., mentor …, 4 proyectos[, sin margen]. Ver detalle».
+- Panel: velo + `aside` ev-lado (400 px, padding 20, role dialog, aria-modal, aria-label «Sala N»). Cabecera: fecha gris,
+  «Sala N» 22 px, rango en ev-hora 15 px; X «Cerrar detalle» (ev-ibtn). Avisos: rojo «El monitor llega de otra sala sin
+  margen: su bloque anterior termina con un turno a las :45.»; amarillo «Esta sala no tiene monitor. Asígnalo en Salas.»
+  Luego (gap 14): «Enlace de la sala» botón naranja a todo el ancho «Abrir meet.google.com/…»; «Mentor» (nombre negrita,
+  celular gris o «Sin registrar», Llamar/WhatsApp); «Monitor» (igual, o chip c-mid «Sin monitor»); «N proyectos del
+  bloque» (ev-grupo: filas 96 px | 1fr, hora + nombre).
+- Funcional (gana la app / pedido del usuario): también cierra con Escape y con el fondo; «Asignar en Salas» solo para el
+  admin; sin datos de estudiantes. Móvil: hoja inferior casi a pantalla completa con el mismo contenido.

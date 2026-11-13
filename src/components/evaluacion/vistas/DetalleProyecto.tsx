@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { CIUDADES, horaCO, horaUY } from "@/lib/ciudades";
-import { diaCOL } from "@/lib/edicion";
-import { estadoFila, MOTIVOS_INASISTENCIA, primerNombre, type MotivoInasistencia } from "@/lib/evaluacion/criterios";
-import type { CupoLibre, DetalleSala, MiSugerencia, VistaSugerencia } from "@/lib/evaluacion/monitor";
+import { diaCOL, horaCOL } from "@/lib/edicion";
+import { estadoPersona, MOTIVOS_INASISTENCIA, type MotivoInasistencia } from "@/lib/evaluacion/criterios";
+import { bloqueDeSala, rangoHoras } from "@/lib/vistas/bloques";
+import type { CupoLibre, DetalleSala, MiSugerencia, SalaMonitor, VistaSugerencia } from "@/lib/evaluacion/monitor";
 import type { VistaMisProyectos } from "@/lib/misProyectos";
 import {
   cuerpoAnotar, cuerpoReprogramar, cuerpoSugerir, faltaMotivo, mismaNota, urlCupos, urlFicha, urlSalas, urlVolver, type Nota,
@@ -14,13 +15,13 @@ import { claseResultado, fechaLarga } from "../comun";
 import { BotonesLlamar, Chip, Telefono, type Tono } from "./Basicos";
 import { useDialogo } from "./Dialogos";
 import { Cargando, ErrorCarga, Vacio } from "./Estados";
-import { IcoCamara } from "./Iconos";
+import { IcoCamara, IcoFlecha, IcoReloj } from "./Iconos";
 import { CLAVE_VOLVER } from "./MisProyectosVista";
 import ShellVistas from "./ShellVistas";
 import d from "./Detalle.module.css";
 import v from "./Vistas.module.css";
 
-// Fase 6 · Entrega B · Paso 3 · Página de detalle /monitor/proyectos/[id]: reemplaza la ficha en ventana (MonitorHoja)
+// Fase 6 · Entrega B · Página de detalle (maquetación según los diseños 1m/1n de docs/diseno/vistas-2) /monitor/proyectos/[id]: reemplaza la ficha en ventana (MonitorHoja)
 // con el MISMO contenido y las MISMAS llamadas (src/lib/vistas/fichaLlamadas.ts, fijadas por
 // tests/fichaLlamadas.db.test.ts), más el enlace de la sesión con «Abrir sala» y «Copiar enlace». Sin reloj.
 // Solo el monitor de esa sala la abre (la ruta responde 403 a los demás). No se refresca sola con cambios sin guardar
@@ -58,6 +59,7 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
   const [guardadas, setGuardadas] = useState<Nota[]>([]);
   const [mentorCel, setMentorCel] = useState<string | null>(null);
   const [sugerencias, setSugerencias] = useState<MiSugerencia[]>([]);
+  const [salasPlan, setSalasPlan] = useState<SalaMonitor[]>([]);
   const [cupos, setCupos] = useState<CupoLibre[] | null>(null);
   const [cuposFallo, setCuposFallo] = useState(false);
   const [diaCupo, setDiaCupo] = useState("");
@@ -109,7 +111,11 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
     void fetch(`/api/monitor/mis-proyectos?dia=${data.dia}`, { cache: "no-store" }).then(async (r) => {
       if (r.ok) setMentorCel(((await r.json()) as VistaMisProyectos).proyectos.find((p) => p.id === id)?.mentor.celular ?? null);
     }).catch(() => null);
-    void fetch(urlSalas, { cache: "no-store" }).then(async (r) => { if (r.ok) setSugerencias((await r.json()).sugerencias ?? []); }).catch(() => null);
+    void fetch(urlSalas, { cache: "no-store" }).then(async (r) => {
+      if (!r.ok) return;
+      const j = (await r.json()) as { sugerencias?: MiSugerencia[]; salas?: SalaMonitor[] };
+      setSugerencias(j.sugerencias ?? []); setSalasPlan(j.salas ?? []);
+    }).catch(() => null);
     if (!data.evaluado) void cargarCupos(); else setCupos([]);
   }, [id, cargarCupos]);
 
@@ -196,48 +202,60 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
   function contenido() {
     const x = det!;
     const pareja = x.integrantes.length > 1;
-    const [txt, tono] = ASIS[estadoFila(x.integrantes.map((i) => ({ res: i.res, presente: i.asistencia === "si", ausente: i.asistencia === "no" })))];
+    const uy = esUY(x.ciudad);
+    const sala = x.sala ? `Sala ${x.sala}` : "Sala por asignar";
+    const bloque = x.sala ? bloqueDeSala(salasPlan, x.dia, x.sala, x.mentor, horaCOL(new Date(x.inicio))) : null;
+    const enlaceTxt = x.enlace?.replace(/^https?:\/\//, "") ?? "";
     const diasCupo = [...new Set((cupos ?? []).map((c) => diaCOL(new Date(c.inicio))))];
+    // Estado de asistencia guardado de cada integrante (las mismas reglas de la lista: estadoPersona).
+    const estadoDe = (i: number) => {
+      const p = x.integrantes[i]!, g = guardadas[i];
+      return estadoPersona({ res: p.res, presente: g?.asistencia === "si", ausente: g?.asistencia === "no" });
+    };
+    const abrirSala = x.enlace && <a className={`${v.btn} ${v.btnPri}`} href={x.enlace} target="_blank" rel="noopener noreferrer"><IcoCamara />Abrir sala</a>;
     return (
       <div className={d.pagina}>
-        <div className={d.top}>
-          {volverBoton}
-          <h1>{x.proyecto}</h1>
-          <div className={d.chips}>
-            <Chip tono="borde">{x.ciudad}{esUY(x.ciudad) ? " · Uruguay" : ""}</Chip>
-            {x.ruta && <Chip tono="borde">Ruta {x.ruta.toLowerCase()}</Chip>}
-            {pareja && <Chip tono="borde">En pareja</Chip>}
-            <Chip tono={tono}>{txt}</Chip>
-          </div>
-        </div>
+        <div className={d.volverFila}>{volverBoton}</div>
 
-        <div className={d.grid}>
-          <div className={d.izq}>
+        <header className={d.cabeza}>
+          <div className={d.titulo}>
+            <p className={d.kicker}>{sala} · {fechaLarga(x.dia)} · {horaLarga(x.inicio)} (COL)</p>
+            <h1>{x.proyecto}</h1>
+            <div className={d.chips}>
+              <Chip tono="borde">{x.ciudad}{uy ? " · Uruguay" : ""}</Chip>
+              {x.ruta && <Chip tono="borde">Ruta {x.ruta.toLowerCase()}</Chip>}
+              {pareja && <Chip tono="borde">En pareja</Chip>}
+              {uy && <Chip tono="info">{horaUY(new Date(x.inicio))} UY</Chip>}
+            </div>
+          </div>
+          {abrirSala}
+        </header>
+
+        <div className={d.cuerpo}>
+          <div className={d.tres}>
             <section className={`${d.card} ${d.o1}`} aria-labelledby="t-sesion">
               <h2 id="t-sesion">Sesión</h2>
-              {x.enlace && <div className={v.soloMovil}><a className={`${v.btn} ${v.btnPri}`} href={x.enlace} target="_blank" rel="noopener noreferrer"><IcoCamara />Abrir sala</a></div>}
               <dl className={d.dl}>
                 <dt>Día</dt><dd>{fechaLarga(x.dia)}</dd>
-                <dt>Hora</dt><dd>{horaLarga(x.inicio)} (COL) · 15 minutos{esUY(x.ciudad) && <span>{horaUY(new Date(x.inicio))} (hora Uruguay)</span>}</dd>
-                <dt>Sala</dt><dd>{x.sala ? `Sala ${x.sala}` : "Sala por asignar"}</dd>
-                <dt>Enlace de la sesión</dt>
-                <dd>{x.enlace ? <span className={d.enlace}>{x.enlace}</span> : <span>Sin enlace registrado</span>}</dd>
+                <dt>Hora</dt><dd>{horaLarga(x.inicio)} (COL) · 15 minutos{uy && <span className={d.uy}>{horaUY(new Date(x.inicio))} UY</span>}</dd>
+                <dt>Sala</dt><dd>{sala}</dd>
+                <dt>Enlace</dt>
+                <dd>{x.enlace ? <a className={d.enlace} href={x.enlace} target="_blank" rel="noopener noreferrer">{enlaceTxt}</a> : <span className={d.sinDato}>Sin enlace registrado</span>}</dd>
               </dl>
-              {x.enlace && (
-                <div className={d.acciones}>
-                  <a className={`${v.btn} ${v.btnPri} ${v.soloWeb}`} href={x.enlace} target="_blank" rel="noopener noreferrer"><IcoCamara />Abrir sala</a>
-                  <button type="button" className={v.btn} onClick={() => void copiar(x.enlace!)}>Copiar enlace</button>
-                </div>
-              )}
+              {x.enlace && <div className={d.pie}><button type="button" className={v.btn} onClick={() => void copiar(x.enlace!)}>Copiar enlace</button></div>}
             </section>
             <section className={`${d.card} ${d.o3}`} aria-labelledby="t-mentor">
               <h2 id="t-mentor">Mentor</h2>
-              <div className={d.linea}><b>{x.mentor}</b><Telefono celular={mentorCel} /><BotonesLlamar celular={mentorCel} nombre={x.mentor} /></div>
+              <div className={d.persona}>
+                <div className={d.personaTxt}><b>{x.mentor}</b><span className={d.tel}><Telefono celular={mentorCel} /></span></div>
+                <div className={d.iconos}><BotonesLlamar celular={mentorCel} nombre={x.mentor} /></div>
+              </div>
+              {bloque && x.sala && <p className={`${d.pie} ${d.gris}`}>Evalúa el bloque {rangoHoras(bloque.desde, bloque.hasta)} en {sala}.</p>}
             </section>
-            <section className={`${d.card} ${d.o4}`} aria-labelledby="t-sobre">
-              <h2 id="t-sobre">Sobre el proyecto</h2>
-              {x.descripcion ? <p className={d.desc}>{x.descripcion}</p> : <p className={d.pista}>Sin descripción.</p>}
-              <dl className={d.dl}>
+            <section className={`${d.card} ${d.o4}`} aria-labelledby="t-proy">
+              <h2 id="t-proy">Proyecto</h2>
+              {x.descripcion ? <p className={d.desc}>{x.descripcion}</p> : <p className={d.gris}>Sin descripción.</p>}
+              <dl className={`${d.dl} ${d.dlAncho}`}>
                 <dt>Ciudad</dt><dd>{x.ciudad}</dd>
                 {x.ruta && <><dt>Ruta</dt><dd>Ruta {x.ruta.toLowerCase()}</dd></>}
                 <dt>Integrantes</dt><dd>{x.integrantes.map((i) => i.nombre).join(" y ")}</dd>
@@ -245,112 +263,132 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
             </section>
           </div>
 
-          <div className={d.centro}>
-            {x.integrantes.map((p, i) => {
-              const n = notas[i]!, sinGuardar = guardadas[i] ? !mismaNota(n, guardadas[i]!) : false;
-              return (
-                <section key={p.i} className={`${d.card} ${d.o2}`} aria-labelledby={`t-int-${i}`}>
-                  <div className={d.personaHead}><h3 id={`t-int-${i}`}>{p.nombre}</h3><span className={claseResultado(p.res)}>{p.res}</span></div>
-                  <div className={d.contacto}>
-                    <div className={v.muted}>{[`Doc. ${p.documento}`, p.correo].filter(Boolean).join(" · ")}</div>
-                    <div className={d.linea}><span>Cel. <Telefono celular={p.celular} /></span><BotonesLlamar celular={p.celular} nombre={p.nombre} /></div>
-                  </div>
-                  {p.retro && <p className={d.retro}>Retroalimentación del mentor: {p.retro}</p>}
-                  <div className={d.campo}>
-                    <span className={d.etiqueta} id={`asis-${i}`}>¿Se presentó?</span>
-                    <div className={d.sino} role="group" aria-labelledby={`asis-${i}`}>
-                      {([["si", "Sí"], ["no", "No"]] as const).map(([val, t]) => (
-                        <button key={val} type="button" data-v={val} aria-pressed={n.asistencia === val} onClick={() => setNota(i, { asistencia: n.asistencia === val ? null : val })}>{t}</button>
-                      ))}
+          <section className={`${d.asis} ${d.o2}`} aria-labelledby="t-asis">
+            <div className={d.asisCab}>
+              <h2 id="t-asis">Asistencia y observaciones</h2>
+              <p className={d.gris}>Marca si cada integrante se presentó. Tocar otra vez Sí o No lo deja en Pendiente.</p>
+            </div>
+            <div className={`${d.ints} ${pareja ? d.intsPareja : d.intsUno}`}>
+              {x.integrantes.map((p, i) => {
+                const n = notas[i]!, sinGuardar = guardadas[i] ? !mismaNota(n, guardadas[i]!) : false;
+                const [etq, tono] = ASIS[estadoDe(i)];
+                const evaluo = p.res !== "Pendiente" || !!p.retro;
+                return (
+                  <article key={p.i} className={d.card} aria-labelledby={`t-int-${i}`}>
+                    <div className={d.personaHead}><h3 id={`t-int-${i}`}>{p.nombre}</h3><Chip tono={tono}>{etq}</Chip></div>
+                    <div className={`${d.persona} ${d.contacto}`}>
+                      <div className={d.personaTxt}>
+                        {p.celular ? <b className={d.tel}><Telefono celular={p.celular} /></b> : <span className={v.sinReg}>Celular sin registrar</span>}
+                        <span className={d.gris}>{[`Doc. ${p.documento}`, p.correo].filter(Boolean).join(" · ")}</span>
+                      </div>
+                      <div className={d.iconos}><BotonesLlamar celular={p.celular} nombre={p.nombre} /></div>
                     </div>
-                  </div>
-                  {n.asistencia !== "si" && (
+                    {evaluo && (
+                      <div className={d.evaluacion}>
+                        <p><span className={d.gris}>Evaluación del mentor · </span><span className={claseResultado(p.res)}>{p.res}</span></p>
+                        {p.retro && <p>{p.retro}</p>}
+                      </div>
+                    )}
+                    <div className={d.sePresento}>
+                      <span className={d.etiqueta} id={`asis-${i}`}>¿Se presentó?</span>
+                      <div className={d.sino} role="group" aria-labelledby={`asis-${i}`}>
+                        {([["si", "Sí"], ["no", "No"]] as const).map(([val, t]) => (
+                          <button key={val} type="button" data-v={val} aria-pressed={n.asistencia === val} onClick={() => setNota(i, { asistencia: n.asistencia === val ? null : val })}>{t}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {n.asistencia === "no" && (
+                      <div className={d.campo}>
+                        <label htmlFor={`motivo-${i}`}>Motivo de inasistencia</label>
+                        <select id={`motivo-${i}`} className={d.control} value={n.motivo ?? ""} onChange={(e) => setNota(i, { motivo: (e.target.value || null) as MotivoInasistencia | null })}>
+                          <option value="">— Sin motivo —</option>
+                          {MOTIVOS_INASISTENCIA.map((m) => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        {faltaMotivo(n) && <p className={d.falta} role="status">Falta registrar el motivo de la inasistencia.</p>}
+                      </div>
+                    )}
                     <div className={d.campo}>
-                      <label htmlFor={`motivo-${i}`}>Motivo de inasistencia (si no se presentó)</label>
-                      <select id={`motivo-${i}`} className={d.control} value={n.motivo ?? ""} onChange={(e) => setNota(i, { motivo: (e.target.value || null) as MotivoInasistencia | null })}>
-                        <option value="">— Sin motivo —</option>
-                        {MOTIVOS_INASISTENCIA.map((m) => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                      {faltaMotivo(n) && <div className={`${v.aviso} ${v.avisoWarn}`} role="status">Falta registrar el motivo de la inasistencia.</div>}
+                      <label htmlFor={`obs-${i}`}>Observación del monitor</label>
+                      <textarea id={`obs-${i}`} className={d.control} maxLength={1000} placeholder="Ej.: avisó que estaba enfermo; se reprograma para el jueves." value={n.observacion} onChange={(e) => setNota(i, { observacion: e.target.value })} />
                     </div>
-                  )}
-                  <div className={d.campo}>
-                    <label htmlFor={`obs-${i}`}>Observación del monitor</label>
-                    <textarea id={`obs-${i}`} className={d.control} maxLength={1000} placeholder="Ej.: avisó que estaba enfermo; se reprograma para el jueves." value={n.observacion} onChange={(e) => setNota(i, { observacion: e.target.value })} />
-                  </div>
-                  <button type="button" className={`${v.btn} ${v.btnPri} ${d.btn}`} disabled={ocupado || !sinGuardar} onClick={() => void guardarNota(i)}>
-                    {pareja ? `Guardar observación de ${primerNombre(p.nombre)}` : "Guardar observación"}
-                  </button>
-                </section>
-              );
-            })}
-          </div>
+                    <div><button type="button" className={v.btn} disabled={ocupado || !sinGuardar} onClick={() => void guardarNota(i)}>Guardar observación</button></div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
 
-          <div className={d.der}>
-            <section className={`${d.card} ${d.o5}`} aria-labelledby="t-reprog">
-              <h2 id="t-reprog">Reprogramar</h2>
-              <p className={d.pista}>Elige un cupo libre de {x.ciudad} en sus días habilitados. {pareja ? "Los estudiantes quedan" : "El estudiante queda"} con el mentor de ese cupo, que {pareja ? "los" : "lo"} verá en su lista, y el cupo anterior queda libre. Si estaba marcado «No se presentó», vuelve a quedar pendiente. El cambio queda registrado con tu nombre.</p>
-              {x.evaluado ? <div className={v.aviso}>{MENSAJE.ya_evaluado}</div>
-                : cuposFallo ? <div className={`${v.aviso} ${v.avisoErr}`}>No se pudieron cargar los cupos libres. <button type="button" className={v.btn} onClick={() => void cargarCupos()}>Reintentar</button></div>
-                : cupos === null ? <div className={v.aviso}>Buscando cupos libres…</div>
-                : !cupos.length ? <div className={`${v.aviso} ${v.avisoWarn}`}>No hay cupos libres de {x.ciudad} en sus días habilitados. Si hace falta otro día u otra ciudad, sugiere el cambio aquí abajo.</div>
-                : (
+          <details className={`${d.card} ${d.plegable} ${d.o5}`}>
+            <summary>
+              <span className={d.sumTxt}><IcoReloj size={18} />¿Hay que cambiar la hora? <span className={d.gris}>Reprogramar o sugerir un cambio especial</span></span>
+              <span className={d.rot} aria-hidden="true"><IcoFlecha /></span>
+            </summary>
+            <div className={d.cambio}>
+              <div className={d.bloqueCambio}>
+                <h3>Reprogramar</h3>
+                <p className={d.gris}>Elige un cupo libre de {x.ciudad} en sus días habilitados. {pareja ? "Los estudiantes quedan" : "El estudiante queda"} con el mentor de ese cupo, que {pareja ? "los" : "lo"} verá en su lista, y el cupo anterior queda libre. Si estaba marcado «No se presentó», vuelve a quedar pendiente. El cambio queda registrado con tu nombre.</p>
+                {x.evaluado ? <div className={v.aviso}>{MENSAJE.ya_evaluado}</div>
+                  : cuposFallo ? <div className={`${v.aviso} ${v.avisoErr}`}>No se pudieron cargar los cupos libres. <button type="button" className={v.btn} onClick={() => void cargarCupos()}>Reintentar</button></div>
+                  : cupos === null ? <div className={v.aviso}>Buscando cupos libres…</div>
+                  : !cupos.length ? <div className={`${v.aviso} ${v.avisoWarn}`}>No hay cupos libres de {x.ciudad} en sus días habilitados. Si hace falta otro día u otra ciudad, sugiere el cambio especial.</div>
+                  : (
+                    <>
+                      <div className={d.dos}>
+                        <div className={d.campo}>
+                          <label htmlFor="cupo-dia">Día</label>
+                          <select id="cupo-dia" className={d.control} value={diaCupo} onChange={(e) => { setDiaCupo(e.target.value); setCupo(cupos.find((c) => diaCOL(new Date(c.inicio)) === e.target.value)?.id ?? ""); }}>
+                            {diasCupo.map((dd) => <option key={dd} value={dd}>{fechaLarga(dd)} ({cupos.filter((c) => diaCOL(new Date(c.inicio)) === dd).length} libres)</option>)}
+                          </select>
+                        </div>
+                        <div className={d.campo}>
+                          <label htmlFor="cupo-hora">Cupo libre (hora · mentor)</label>
+                          <select id="cupo-hora" className={d.control} value={cupo} onChange={(e) => setCupo(e.target.value)}>
+                            {cupos.filter((c) => diaCOL(new Date(c.inicio)) === diaCupo).map((c) => <option key={c.id} value={c.id}>{horaLarga(c.inicio)} · {c.mentor}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className={d.campo}>
+                        <label htmlFor="motivo-cambio">Motivo del cambio</label>
+                        <input id="motivo-cambio" className={d.control} maxLength={300} placeholder="Ej.: cita médica el día asignado" value={motivoCambio} onChange={(e) => setMotivoCambio(e.target.value)} />
+                      </div>
+                      <div><button type="button" className={v.btn} disabled={ocupado} onClick={() => void reprogramarCupo()}>Reprogramar en este cupo</button></div>
+                    </>
+                  )}
+              </div>
+              <div className={d.bloqueCambio}>
+                <h3>Sugerir un cambio especial</h3>
+                <p className={d.gris}>Para otro día, otra ciudad o una fecha después de la clausura de {x.ciudad}. Administración lo aprueba o lo rechaza; mientras tanto la hora no cambia.</p>
+                {x.sugerencia && <EstadoSugerencia x={x.sugerencia} />}
+                {x.sugerencia?.estado !== "pendiente" && (
                   <>
-                    <div className={d.dos}>
-                      <div className={d.campo}>
-                        <label htmlFor="cupo-dia">Día</label>
-                        <select id="cupo-dia" className={d.control} value={diaCupo} onChange={(e) => { setDiaCupo(e.target.value); setCupo(cupos.find((c) => diaCOL(new Date(c.inicio)) === e.target.value)?.id ?? ""); }}>
-                          {diasCupo.map((dd) => <option key={dd} value={dd}>{fechaLarga(dd)} ({cupos.filter((c) => diaCOL(new Date(c.inicio)) === dd).length} libres)</option>)}
-                        </select>
-                      </div>
-                      <div className={d.campo}>
-                        <label htmlFor="cupo-hora">Cupo libre (hora · mentor)</label>
-                        <select id="cupo-hora" className={d.control} value={cupo} onChange={(e) => setCupo(e.target.value)}>
-                          {cupos.filter((c) => diaCOL(new Date(c.inicio)) === diaCupo).map((c) => <option key={c.id} value={c.id}>{horaLarga(c.inicio)} · {c.mentor}</option>)}
-                        </select>
-                      </div>
+                    <div className={d.campo}>
+                      <label htmlFor="sug-detalle">Qué cambio sugieres</label>
+                      <input id="sug-detalle" className={d.control} maxLength={300} placeholder="Ej.: pasarlo al lunes 16 con Cartagena" value={detalle} onChange={(e) => setDetalle(e.target.value)} />
                     </div>
                     <div className={d.campo}>
-                      <label htmlFor="motivo-cambio">Motivo del cambio</label>
-                      <input id="motivo-cambio" className={d.control} maxLength={300} placeholder="Ej.: cita médica el día asignado" value={motivoCambio} onChange={(e) => setMotivoCambio(e.target.value)} />
+                      <label htmlFor="sug-motivo">Motivo</label>
+                      <input id="sug-motivo" className={d.control} maxLength={300} placeholder="Ej.: viaja esa semana por trabajo" value={motivoSug} onChange={(e) => setMotivoSug(e.target.value)} />
                     </div>
-                    <button type="button" className={`${v.btn} ${v.btnNegro} ${d.btn}`} disabled={ocupado} onClick={() => void reprogramarCupo()}>Reprogramar en este cupo</button>
+                    <div><button type="button" className={v.btn} disabled={ocupado} onClick={() => void sugerir()}>Enviar sugerencia</button></div>
                   </>
                 )}
-            </section>
-            <section className={`${d.card} ${d.o6}`} aria-labelledby="t-sug">
-              <h2 id="t-sug">Sugerir un cambio especial</h2>
-              <p className={d.pista}>Para otro día, otra ciudad o una fecha después de la clausura de {x.ciudad}. Administración lo aprueba o lo rechaza; mientras tanto la hora no cambia.</p>
-              {x.sugerencia && <EstadoSugerencia x={x.sugerencia} />}
-              {x.sugerencia?.estado !== "pendiente" && (
-                <>
-                  <div className={d.campo}>
-                    <label htmlFor="sug-detalle">Qué cambio sugieres</label>
-                    <input id="sug-detalle" className={d.control} maxLength={300} placeholder="Ej.: pasarlo al lunes 16 con Cartagena" value={detalle} onChange={(e) => setDetalle(e.target.value)} />
+              </div>
+              {sugerencias.length > 0 && (
+                <div className={`${d.bloqueCambio} ${d.ancho}`}>
+                  <h3>Tus sugerencias de cambio</h3>
+                  <div className={d.sugs}>
+                    {sugerencias.map((s) => (
+                      <div key={s.creadoEn} className={d.sug}>
+                        <b>{s.integrantes.join(" y ")}</b>
+                        <span className={d.gris}>{s.proyecto} · hora al sugerir: {fechaLarga(s.anterior.slice(0, 10))}, {s.anterior.slice(11)}</span>
+                        <EstadoSugerencia x={s} />
+                      </div>
+                    ))}
                   </div>
-                  <div className={d.campo}>
-                    <label htmlFor="sug-motivo">Motivo</label>
-                    <input id="sug-motivo" className={d.control} maxLength={300} placeholder="Ej.: viaja esa semana por trabajo" value={motivoSug} onChange={(e) => setMotivoSug(e.target.value)} />
-                  </div>
-                  <button type="button" className={`${v.btn} ${d.btn}`} disabled={ocupado} onClick={() => void sugerir()}>Enviar sugerencia</button>
-                </>
-              )}
-            </section>
-            {sugerencias.length > 0 && (
-              <section className={`${d.card} ${d.o7}`} aria-labelledby="t-tus">
-                <h2 id="t-tus">Tus sugerencias de cambio</h2>
-                <div className={d.sugs}>
-                  {sugerencias.map((s) => (
-                    <div key={s.creadoEn} className={d.sug}>
-                      <b>{s.integrantes.join(" y ")}</b>
-                      <span className={d.pista}>{s.proyecto} · hora al sugerir: {fechaLarga(s.anterior.slice(0, 10))}, {s.anterior.slice(11)}</span>
-                      <EstadoSugerencia x={s} />
-                    </div>
-                  ))}
                 </div>
-              </section>
-            )}
-          </div>
+              )}
+            </div>
+          </details>
         </div>
       </div>
     );

@@ -1,65 +1,94 @@
-/* Fase 6 · Entrega B · Página de detalle /monitor/proyectos/[id]. Solo variables --ev-*.
-   ≥ 1440 px: tres columnas (Sesión, Mentor y Sobre el proyecto | integrantes | Reprogramar, Sugerir y Tus sugerencias).
-   900–1439 px: dos columnas (la izquierda igual; a la derecha integrantes y, debajo, lo demás). Móvil: una columna en
-   el orden Sesión, integrantes, Mentor, Sobre el proyecto, Reprogramar, Sugerir, Tus sugerencias. */
+/* Fase 6 · Entrega B · Página de detalle «Gestionar» según los diseños 1m (claro, pareja) y 1n (oscuro, individual,
+   Uruguay) de docs/diseno/vistas-2. Solo variables --ev-*. Contenedor fluido con tope de 1680 px centrado (es un
+   formulario). Móvil (< 900 px): una columna en el orden encabezado, Sesión, integrantes, Mentor, Proyecto, plegable. */
 
-.top { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-.volver { align-self: flex-start; }
-.top h1 { font-size: 28px; letter-spacing: -.02em; font-weight: 600; }
+.pagina { max-width: 1680px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.volverFila { display: flex; }
+.volver { gap: 6px; }
+
+/* Encabezado: kicker, título, chips y «Abrir sala» a la derecha en la misma fila. */
+.cabeza { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.titulo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.kicker { margin: 0; font-size: 13px; font-weight: 600; color: var(--ev-muted); }
+.titulo h1 { font-size: 30px; letter-spacing: -.02em; font-weight: 600; overflow-wrap: anywhere; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
-.grid { display: grid; gap: 16px; align-items: start; grid-template-columns: minmax(280px, 1fr) minmax(0, 1.6fr); grid-template-areas: "izq centro" "izq der"; }
-.izq { grid-area: izq; } .centro { grid-area: centro; } .der { grid-area: der; }
-.izq, .centro, .der { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-@media (min-width: 1440px) {
-  .grid { grid-template-columns: minmax(300px, 1fr) minmax(0, 1.5fr) minmax(320px, 1fr); grid-template-areas: "izq centro der"; }
-}
-/* Desde 1920 px la columna central no pasa de 760 px y las laterales tienen su máximo: el sobrante queda como margen. */
-@media (min-width: 1920px) {
-  .grid { grid-template-columns: minmax(300px, 480px) minmax(0, 760px) minmax(320px, 500px); }
-  .pagina { max-width: 1772px; margin: 0 auto; }
-}
-@media (max-width: 899px) {
-  .grid { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 0; }
-  .izq, .centro, .der { display: contents; }
-  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; }
-  .top { padding: 12px 16px 0; margin-bottom: 4px; }
-  .top h1 { font-size: 22px; }
-}
-
-.card { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 16px; box-shadow: var(--ev-sombra); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.card h2 { font-size: 17px; }
-.dl { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px 12px; font-size: 14px; margin: 0; }
+/* Cuerpo: fila de tres tarjetas, asistencia y plegable. */
+.cuerpo { display: flex; flex-direction: column; gap: 20px; }
+.tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.card { background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 14px; padding: 18px; box-shadow: var(--ev-sombra); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card h2 { font-size: 16px; }
+.dl { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px 12px; font-size: 14px; margin: 0; }
+.dlAncho { grid-template-columns: 92px minmax(0, 1fr); }
 .dl dt { color: var(--ev-muted); }
 .dl dd { margin: 0; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.dl dd span { display: block; font-weight: 400; color: var(--ev-muted); }
-.enlace { display: block; font-weight: 400; word-break: break-all; color: var(--ev-ink) !important; user-select: all; }
-.acciones { display: flex; gap: 8px; flex-wrap: wrap; }
-.linea { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; font-size: 14px; }
+.uy { display: block; color: var(--ev-muted); font-weight: 500; }
+.enlace { display: inline-flex; align-items: center; min-height: 44px; color: var(--ev-orange-ink) !important; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; word-break: break-all; }
+.sinDato { color: var(--ev-muted); font-weight: 400; }
+.pie { margin: auto 0 0; }
+.gris { margin: 0; font-size: 13px; color: var(--ev-muted); }
 .desc { margin: 0; white-space: pre-wrap; }
-.pista { margin: 0; font-size: 13.5px; color: var(--ev-muted); }
 
+/* Persona (mentor e integrante): texto flexible | columna fija de 96 px con Llamar y WhatsApp pegados a la derecha. */
+.persona { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; }
+.personaTxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.tel { font-variant-numeric: tabular-nums; }
+.iconos { display: flex; justify-content: flex-end; }
+.contacto { background: var(--ev-surface-2); border-radius: 9px; padding: 12px; }
+
+/* Asistencia y observaciones */
+.asis { display: flex; flex-direction: column; gap: 12px; }
+.asisCab { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.asisCab h2 { font-size: 20px; }
+.ints { display: grid; gap: 16px; align-items: stretch; }
+.intsPareja { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.intsUno { grid-template-columns: minmax(0, calc(50% - 8px)); }
 .personaHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.personaHead h3 { font-size: 16px; }
-.contacto { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.retro { margin: 0; font-size: 13.5px; background: var(--ev-surface-2); border-radius: 9px; padding: 8px 10px; }
-.campo { display: flex; flex-direction: column; gap: 4px; }
-.campo label, .etiqueta { font-size: 12.5px; font-weight: 600; color: var(--ev-muted); }
+.personaHead h3 { font-size: 17px; }
+.evaluacion { border: 1px solid var(--ev-line); border-radius: 9px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.evaluacion p { margin: 0; }
+.sePresento { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.etiqueta, .campo label { font-size: 13px; font-weight: 600; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
 .control { min-height: 44px; background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 9px; padding: 0 12px; width: 100%; color: var(--ev-ink); }
-textarea.control { min-height: 76px; padding: 10px 12px; resize: vertical; }
-.dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-.sino { display: inline-flex; gap: 8px; }
-.sino button { appearance: none; min-width: 72px; min-height: 44px; border-radius: 999px; border: 1px solid var(--ev-line); background: var(--ev-surface); color: var(--ev-ink); font-weight: 600; cursor: pointer; }
-.sino button[data-v="si"][aria-pressed="true"] { background: var(--ev-ok); border-color: var(--ev-ok); color: var(--ev-surface); }
-.sino button[data-v="no"][aria-pressed="true"] { background: var(--ev-bad); border-color: var(--ev-bad); color: var(--ev-surface); }
-.btn { align-self: flex-start; }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
+textarea.control { min-height: 72px; padding: 10px 12px; resize: vertical; }
+.falta { margin: 0; font-size: 13px; color: var(--ev-mid); font-weight: 600; }
+.sino { display: inline-flex; border: 1px solid var(--ev-line); border-radius: 999px; padding: 3px; background: var(--ev-surface-2); gap: 2px; }
+.sino button { appearance: none; border: 0; background: transparent; min-width: 64px; min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ev-muted); }
+.sino button[data-v="si"][aria-pressed="true"] { background: var(--ev-ok); color: var(--ev-surface); }
+.sino button[data-v="no"][aria-pressed="true"] { background: var(--ev-bad); color: var(--ev-surface); }
+.card button:disabled { opacity: .5; cursor: not-allowed; }
 
+/* Plegable «¿Hay que cambiar la hora?» */
+.plegable { padding: 4px 18px; gap: 0; }
+.plegable > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; font-weight: 600; font-size: 14px; }
+.plegable > summary::-webkit-details-marker { display: none; }
+.sumTxt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sumTxt .gris { font-size: 14px; font-weight: 500; }
+.rot { display: inline-grid; transition: transform .2s; flex: none; }
+.plegable[open] .rot { transform: rotate(180deg); }
+.cambio { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 6px 0 18px; }
+@media (min-width: 1280px) { .cambio { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bloqueCambio { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bloqueCambio h3 { font-size: 15px; }
+.ancho { grid-column: 1 / -1; }
+.dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .sugs { display: flex; flex-direction: column; gap: 10px; }
 .sug { border-top: 1px solid var(--ev-line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .sug:first-child { border-top: 0; padding-top: 0; }
 .sugOk { background: var(--ev-ok-bg); color: var(--ev-ok); font-weight: 600; }
 
+/* Móvil: una columna con el orden pedido (las tarjetas de .tres se reparten con order). */
+@media (max-width: 899px) {
+  .pagina { padding: 12px 16px 0; gap: 14px; }
+  .titulo h1 { font-size: 22px; }
+  .cuerpo { gap: 14px; }
+  .tres { display: contents; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; }
+  .intsPareja, .intsUno { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Confirmaciones y aviso */
 .confirmarBox { position: fixed; z-index: 42; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 32px)); background: var(--ev-surface); color: var(--ev-ink); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px -20px rgba(0, 0, 0, .5); }
 .confirmarBox p { margin: 0; }
 .confirmarActs { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }

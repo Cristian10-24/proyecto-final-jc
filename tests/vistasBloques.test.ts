@@ -51,3 +51,17 @@ describe("sin monitor y textos de hora", () => {
     expect(rangoHoras(14, 16)).toBe("2:00 a 4:00 p. m.");
   });
 });
+
+describe("bloqueDeSala (tarjeta Mentor del detalle)", async () => {
+  const { bloqueDeSala } = await import("@/lib/vistas/bloques");
+  const S = [8, 9, 11].map((hora) => ({ dia: "2026-11-12", hora, sala: 2, mentor: "Julián" })).concat([{ dia: "2026-11-12", hora: 10, sala: 2, mentor: "Otra" }, { dia: "2026-11-13", hora: 10, sala: 2, mentor: "Julián" }]);
+  it("une las horas seguidas de la misma sala y mentor", () => {
+    expect(bloqueDeSala(S, "2026-11-12", 2, "Julián", 8)).toEqual({ desde: 8, hasta: 10 });
+    expect(bloqueDeSala(S, "2026-11-12", 2, "Julián", 9)).toEqual({ desde: 8, hasta: 10 });
+    expect(bloqueDeSala(S, "2026-11-12", 2, "Julián", 11)).toEqual({ desde: 11, hasta: 12 }); // a las 10 hay otro mentor
+  });
+  it("sin esa hora en la lista: null", () => {
+    expect(bloqueDeSala(S, "2026-11-12", 3, "Julián", 8)).toBeNull();
+    expect(bloqueDeSala(S, "2026-11-14", 2, "Julián", 8)).toBeNull();
+  });
+});
