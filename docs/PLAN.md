@@ -353,3 +353,10 @@ con una prueba previa que fije las llamadas de asistencia, motivo, observación,
 - [x] B3. Página de detalle con el cuerpo de MonitorHoja sin modal y las mismas llamadas (prueba previa que las fija).
 - [x] B4. Cierre: pruebas, batería completa, build, revisores, guía de prueba.
 - [x] B5. Ajustes 1–4 (diseños 1m, 1n y 3a) y cierre final de la entrega B (sin push; no preparada para publicar).
+
+## Plan de salas por monitor (rama feature/plan-salas-por-monitor) — PLAN APROBADO
+Producción activa. Hoja nueva y opcional «Plan de salas» en el libro de Salas y monitores: fija la sala (y el monitor)
+de cada mentor en cada hora y SOLO cambia los días que trae (martes 17 a sábado 21); jueves 12, viernes 13 y los demás
+días quedan iguales. Vista previa con confirmación, protección de bloques con evaluación o asistencia, «Volver a
+automático» por día, recalcular desde hoy respetando lo fijado. Decisiones: DECISIONES.md.
+- [x] Plan de salas fijo: lector, validación, vista previa, aplicar, recalcular, Volver a automático, plantilla, pruebas y archivo de la demo.

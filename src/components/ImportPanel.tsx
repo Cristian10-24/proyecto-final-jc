@@ -5,6 +5,7 @@ import type { SessionUser } from "@/lib/auth";
 import type { PreviaMentores, PreviaProyectos } from "@/lib/importar/aplicar";
 import type { ErrorFila } from "@/lib/importar/excel";
 import type { PreviaSalas } from "@/lib/planSalas";
+import type { ResumenPlanFijo } from "@/lib/salasFijas";
 import AppShell from "./AppShell";
 import s from "./ImportPanel.module.css";
 
@@ -13,17 +14,17 @@ type Resultado =
   | { tipo: "proyectos"; previa: PreviaProyectos; aplicado: boolean }
   | { tipo: "mentores"; previa: PreviaMentores; aplicado: boolean }
   | { tipo: "salas"; previa: PreviaSalas; aplicado: boolean };
-type Estado = { archivo: File | null; cargando: boolean; error: string; resultado: Resultado | null; mapa: Record<string, string> };
+type Estado = { archivo: File | null; cargando: boolean; error: string; resultado: Resultado | null; mapa: Record<string, string>; confirmarEnlaces: boolean };
 
 const TITULO: Record<Tipo, { titulo: string; desc: string }> = {
   proyectos: { titulo: "Proyectos", desc: "Una fila por proyecto con su ciudad e integrantes (individual o en pareja)." },
   mentores: { titulo: "Mentores y disponibilidad", desc: "Hojas Mentores, Horarios y Cupos. Genera los asientos de 15 min por ciudad." },
-  salas: { titulo: "Salas y monitores", desc: "Hojas Salas, Monitores y Disponibilidad monitores. Asigna sala a cada mentor y un monitor a cada sala." },
+  salas: { titulo: "Salas y monitores", desc: "Hojas Salas, Monitores y Disponibilidad monitores. Asigna sala a cada mentor y un monitor a cada sala. Con la hoja Plan de salas, fija la sala de cada mentor y solo cambia los días que trae." },
 };
 
 const fmtDia = new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const etiquetaDia = (dia: string) => { const t = fmtDia.format(new Date(dia + "T12:00:00Z")).replace(/[.,]/g, ""); return t.charAt(0).toUpperCase() + t.slice(1); };
-const vacio: Estado = { archivo: null, cargando: false, error: "", resultado: null, mapa: {} };
+const vacio: Estado = { archivo: null, cargando: false, error: "", resultado: null, mapa: {}, confirmarEnlaces: false };
 
 export default function ImportPanel({ user }: { user: SessionUser }) {
   const [estados, setEstados] = useState<Record<Tipo, Estado>>({ proyectos: vacio, mentores: vacio, salas: vacio });
@@ -38,6 +39,7 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
     fd.set("modo", modo);
     fd.set("archivo", archivo);
     if (tipo === "proyectos" && Object.keys(estados.proyectos.mapa).length) fd.set("mapa", JSON.stringify(estados.proyectos.mapa));
+    if (tipo === "salas" && modo === "confirmar" && estados.salas.confirmarEnlaces) fd.set("confirmarEnlaces", "si");
     try {
       const res = await fetch("/api/admin/importar", { method: "POST", body: fd });
       if (res.status === 401) return window.location.assign("/login");
@@ -68,7 +70,7 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
               <p className={s.desc}>{TITULO[tipo].desc}</p>
 
               <label className={s.file}>
-                <input type="file" accept=".xlsx" onChange={(ev) => set(tipo, { archivo: ev.target.files?.[0] ?? null, resultado: null, error: "", mapa: {} })} />
+                <input type="file" accept=".xlsx" onChange={(ev) => set(tipo, { archivo: ev.target.files?.[0] ?? null, resultado: null, error: "", mapa: {}, confirmarEnlaces: false })} />
                 <span className={s.fileMain}>{e.archivo ? e.archivo.name : "Arrastra el archivo o haz clic para elegirlo"}</span>
                 <span className={s.fileSub}>{e.archivo ? "Cambiar archivo" : "Excel .xlsx · hasta 4 MB"}</span>
               </label>
@@ -78,8 +80,12 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
                   {e.cargando ? "Revisando…" : "Revisar archivo"}
                 </button>
                 {e.resultado && !e.resultado.aplicado && errores.length === 0 && (
-                  <button type="button" className="btn btn-primary" disabled={e.cargando} onClick={() => enviar(tipo, "confirmar")}>
-                    {e.resultado.tipo === "proyectos" ? `Importar ${e.resultado.previa.total} proyectos` : e.resultado.tipo === "salas" ? "Importar salas y monitores" : "Importar mentores y cupos"}
+                  <button type="button" className="btn btn-primary"
+                    disabled={e.cargando || (e.resultado.tipo === "salas" && !!e.resultado.previa.planFijo?.confirmarEnlaces && !e.confirmarEnlaces)}
+                    onClick={() => enviar(tipo, "confirmar")}>
+                    {e.resultado.tipo === "proyectos" ? `Importar ${e.resultado.previa.total} proyectos`
+                      : e.resultado.tipo === "salas" ? (e.resultado.previa.planFijo ? `Aplicar plan de salas (${e.resultado.previa.planFijo.dias.length} ${e.resultado.previa.planFijo.dias.length === 1 ? "día" : "días"})` : "Importar salas y monitores")
+                      : "Importar mentores y cupos"}
                   </button>
                 )}
               </div>
@@ -94,6 +100,10 @@ export default function ImportPanel({ user }: { user: SessionUser }) {
               {e.resultado?.tipo === "proyectos" && e.resultado.previa.faltan.length === 0 && <ResumenProyectos p={e.resultado.previa} />}
               {e.resultado?.tipo === "mentores" && <ResumenMentores p={e.resultado.previa} />}
               {e.resultado?.tipo === "salas" && e.resultado.previa.horasSala > 0 && <ResumenSalas p={e.resultado.previa} />}
+              {e.resultado?.tipo === "salas" && e.resultado.previa.planFijo && (
+                <ResumenPlanFijoVista p={e.resultado.previa.planFijo} confirmado={e.confirmarEnlaces} aplicado={e.resultado.aplicado}
+                  onConfirmar={(v) => set(tipo, { confirmarEnlaces: v })} />
+              )}
               {errores.length > 0 && <Filas titulo={`${errores.length} ${errores.length === 1 ? "error" : "errores"}: corrige el archivo y vuelve a subirlo`} filas={errores} tono="error" />}
               {e.resultado && e.resultado.previa.avisos.length > 0 && <Filas titulo="Avisos (no impiden importar)" filas={e.resultado.previa.avisos} tono="warn" />}
             </section>
@@ -186,6 +196,42 @@ function ResumenSalas({ p }: { p: PreviaSalas }) {
           <thead><tr><th>Monitor</th><th className={s.num}>Salas</th></tr></thead>
           <tbody>{p.cargaPorMonitor.map((m) => <tr key={m.nombre}><td>{m.nombre}</td><td className={s.num}>{m.salas}</td></tr>)}</tbody>
         </table>
+      )}
+    </div>
+  );
+}
+
+const hhmm = (h: number) => `${String(h % 12 || 12).padStart(2, "0")}:00 ${h < 12 ? "a. m." : "p. m."}`;
+
+/** Vista previa de la hoja Plan de salas: qué días cambian, qué no, y cada cambio con su motivo. */
+function ResumenPlanFijoVista({ p, confirmado, aplicado, onConfirmar }: { p: ResumenPlanFijo; confirmado: boolean; aplicado: boolean; onConfirmar: (v: boolean) => void }) {
+  const tabla = (titulo: string, cab: string[], filas: (string | number)[][], vacio: string) => (
+    <details className={s.resumen} open={filas.length > 0 && filas.length <= 30}>
+      <summary className={s.filasTitulo}>{titulo} ({filas.length})</summary>
+      {filas.length ? (
+        <table className={s.tabla}>
+          <thead><tr>{cab.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+          <tbody>{filas.map((f, i) => <tr key={i}>{f.map((x, j) => <td key={j}>{x}</td>)}</tr>)}</tbody>
+        </table>
+      ) : <p className={s.desc}>{vacio}</p>}
+    </details>
+  );
+  return (
+    <div className={s.resumen}>
+      <div className={s.stats}><Stat n={p.filasFijadas} t="filas fijadas" /><Stat n={p.cambiosSala.length} t="bloques cambian de sala" /><Stat n={p.dias.length} t="días que cambian" /></div>
+      <div className="note note-info">Solo cambian: {p.dias.map(etiquetaDia).join(", ")}.</div>
+      <div className="note note-info">Días sin cambios: {p.diasSinCambios.length ? p.diasSinCambios.map(etiquetaDia).join(", ") : "ninguno"}.</div>
+      {tabla("Bloques que cambian de sala", ["Día", "Hora", "Mentor", "De", "A"], p.cambiosSala.map((c) => [etiquetaDia(c.dia), hhmm(c.hora), c.mentor, c.de === null ? "Nuevo" : `Sala ${c.de}`, `Sala ${c.a}`]), "Ningún bloque cambia de sala.")}
+      {tabla("Mentores que cambian de sala entre horas seguidas", ["Día", "Hora", "Mentor", "De", "A"], p.cambiosEntreHoras.map((c) => [etiquetaDia(c.dia), hhmm(c.hora), c.mentor, `Sala ${c.de}`, `Sala ${c.a}`]), "Ningún mentor cambia de sala entre horas seguidas.")}
+      {tabla("Salas por monitor", ["Monitor", "Salas", "Bloques"], p.salasPorMonitor.map((m) => [m.nombre, m.salas.map((x) => `Sala ${x}`).join(", ") + (m.salas.length > 1 ? " (varias)" : ""), m.bloques]), "Ningún monitor asignado.")}
+      {tabla("Mentores activos sin fila (sala automática)", ["Día", "Hora", "Mentor", "Sala"], p.sinFila.map((x) => [etiquetaDia(x.dia), hhmm(x.hora), x.mentor, `Sala ${x.sala}`]), "Todos los mentores activos traen fila.")}
+      {tabla("Cambios manuales de monitor que se descartan", ["Día", "Hora", "Sala", "Mentor", "Monitor"], p.descartados.map((x) => [etiquetaDia(x.dia), hhmm(x.hora), `Sala ${x.sala}`, x.mentor, x.monitor]), "No hay cambios manuales en esos días.")}
+      {tabla("Enlaces que cambian", ["Sala", "Antes", "Ahora"], p.enlacesCambian.map((x) => [`Sala ${x.sala}`, x.antes ?? "Sala nueva", x.despues]), "Ningún enlace cambia.")}
+      {p.confirmarEnlaces && !aplicado && (
+        <label className="note note-warn">
+          <input type="checkbox" checked={confirmado} onChange={(ev) => onConfirmar(ev.target.checked)} />{" "}
+          Entiendo que cambia el enlace de una sala que ya existía: también cambia para el jueves 12 y el viernes 13 (y sus citaciones quedan desactualizadas).
+        </label>
       )}
     </div>
   );

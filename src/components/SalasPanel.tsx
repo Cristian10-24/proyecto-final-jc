@@ -76,6 +76,17 @@ export default function SalasPanel({ user }: { user: SessionUser }) {
     setGuardando("");
   }
 
+  async function automatico(d: string) {
+    if (!window.confirm(`¿Volver a automático las salas del ${etiquetaDia(d)}? Las salas de ese día se vuelven a calcular solas; los monitores que fijó el archivo se conservan por mentor y hora, y los bloques con evaluación o asistencia no cambian.`)) return;
+    setGuardando("automatico");
+    setAviso(null);
+    const r = await post({ accion: "automatico", dia: d }).catch(() => null);
+    setAviso(r?.ok ? { tono: "ok", texto: `Las salas del ${etiquetaDia(d)} vuelven a ser automáticas.` }
+      : { tono: "error", texto: r?.data?.error === "pasado" ? "Ese día ya pasó: su plan de salas no se cambia." : "No se pudo volver a automático: recarga la página e inténtalo otra vez." });
+    await cargar();
+    setGuardando("");
+  }
+
   return (
     <AppShell user={user} active="salas">
       <div className={s.kicker}>Administración</div>
@@ -107,6 +118,12 @@ export default function SalasPanel({ user }: { user: SessionUser }) {
               </div>
             )}
             {aviso && <div className={`note ${aviso.tono === "ok" ? "note-info" : "note-error"}`} role="status">{aviso.texto}</div>}
+            {vista.diasFijos.includes(diaActual) && (
+              <div className="note note-info">
+                Las salas de este día están fijadas por archivo (Plan de salas): «Recalcular plan» no las cambia.{" "}
+                <button type="button" className="btn btn-ghost" disabled={!!guardando} onClick={() => void automatico(diaActual)}>{guardando === "automatico" ? "Volviendo…" : "Volver a automático"}</button>
+              </div>
+            )}
 
             <div className={s.filtros}>
               <div className={s.segmento} role="group" aria-label="Día">
@@ -129,7 +146,7 @@ export default function SalasPanel({ user }: { user: SessionUser }) {
                   {filas.map((f) => (
                     <tr key={f.id}>
                       <td className={s.nowrap}>{f.horaTxt}</td>
-                      <td className={s.num}>{f.sala}</td>
+                      <td className={s.num}>{f.sala}{f.fijo && <div className={s.sub}><span className={`${s.chip} ${s.chip_neutro}`}><i />Fijo</span></div>}</td>
                       <td className={s.pNombre}>{f.mentor}</td>
                       <td>
                         <select className={`input ${s.select}`} aria-label={`Monitor de la sala ${f.sala} a las ${f.horaTxt}`} value={f.monitor?.usuario ?? ""}

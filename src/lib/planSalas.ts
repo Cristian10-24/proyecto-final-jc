@@ -7,9 +7,10 @@ import { diaCOL, horaCOL, inicioUTC } from "./edicion";
 import { clave, type ErrorFila } from "./importar/excel";
 import { idMentor } from "./importar/mentores";
 import type { LibroSalas } from "./importar/salas";
-import { HOJAS_SALAS, planificar, type CambioAdmin, type Disponible, type MonitorFijo, type OrigenMonitor, type PlanSala, type Sala } from "./salas";
+import { HOJAS_SALAS, planificar, type CambioAdmin, type Disponible, type MonitorFijo, type OrigenMonitor, type PlanSala, type Sala, type SalaFija } from "./salas";
 import type { Actor } from "./types";
 import { FILTRO_MONITOR } from "./permisos";
+import type { ResumenPlanFijo } from "./salasFijas";
 
 // Plan de salas en la base: se calcula al importar el libro de salas y monitores (o al recalcular
 // después de reimportar mentores) y el admin cambia el monitor de una sala. Todo deja changeLog.
@@ -17,7 +18,7 @@ import { FILTRO_MONITOR } from "./permisos";
 type MonitorUsuario = { usuario: string; nombre: string };
 
 /** Mentores de cada hora según los asientos (fuente de verdad: hoja Horarios importada). */
-async function horasDeMentores(session?: ClientSession): Promise<HoraMentores[]> {
+export async function horasDeMentores(session?: ClientSession): Promise<HoraMentores[]> {
   const { asientos } = await collections();
   const m = new Map<string, HoraMentores>();
   for (const a of await asientos.find({}, { session, projection: { inicio: 1, mentorId: 1 } }).toArray()) {
@@ -29,7 +30,7 @@ async function horasDeMentores(session?: ClientSession): Promise<HoraMentores[]>
   return [...m.values()];
 }
 
-async function monitoresActivos(session?: ClientSession): Promise<MonitorUsuario[]> {
+export async function monitoresActivos(session?: ClientSession): Promise<MonitorUsuario[]> {
   const { users } = await collections();
   return users.find({ ...FILTRO_MONITOR, activo: true }, { session, projection: { _id: 0, usuario: 1, nombre: 1 } }).toArray() as Promise<MonitorUsuario[]>;
 }
@@ -45,7 +46,7 @@ export function buscarMonitor(textoMonitor: string, monitores: MonitorUsuario[])
 }
 
 /** Pasa los nombres del libro a usuarios y mentores de la base. Nombres de monitor sin usuario = aviso. */
-function reconocer(libro: LibroSalas, monitores: MonitorUsuario[], mentores: Set<string>) {
+export function reconocer(libro: LibroSalas, monitores: MonitorUsuario[], mentores: Set<string>) {
   const errores: ErrorFila[] = [], avisos: ErrorFila[] = [];
   const importados: MonitorFijo[] = [], disponibilidad: Disponible[] = [];
   for (const f of libro.monitores) {
@@ -76,9 +77,9 @@ export type ResumenPlan = {
   cargaPorMonitor: { nombre: string; salas: number }[];
 };
 
-export type PreviaSalas = ResumenPlan & { errores: ErrorFila[]; avisos: ErrorFila[] };
+export type PreviaSalas = ResumenPlan & { errores: ErrorFila[]; avisos: ErrorFila[]; planFijo?: ResumenPlanFijo };
 
-function resumir(plan: PlanSala[], salas: Sala[], monitores: MonitorUsuario[]): ResumenPlan {
+export function resumir(plan: PlanSala[], salas: Sala[], monitores: MonitorUsuario[]): ResumenPlan {
   const nombre = new Map(monitores.map((m) => [m.usuario, m.nombre]));
   const porOrigen: Record<OrigenMonitor, number> = { importado: 0, automatico: 0, admin: 0 };
   const dias = new Map<string, { dia: string; horasSala: number; sinMonitor: number }>();
@@ -99,20 +100,36 @@ function resumir(plan: PlanSala[], salas: Sala[], monitores: MonitorUsuario[]): 
   };
 }
 
-async function calcular(salas: Sala[], importados: MonitorFijo[], disponibilidad: Disponible[], session?: ClientSession, recalculo = false) {
+export type OpcionesCalculo = {
+  /** Solo estos días (los demás no se calculan ni se escriben). Sin esto, todos los días, como siempre. */
+  dias?: ReadonlySet<string>;
+  /** Salas fijas y bloques protegidos. */
+  fijas?: SalaFija[];
+  /** No usar los cambios manuales del admin (la hoja Plan de salas manda en sus días). */
+  sinCambiosAdmin?: boolean;
+};
+
+export async function calcular(salas: Sala[], importados: MonitorFijo[], disponibilidad: Disponible[], session?: ClientSession, recalculo = false, o: OpcionesCalculo = {}) {
   const { planSalas } = await collections();
   const monitores = await monitoresActivos(session);
   const activos = new Set(monitores.map((m) => m.usuario));
-  const cambiosAdmin: CambioAdmin[] = (await planSalas.find({ origen: "admin" }, { session }).toArray())
+  const enDias = (x: { dia: string }) => !o.dias || o.dias.has(x.dia);
+  const cambiosAdmin: CambioAdmin[] = o.sinCambiosAdmin ? [] : (await planSalas.find({ origen: "admin", ...(o.dias ? { dia: { $in: [...o.dias] } } : {}) }, { session }).toArray())
     .filter((p) => !p.monitor || activos.has(p.monitor))
     .map((p) => ({ dia: p.dia, hora: p.hora, mentorId: p.mentorId, monitor: p.monitor }));
-  const r = planificar({
-    horas: await horasDeMentores(session), salas, cambiosAdmin, faltantesComoAviso: recalculo,
-    importados: importados.filter((f) => activos.has(f.monitor)),
-    disponibilidad: disponibilidad.filter((d) => activos.has(d.monitor)),
+  const avisosFijas: ErrorFila[] = [];
+  const fijas = (o.fijas ?? []).filter(enDias).map((f) => {
+    if (!f.monitor || activos.has(f.monitor)) return f;
+    avisosFijas.push({ hoja: HOJAS_SALAS.plan, fila: 0, mensaje: `El monitor "${f.monitor}" de la sala ${f.sala} del ${f.dia} a las ${f.hora}:00 ya no está activo: la sala queda sin monitor.` });
+    return { ...f, monitor: null, origen: null };
   });
-  if (!r.plan.length && !r.errores.length) r.errores.push({ hoja: "", fila: 0, mensaje: "Todavía no hay mentores importados: importa primero mentores y disponibilidad." });
-  return { ...r, monitores };
+  const r = planificar({
+    horas: (await horasDeMentores(session)).filter(enDias), salas, cambiosAdmin, faltantesComoAviso: recalculo, fijas,
+    importados: importados.filter((f) => activos.has(f.monitor) && enDias(f)),
+    disponibilidad: disponibilidad.filter((d) => activos.has(d.monitor) && enDias(d)),
+  });
+  if (!o.dias && !r.plan.length && !r.errores.length) r.errores.push({ hoja: "", fila: 0, mensaje: "Todavía no hay mentores importados: importa primero mentores y disponibilidad." });
+  return { ...r, avisos: [...avisosFijas, ...r.avisos], monitores };
 }
 
 export async function previaSalas(libro: LibroSalas): Promise<PreviaSalas> {
@@ -122,45 +139,110 @@ export async function previaSalas(libro: LibroSalas): Promise<PreviaSalas> {
   if (libro.errores.length) return { ...vacio, errores: libro.errores, avisos: libro.avisos };
   const rec = reconocer(libro, monitores, new Set((await mentores.find({}, { projection: { _id: 1 } }).toArray()).map((m) => m._id)));
   if (rec.errores.length) return { ...vacio, errores: rec.errores, avisos: [...libro.avisos, ...rec.avisos] };
-  const r = await calcular(libro.salas, rec.importados, rec.disponibilidad);
+  const fijos = (await collections()).salasConfig.findOne({ _id: "actual" }, { projection: { fijos: 1 } }).then((x) => x?.fijos ?? []);
+  const r = await calcular(libro.salas, rec.importados, rec.disponibilidad, undefined, false, { fijas: await fijos });
   return { ...resumir(r.plan, libro.salas, monitores), errores: r.errores, avisos: [...libro.avisos, ...rec.avisos, ...r.avisos] };
 }
 
-async function guardar(salas: Sala[], importados: MonitorFijo[], disponibilidad: Disponible[], actor: Actor, nota: string, recalculo = false) {
+type Config = { salas: Sala[]; importados: MonitorFijo[]; disponibilidad: Disponible[]; fijos?: SalaFija[] };
+
+/** Día de hoy en Colombia. En las pruebas (VITEST) solo si se fija PFJC_HOY_PRUEBAS; si no, null = todos los días (como antes). */
+export function diaDesde(): string | null {
+  if (process.env.VITEST) return process.env.PFJC_HOY_PRUEBAS || null;
+  return diaCOL(new Date());
+}
+
+/** Bloques (día|hora|mentor) con evaluación guardada o asistencia marcada por el monitor en alguno de sus proyectos. */
+export async function bloquesConDatos(dias: Iterable<string> | null, session?: ClientSession): Promise<Set<string>> {
   const c = await collections();
+  // En secuencia: dentro de una transacción, una sesión no admite operaciones en paralelo.
+  const res = await c.evalResultados.distinct("proyectoId", {}, { session });
+  const asis = await c.evalMonitor.distinct("proyectoId", { asistencia: { $ne: null } }, { session });
+  const ids = [...res, ...asis];
+  if (!ids.length) return new Set();
+  const filtro = { proyectoId: { $in: ids }, ...(dias ? { dia: { $in: [...dias] } } : {}) };
+  const as = await c.asientos.find(filtro, { session, projection: { inicio: 1, mentorId: 1 } }).toArray();
+  return new Set(as.map((a) => `${diaCOL(a.inicio)}|${horaCOL(a.inicio)}|${a.mentorId}`));
+}
+
+/** Bloques protegidos de esos días: conservan sala y monitor al recalcular. */
+async function fijasProtegidas(dias: ReadonlySet<string> | null, session?: ClientSession): Promise<SalaFija[]> {
+  const { planSalas } = await collections();
+  const conDatos = await bloquesConDatos(dias, session);
+  if (!conDatos.size) return [];
+  const plan = await planSalas.find(dias ? { dia: { $in: [...dias] } } : {}, { session }).toArray();
+  return plan.filter((p) => conDatos.has(`${p.dia}|${p.hora}|${p.mentorId}`))
+    .map((p) => ({ dia: p.dia, hora: p.hora, mentorId: p.mentorId, sala: p.sala, monitor: p.monitor, origen: p.origen, protegido: true as const }));
+}
+
+/** Une las salas fijas del archivo con los bloques protegidos (estos mandan: ya tienen evaluación o asistencia). */
+function unirFijas(fijos: SalaFija[], protegidas: SalaFija[]): SalaFija[] {
+  const p = new Set(protegidas.map((f) => `${f.dia}|${f.hora}|${f.mentorId}`));
+  return [...protegidas, ...fijos.filter((f) => !p.has(`${f.dia}|${f.hora}|${f.mentorId}`))];
+}
+
+/**
+ * Guarda la configuración y rehace el plan. Sin `dias`, todos los días (como siempre); con `dias`, solo esos (los
+ * demás quedan intactos). `proteger`: los bloques con evaluación o asistencia conservan sala y monitor.
+ */
+async function guardar(cfg: Config, actor: Actor, nota: string, recalculo = false, dias: ReadonlySet<string> | null = null, proteger = false) {
+  const c = await collections();
+  let avisos: ErrorFila[] = [];
   await transaccion(async (s) => {
-    const r = await calcular(salas, importados, disponibilidad, s, recalculo);
+    const fijas = unirFijas(cfg.fijos ?? [], proteger ? await fijasProtegidas(dias, s) : []);
+    const r = await calcular(cfg.salas, cfg.importados, cfg.disponibilidad, s, recalculo, { ...(dias ? { dias } : {}), fijas });
     if (r.errores.length) throw new Error("errores");
-    await c.salasConfig.replaceOne({ _id: "actual" }, { salas, importados, disponibilidad, actualizadoEn: new Date() }, { upsert: true, session: s });
-    await c.planSalas.deleteMany({}, { session: s });
+    avisos = r.avisos;
+    await c.salasConfig.replaceOne({ _id: "actual" }, { salas: cfg.salas, importados: cfg.importados, disponibilidad: cfg.disponibilidad, ...(cfg.fijos?.length ? { fijos: cfg.fijos } : {}), actualizadoEn: new Date() }, { upsert: true, session: s });
+    await c.planSalas.deleteMany(dias ? { dia: { $in: [...dias] } } : {}, { session: s });
     if (r.plan.length) await c.planSalas.insertMany(r.plan, { session: s });
     const sin = r.plan.filter((p) => !p.monitor).length;
-    await c.changeLog.insertOne({ accion: "importar", nuevo: `${nota}: ${salas.length} salas, ${r.plan.length} horas-sala, ${sin} sin monitor`, actor, fecha: new Date() }, { session: s });
+    const alcance = dias ? `, días ${[...dias].sort().join(", ") || "ninguno"}` : "";
+    await c.changeLog.insertOne({ accion: "importar", nuevo: `${nota}: ${cfg.salas.length} salas, ${r.plan.length} horas-sala, ${sin} sin monitor${alcance}`, actor, fecha: new Date() }, { session: s });
   });
+  return avisos;
 }
 
-/** Guarda el libro de salas y monitores y rehace el plan. Falla ("errores") si el plan tiene errores. */
+/** Guarda el libro de salas y monitores y rehace el plan. Falla ("errores") si el plan tiene errores. Las salas fijas se conservan. */
 export async function aplicarSalas(libro: LibroSalas, actor: Actor) {
-  const { mentores } = await collections();
+  const { mentores, salasConfig } = await collections();
   const rec = reconocer(libro, await monitoresActivos(), new Set((await mentores.find({}, { projection: { _id: 1 } }).toArray()).map((m) => m._id)));
   if (libro.errores.length || rec.errores.length) throw new Error("errores");
-  await guardar(libro.salas, rec.importados, rec.disponibilidad, actor, "salas y monitores");
+  const fijos = (await salasConfig.findOne({ _id: "actual" }))?.fijos;
+  await guardar({ salas: libro.salas, importados: rec.importados, disponibilidad: rec.disponibilidad, ...(fijos ? { fijos } : {}) }, actor, "salas y monitores");
 }
 
-/** Rehace el plan con el último libro importado (por ejemplo, después de reimportar mentores). */
+/** Días que «Recalcular plan» rehace: desde hoy (hora de Colombia) en adelante. Los anteriores quedan intactos. */
+async function diasRecalculables(session?: ClientSession): Promise<Set<string> | null> {
+  const desde = diaDesde();
+  if (!desde) return null;
+  const c = await collections();
+  const enPlan = await c.planSalas.distinct("dia", {}, { session });
+  const enAsientos = await c.asientos.distinct("dia", {}, { session });
+  return new Set([...enPlan, ...enAsientos].filter((d) => d >= desde));
+}
+
+/**
+ * Rehace el plan con el último libro importado (por ejemplo, después de reimportar mentores o desde Franjas).
+ * Solo los días desde hoy; las salas fijas se respetan y los bloques con evaluación o asistencia no cambian.
+ */
 export async function recalcularPlan(actor: Actor): Promise<{ ok: true; avisos: ErrorFila[] } | { ok: false; error: "sin_salas" | "errores"; errores?: ErrorFila[] }> {
   const { salasConfig } = await collections();
   const cfg = await salasConfig.findOne({ _id: "actual" });
   if (!cfg) return { ok: false, error: "sin_salas" };
-  const r = await calcular(cfg.salas, cfg.importados, cfg.disponibilidad, undefined, true);
+  const dias = await diasRecalculables();
+  const fijas = unirFijas(cfg.fijos ?? [], await fijasProtegidas(dias));
+  const r = await calcular(cfg.salas, cfg.importados, cfg.disponibilidad, undefined, true, { ...(dias ? { dias } : {}), fijas });
   if (r.errores.length) return { ok: false, error: "errores", errores: r.errores };
-  await guardar(cfg.salas, cfg.importados, cfg.disponibilidad, actor, "plan recalculado", true);
-  return { ok: true, avisos: r.avisos };
+  const avisos = await guardar(cfg, actor, "plan recalculado", true, dias, true);
+  return { ok: true, avisos };
 }
 
 export type FilaPlan = {
   id: string; dia: string; hora: number; horaTxt: string; sala: number; enlace: string;
   mentor: string; monitor: MonitorUsuario | null; origen: OrigenMonitor | null;
+  /** Sala fijada con la hoja Plan de salas. */
+  fijo: boolean;
 };
 
 export type VistaPlan = {
@@ -169,6 +251,8 @@ export type VistaPlan = {
   desactualizado: boolean;
   filas: FilaPlan[];
   monitores: MonitorUsuario[];
+  /** Días con salas fijas (admiten «Volver a automático»). */
+  diasFijos: string[];
 };
 
 export async function verPlan(): Promise<VistaPlan> {
@@ -185,11 +269,11 @@ export async function verPlan(): Promise<VistaPlan> {
   const enPlan = new Set(plan.map((p) => `${p.dia}|${p.hora}|${p.mentorId}`));
   const desactualizado = !!cfg && (enAsientos.size !== enPlan.size || [...enPlan].some((x) => !enAsientos.has(x)));
   return {
-    hayConfig: !!cfg, desactualizado, monitores: monitores.sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    hayConfig: !!cfg, desactualizado, diasFijos: [...new Set((cfg?.fijos ?? []).map((f) => f.dia))].sort(), monitores: monitores.sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     filas: plan.map((p) => ({
       id: p._id, dia: p.dia, hora: p.hora, horaTxt: horaCO(inicioUTC(p.dia, p.hora)), sala: p.sala, enlace: enlace.get(p.sala) ?? "",
       mentor: nombreMentor.get(p.mentorId) ?? p.mentorId,
-      monitor: p.monitor ? { usuario: p.monitor, nombre: nombres.get(p.monitor) ?? p.monitor } : null, origen: p.origen,
+      monitor: p.monitor ? { usuario: p.monitor, nombre: nombres.get(p.monitor) ?? p.monitor } : null, origen: p.origen, fijo: !!p.fijo,
     })),
   };
 }

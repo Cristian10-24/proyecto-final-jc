@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { COLUMNAS_CUPOS, HOJAS_MENTORES } from "./mentores";
 import { COLUMNAS_PROYECTOS, HOJA_PROYECTOS } from "./proyectos";
-import { COLUMNAS_DISPONIBILIDAD, COLUMNAS_MONITORES, COLUMNAS_SALAS } from "./salas";
+import { COLUMNAS_DISPONIBILIDAD, COLUMNAS_MONITORES, COLUMNAS_PLAN, COLUMNAS_SALAS } from "./salas";
 import { HOJAS_SALAS, MAX_SALAS } from "../salas";
 import { COLUMNAS_USUARIOS } from "../usuariosExcel";
 
@@ -80,6 +80,9 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
       ["Monitor Ejemplo Dos", "Jueves 12 nov", "09 am"],
       ["Monitor Ejemplo Dos", "Viernes 13 nov", "08 am"],
     ], [28, 16, 10]);
+    hojaCon(wb, HOJAS_SALAS.plan, COLUMNAS_PLAN, [
+      ["Martes 17 nov", "05 pm", "Mentora Ejemplo Uno", 1, "monitora.uno"],
+    ], [16, 10, 28, 8, 20]);
     instrucciones(wb, [
       "Plantilla de salas y monitores · Proyecto final JC 2026",
       "Importa primero mentores y disponibilidad: las salas se asignan a los mentores de cada hora.",
@@ -91,6 +94,10 @@ export async function plantilla(tipo: TipoPlantilla): Promise<Buffer> {
       "Lo de la hoja Monitores manda sobre lo automático. Nadie puede estar en dos salas a la misma hora.",
       "El nombre del monitor debe ser igual al de su usuario (o escribe el usuario). Si no coincide, la vista previa avisa y esa fila no se usa.",
       "Las horas son de Colombia y en punto (08 am, 4 pm, 16:00). Volver a importar rehace el plan; los cambios hechos a mano se conservan si siguen valiendo.",
+      "Plan de salas (opcional): fija la sala de cada mentor en cada hora (Día, Hora, Mentor, Sala, Monitor = usuario; vacío = sin monitor).",
+      "  Si el archivo trae esta hoja, SOLO cambian los días que aparecen en ella; los demás días quedan exactamente igual.",
+      "  Monitores y Disponibilidad monitores valen solo para esos mismos días. Borra esta hoja si quieres el cálculo automático de siempre.",
+      "  Lo fijado se respeta al recalcular; en Salas, «Volver a automático» lo quita por día.",
     ]);
   } else {
     hojaCon(wb, HOJAS_MENTORES.mentores, ["N°", "Nombre del mentor", "Correo", "Celular"], [

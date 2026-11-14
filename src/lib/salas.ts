@@ -4,7 +4,7 @@ import type { ErrorFila } from "./importar/excel";
 // Funciones puras del plan de salas: no tocan la base. Una sala = un mentor en una hora; el monitor
 // acompaña la sala esa hora. Las horas son de Colombia (0–23).
 
-export const HOJAS_SALAS = { salas: "Salas", monitores: "Monitores", disponibilidad: "Disponibilidad monitores" } as const;
+export const HOJAS_SALAS = { salas: "Salas", monitores: "Monitores", disponibilidad: "Disponibilidad monitores", plan: "Plan de salas" } as const;
 /** Tope de salas de la hoja Salas (Sala 1 a N). El número real de salas es el de la hoja importada. */
 export const MAX_SALAS = 12;
 
@@ -17,7 +17,15 @@ export type Disponible = { monitor: string; dia: string; hora: number };
 /** Cambio manual del admin que se conserva al recalcular, si la sala sigue existiendo. */
 export type CambioAdmin = { dia: string; hora: number; mentorId: string; monitor: string | null };
 
-export type PlanSala = { _id: string; dia: string; hora: number; sala: number; mentorId: string; monitor: string | null; origen: OrigenMonitor | null };
+/** `fijo`: la sala la fijó el admin (hoja Plan de salas); «Recalcular plan» no la cambia. Campo nuevo y opcional. */
+export type PlanSala = { _id: string; dia: string; hora: number; sala: number; mentorId: string; monitor: string | null; origen: OrigenMonitor | null; fijo?: true };
+
+/**
+ * Sala fija de un mentor en una hora, con su monitor (null = la sala queda sin monitor y lo automático no la llena).
+ * `protegido`: no es una fila del archivo sino un bloque con evaluación o asistencia que conserva sala y monitor
+ * al recalcular (no se marca como fijo). `origen`: el del monitor que se conserva (por defecto, importado).
+ */
+export type SalaFija = { dia: string; hora: number; mentorId: string; sala: number; monitor: string | null; origen?: OrigenMonitor | null; protegido?: true };
 
 export const idSala = (dia: string, hora: number, sala: number) => `${dia}|${hora}|${sala}`;
 const k = (...p: (string | number)[]) => p.join("|");
@@ -27,9 +35,10 @@ const k = (...p: (string | number)[]) => p.join("|");
  * demás toman la sala que ya usaron ese día si está libre, y si no, la de número más bajo.
  * Error si en una hora hay más mentores que salas.
  */
-export function asignarSalas(horas: HoraMentores[], salas: number[]): { salaDe: Map<string, number>; errores: ErrorFila[] } {
+export function asignarSalas(horas: HoraMentores[], salas: number[], fijas: ReadonlyMap<string, number> = new Map()):
+  { salaDe: Map<string, number>; errores: ErrorFila[]; avisos: ErrorFila[] } {
   const orden = [...salas].sort((a, b) => a - b);
-  const salaDe = new Map<string, number>(), errores: ErrorFila[] = [];
+  const salaDe = new Map<string, number>(), errores: ErrorFila[] = [], avisos: ErrorFila[] = [];
   const porDia = new Map<string, HoraMentores[]>();
   for (const h of horas) porDia.set(h.dia, [...(porDia.get(h.dia) ?? []), h]);
   for (const [dia, lista] of [...porDia].sort(([a], [b]) => a.localeCompare(b))) {
@@ -43,8 +52,15 @@ export function asignarSalas(horas: HoraMentores[], salas: number[]): { salaDe: 
       }
       const ocupadas = new Set<number>(), actual = new Map<string, number>();
       const tomar = (m: string, s: number) => { ocupadas.add(s); actual.set(m, s); usada.set(m, s); salaDe.set(k(dia, h.hora, m), s); };
+      // Primero las salas fijas (sin fijas, todo sigue exactamente igual que antes).
+      for (const m of mentores) {
+        const f = fijas.get(k(dia, h.hora, m));
+        if (f === undefined) continue;
+        if (orden.includes(f) && !ocupadas.has(f)) tomar(m, f);
+        else avisos.push({ hoja: HOJAS_SALAS.plan, fila: 0, mensaje: `La sala fija ${f} del ${dia} a las ${h.hora}:00 ya no está disponible: se asigna otra.` });
+      }
       const siguen = anterior?.hora === h.hora - 1 ? anterior.sala : new Map<string, number>();
-      for (const m of mentores) { const s = siguen.get(m); if (s !== undefined) tomar(m, s); }
+      for (const m of mentores) { const s = siguen.get(m); if (s !== undefined && !actual.has(m) && !ocupadas.has(s)) tomar(m, s); }
       for (const m of mentores) {
         if (actual.has(m)) continue;
         const antes = usada.get(m);
@@ -53,7 +69,7 @@ export function asignarSalas(horas: HoraMentores[], salas: number[]): { salaDe: 
       anterior = { hora: h.hora, sala: actual };
     }
   }
-  return { salaDe, errores };
+  return { salaDe, errores, avisos };
 }
 
 export type EntradaPlan = {
@@ -62,6 +78,8 @@ export type EntradaPlan = {
   importados: MonitorFijo[];
   disponibilidad: Disponible[];
   cambiosAdmin: CambioAdmin[];
+  /** Salas fijas (hoja Plan de salas) y bloques protegidos: conservan sala y monitor; lo automático no los toca. */
+  fijas?: SalaFija[];
   /** Al recalcular: una fila importada cuya hora o sala ya no existe es aviso (se ignora), no error. */
   faltantesComoAviso?: boolean;
 };
@@ -73,8 +91,9 @@ export type EntradaPlan = {
  * si no, gana el disponible con menos salas. Nadie queda en dos salas a la misma hora.
  */
 export function planificar(e: EntradaPlan): { plan: PlanSala[]; errores: ErrorFila[]; avisos: ErrorFila[] } {
-  const { salaDe, errores } = asignarSalas(e.horas, e.salas.map((s) => s.sala));
-  const avisos: ErrorFila[] = [];
+  const fijas = e.fijas ?? [];
+  const salaFija = new Map(fijas.map((f) => [k(f.dia, f.hora, f.mentorId), f.sala]));
+  const { salaDe, errores, avisos } = asignarSalas(e.horas, e.salas.map((s) => s.sala), salaFija);
   const plan = new Map<string, PlanSala>(), porMentor = new Map<string, PlanSala>();
   for (const [clave, sala] of salaDe) {
     const [dia, hora, mentorId] = clave.split("|") as [string, string, string];
@@ -88,12 +107,31 @@ export function planificar(e: EntradaPlan): { plan: PlanSala[]; errores: ErrorFi
     if (monitor) { ocupado.add(k(monitor, p.dia, p.hora)); carga.set(monitor, (carga.get(monitor) ?? 0) + 1); }
   };
 
+  // Salas fijas y protegidas: su monitor (o ninguno) se conserva; lo automático y los cambios del admin no las llenan.
+  const fijado = new Set<string>();
+  for (const f of fijas) {
+    const p = porMentor.get(k(f.dia, f.hora, f.mentorId));
+    if (!p || p.sala !== f.sala) continue; // ya avisado por asignarSalas, o el mentor ya no está esa hora
+    fijado.add(p._id);
+    if (!f.protegido) p.fijo = true;
+    if (!f.monitor) { if (f.origen) p.origen = f.origen; continue; }
+    if (ocupado.has(k(f.monitor, f.dia, f.hora))) {
+      avisos.push({ hoja: HOJAS_SALAS.plan, fila: 0, mensaje: `El monitor de la sala ${p.sala} del ${f.dia} a las ${f.hora}:00 ya tiene otra sala: queda sin monitor.` });
+      continue;
+    }
+    poner(p, f.monitor, f.origen ?? "importado");
+  }
+
   const H = HOJAS_SALAS.monitores;
   for (const f of e.importados) {
     const err = (mensaje: string) => errores.push({ hoja: H, fila: f.fila, mensaje });
     const p = f.sala !== undefined ? plan.get(idSala(f.dia, f.hora, f.sala)) : porMentor.get(k(f.dia, f.hora, f.mentorId!));
     if (!p && e.faltantesComoAviso) { avisos.push({ hoja: H, fila: f.fila, mensaje: `Esa sala ya no existe el ${f.dia} a las ${f.hora}:00 (cambiaron los horarios): la fila no se usa.` }); continue; }
     if (!p) { err(f.sala !== undefined ? `La sala ${f.sala} no tiene mentor el ${f.dia} a las ${f.hora}:00.` : `Ese mentor no está disponible el ${f.dia} a las ${f.hora}:00.`); continue; }
+    if (fijado.has(p._id)) {
+      if (p.monitor !== f.monitor) avisos.push({ hoja: H, fila: f.fila, mensaje: `La sala ${p.sala} del ${f.dia} a las ${f.hora}:00 está fijada (Plan de salas o con evaluación): la fila no se usa.` });
+      continue;
+    }
     if (p.origen) { err(`La sala ${p.sala} del ${f.dia} a las ${f.hora}:00 ya tiene otro monitor en el archivo.`); continue; }
     if (ocupado.has(k(f.monitor, f.dia, f.hora))) { err(`Ese monitor ya tiene otra sala el ${f.dia} a las ${f.hora}:00.`); continue; }
     poner(p, f.monitor, "importado");
@@ -101,6 +139,10 @@ export function planificar(e: EntradaPlan): { plan: PlanSala[]; errores: ErrorFi
   for (const c of e.cambiosAdmin) {
     const p = porMentor.get(k(c.dia, c.hora, c.mentorId));
     if (!p) continue; // esa sala ya no existe
+    if (fijado.has(p._id) && (p.origen || !p.fijo)) {
+      if (p.monitor !== c.monitor) avisos.push({ hoja: "", fila: 0, mensaje: `Se descarta un cambio manual del ${c.dia} a las ${c.hora}:00 (sala ${p.sala}): la sala está fijada con otro monitor.` });
+      continue;
+    }
     if (p.origen || (c.monitor && ocupado.has(k(c.monitor, c.dia, c.hora)))) {
       avisos.push({ hoja: "", fila: 0, mensaje: `Se descarta un cambio manual del ${c.dia} a las ${c.hora}:00 (sala ${p.sala}): el archivo asigna otro monitor.` });
       continue;
@@ -116,7 +158,7 @@ export function planificar(e: EntradaPlan): { plan: PlanSala[]; errores: ErrorFi
     const { dia, hora } = orden[i]!;
     const deLaHora: PlanSala[] = [];
     while (i < orden.length && orden[i]!.dia === dia && orden[i]!.hora === hora) deLaHora.push(orden[i++]!);
-    const pendientes = deLaHora.filter((p) => !p.origen);
+    const pendientes = deLaHora.filter((p) => !p.origen && !fijado.has(p._id));
     // Primero, continuidad: el de la hora anterior en la misma sala, si la carga no queda muy desigual.
     for (const p of pendientes) {
       const previo = plan.get(idSala(dia, hora - 1, p.sala))?.monitor;

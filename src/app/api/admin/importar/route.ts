@@ -6,6 +6,7 @@ import { leerLibro } from "@/lib/importar/excel";
 import { leerLibroMentores } from "@/lib/importar/mentores";
 import { leerLibroSalas } from "@/lib/importar/salas";
 import { aplicarSalas, previaSalas } from "@/lib/planSalas";
+import { aplicarPlanFijo, FallaPlanFijo, previaPlanFijo } from "@/lib/planSalasFijo";
 import { CAMPOS, leerLibroProyectos, type Campo } from "@/lib/importar/proyectos";
 
 const MAX_BYTES = 4 * 1024 * 1024; // Vercel corta los cuerpos de más de 4,5 MB
@@ -17,6 +18,8 @@ const Campos = z
   .object({
     tipo: z.enum(["proyectos", "mentores", "salas"]),
     modo: z.enum(["previa", "confirmar"]),
+    // Solo salas con hoja Plan de salas: confirma que cambia el enlace de una sala que ya existía.
+    confirmarEnlaces: z.literal("si").optional(),
     mapa: z.string().max(5000).optional().transform((s, ctx) => {
       if (!s) return {};
       try { return Mapa.parse(JSON.parse(s)); } catch { ctx.addIssue({ code: "custom", message: "mapa inválido" }); return z.NEVER; }
@@ -37,10 +40,15 @@ export async function POST(req: Request) {
   const form = await req.formData().catch(() => null);
   const archivo = form?.get("archivo");
   const mapaCrudo = form?.get("mapa");
-  const parsed = Campos.safeParse({ tipo: form?.get("tipo"), modo: form?.get("modo"), ...(typeof mapaCrudo === "string" ? { mapa: mapaCrudo } : {}) });
+  const confirmarCrudo = form?.get("confirmarEnlaces");
+  const parsed = Campos.safeParse({
+    tipo: form?.get("tipo"), modo: form?.get("modo"),
+    ...(typeof mapaCrudo === "string" ? { mapa: mapaCrudo } : {}),
+    ...(confirmarCrudo !== null && confirmarCrudo !== undefined ? { confirmarEnlaces: confirmarCrudo } : {}),
+  });
   if (!parsed.success || !(archivo instanceof File)) return NextResponse.json({ error: "datos_invalidos", mensaje: "Elige un archivo .xlsx." }, { status: 400 });
   if (archivo.size > MAX_BYTES) return NextResponse.json({ error: "muy_grande", mensaje: "El archivo pesa más de 4 MB." }, { status: 413 });
-  const { tipo, modo, mapa } = parsed.data;
+  const { tipo, modo, mapa, confirmarEnlaces } = parsed.data;
 
   let wb;
   try {
@@ -60,6 +68,21 @@ export async function POST(req: Request) {
 
   if (tipo === "salas") {
     const libro = leerLibroSalas(wb);
+    if (libro.plan) {
+      // Hoja «Plan de salas»: solo se tocan los días que trae el archivo.
+      const previa = await previaPlanFijo(libro);
+      if (modo === "previa" || previa.errores.length) return NextResponse.json({ tipo, previa, aplicado: false });
+      try {
+        await aplicarPlanFijo(libro, actor, confirmarEnlaces === "si");
+      } catch (e) {
+        if (e instanceof FallaPlanFijo && e.motivo === "confirmar_enlaces")
+          return NextResponse.json({ error: "confirmar_enlaces", mensaje: "Cambia el enlace de una sala que ya existía (afecta también al jueves 12 y al viernes 13). Confírmalo aparte." }, { status: 409 });
+        if (e instanceof FallaPlanFijo)
+          return NextResponse.json({ error: "conflictos", mensaje: "Los horarios, los monitores o las evaluaciones cambiaron. Revisa la vista previa otra vez." }, { status: 409 });
+        throw e;
+      }
+      return NextResponse.json({ tipo, previa, aplicado: true });
+    }
     const previa = await previaSalas(libro);
     if (modo === "previa" || previa.errores.length) return NextResponse.json({ tipo, previa, aplicado: false });
     try {

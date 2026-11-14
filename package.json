@@ -20,6 +20,7 @@
     "semilla:local": "tsx --env-file-if-exists=.env.local scripts/semilla-local.ts",
     "semilla:demo": "tsx --env-file-if-exists=.env.local scripts/semilla-demo.ts",
     "semilla:demo:atlas": "node scripts/con-atlas.mjs scripts/semilla-demo.ts",
+    "plan-salas:demo": "tsx --env-file-if-exists=.env.local scripts/plan-salas-demo.ts",
     "vaciar:atlas-pruebas": "node scripts/con-atlas.mjs scripts/vaciar-atlas-pruebas.ts",
     "admin:produccion": "node scripts/con-produccion.mjs scripts/primer-admin.ts",
     "respaldo:produccion": "node scripts/con-produccion.mjs scripts/respaldo.ts",
