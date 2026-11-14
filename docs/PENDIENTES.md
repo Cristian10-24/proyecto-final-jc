@@ -54,6 +54,9 @@ anota en la bitácora. El despliegue sigue en `docs/DESPLIEGUE.md`.
 - Fase 6 (bajo, cierre B): `urlVolver` (fichaLlamadas.ts) acepta espacios y caracteres de control en la query (`[^#]*`), siempre en el mismo origen; endurecer a `[^#\s]*`.
 - Fase 6 (nota, cierre B): el detalle muestra al monitor documento y correo de los integrantes, como la ficha anterior (misma ruta GET /api/evaluacion/salas/[id]); confirmar que se quiere así.
 - Fase 6 (demo): la semilla demo no trae proyectos de Uruguay (Colonia/Paysandú) ni un monitor con coordinación como rol adicional; para probarlos en el Preview hay que crearlos a mano.
+- Plan de salas (bajo): importar el libro de Salas y monitores SIN la hoja Plan de salas sigue rehaciendo TODOS los días (también jueves 12 y viernes 13) y no protege bloques con evaluación o asistencia, como antes de esta rama; conserva lo fijado. Mientras tanto, usar siempre la hoja Plan de salas (solo toca sus días).
+- Plan de salas (bajo): `diaDesde()` lee `PFJC_HOY_PRUEBAS` solo si existe `VITEST` (nunca en Vercel); si alguien definiera `VITEST` en producción, «Recalcular plan» volvería a rehacer todos los días (los bloques con evaluación o asistencia siguen protegidos).
+- Plan de salas (bajo): las pruebas con base que usan el 12 de noviembre corren «Recalcular» sobre todos los días (sin `PFJC_HOY_PRUEBAS`); la regla «desde hoy» solo se prueba en tests/salasFijas.db.test.ts.
 
 ## Más adelante
 - Reserva que prefiera al mentor que ya tiene proyectos en esa hora (propuesta del Paso 24, sin implementar): antes del `findOneAndUpdate`, ordenar los mentores libres del bloque por proyectos en esa hora. A favor: menos horas sueltas sin mover a nadie. En contra: una consulta más por reserva y concentra la carga. Decidir después de ver el reporte de carga.

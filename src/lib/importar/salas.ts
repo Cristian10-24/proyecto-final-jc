@@ -10,14 +10,21 @@ import { clave, hoja, leerDia, leerHora, texto, valor, type ErrorFila } from "./
 export const COLUMNAS_SALAS = ["Sala", "Enlace"] as const;
 export const COLUMNAS_MONITORES = ["Día", "Hora", "Sala", "Monitor"] as const;
 export const COLUMNAS_DISPONIBILIDAD = ["Monitor", "Día", "Hora"] as const;
+export const COLUMNAS_PLAN = ["Día", "Hora", "Mentor", "Sala", "Monitor"] as const;
 
 export type FilaMonitorLeida = { fila: number; dia: string; hora: number; sala?: number; mentor?: string; monitor: string };
 export type FilaDisponibilidadLeida = { fila: number; monitor: string; dia: string; hora: number };
+/** Fila de la hoja «Plan de salas»: fija la sala del mentor en esa hora; `monitor` vacío = sala sin monitor. */
+export type FilaPlanLeida = { fila: number; dia: string; hora: number; mentor: string; sala: number; monitor: string };
 
 export type LibroSalas = {
   salas: Sala[];
   monitores: FilaMonitorLeida[];
   disponibilidad: FilaDisponibilidadLeida[];
+  /** Hoja opcional «Plan de salas». Si viene, la importación solo toca los días que trae (ver planSalasFijo.ts). */
+  plan?: FilaPlanLeida[];
+  /** La hoja Disponibilidad monitores venía en el archivo (aunque sin filas). */
+  conDisponibilidad?: boolean;
   errores: ErrorFila[];
   avisos: ErrorFila[];
 };
@@ -100,6 +107,32 @@ export function leerLibroSalas(wb: ExcelJS.Workbook): LibroSalas {
       out.disponibilidad.push({ fila: r, monitor, dia, hora });
     });
   }
-  if (!wsM && !wsD) out.avisos.push({ hoja: "", fila: 0, mensaje: "El archivo no tiene hojas Monitores ni Disponibilidad monitores: las salas quedan sin monitor." });
+  if (wsD) out.conDisponibilidad = true;
+
+  const wsP = hoja(wb, HOJAS_SALAS.plan);
+  if (wsP) {
+    const H = HOJAS_SALAS.plan;
+    out.plan = [];
+    const cp = columnas(wsP, { dia: /^dia|fecha/, hora: /^hora/, mentor: /^mentor/, sala: /^sala/, monitor: /^monitor/ });
+    if (!cp.dia || !cp.hora || !cp.mentor || !cp.sala || !cp.monitor)
+      out.errores.push({ hoja: H, fila: 1, mensaje: "La hoja Plan de salas debe tener Día, Hora, Mentor, Sala y Monitor." });
+    else wsP.eachRow((row, r) => {
+      if (r === 1 || vacia(row, [cp.dia!, cp.hora!, cp.mentor!, cp.sala!, cp.monitor!])) return;
+      const err = (mensaje: string) => out.errores.push({ hoja: H, fila: r, mensaje });
+      const dia = leerDia(row.getCell(cp.dia!).value), hora = leerHora(row.getCell(cp.hora!).value);
+      const mentor = cleanSpaces(texto(row.getCell(cp.mentor!).value));
+      const sala = leerSala(row.getCell(cp.sala!).value);
+      const monitor = cleanSpaces(texto(row.getCell(cp.monitor!).value));
+      if (!dia) return err(`Día no reconocido: "${texto(row.getCell(cp.dia!).value)}". Usa por ejemplo "Martes 17 nov".`);
+      if (hora === null) return err(`Hora no reconocida: "${texto(row.getCell(cp.hora!).value)}". Usa por ejemplo "05 pm".`);
+      if (!mentor) return err("Falta el mentor.");
+      if (sala === null) return err(`Sala debe ser un número del 1 al ${MAX_SALAS}: "${texto(row.getCell(cp.sala!).value)}".`);
+      if (monitor.length > 80) return err("El monitor es demasiado largo (escribe su usuario).");
+      out.plan!.push({ fila: r, dia, hora, mentor, sala, monitor });
+    });
+    if (!out.plan.length && !out.errores.some((e) => e.hoja === H)) out.errores.push({ hoja: H, fila: 0, mensaje: "La hoja Plan de salas no tiene filas." });
+  }
+
+  if (!wsM && !wsD && !wsP) out.avisos.push({ hoja: "", fila: 0, mensaje: "El archivo no tiene hojas Monitores ni Disponibilidad monitores: las salas quedan sin monitor." });
   return out;
 }
