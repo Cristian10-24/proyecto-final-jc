@@ -12,6 +12,7 @@ import {
   cuerpoAnotar, cuerpoReprogramar, cuerpoSugerir, faltaMotivo, mismaNota, urlCupos, urlFicha, urlSalas, urlVolver, type Nota,
 } from "@/lib/vistas/fichaLlamadas";
 import { claseResultado, fechaLarga } from "../comun";
+import { mensajeRecordatorio } from "@/lib/contacto/mensajes";
 import { BotonesLlamar, Chip, Telefono, type Tono } from "./Basicos";
 import { useDialogo } from "./Dialogos";
 import { Cargando, ErrorCarga, Vacio } from "./Estados";
@@ -278,10 +279,11 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
                     <div className={d.personaHead}><h3 id={`t-int-${i}`}>{p.nombre}</h3><Chip tono={tono}>{etq}</Chip></div>
                     <div className={`${d.persona} ${d.contacto}`}>
                       <div className={d.personaTxt}>
-                        {p.celular ? <b className={d.tel}><Telefono celular={p.celular} /></b> : <span className={v.sinReg}>Celular sin registrar</span>}
+                        {p.celular ? <b className={d.tel}><Telefono celular={p.celular} ciudad={x.ciudad} /></b> : <span className={v.sinReg}>Celular sin registrar</span>}
                         <span className={d.gris}>{[`Doc. ${p.documento}`, p.correo].filter(Boolean).join(" · ")}</span>
                       </div>
-                      <div className={d.iconos}><BotonesLlamar celular={p.celular} nombre={p.nombre} /></div>
+                      <div className={d.iconos}><BotonesLlamar celular={p.celular} nombre={p.nombre} ciudad={x.ciudad}
+                        mensaje={mensajeRecordatorio({ nombre: p.nombre, proyecto: x.proyecto, inicio: x.inicio, ciudad: x.ciudad })} /></div>
                     </div>
                     {evaluo && (
                       <div className={d.evaluacion}>

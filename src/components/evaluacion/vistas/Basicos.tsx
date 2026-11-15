@@ -1,7 +1,7 @@
 "use client";
 
-import { digitosTelefono } from "@/lib/evaluacion/criterios";
-import { formatoCelular, iniciales } from "@/lib/vistas/formato";
+import { enlaceLlamar, enlaceWhatsApp, normalizarCelular, paisDeCiudad } from "@/lib/contacto/celular";
+import { iniciales } from "@/lib/vistas/formato";
 import { IcoBuscar, IcoFlecha, IcoTelefono, IcoWhatsApp } from "./Iconos";
 import v from "./Vistas.module.css";
 
@@ -27,20 +27,41 @@ export function Avatar({ nombre, color }: { nombre: string; color: number | "sin
   return <span className={`${v.av} ${color === "sin" ? v.avSin : v[`m${color}`]}`} aria-hidden="true">{color === "sin" ? "!" : iniciales(nombre)}</span>;
 }
 
-/** Celular con formato (+57 300 411 8250) o «Sin registrar». */
-export function Telefono({ celular }: { celular: string | null | undefined }) {
-  const t = formatoCelular(celular);
-  return t ? <span className={v.tel}>{t}</span> : <span className={v.sinReg}>Sin registrar</span>;
+/**
+ * Celular con formato internacional (+57 300 411 8250, +593 96 397 6623…) o «Sin registrar». `ciudad` = la del
+ * participante (decide las formas locales de Ecuador, Panamá y Uruguay); mentores y monitores van sin ciudad.
+ * Un número que no se reconoce se muestra tal cual con la marca «Revisar número».
+ */
+export function Telefono({ celular, ciudad }: { celular: string | null | undefined; ciudad?: string | null }) {
+  const crudo = (celular ?? "").trim();
+  if (!crudo) return <span className={v.sinReg}>Sin registrar</span>;
+  const n = normalizarCelular(crudo, paisDeCiudad(ciudad));
+  return n.ok
+    ? <span className={v.tel}>{n.internacional}</span>
+    : <span className={v.tel}>{crudo}<span className={v.revisar}>Revisar número</span></span>;
 }
 
-/** Botones de ícono Llamar y WhatsApp (44 px), con el nombre en la etiqueta accesible. Sin celular, nada. */
-export function BotonesLlamar({ celular, nombre }: { celular: string | null | undefined; nombre: string }) {
+/**
+ * ÚNICO componente de «Llamar» y «WhatsApp» de la app (botones de ícono de 44 px). Sin celular, nada (la columna se
+ * reserva igual). Número que no se reconoce: botones deshabilitados («Revisar número»), nunca un enlace mal formado.
+ * `mensaje`: texto prellenado de WhatsApp (solo participantes; mentores y monitores abren el chat vacío).
+ */
+export function BotonesLlamar({ celular, nombre, ciudad, mensaje }: {
+  celular: string | null | undefined; nombre: string; ciudad?: string | null; mensaje?: string | null;
+}) {
   if (!celular?.trim()) return null;
-  const d = digitosTelefono(celular);
+  const n = normalizarCelular(celular, paisDeCiudad(ciudad));
+  if (!n.ok || !n.e164)
+    return (
+      <span className={v.acc}>
+        <button type="button" className={v.ibtn} disabled aria-label={`Llamar a ${nombre}: revisar número`} title="Revisar número"><IcoTelefono /></button>
+        <button type="button" className={`${v.ibtn} ${v.wa}`} disabled aria-label={`Escribir por WhatsApp a ${nombre}: revisar número`} title="Revisar número"><IcoWhatsApp /></button>
+      </span>
+    );
   return (
     <span className={v.acc}>
-      <a className={v.ibtn} href={`tel:+${d}`} aria-label={`Llamar a ${nombre}`} title="Llamar"><IcoTelefono /></a>
-      <a className={`${v.ibtn} ${v.wa}`} href={`https://wa.me/${d}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp a ${nombre}`} title="WhatsApp"><IcoWhatsApp /></a>
+      <a className={v.ibtn} href={enlaceLlamar(n.e164)} aria-label={`Llamar a ${nombre}`} title="Llamar"><IcoTelefono /></a>
+      <a className={`${v.ibtn} ${v.wa}`} href={enlaceWhatsApp(n.e164, mensaje)} target="_blank" rel="noopener noreferrer" aria-label={`Escribir por WhatsApp a ${nombre}`} title="WhatsApp"><IcoWhatsApp /></a>
     </span>
   );
 }

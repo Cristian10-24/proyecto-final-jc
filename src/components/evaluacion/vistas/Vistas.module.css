@@ -51,6 +51,8 @@
 .ibtn { appearance: none; width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid var(--ev-line); background: var(--ev-surface); color: var(--ev-ink); display: inline-grid; place-items: center; cursor: pointer; text-decoration: none; }
 .ibtn:hover { border-color: var(--ev-muted); background: var(--ev-surface-2); }
 .ibtn.wa { color: var(--ev-ok); }
+.ibtn:disabled, .ibtn:disabled:hover { cursor: not-allowed; opacity: .45; border-color: var(--ev-line); background: var(--ev-surface); }
+.revisar { margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--ev-bad); white-space: nowrap; }
 .acc { display: flex; gap: 6px; }
 
 /* ---- Chips (siempre con texto) ---- */

@@ -1,21 +1,18 @@
 // Fase 6 · Formatos puros de las vistas nuevas (Mi ciudad y Monitores). Sin base ni navegador: se usan en el servidor
 // y en el cliente, y se prueban en tests/vistasFormato.test.ts.
 
+import type { Pais } from "../ciudades";
+import { normalizarCelular } from "../contacto/celular";
+
 /**
- * Celular para mostrar, como el prototipo: "+57 300 411 8250" (Colombia) y "+598 99 214 367" (Uruguay).
- * Acepta lo que guarda el importador ("+573004118250", "3004118250", "+59899214367", "099214367").
- * Vacío → null (la vista escribe «Sin registrar»). Un formato que no reconoce se devuelve tal cual.
+ * Celular para mostrar: "+57 300 411 8250", "+593 96 397 6623", "+507 6123 4567", "+598 99 214 367" (normalizarCelular).
+ * `pais` = país de la ciudad del participante (decide las formas locales de Ecuador, Panamá y Uruguay).
+ * Vacío → null (la vista escribe «Sin registrar»). Un número que no se reconoce se devuelve tal cual.
  */
-export function formatoCelular(celular: string | null | undefined): string | null {
+export function formatoCelular(celular: string | null | undefined, pais?: Pais | null): string | null {
   const crudo = (celular ?? "").trim();
   if (!crudo) return null;
-  let d = crudo.replace(/\D/g, "");
-  if (d.startsWith("00")) d = d.slice(2);
-  if (d.length === 10 && d.startsWith("3")) d = `57${d}`;
-  if (d.length === 12 && d.startsWith("573")) return `+57 ${d.slice(2, 5)} ${d.slice(5, 8)} ${d.slice(8)}`;
-  if (d.length === 11 && d.startsWith("598")) return `+598 ${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8)}`;
-  if (d.length === 9 && d.startsWith("09")) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`; // Uruguay sin indicativo
-  return crudo;
+  return normalizarCelular(crudo, pais).internacional ?? crudo;
 }
 
 /** Iniciales del avatar del monitor: "Valeria Ocampo Ríos" → "VO"; un solo nombre → "VA". */

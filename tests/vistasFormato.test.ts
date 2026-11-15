@@ -12,7 +12,9 @@ describe("formatoCelular", () => {
   });
   it("Uruguay, con indicativo y local", () => {
     expect(formatoCelular("+59899214367")).toBe("+598 99 214 367");
-    expect(formatoCelular("099214367")).toBe("099 214 367");
+    expect(formatoCelular("099214367", "UY")).toBe("+598 99 214 367");
+    expect(formatoCelular("963976623", "EC")).toBe("+593 96 397 6623");
+    expect(formatoCelular("099214367")).toBe("099214367"); // sin país no se adivina: tal cual
   });
   it("vacío = null (la vista dice «Sin registrar»); lo desconocido, tal cual", () => {
     expect(formatoCelular("")).toBeNull();
