@@ -6,6 +6,7 @@ import { coincide, plural, porcentaje } from "@/lib/vistas/formato";
 import { chipsExtra, contarEstudiantes, filtrarPorEstado, ordenar, type FiltroEstado } from "@/lib/vistas/conteoCiudad";
 import type { FilaMiCiudad, VistaMiCiudad } from "@/lib/vistas/miCiudad";
 import { estadoFila } from "@/lib/evaluacion/criterios";
+import { mensajeRecordatorio } from "@/lib/contacto/mensajes";
 import { fechaLarga } from "../comun";
 import { BotonesLlamar, Buscador, Chip, ChipEstado, ResumenBarra, Selector, TarjetasFiltro, Telefono, type Opcion } from "./Basicos";
 import { BarraMovil, HojaFiltros, type CampoFiltro } from "./Dialogos";
@@ -134,9 +135,9 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
                     <span role="columnheader">Proyecto e integrantes</span><span role="columnheader">Día, hora y sala</span>
                     <span role="columnheader">Monitor</span><span role="columnheader">Estado</span>
                   </div>
-                  {lista.map((x) => <FilaWeb key={x.id} x={x} />)}
+                  {lista.map((x) => <FilaWeb key={x.id} x={x} ciudad={datos!.ciudad} />)}
                 </div>
-                <div className={v.soloMovil}><div className={m.tarjetas}>{lista.map((x) => <TarjetaMovil key={x.id} x={x} />)}</div></div>
+                <div className={v.soloMovil}><div className={m.tarjetas}>{lista.map((x) => <TarjetaMovil key={x.id} x={x} ciudad={datos!.ciudad} />)}</div></div>
               </>
             )}
           </div>
@@ -150,11 +151,15 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
   );
 }
 
-function Integrante({ i }: { i: FilaMiCiudad["integrantes"][number] }) {
+type PropsIntegrante = { i: FilaMiCiudad["integrantes"][number]; x: FilaMiCiudad; ciudad: string | null };
+const mensajeDe = ({ i, x, ciudad }: PropsIntegrante) => mensajeRecordatorio({ nombre: i.nombre, proyecto: x.proyecto, inicio: x.inicio, ciudad });
+
+function Integrante(p: PropsIntegrante) {
+  const { i, ciudad } = p;
   return (
     <div className={m.int}>
-      <span className={m.intNombre}>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} /></span></span>
-      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span>
+      <span className={m.intNombre}>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} ciudad={ciudad} /></span></span>
+      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} ciudad={ciudad} mensaje={mensajeDe(p)} /></span>
     </div>
   );
 }
@@ -173,13 +178,13 @@ function Extras({ x }: { x: FilaMiCiudad }) {
 const FONDO = { presente: m.presente, ausente: m.ausente, pendiente: "" } as const;
 const fondo = (x: FilaMiCiudad) => FONDO[estadoFila(x.integrantes.map((i) => ({ res: "Pendiente" as const, presente: i.estado === "evaluado", ausente: i.estado === "ausente" })))];
 
-function FilaWeb({ x }: { x: FilaMiCiudad }) {
+function FilaWeb({ x, ciudad }: { x: FilaMiCiudad; ciudad: string | null }) {
   return (
     <div className={`${m.fila} ${fondo(x)}`} role="row">
       <div role="cell" className={m.celdaProy}>
         <div className={m.subcols}>
           <div className={m.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div>
-          <div className={m.integrantes}>{x.integrantes.map((i, k) => <Integrante key={k} i={i} />)}</div>
+          <div className={m.integrantes}>{x.integrantes.map((i, k) => <Integrante key={k} i={i} x={x} ciudad={ciudad} />)}</div>
         </div>
       </div>
       <div role="cell" className={m.cuando}><b>{x.hora}</b><span>{fechaLarga(x.dia)}</span><span>{salaTxt(x.sala)}</span></div>
@@ -189,7 +194,7 @@ function FilaWeb({ x }: { x: FilaMiCiudad }) {
   );
 }
 
-function TarjetaMovil({ x }: { x: FilaMiCiudad }) {
+function TarjetaMovil({ x, ciudad }: { x: FilaMiCiudad; ciudad: string | null }) {
   return (
     <article className={`${m.tarjeta} ${fondo(x)}`}>
       <div className={m.tarjetaCab}>
@@ -201,16 +206,17 @@ function TarjetaMovil({ x }: { x: FilaMiCiudad }) {
         <span className={m.chipsMovil}><ChipEstado estado={x.estado} /><Extras x={x} /></span>
       </div>
       <PorPersona x={x} />
-      <div className={m.ints}>{x.integrantes.map((i, k) => <IntegranteMovil key={k} i={i} />)}</div>
+      <div className={m.ints}>{x.integrantes.map((i, k) => <IntegranteMovil key={k} i={i} x={x} ciudad={ciudad} />)}</div>
     </article>
   );
 }
 
-function IntegranteMovil({ i }: { i: FilaMiCiudad["integrantes"][number] }) {
+function IntegranteMovil(p: PropsIntegrante) {
+  const { i, ciudad } = p;
   return (
     <div className={m.int}>
-      <span className={m.intNombre}><b>{i.nombre}</b><Telefono celular={i.celular} /></span>
-      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span>
+      <span className={m.intNombre}><b>{i.nombre}</b><Telefono celular={i.celular} ciudad={ciudad} /></span>
+      <span className={m.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} ciudad={ciudad} mensaje={mensajeDe(p)} /></span>
     </div>
   );
 }

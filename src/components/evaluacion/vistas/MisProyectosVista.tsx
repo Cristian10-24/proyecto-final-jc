@@ -14,6 +14,7 @@ import {
   FILTROS_VACIOS, leerFiltros, mentoresDisponibles, modoLista, resumen, TEXTO_ASIS, unirLecturas, type BloqueLista, type EstadoAsis, type FilaLista, type Filtros,
 } from "@/lib/vistas/listaProyectos";
 import { fechaLarga } from "../comun";
+import { mensajeRecordatorio } from "@/lib/contacto/mensajes";
 import { BotonesLlamar, Buscador, Chip, ResumenBarra, Segmentado, Selector, Telefono, type Opcion, type Tono } from "./Basicos";
 import { BarraMovil, HojaFiltros, type CampoFiltro } from "./Dialogos";
 import { Cargando, ErrorCarga, Vacio } from "./Estados";
@@ -251,6 +252,12 @@ function Chips({ x }: { x: FilaLista }) {
   );
 }
 
+/** Llamar/WhatsApp de un integrante: país de la ciudad del proyecto y recordatorio prellenado. */
+function ContactoIntegrante({ i, x }: { i: FilaLista["integrantes"][number]; x: FilaLista }) {
+  return <BotonesLlamar celular={i.celular} nombre={i.nombre} ciudad={x.ciudad}
+    mensaje={mensajeRecordatorio({ nombre: i.nombre, proyecto: x.proyecto, inicio: x.inicio, ciudad: x.ciudad })} />;
+}
+
 const fondo = (x: FilaLista, todos: boolean) => (todos ? "" : FONDO[estadoFila(x.integrantes.map(comoPersona))]);
 
 function FilaWeb({ x, todos, cols }: { x: FilaLista; todos: boolean; cols: string }) {
@@ -263,7 +270,7 @@ function FilaWeb({ x, todos, cols }: { x: FilaLista; todos: boolean; cols: strin
           <div><div className={l.proy}>{x.proyecto}{x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}</div><Lugar x={x} /></div>
           <div className={l.ints}>
             {x.integrantes.map((i, k) => (
-              <div key={k} className={l.int}><span>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} /></span></span><span className={l.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span></div>
+              <div key={k} className={l.int}><span>{i.nombre} <span className={v.muted}>· <Telefono celular={i.celular} ciudad={x.ciudad} /></span></span><span className={l.iconos}><ContactoIntegrante i={i} x={x} /></span></div>
             ))}
           </div>
         </div>
@@ -293,7 +300,7 @@ function GrupoMovil({ b, todos, verDia }: { b: BloqueLista; todos: boolean; verD
             <Lugar x={x} />
             {x.integrantes.length > 1 && <Chip tono="borde">En pareja</Chip>}
             {todos
-              ? x.integrantes.map((i, k) => <div key={k} className={l.int}><span>{i.nombre} · <Telefono celular={i.celular} /></span><span className={l.iconos}><BotonesLlamar celular={i.celular} nombre={i.nombre} /></span></div>)
+              ? x.integrantes.map((i, k) => <div key={k} className={l.int}><span>{i.nombre} · <Telefono celular={i.celular} ciudad={x.ciudad} /></span><span className={l.iconos}><ContactoIntegrante i={i} x={x} /></span></div>)
               : <><Chips x={x} /><a className={`${v.btn} ${l.gestionar}`} href={`/monitor/proyectos/${x.id}`} aria-label={`Gestionar ${x.proyecto}`}>Gestionar ›</a></>}
           </article>
         ))}
