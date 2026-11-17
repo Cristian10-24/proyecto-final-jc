@@ -6,7 +6,9 @@ import { calc, faltantes, ITEMS_A, MIN_B, primerNombre, TEMAS_B, type Borrador, 
 import type { DetalleEvaluacion, ResultadoIntegrante } from "@/lib/evaluacion/datos";
 import { diaCOL } from "@/lib/edicion";
 import { fechaLarga, pct, uno } from "./comun";
-import { BotonesLlamar, Telefono } from "./vistas/Basicos";
+import { AVISO_RUTA, NOTA_B_BASICA } from "@/lib/evaluacion/ayudas";
+import { AyudaCriterio } from "./vistas/Ayuda";
+import { BotonesLlamar, Chip, Telefono } from "./vistas/Basicos";
 import { IcoCamara, IcoFlecha, IcoReiniciar, IcoVolver } from "./vistas/Iconos";
 import e from "./vistas/Evaluar.module.css";
 import vs from "./vistas/Vistas.module.css";
@@ -286,7 +288,8 @@ export default function EvaluarHoja({ id, usuario, onCerrar, inicial }: { id: st
           <button type="button" className={`${vs.btn} ${e.volver}`} onClick={() => void cerrar()} aria-label="Volver a Mis evaluaciones"><IcoVolver /><span className={e.volverTxt}>Volver</span></button>
           <div className={e.quien}>
             <h1>{nombres || "Cargando…"}</h1>
-            {d && <p className={e.meta}><span className={e.horaBarra}>{hora}</span> (COL){horaUy && <> · {horaUy}</>}{ruta && <> · {ruta}</>}</p>}
+            {d && <p className={e.meta}><span className={e.horaBarra}>{hora}</span> (COL){horaUy && <> · {horaUy}</>}{ruta && <> · <Chip tono="borde">{ruta}</Chip></>}</p>}
+            {d?.ruta && <p className={`${e.avisoRuta} ${vs.soloWeb}`}>{AVISO_RUTA[d.ruta]}</p>}
           </div>
           {d && editable && (
             <div className={e.reloj}>
@@ -323,6 +326,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar, inicial }: { id: st
                 <span>{pareja ? "Este proyecto" : "Este estudiante"} está programado para el {fechaLarga(d.dia).toLowerCase()} a las {hora} COL{horaUy && ` · ${horaUy}`}, no para hoy. Verifica que sea la persona correcta antes de calificar.</span>
               </div>
             )}
+            {d.ruta && <div className={e.avisoRutaMovil}><Chip tono="borde">{ruta}</Chip><p>{AVISO_RUTA[d.ruta]}</p></div>}
             {recuperado && editable && <div className={vs.aviso}>Recuperamos lo que llevabas sin guardar. Revisa y pulsa «Guardar evaluación».</div>}
             {d.integrantes.map((x, i) => ns[i] && (
               <div key={i} className={`${vs.aviso} ${e.banner}`}>
@@ -377,7 +381,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar, inicial }: { id: st
               <p className={e.pista}>{pareja ? "Minutos 0 a 6. Recorren juntos la app publicada. Esta parte cuenta igual para los dos." : "Minutos 0 a 6. El estudiante recorre su app publicada; tú marcas mientras observas."}</p>
               {ITEMS_A.map(([k, t, desc]) => (
                 <div key={k} className={e.item}>
-                  <div className={e.itemTxt}><p className={e.b}>{t}</p><p className={`${vs.small} ${vs.muted}`}>{desc}</p></div>
+                  <div className={e.itemTxt}><div className={e.titulo}><span className={e.b}>{t}</span><AyudaCriterio clave={k} titulo={t} ruta={d.ruta} /></div><p className={`${vs.small} ${vs.muted}`}>{desc}</p></div>
                   <Seg etiqueta={t} opciones={[["si", "Sí"], ["parcial", "Parcial"], ["no", "No"]] as const} valor={f.a[k]} disabled={!editable} onPick={(val) => ponerA(k, val)} />
                 </div>
               ))}
@@ -386,9 +390,10 @@ export default function EvaluarHoja({ id, usuario, onCerrar, inicial }: { id: st
             <section className={`${vs.tarjeta} ${e.parte}`} aria-labelledby="ev-t-b">
               <h2 id="ev-t-b" className={e.tParte}>Parte B · ¿Lo entiende?</h2>
               <p className={e.pista}>{pareja ? "Minutos 6 a 12. Reparte las preguntas entre los dos y califica a cada uno: el conocimiento es individual. Si los dos saben lo mismo, márcales el mismo nivel. Califica mínimo 2 temas por persona." : "Minutos 6 a 12. Pide que te muestre el código. Califica mínimo 2 temas; los que no preguntes déjalos sin marcar."}</p>
+              {d.ruta === "Básica" && <p className={e.notaB}>{NOTA_B_BASICA}</p>}
               {TEMAS_B.map(([k, t, pregunta]) => (
                 <div key={k} className={`${e.item} ${pareja ? e.itemPareja : ""}`}>
-                  <div className={e.itemTxt}><p className={e.b}>{t}</p><p className={`${vs.small} ${vs.muted} ${e.pregunta}`}>{pregunta}</p></div>
+                  <div className={e.itemTxt}><div className={e.titulo}><span className={e.b}>{t}</span><AyudaCriterio clave={k} titulo={t} ruta={d.ruta} /></div><p className={`${vs.small} ${vs.muted} ${e.pregunta}`}>{pregunta}</p></div>
                   <div className={e.porPersona}>
                     {d.integrantes.map((x, i) => (
                       <div key={i} className={e.persona2}>

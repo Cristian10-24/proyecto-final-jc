@@ -171,3 +171,11 @@
   .destacado { min-height: 56px; padding: 12px 14px; }
   .toast { bottom: 96px; }
 }
+
+/* ---- Paso 4 · Ayudas «?»: título con el botón, aviso de la ruta y nota de la Parte B (ruta básica) ---- */
+.titulo { display: flex; align-items: center; gap: 4px; min-height: 22px; }
+.avisoRuta { font-size: 12.5px; color: var(--ev-muted); margin: 4px 0 0; max-width: 720px; }
+.avisoRutaMovil { display: none; flex-direction: column; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--ev-muted); padding: 10px 12px; border-radius: 9px; background: var(--ev-surface-2); }
+.avisoRutaMovil p { margin: 0; }
+.notaB { font-size: 13px; font-weight: 600; color: var(--ev-ink); margin: -4px 0 8px; }
+@media (max-width: 899px) { .avisoRutaMovil { display: flex; } }

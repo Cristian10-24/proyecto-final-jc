@@ -369,5 +369,5 @@ excepción: el monitor del bloque (nombre y celular) en la lectura de evaluacion
 - [x] 1. Lectura de prototipos, resumen de diseño, inventario y plan.
 - [x] 2. Listas «Mis evaluaciones» y «Evaluaciones» (web y móvil).
 - [x] 3. Pantalla de evaluar (web y móvil).
-- [ ] 4. Ayudas «?» por criterio.
+- [x] 4. Ayudas «?» por criterio.
 - [ ] 5. Cierre: paridad, «como producción», 7 mentores a la vez, batería completa, revisores, capturas y guía.

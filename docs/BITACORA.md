@@ -432,3 +432,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: pantalla de evaluar con el diseño nuevo`. EvaluarHoja pasa de ventana a pantalla dentro de /mentor (tope 1440 px): barra fija con Volver, hora COL · UY, ruta y cronómetro (anillo, fase, Iniciar/Pausar/Reanudar, Reiniciar); tarjetas Proyecto y Monitor a cargo (Llamar/WhatsApp, enlace, Abrir sala); «Lo que anotó el monitor»; Partes A y B y Cierre; columna fija con resultado por integrante, «¿Se presentó?» Sí/No (= No se presentó / Deshacer), destacado, Guardar y «Guardada el …». Móvil: proyecto plegable, barra inferior con resumen y «Guardar» que sube con el teclado. Lógica, llamadas, borrador, aviso al salir y cronómetro iguales (diff revisado).
 - Verificar: `npx vitest run tests/vistasEvaluar.test.ts` (11/11); typecheck. Local: guardada en pareja (todo visible), pendiente: borrador a los 2 s, «Faltan N de 7», Volver y Escape piden confirmar; 375 px sin scroll horizontal.
 - Pendiente: Pasos 4 y 5.
+
+## Vistas del mentor · Paso 4 · Ayudas «?» en cada criterio
+- Commit: `feat: ayudas por criterio según la ruta del proyecto`. `AYUDAS` en src/lib/evaluacion/ayudas.ts; `AyudaCriterio` (Ayuda.tsx): botón de 44 px con aria-label «Qué se evalúa en «…»» y aria-expanded, una sola abierta, «Para este proyecto · Ruta …» y «Ver la otra ruta» (sin ruta: las dos); cierra con X, Escape o clic fuera y devuelve el foco. Chip de ruta + aviso en el encabezado; nota de la Parte B en ruta básica.
+- Verificar: `npx vitest run tests/ayudas.test.ts` (10/10). Local: abrir la ayuda no hace peticiones, no marca «Cambios sin guardar» ni toca el cronómetro; Escape cierra solo la ayuda; foco de vuelta al «?»; hoja inferior a 375 px.
+- Pendiente: Paso 5 (cierre).
