@@ -36,3 +36,6 @@
 .tarjeta .chips { flex-direction: row; flex-wrap: wrap; }
 .nombresMovil { font-weight: 600; font-size: 15.5px; overflow-wrap: anywhere; }
 .accionMovil { width: 100%; }
+
+/* Párrafos sin margen del navegador (como el prototipo). */
+.ghead p, .gheadMovil p, .celda p, .tarjeta p, .monitor p { margin: 0; }

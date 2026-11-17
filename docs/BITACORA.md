@@ -437,3 +437,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: ayudas por criterio según la ruta del proyecto`. `AYUDAS` en src/lib/evaluacion/ayudas.ts; `AyudaCriterio` (Ayuda.tsx): botón de 44 px con aria-label «Qué se evalúa en «…»» y aria-expanded, una sola abierta, «Para este proyecto · Ruta …» y «Ver la otra ruta» (sin ruta: las dos); cierra con X, Escape o clic fuera y devuelve el foco. Chip de ruta + aviso en el encabezado; nota de la Parte B en ruta básica.
 - Verificar: `npx vitest run tests/ayudas.test.ts` (10/10). Local: abrir la ayuda no hace peticiones, no marca «Cambios sin guardar» ni toca el cronómetro; Escape cierra solo la ayuda; foco de vuelta al «?»; hoja inferior a 375 px.
 - Pendiente: Paso 5 (cierre).
+
+## Vistas del mentor · Paso 5 · Cierre
+- Commit: `test: paridad, como producción y cierre de las vistas del mentor`. Paridad con la demo (pareja e individual, retroalimentación, destacado, notas del monitor): la pantalla muestra lo guardado y calc() coincide; «como producción»: listas y fichas como mentor, coordinación y admin (con refresco) dejan la base idéntica. Márgenes de párrafos como el prototipo. revisor-seguridad: sin altos ni medios (3 bajos a PENDIENTES). Diff contra main: sin rutas de API, permisos.ts, auth.ts, scripts, db.ts ni types.ts; única lectura nueva `monitoresDe` (datos.ts).
+- Verificar: npm test 579/579; test:db una vez: 407 pasan, 13 fallan (las 7 de la fecha fija del 12-nov, ninguna tocada), evaluacion.db (7 mentores a la vez) completa; typecheck y build bien. Capturas mentores-* en C:\ROFÉ\capturas-vistas.
+- Pendiente: push y Preview (usuario); actualización de seguridad de Next.js que pide el build (decisión del usuario).

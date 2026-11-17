@@ -3,6 +3,7 @@
    Todo control táctil mide al menos 44 px. */
 
 .pantalla { --ev-tope: 1440px; }
+.pantalla p, .pantalla h1, .pantalla h2, .pantalla h3 { margin: 0; }
 .b { font-weight: 600; }
 
 /* ---- Barra fija: Volver, nombres, hora y cronómetro ---- */
