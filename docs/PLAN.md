@@ -367,7 +367,7 @@ admin) y la pantalla de evaluar según `docs/diseno/vistas-mentores/` (resumen: 
 INVENTARIO-EVALUACION.md) y ayudas «?» por criterio. Sin cambios de base, esquema, permisos ni rutas de escritura; única
 excepción: el monitor del bloque (nombre y celular) en la lectura de evaluaciones.
 - [x] 1. Lectura de prototipos, resumen de diseño, inventario y plan.
-- [ ] 2. Listas «Mis evaluaciones» y «Evaluaciones» (web y móvil).
+- [x] 2. Listas «Mis evaluaciones» y «Evaluaciones» (web y móvil).
 - [ ] 3. Pantalla de evaluar (web y móvil).
 - [ ] 4. Ayudas «?» por criterio.
 - [ ] 5. Cierre: paridad, «como producción», 7 mentores a la vez, batería completa, revisores, capturas y guía.

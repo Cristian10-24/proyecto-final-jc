@@ -422,3 +422,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `docs: diseño e inventario de las vistas del mentor`. Prototipos copiados a `docs/diseno/vistas-mentores/` («Claude outputs/» en .gitignore); resumen en DISENO-VISTAS-MENTORES.md; inventario de lo que hoy se ve de una evaluación y plan en INVENTARIO-EVALUACION.md; 3 líneas en DECISIONES. Verificado: ni la agenda ni la ficha traen el monitor del bloque → se ampliará la lectura de evaluaciones (solo lectura).
 - Verificar: leer los dos documentos; ningún dato del inventario queda sin lugar.
 - Pendiente: Pasos 2–5.
+
+## Vistas del mentor · Paso 2 · Listas «Mis evaluaciones» y «Evaluaciones»
+- Commit: `feat: listas del mentor y de coordinación con el diseño nuevo`. /mentor con ShellVistas; resumen con barra y «% listo»; filtros Fecha, Estado (+ «Inasistencias sin motivo registrado»), [Ciudad, Mentor], Monitor y buscador en la URL; por día (chip «Hoy») y bloque de sala con «Monitor a cargo» (Llamar/WhatsApp sin texto) y «Abrir sala»; Evaluar/Revisar/Ver; chips por integrante, motivo, destacado y borrador; fondo con estadoFila; sin reloj. Lectura: `monitoresDe` en datos.ts agrega `monitor` a la lista y `monitorBloque` a la ficha (plan de salas; desactivado o sin monitor = null).
+- Verificar: `npx vitest run tests/vistasEvaluaciones.test.ts` (15/15); `npx vitest run --config vitest.db.config.mts tests/monitorBloque.db.test.ts tests/evaluacion.db.test.ts` (23/23); módulo 156/156; typecheck. Local (dev-pruebas, demo): mentor.demo y coordinacion.demo a 1440 y 375.
+- Pendiente: Pasos 3–5 (la pantalla de evaluar sigue con el diseño anterior).
