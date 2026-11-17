@@ -26,3 +26,6 @@ docs/diseno/evaluacion/
 .impeccable/config.local.json
 # Respaldos de producción (npm run respaldo:produccion): datos reales, nunca al repositorio
 respaldos/
+
+# Salidas de Claude (borradores y prototipos): solo se versiona la copia en docs/diseno/
+Claude outputs/

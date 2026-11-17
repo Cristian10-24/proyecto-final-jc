@@ -360,3 +360,14 @@ de cada mentor en cada hora y SOLO cambia los días que trae (martes 17 a sábad
 días quedan iguales. Vista previa con confirmación, protección de bloques con evaluación o asistencia, «Volver a
 automático» por día, recalcular desde hoy respetando lo fijado. Decisiones: DECISIONES.md.
 - [x] Plan de salas fijo: lector, validación, vista previa, aplicar, recalcular, Volver a automático, plantilla, pruebas y archivo de la demo.
+
+## Vistas del mentor (rama feature/vistas-mentores) — pedido del usuario, todo estético
+Producción activa (presentaciones hasta el sábado 21). Rediseño de «Mis evaluaciones», «Evaluaciones» (coordinación y
+admin) y la pantalla de evaluar según `docs/diseno/vistas-mentores/` (resumen: DISENO-VISTAS-MENTORES.md; inventario:
+INVENTARIO-EVALUACION.md) y ayudas «?» por criterio. Sin cambios de base, esquema, permisos ni rutas de escritura; única
+excepción: el monitor del bloque (nombre y celular) en la lectura de evaluaciones.
+- [x] 1. Lectura de prototipos, resumen de diseño, inventario y plan.
+- [ ] 2. Listas «Mis evaluaciones» y «Evaluaciones» (web y móvil).
+- [ ] 3. Pantalla de evaluar (web y móvil).
+- [ ] 4. Ayudas «?» por criterio.
+- [ ] 5. Cierre: paridad, «como producción», 7 mentores a la vez, batería completa, revisores, capturas y guía.

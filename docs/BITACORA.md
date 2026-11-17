@@ -417,3 +417,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Verificar: `npx vitest run tests/contactoCelular.test.ts tests/contactoMensajes.test.ts tests/contactoBotones.test.ts tests/vistasFormato.test.ts`; npm test 543/543; test:db: 400 pasan, solo las 13 fallas ya anotadas de la fecha fija; typecheck y build. revisor-seguridad: sin altos ni medios; 2 bajos corregidos (emoji partido y fecha inválida) y proyecto recortado a 120. Local: 4 proyectos de la demo cambiados por un rato (Guayaquil 0963976623, Colonia en pareja con proyecto marcador, Panamá 6123-4567, Paysandú +598167992) y devueltos.
 - Pendiente: push y Preview (los hace el usuario).
 
+
+## Vistas del mentor · Paso 1 · Prototipos, inventario y plan (rama feature/vistas-mentores)
+- Commit: `docs: diseño e inventario de las vistas del mentor`. Prototipos copiados a `docs/diseno/vistas-mentores/` («Claude outputs/» en .gitignore); resumen en DISENO-VISTAS-MENTORES.md; inventario de lo que hoy se ve de una evaluación y plan en INVENTARIO-EVALUACION.md; 3 líneas en DECISIONES. Verificado: ni la agenda ni la ficha traen el monitor del bloque → se ampliará la lectura de evaluaciones (solo lectura).
+- Verificar: leer los dos documentos; ningún dato del inventario queda sin lugar.
+- Pendiente: Pasos 2–5.
