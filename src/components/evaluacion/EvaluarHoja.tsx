@@ -1,16 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { CIUDADES, horaCO, horaUY } from "@/lib/ciudades";
 import { calc, faltantes, ITEMS_A, MIN_B, primerNombre, TEMAS_B, type Borrador, type Formulario, type PartesB, type Resultado, type ValorA } from "@/lib/evaluacion/criterios";
 import type { DetalleEvaluacion, ResultadoIntegrante } from "@/lib/evaluacion/datos";
 import { diaCOL } from "@/lib/edicion";
-import s from "./Evaluacion.module.css";
-import { claseGrande, fechaLarga, horaTxt, pct, uno } from "./comun";
+import { fechaLarga, pct, uno } from "./comun";
+import { BotonesLlamar, Telefono } from "./vistas/Basicos";
+import { IcoCamara, IcoFlecha, IcoReiniciar, IcoVolver } from "./vistas/Iconos";
+import e from "./vistas/Evaluar.module.css";
+import vs from "./vistas/Vistas.module.css";
 
-// Pantalla de evaluar (igual al prototipo): cronómetro de 15 min, Parte A común, Parte B por integrante,
-// cierre común y "No se presentó" por integrante. El borrador se guarda solo en el servidor mientras se
-// califica; solo si la sesión venció o no hay conexión queda también en este navegador (con fecha y usuario,
-// y se borra al guardar o al cerrar sesión). No cuenta hasta "Guardar evaluación".
+// Pantalla de evaluar (prototipos 03 y 05, docs/DISENO-VISTAS-MENTORES.md): cronómetro de 15 min, Parte A común,
+// Parte B por integrante, cierre común y "No se presentó" por integrante. El borrador se guarda solo en el servidor
+// mientras se califica; solo si la sesión venció o no hay conexión queda también en este navegador (con fecha y
+// usuario, y se borra al guardar o al cerrar sesión). No cuenta hasta "Guardar evaluación".
+// Vistas del mentor: solo cambió el marcado (pantalla completa dentro de /mentor, sin ventana); la lógica, las
+// llamadas, el borrador, el aviso al salir y el cronómetro son los de siempre.
 
 const TOTAL = 900;
 const LV = [0, 1, 2, 3, 4] as const;
@@ -53,7 +59,7 @@ function Seg<T extends string | number>({ opciones, valor, onPick, nivel, disabl
   opciones: readonly (readonly [T, string])[]; valor: T | undefined; onPick: (v: T | undefined) => void; nivel?: boolean; disabled?: boolean; etiqueta: string;
 }) {
   return (
-    <div className={`${s.seg} ${nivel ? s.segNivel : ""}`} role="group" aria-label={etiqueta}>
+    <div className={`${e.seg} ${nivel ? e.segNivel : ""}`} role="group" aria-label={etiqueta}>
       {opciones.map(([v, t]) => (
         <button key={String(v)} type="button" data-v={v} aria-pressed={valor === v} disabled={disabled}
           onClick={() => onPick(valor === v ? undefined : v)}>{t}</button>
@@ -62,11 +68,15 @@ function Seg<T extends string | number>({ opciones, valor, onPick, nivel, disabl
   );
 }
 
-export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usuario: string; onCerrar: (cambio: boolean) => void }) {
-  const [d, setD] = useState<DetalleEvaluacion | null>(null);
+/** Lo guardado, armado como formulario con una Parte B por integrante (igual que siempre al abrir). */
+export const baseDe = (data: DetalleEvaluacion): Formulario => ({ ...data.guardado, b: Array.from({ length: data.integrantes.length }, (_, i) => data.guardado.b[i] ?? {}) });
+
+/** `inicial`: solo para las pruebas de render (sin navegador); en la app siempre se carga con GET, como antes. */
+export default function EvaluarHoja({ id, usuario, onCerrar, inicial }: { id: string; usuario: string; onCerrar: (cambio: boolean) => void; inicial?: DetalleEvaluacion }) {
+  const [d, setD] = useState<DetalleEvaluacion | null>(inicial ?? null);
   const [error, setError] = useState("");
-  const [f, setF] = useState<Formulario>(VACIO);
-  const [ns, setNs] = useState<boolean[]>([]);
+  const [f, setF] = useState<Formulario>(() => (inicial ? baseDe(inicial) : VACIO));
+  const [ns, setNs] = useState<boolean[]>(() => inicial?.integrantes.map((x) => x.noPresento) ?? []);
   const [sucio, setSucio] = useState(false);
   const [recuperado, setRecuperado] = useState(false);
   const [borradorEn, setBorradorEn] = useState<Date | null>(null);
@@ -74,6 +84,8 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
   const [ocupado, setOcupado] = useState(false);
   const [confirmar, setConfirmar] = useState<Confirmar | null>(null);
   const [toast, setToast] = useState("");
+  /** Solo para mostrar «Guardada el …» (dato que ya llegaba: `guardadoEn`); no participa en ninguna decisión. */
+  const [guardadaEn, setGuardadaEn] = useState<string | null>(inicial?.guardadoEn ?? null);
   const cambio = useRef(false);
   const toastT = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,7 +102,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
       const data = res?.ok ? ((await res.json()) as DetalleEvaluacion) : null;
       if (!data) return setError(res?.status === 403 ? "Este proyecto ya no está asignado a ti." : "No se pudo abrir la evaluación. Revisa tu conexión e inténtalo otra vez.");
       const n = data.integrantes.length;
-      const base = { ...data.guardado, b: Array.from({ length: n }, (_, i) => data.guardado.b[i] ?? {}) };
+      const base = baseDe(data);
       const local = data.editable ? leerLocal(id, usuario, data.guardadoEn) : null;
       // La copia local (lo escrito sin conexión) gana si es más nueva que el borrador del servidor.
       const borr = local && (!data.borradorEn || local.en > Date.parse(data.borradorEn)) ? local.datos : data.borrador;
@@ -98,6 +110,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
       setNs(data.integrantes.map((x) => x.noPresento));
       setF(borr ? { ...base, ...borr, b: borr.b?.length === n ? borr.b : base.b } : base);
       setRecuperado(!!borr);
+      setGuardadaEn(data.guardadoEn);
       setSucio(!!borr);
     })();
     return () => { vivo = false; };
@@ -133,10 +146,10 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
   }, [sucio, editable, onCerrar]);
 
   useEffect(() => {
-    const fn = (e: KeyboardEvent) => { if (e.key === "Escape" && !confirmar) void cerrar(); };
+    // Escape = «Volver» (como antes). Si otra pieza ya lo usó (p. ej. cerrar una ayuda «?»), no hace nada más.
+    const fn = (ev: KeyboardEvent) => { if (ev.key === "Escape" && !ev.defaultPrevented && !confirmar) void cerrar(); };
     document.addEventListener("keydown", fn);
-    document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", fn); document.body.style.overflow = ""; };
+    return () => { document.removeEventListener("keydown", fn); };
   }, [cerrar, confirmar]);
 
   // ---- cronómetro (no bloquea nada) ----
@@ -153,9 +166,11 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
   }, [corriendo]);
   const seg = reloj.inicio === null ? 0 : Math.floor(((reloj.pausa ?? ahora) - reloj.inicio) / 1000);
   const quedan = Math.max(0, TOTAL - seg);
+  // Textos del prototipo 03; los minutos de cada parte son los de siempre (A hasta el 6, B hasta el 12, cierre hasta el 15).
+  const marcha = `${corriendo ? "Corriendo" : "En pausa"} · min ${Math.floor(Math.min(seg, TOTAL) / 60)} de 15`;
   const [fase, faseTxt] = reloj.inicio === null ? ["Listo para empezar", "Inicia cuando el estudiante empiece"]
-    : seg < 360 ? ["Demo", "Parte A · hasta el minuto 6"] : seg < 720 ? ["Preguntas", "Parte B · hasta el minuto 12"]
-    : seg < TOTAL ? ["Cierre", "Escribe fortaleza y mejora"] : ["Tiempo cumplido", "Guarda la evaluación"];
+    : seg < 360 ? ["Parte A · ¿Funciona?", marcha] : seg < 720 ? ["Parte B · ¿Lo entiende?", marcha]
+    : seg < TOTAL ? ["Cierre", marcha] : ["Tiempo cumplido", "Guarda la evaluación"];
   function botonReloj() {
     const t = Date.now();
     setAhora(t);
@@ -194,7 +209,7 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
     if (r?.status === 401) { setSesionVencida(true); return; }
     if (!r?.data?.ok) return avisar(r?.data?.faltan ? "Faltan datos para guardar." : errorTxt(r?.data?.error));
     escribirLocal(id, usuario, null);
-    setSucio(false); setRecuperado(false); setBorradorEn(null);
+    setSucio(false); setRecuperado(false); setBorradorEn(null); setGuardadaEn(new Date().toISOString());
     setNs(ns.map((x, i) => x && omitido(i)));
     aplicarResultados(r.data.resultados);
     avisar(pareja ? "Evaluación de la pareja guardada" : "Evaluación guardada");
@@ -224,72 +239,132 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
     avisar("Listo, ya puedes calificarlo");
   }
 
-  // ---- vista ----
+  // ---- vista (prototipos 03 y 05) ----
   const nombres = d?.integrantes.map((x) => x.nombre).join(" y ") ?? "";
   const hoy = diaCOL(new Date());
+  const inicio = d ? new Date(d.inicio) : null;
+  const uy = !!d && CIUDADES.find((c) => c.nombre === d.ciudad)?.pais === "UY";
+  const hora = inicio ? horaCO(inicio) : "";
+  const horaUy = inicio && uy ? `${horaUY(inicio)} UY` : null;
+  const ruta = d?.ruta ? `Ruta ${d.ruta.toLowerCase()}` : null;
+  const faltanA = ITEMS_A.filter(([k]) => !f.a[k]).length;
+  const temasB = (i: number) => TEMAS_B.filter(([k]) => typeof f.b[i]?.[k] === "number").length;
+  const textoGuardar = ocupado ? "Guardando…" : pareja ? "Guardar evaluación de la pareja" : "Guardar evaluación";
+  const estadoBorrador = sucio ? (borradorEn ? `Borrador guardado (${borradorEn.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" })}). Aún no cuenta: falta «Guardar evaluación».` : "Cambios sin guardar.") : null;
+  const guardadaTxt = guardadaEn && !sucio ? `Guardada el ${fechaLarga(diaCOL(new Date(guardadaEn))).toLowerCase()} a las ${horaCO(new Date(guardadaEn))}` : null;
+  const claseRes = (r: Resultado) => e[`r_${r === "No se presentó" ? "NoSePresento" : r}`];
+
+  // La barra del cronómetro va pegada bajo la cabecera de la app (fija en web; en el celular la cabecera no es fija).
+  const [arriba, setArriba] = useState(0);
+  useLayoutEffect(() => {
+    const cab = document.querySelector<HTMLElement>(".tema-evaluacion > header");
+    if (!cab) return;
+    const medir = () => setArriba(getComputedStyle(cab).position === "sticky" ? cab.offsetHeight : 0);
+    medir();
+    const o = new ResizeObserver(medir);
+    o.observe(cab);
+    window.addEventListener("resize", medir);
+    return () => { o.disconnect(); window.removeEventListener("resize", medir); };
+  }, []);
+  // Celular: con el teclado abierto, la barra inferior sube con él (visualViewport) y no queda tapada.
+  const [teclado, setTeclado] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const medir = () => setTeclado(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    vv.addEventListener("resize", medir);
+    vv.addEventListener("scroll", medir);
+    return () => { vv.removeEventListener("resize", medir); vv.removeEventListener("scroll", medir); };
+  }, []);
+  // Es una pantalla (no una ventana): abre arriba; al volver, la lista recupera su posición.
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   return (
-    <div className={s.hoja} role="dialog" aria-modal="true" aria-label={nombres || "Evaluación"}>
-      <div className={s.hojaHead}>
-        <div className={s.hojaHeadIn}>
-          <button type="button" className={`ev-btn ${s.volver}`} onClick={() => void cerrar()}>Volver</button>
-          <div style={{ flex: "1 1 260px", minWidth: 0 }}>
-            <h2>{nombres || "Cargando…"}</h2>
-            {d && (
-              <>
-                <div className={s.meta}>{[`${fechaLarga(d.dia)}, ${horaTxt(d.inicio, d.ciudad)}`, d.proyecto, d.ciudad, d.ruta ? `Ruta ${d.ruta.toLowerCase()}` : null, pareja ? "Proyecto en pareja" : null].filter(Boolean).join(" · ")}</div>
-                <div className={s.meta}>{d.integrantes.map((x) => `${pareja ? `${primerNombre(x.nombre)}: ` : ""}Doc. ${x.documento}`).join("   ·   ")}</div>
-              </>
-            )}
+    <div className={e.pantalla} aria-label={nombres || "Evaluación"}>
+      <div className={e.barra} style={{ top: arriba }}>
+        <div className={e.barraIn}>
+          <button type="button" className={`${vs.btn} ${e.volver}`} onClick={() => void cerrar()} aria-label="Volver a Mis evaluaciones"><IcoVolver /><span className={e.volverTxt}>Volver</span></button>
+          <div className={e.quien}>
+            <h1>{nombres || "Cargando…"}</h1>
+            {d && <p className={e.meta}><span className={e.horaBarra}>{hora}</span> (COL){horaUy && <> · {horaUy}</>}{ruta && <> · {ruta}</>}</p>}
           </div>
-          {editable && (
-            <div className={s.reloj}>
-              <div className={s.anillo} style={{ "--p": Math.min(1, seg / TOTAL) } as React.CSSProperties}>
+          {d && editable && (
+            <div className={e.reloj}>
+              <div className={e.anillo} role="timer" aria-label={`Quedan ${Math.floor(quedan / 60)} minutos y ${quedan % 60} segundos`} style={{ "--p": `${Math.min(1, seg / TOTAL)}turn` } as React.CSSProperties}>
                 <span>{String(Math.floor(quedan / 60)).padStart(2, "0")}:{String(quedan % 60).padStart(2, "0")}</span>
               </div>
-              <div className={s.fase}><b>{fase}</b>{faseTxt}</div>
-              <button type="button" className="ev-btn" onClick={botonReloj}>{reloj.inicio === null ? "Iniciar" : corriendo ? "Pausar" : "Reanudar"}</button>
-              {reloj.inicio !== null && <button type="button" className={`ev-btn ${s.reiniciar}`} onClick={() => void reiniciarReloj()}>Reiniciar</button>}
+              <div className={e.fase}><b>{fase}</b><span>{faseTxt}</span></div>
+              <button type="button" className={`${vs.btn} ${e.btnReloj} ${corriendo ? "" : vs.btnNegro}`} onClick={botonReloj}>{reloj.inicio === null ? "Iniciar" : corriendo ? "Pausar" : "Reanudar"}</button>
+              {reloj.inicio !== null && (
+                <button type="button" className={`${vs.btn} ${e.btnReloj} ${e.reiniciar}`} onClick={() => void reiniciarReloj()} aria-label="Reiniciar cronómetro">
+                  <IcoReiniciar /><span className={e.reiniciarTxt}>Reiniciar</span>
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {error && <div className={s.hojaBody}><div className="ev-aviso ev-aviso-error" role="alert">{error}</div></div>}
-      {!d && !error && <div className={s.hojaBody}><div className={s.skel}>{[1, 2, 3].map((i) => <i key={i} />)}</div></div>}
+      {error && <div className={e.cuerpo}><div className={`${vs.aviso} ${vs.avisoErr}`} role="alert">{error}</div></div>}
+      {!d && !error && <div className={e.cuerpo}><div className={vs.skelLista} aria-busy="true">{[1, 2, 3].map((i) => <i key={i} className={vs.skel} style={{ height: 96 }} />)}</div></div>}
 
       {d && (
-        <div className={s.hojaBody}>
-          <div className={s.col}>
+        <div className={`${e.cuerpo} ${e.grid}`}>
+          <div className={e.col}>
             {sesionVencida && (
-              <div className="ev-aviso ev-aviso-error" role="alert">
-                Tu sesión venció. Lo que llevas quedó guardado como borrador en este navegador.{" "}
-                <a href="/login">Vuelve a entrar</a> y abre otra vez a {pareja ? "esta pareja" : "este estudiante"} para seguir.
+              <div className={`${vs.aviso} ${vs.avisoErr}`} role="alert">
+                <span>Tu sesión venció. Lo que llevas quedó guardado como borrador en este navegador.{" "}
+                <a href="/login">Vuelve a entrar</a> y abre otra vez a {pareja ? "esta pareja" : "este estudiante"} para seguir.</span>
               </div>
             )}
-            {!d.editable && <div className="ev-aviso">Solo lectura: la evaluación la hace el mentor del proyecto.</div>}
+            {!d.editable && <div className={vs.aviso}>Solo lectura: la evaluación la hace el mentor del proyecto.</div>}
             {d.editable && d.dia !== hoy && (
-              <div className="ev-aviso ev-aviso-warn">
-                {pareja ? "Este proyecto" : "Este estudiante"} está programado para el {fechaLarga(d.dia).toLowerCase()} a las {horaTxt(d.inicio, d.ciudad)}, no para hoy. Verifica que sea la persona correcta antes de calificar.
+              <div className={`${vs.aviso} ${vs.avisoWarn}`}>
+                <span>{pareja ? "Este proyecto" : "Este estudiante"} está programado para el {fechaLarga(d.dia).toLowerCase()} a las {hora} COL{horaUy && ` · ${horaUy}`}, no para hoy. Verifica que sea la persona correcta antes de calificar.</span>
               </div>
             )}
-            {recuperado && editable && <div className="ev-aviso">Recuperamos lo que llevabas sin guardar. Revisa y pulsa «Guardar evaluación».</div>}
+            {recuperado && editable && <div className={vs.aviso}>Recuperamos lo que llevabas sin guardar. Revisa y pulsa «Guardar evaluación».</div>}
             {d.integrantes.map((x, i) => ns[i] && (
-              <div key={i} className={`ev-aviso ${s.banner}`}>
+              <div key={i} className={`${vs.aviso} ${e.banner}`}>
                 <span>{x.nombre} está marcado como «No se presentó».</span>
-                {editable && <button type="button" className="ev-btn" onClick={() => void deshacer(i)}>Deshacer</button>}
+                {editable && <button type="button" className={`${vs.btn} ${e.btnChico}`} onClick={() => void deshacer(i)}>Deshacer</button>}
               </div>
             ))}
-            {d.descripcion && (
-              <section className={`ev-tarjeta ${s.parte}`}>
-                <div className="ev-small ev-muted">Sobre el proyecto</div>
-                <p className={s.desc}>{d.descripcion}</p>
+
+            <div className={e.dos}>
+              <section className={`${vs.tarjeta} ${e.tarjeta} ${vs.soloWeb}`} aria-labelledby="ev-t-proy">
+                <div><p className={`${vs.small} ${vs.muted}`}>Proyecto</p><h2 id="ev-t-proy" className={e.tProyecto}>{d.proyecto}</h2></div>
+                {d.descripcion && <p>{d.descripcion}</p>}
+                <DatosProyecto d={d} hora={hora} horaUy={horaUy} ruta={ruta} uy={uy} />
               </section>
-            )}
+              <details className={`${vs.tarjeta} ${e.plegable} ${vs.soloMovil}`}>
+                <summary><span>Proyecto · {d.proyecto}</span><span className={e.rot} aria-hidden="true"><IcoFlecha /></span></summary>
+                <div className={e.plegableCuerpo}>
+                  {d.descripcion && <p className={vs.small}>{d.descripcion}</p>}
+                  <DatosProyecto d={d} hora={hora} horaUy={horaUy} ruta={ruta} uy={uy} />
+                </div>
+              </details>
+              <section className={`${vs.tarjeta} ${e.tarjeta}`} aria-labelledby="ev-t-mon">
+                <h2 id="ev-t-mon" className={e.tMonitor}>Monitor a cargo</h2>
+                <div className={e.persona}>
+                  <div className={e.personaTxt}>
+                    {d.monitorBloque
+                      ? <><p className={e.b}>{d.monitorBloque.nombre}</p><p className={`${vs.small} ${vs.muted}`}><Telefono celular={d.monitorBloque.celular} /></p></>
+                      : <p className={e.b}>Sin monitor</p>}
+                  </div>
+                  <span className={e.iconos}>{d.monitorBloque && <BotonesLlamar celular={d.monitorBloque.celular} nombre={d.monitorBloque.nombre} />}</span>
+                </div>
+                <p className={`${vs.small} ${vs.muted} ${vs.soloWeb}`}>Escríbele si el estudiante no entra a la sala o hay problemas de conexión.</p>
+                {d.enlace && <dl className={`${e.dl} ${e.dlEnlace} ${vs.soloWeb}`}><dt>Enlace</dt><dd><a href={d.enlace} target="_blank" rel="noopener noreferrer" className={e.enlace}>{d.enlace.replace(/^https:\/\//, "")}</a></dd></dl>}
+                {d.enlace && <a className={`${vs.btn} ${vs.btnPri} ${e.abrirSala}`} href={d.enlace} target="_blank" rel="noopener noreferrer"><IcoCamara />Abrir sala</a>}
+              </section>
+            </div>
+
             {d.integrantes.some((x) => x.monitor) && (
-              <section className={`ev-tarjeta ${s.parte}`}>
-                <div className="ev-small ev-muted">Lo que anotó el monitor</div>
+              <section className={`${vs.tarjeta} ${e.tarjeta}`}>
+                <h2 className={e.tMonitor}>Lo que anotó el monitor</h2>
                 {d.integrantes.filter((x) => x.monitor).map((x) => (
-                  <p key={x.i} className={s.desc}>
+                  <p key={x.i}>
                     {pareja && <b>{primerNombre(x.nombre)}: </b>}
                     {[x.monitor!.motivo ? `Motivo de inasistencia: ${x.monitor!.motivo}` : null, x.monitor!.observacion].filter(Boolean).join(" · ")}
                   </p>
@@ -297,109 +372,149 @@ export default function EvaluarHoja({ id, usuario, onCerrar }: { id: string; usu
               </section>
             )}
 
-            <section className={`ev-tarjeta ${s.parte}`}>
-              <div>
-                <h3>Parte A · ¿Funciona?</h3>
-                <p className={s.pista}>{pareja ? "Minutos 0 a 6. Recorren juntos la app publicada. Esta parte cuenta igual para los dos." : "Minutos 0 a 6. El estudiante recorre su app publicada; tú marcas mientras observas."}</p>
-              </div>
-              <div>
-                {ITEMS_A.map(([k, t, desc]) => (
-                  <div key={k} className={s.q}>
-                    <div><div className={s.qT}>{t}</div><div className={s.qD}>{desc}</div></div>
-                    <Seg etiqueta={t} opciones={[["si", "Sí"], ["parcial", "Parcial"], ["no", "No"]] as const} valor={f.a[k]} disabled={!editable} onPick={(v) => ponerA(k, v)} />
-                  </div>
-                ))}
-              </div>
+            <section className={`${vs.tarjeta} ${e.parte}`} aria-labelledby="ev-t-a">
+              <h2 id="ev-t-a" className={e.tParte}>Parte A · ¿Funciona?</h2>
+              <p className={e.pista}>{pareja ? "Minutos 0 a 6. Recorren juntos la app publicada. Esta parte cuenta igual para los dos." : "Minutos 0 a 6. El estudiante recorre su app publicada; tú marcas mientras observas."}</p>
+              {ITEMS_A.map(([k, t, desc]) => (
+                <div key={k} className={e.item}>
+                  <div className={e.itemTxt}><p className={e.b}>{t}</p><p className={`${vs.small} ${vs.muted}`}>{desc}</p></div>
+                  <Seg etiqueta={t} opciones={[["si", "Sí"], ["parcial", "Parcial"], ["no", "No"]] as const} valor={f.a[k]} disabled={!editable} onPick={(val) => ponerA(k, val)} />
+                </div>
+              ))}
             </section>
 
-            <section className={`ev-tarjeta ${s.parte}`}>
-              <div>
-                <h3>Parte B · ¿Lo entiende?</h3>
-                <p className={s.pista}>{pareja ? "Minutos 6 a 12. Reparte las preguntas entre los dos y califica a cada uno: el conocimiento es individual. Si los dos saben lo mismo, márcales el mismo nivel. Califica mínimo 2 temas por persona." : "Minutos 6 a 12. Pide que te muestre el código. Califica mínimo 2 temas; los que no preguntes déjalos sin marcar."}</p>
-              </div>
-              <div>
-                {TEMAS_B.map(([k, t, pregunta]) => (
-                  <div key={k} className={s.qb}>
-                    <div className={s.qT}>{t}</div>
-                    <div className={`${s.qD} ${s.qPregunta}`}>{pregunta}</div>
+            <section className={`${vs.tarjeta} ${e.parte}`} aria-labelledby="ev-t-b">
+              <h2 id="ev-t-b" className={e.tParte}>Parte B · ¿Lo entiende?</h2>
+              <p className={e.pista}>{pareja ? "Minutos 6 a 12. Reparte las preguntas entre los dos y califica a cada uno: el conocimiento es individual. Si los dos saben lo mismo, márcales el mismo nivel. Califica mínimo 2 temas por persona." : "Minutos 6 a 12. Pide que te muestre el código. Califica mínimo 2 temas; los que no preguntes déjalos sin marcar."}</p>
+              {TEMAS_B.map(([k, t, pregunta]) => (
+                <div key={k} className={`${e.item} ${pareja ? e.itemPareja : ""}`}>
+                  <div className={e.itemTxt}><p className={e.b}>{t}</p><p className={`${vs.small} ${vs.muted} ${e.pregunta}`}>{pregunta}</p></div>
+                  <div className={e.porPersona}>
                     {d.integrantes.map((x, i) => (
-                      <div key={i} className={`${s.quienFila} ${pareja ? "" : s.quienSolo}`}>
-                        {pareja && <span className={s.quienNombre}>{primerNombre(x.nombre)}</span>}
-                        {omitido(i) ? <span className="ev-small ev-muted">No se presentó</span> : (
-                          <Seg nivel etiqueta={`${t}${pareja ? ` · ${x.nombre}` : ""}`} opciones={LV.map((n) => [n, String(n)] as const)} valor={f.b[i]?.[k]} disabled={!editable} onPick={(v) => ponerB(i, k, v)} />
+                      <div key={i} className={e.persona2}>
+                        {pareja && <span className={e.quienNombre}>{primerNombre(x.nombre)}</span>}
+                        {omitido(i) ? <span className={`${vs.small} ${vs.muted}`}>No se presentó</span> : (
+                          <Seg nivel etiqueta={`${t}${pareja ? ` · ${x.nombre}` : ""}`} opciones={LV.map((n) => [n, String(n)] as const)} valor={f.b[i]?.[k]} disabled={!editable} onPick={(val) => ponerB(i, k, val)} />
                         )}
                       </div>
                     ))}
                   </div>
-                ))}
-                <p className={s.leyenda}>0 No conoce · 1 Conoce · 2 Comprende (explica la idea con ayuda) · 3 Practica (lo muestra y explica solo) · 4 Domina (podría modificarlo en vivo)</p>
-              </div>
-            </section>
-
-            <section className={`ev-tarjeta ${s.parte}`}>
-              <div>
-                <h3>Cierre</h3>
-                <p className={s.pista}>Minutos 12 a 15. Retroalimentación para el estudiante (en pareja, aplica para ambos). Coordinación la usará para el mensaje final.</p>
-              </div>
-              {([["fortaleza", "Lo que hizo muy bien", "Ej.: su catálogo es claro y explicó con seguridad cómo llegan los datos."],
-                ["mejora", "Qué puede mejorar", "Ej.: terminar de conectar el formulario con la base de datos."],
-                ["percepcion", "Percepción del mentor", "Un mensaje personal para el estudiante."]] as const).map(([k, label, ph]) => (
-                <div key={k} className={s.campo}>
-                  <label htmlFor={`c-${k}`}>{label}</label>
-                  <textarea className="ev-campo" id={`c-${k}`} placeholder={ph} maxLength={2000} value={f[k]} disabled={!editable} onChange={(e) => cambiar({ ...f, [k]: e.target.value })} />
                 </div>
               ))}
+              <p className={`${e.leyenda} ${vs.soloWeb}`}>0 No conoce · 1 Conoce · 2 Comprende (explica la idea con ayuda) · 3 Practica (lo muestra y explica solo) · 4 Domina (podría modificarlo en vivo)</p>
+              <p className={`${e.leyenda} ${vs.soloMovil}`}>0 No conoce · 1 Conoce · 2 Comprende · 3 Practica · 4 Domina</p>
+            </section>
+
+            <section className={`${vs.tarjeta} ${e.parte} ${e.cierre}`} aria-labelledby="ev-t-c">
+              <div>
+                <h2 id="ev-t-c" className={e.tParte}>Cierre</h2>
+                <p className={e.pista}>Minutos 12 a 15. Retroalimentación para el estudiante (en pareja, aplica para ambos). Coordinación la usará para el mensaje final.</p>
+              </div>
+              <div className={e.cierreDos}>
+                {([["fortaleza", "Lo que hizo muy bien", "Ej.: su catálogo es claro y explicó con seguridad cómo llegan los datos."],
+                  ["mejora", "Qué puede mejorar", "Ej.: terminar de conectar el formulario con la base de datos."]] as const).map(([k, label, ph]) => (
+                  <label key={k} className={e.campo} htmlFor={`c-${k}`}>
+                    <span>{label}</span>
+                    <textarea className={e.texto} id={`c-${k}`} placeholder={ph} maxLength={2000} value={f[k]} disabled={!editable} onChange={(ev) => cambiar({ ...f, [k]: ev.target.value })} />
+                  </label>
+                ))}
+              </div>
+              <label className={e.campo} htmlFor="c-percepcion">
+                <span>Percepción del mentor</span>
+                <textarea className={`${e.texto} ${e.textoCorto}`} id="c-percepcion" placeholder="Un mensaje personal para el estudiante." maxLength={2000} value={f.percepcion} disabled={!editable} onChange={(ev) => cambiar({ ...f, percepcion: ev.target.value })} />
+              </label>
             </section>
           </div>
 
-          <aside className={s.lado}>
+          <aside className={e.lado} style={{ top: arriba + 112 }}>
             {d.integrantes.map((x, i) => {
               const c = resultado(i);
+              const sinB = !omitido(i) && temasB(i) < MIN_B;
               return (
-                <div key={i} className={`ev-tarjeta ${s.score}`}>
-                  <span className="ev-small ev-muted">{pareja ? `Resultado de ${primerNombre(x.nombre)}` : "Resultado"}</span>
-                  <span className={`${s.big} ${claseGrande(c.res as Resultado)}`}>{c.res}</span>
-                  <div className={s.medidor}><span>Funciona (A)</span><b>{pct(c.a)}</b></div>
-                  <div className={s.medidor}><span>Nivel promedio (B)</span><b>{c.nb ? `${uno(c.b)} (${c.nb} temas)` : "—"}</b></div>
-                  {c.res === "Incompleto" && <span className={s.faltan}>Faltan datos: marca los 7 puntos de la Parte A y mínimo {MIN_B} temas de la Parte B.</span>}
-                </div>
+                <section key={i} className={`${vs.tarjeta} ${e.resultado}`} aria-label={pareja ? `Resultado de ${x.nombre}` : "Resultado"}>
+                  <p className={`${vs.small} ${vs.muted}`}>{pareja ? `Resultado de ${primerNombre(x.nombre)}` : "Resultado"}</p>
+                  <p className={`${e.big} ${claseRes(c.res)}`}>{c.res}</p>
+                  <div className={e.medidor}><span>Funciona (A)</span><b>{pct(c.a)}</b></div>
+                  <div className={e.medidor}><span>Nivel promedio (B)</span><b>{c.nb ? `${uno(c.b)} (${c.nb} temas)` : "—"}</b></div>
+                  {c.res !== "No se presentó" && faltanA > 0 && <p className={e.faltan}>Faltan {faltanA} de 7 criterios de la Parte A.</p>}
+                  {c.res !== "No se presentó" && sinB && <p className={e.faltan}>Califica mínimo {MIN_B} temas de la Parte B{pareja ? ` (${primerNombre(x.nombre)})` : ""}.</p>}
+                </section>
               );
             })}
-            <div className="ev-tarjeta">
-              <label className={s.toggle}>
-                <input type="checkbox" checked={f.destacado} disabled={!editable} onChange={(e) => cambiar({ ...f, destacado: e.target.checked })} />
-                Nominar como proyecto destacado
-              </label>
-            </div>
+            <section className={`${vs.tarjeta} ${e.asistencia}`} aria-label="Asistencia">
+              <p className={`${vs.small} ${vs.muted}`}>¿Se presentó?</p>
+              {d.integrantes.map((x, i) => (
+                <div key={i} className={e.asisFila}>
+                  <div className={e.asisLinea}>
+                    <span className={`${vs.small} ${e.b}`}>{x.nombre.trim().split(/\s+/).slice(0, 2).join(" ")}</span>
+                    <div className={`${e.seg} ${e.segAsis}`} role="group" aria-label={`¿${x.nombre} se presentó?`}>
+                      <button type="button" data-v="si" aria-pressed={!ns[i]} disabled={!editable} onClick={() => { if (ns[i]) void deshacer(i); }}>Sí</button>
+                      <button type="button" data-v="no" aria-pressed={!!ns[i]} disabled={!editable} onClick={() => { if (!ns[i]) void noSePresento(i); }}>No</button>
+                    </div>
+                  </div>
+                  {x.monitor?.motivo && <p className={`${vs.small} ${vs.muted}`}>Motivo de inasistencia: {x.monitor.motivo}</p>}
+                </div>
+              ))}
+            </section>
+            <label className={`${vs.tarjeta} ${e.destacado}`}>
+              <input type="checkbox" checked={f.destacado} disabled={!editable} onChange={(ev) => cambiar({ ...f, destacado: ev.target.checked })} />
+              <span className={`${vs.small} ${e.b}`}>Nominar como proyecto destacado</span>
+            </label>
             {editable && (
-              <>
-                <button type="button" className="ev-btn ev-btn-primario" disabled={ocupado} onClick={() => void guardar()}>
-                  {ocupado ? "Guardando…" : pareja ? "Guardar evaluación de la pareja" : "Guardar evaluación"}
-                </button>
-                {d.integrantes.map((x, i) => !ns[i] && (
-                  <button key={i} type="button" className="ev-btn" onClick={() => void noSePresento(i)}>
-                    {pareja ? `${primerNombre(x.nombre)} no se presentó` : "No se presentó"}
-                  </button>
-                ))}
-                {sucio && <div className={s.guardado} aria-live="polite">{borradorEn ? `Borrador guardado (${borradorEn.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" })}). Aún no cuenta: falta «Guardar evaluación».` : "Cambios sin guardar."}</div>}
-              </>
+              <div className={`${e.guardarWeb} ${vs.soloWeb}`}>
+                <button type="button" className={`${vs.btn} ${vs.btnPri} ${e.guardar}`} disabled={ocupado} onClick={() => void guardar()}>{textoGuardar}</button>
+                {estadoBorrador && <p className={e.estado} aria-live="polite">{estadoBorrador}</p>}
+              </div>
             )}
+            {guardadaTxt && <p className={e.estado}>{guardadaTxt}{editable ? " Puedes corregirla y volver a guardar." : ""}</p>}
           </aside>
         </div>
       )}
 
+      {d && (
+        <div className={`${e.barraAbajo} ${vs.soloMovil}`} style={{ bottom: teclado }}>
+          {editable && estadoBorrador && <p className={e.estadoMovil} aria-live="polite">{estadoBorrador}</p>}
+          <div className={e.barraAbajoIn}>
+            <div className={e.barraRes}>
+              {pareja
+                ? <p className={e.resPareja}>{d.integrantes.map((x, i) => { const r = resultado(i).res as Resultado; return <span key={i} className={claseRes(r)}>{primerNombre(x.nombre)}: {r}</span>; })}</p>
+                : <p className={`${e.resUno} ${claseRes(resultado(0).res as Resultado)}`}>{resultado(0).res}</p>}
+              <p className={e.resLinea}>
+                A {pct(resultado(0).a ?? (pareja ? resultado(1).a : null))} · B {d.integrantes.map((_, i) => { const c = resultado(i); return c.nb ? uno(c.b) : "—"; }).join(" / ")}
+                {faltanA > 0 && !ns.every(Boolean) ? ` · faltan ${faltanA} de A` : ""}
+              </p>
+            </div>
+            {editable && <button type="button" className={`${vs.btn} ${vs.btnPri} ${e.guardarMovil}`} disabled={ocupado} aria-label="Guardar evaluación" onClick={() => void guardar()}>{ocupado ? "Guardando…" : "Guardar"}</button>}
+          </div>
+        </div>
+      )}
+
       {confirmar && (
-        <div className={s.confirmar} role="alertdialog" aria-modal="true">
-          <div className={s.confirmarBox}>
+        <div className={e.confirmar} role="alertdialog" aria-modal="true">
+          <div className={e.confirmarBox}>
             <p>{confirmar.texto}</p>
-            <div className={s.confirmarActs}>
-              {confirmar.no && <button type="button" className="ev-btn" onClick={() => { confirmar.ok(false); setConfirmar(null); }}>{confirmar.no}</button>}
-              <button type="button" className="ev-btn ev-btn-primario" autoFocus onClick={() => { confirmar.ok(true); setConfirmar(null); }}>{confirmar.si}</button>
+            <div className={e.confirmarActs}>
+              {confirmar.no && <button type="button" className={vs.btn} onClick={() => { confirmar.ok(false); setConfirmar(null); }}>{confirmar.no}</button>}
+              <button type="button" className={`${vs.btn} ${vs.btnPri}`} autoFocus onClick={() => { confirmar.ok(true); setConfirmar(null); }}>{confirmar.si}</button>
             </div>
           </div>
         </div>
       )}
-      {toast && <div className={s.toast} role="status">{toast}</div>}
+      {toast && <div className={e.toast} role="status">{toast}</div>}
     </div>
+  );
+}
+
+function DatosProyecto({ d, hora, horaUy, ruta, uy }: { d: DetalleEvaluacion; hora: string; horaUy: string | null; ruta: string | null; uy: boolean }) {
+  return (
+    <dl className={e.dl}>
+      <dt>Día</dt><dd>{fechaLarga(d.dia)}</dd>
+      <dt>Hora</dt><dd>{hora} (COL) · 15 minutos{horaUy && ` · ${horaUy}`}</dd>
+      <dt>Sala</dt><dd>{d.sala !== undefined ? `Sala ${d.sala}` : "Por asignar"}</dd>
+      <dt>Ciudad</dt><dd>{uy ? `${d.ciudad} · Uruguay` : d.ciudad}</dd>
+      {ruta && <><dt>Ruta</dt><dd>{ruta}</dd></>}
+      <dt>Integrantes</dt>
+      <dd>{d.integrantes.map((x) => <span key={x.i} className={e.integrante}>{x.nombre} <span className={vs.muted}>· Doc. {x.documento}</span></span>)}</dd>
+    </dl>
   );
 }
