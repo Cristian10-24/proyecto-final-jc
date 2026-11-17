@@ -1,0 +1,182 @@
+/* Vistas del mentor · Pantalla de evaluar (prototipos 03 web y 05 móvil; docs/DISENO-VISTAS-MENTORES.md).
+   Solo variables --ev-*. Tope de 1440 px centrado. Corte web/móvil: 900 px (como las vistas del monitor).
+   Todo control táctil mide al menos 44 px. */
+
+.pantalla { --ev-tope: 1440px; }
+.pantalla p, .pantalla h1, .pantalla h2, .pantalla h3 { margin: 0; }
+.b { font-weight: 600; }
+
+/* ---- Barra fija: Volver, nombres, hora y cronómetro ---- */
+.barra { position: sticky; z-index: 4; margin: -24px calc(var(--ev-margen, 20px) * -1) 0; background: var(--ev-surface); border-bottom: 1px solid var(--ev-line); box-shadow: 0 6px 16px -14px rgba(0, 0, 0, .4); }
+.barraIn { max-width: var(--ev-tope); margin: 0 auto; padding: 12px var(--ev-margen, 20px); display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; box-sizing: border-box; }
+.volver { min-height: 44px; padding: 0 14px; font-size: 13.5px; }
+.quien { flex: 1 1 260px; min-width: 0; }
+.quien h1 { font-size: 22px; letter-spacing: -.01em; line-height: 1.25; overflow-wrap: anywhere; }
+.meta { font-size: 13px; color: var(--ev-muted); margin: 2px 0 0; }
+.horaBarra { font-family: var(--ev-font-titulo); font-weight: 600; font-size: 14px; color: var(--ev-hora); }
+.reloj { display: flex; align-items: center; gap: 12px; }
+.anillo { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; flex: none; background: conic-gradient(var(--ev-orange) var(--p, 0turn), var(--ev-surface-2) 0); }
+.anillo span { width: 48px; height: 48px; border-radius: 50%; background: var(--ev-surface); display: grid; place-items: center; font-family: var(--ev-font-titulo); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+.fase { display: flex; flex-direction: column; line-height: 1.3; min-width: 170px; }
+.fase b { font-family: var(--ev-font-titulo); font-size: 15px; font-weight: 600; }
+.fase span { font-size: 13px; color: var(--ev-muted); }
+.btnReloj { min-height: 44px; padding: 0 14px; font-size: 13.5px; }
+
+/* ---- Cuerpo: 2 columnas (contenido | resultado fijo) ---- */
+.cuerpo { max-width: var(--ev-tope); margin: 0 auto; padding: 24px 0 48px; box-sizing: border-box; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.banner { justify-content: space-between; flex-wrap: wrap; }
+.btnChico { min-height: 44px; padding: 0 14px; font-size: 13.5px; }
+
+.dos { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.tarjeta { display: flex; flex-direction: column; gap: 12px; }
+.tProyecto { font-size: 19px; }
+.tMonitor { font-size: 16px; }
+.dl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; font-size: 14px; margin: 0; }
+.dl dt { color: var(--ev-muted); }
+.dl dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.dlEnlace { grid-template-columns: 64px minmax(0, 1fr); }
+.enlace { color: var(--ev-orange-ink); }
+.integrante { display: block; }
+.integrante .muted, .integrante span { font-weight: 500; }
+.persona { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; }
+.personaTxt { min-width: 0; overflow-wrap: anywhere; }
+.iconos { display: flex; justify-content: flex-end; }
+.abrirSala { margin-top: auto; }
+
+/* Partes A y B */
+.parte { display: flex; flex-direction: column; }
+.tParte { font-size: 18px; }
+.pista { font-size: 13px; color: var(--ev-muted); margin: 2px 0 8px; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--ev-line); }
+.itemTxt { min-width: 0; }
+.pregunta { font-style: italic; }
+.porPersona { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.persona2 { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.quienNombre { font-weight: 600; font-size: 13.5px; }
+.itemPareja { grid-template-columns: minmax(0, 1fr); }
+.itemPareja .porPersona { align-items: stretch; }
+.itemPareja .persona2 { justify-content: space-between; }
+.leyenda { font-size: 13px; color: var(--ev-muted); padding-top: 10px; border-top: 1px solid var(--ev-line); margin: 0; }
+
+/* Selectores segmentados: Sí/Parcial/No (verde, ámbar, rojo), 0–4 (negro; naranja en oscuro), asistencia Sí/No */
+.seg { display: inline-flex; border: 1px solid var(--ev-line); border-radius: 999px; padding: 3px; background: var(--ev-surface-2); gap: 2px; flex: none; }
+.seg button { appearance: none; border: 0; background: transparent; min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ev-muted); }
+.seg button:disabled { cursor: default; }
+.seg button[aria-pressed="true"][data-v="si"] { background: var(--ev-ok); color: var(--ev-surface); }
+.seg button[aria-pressed="true"][data-v="parcial"] { background: var(--ev-parcial); color: var(--ev-surface); }
+.seg button[aria-pressed="true"][data-v="no"] { background: var(--ev-bad); color: var(--ev-surface); }
+.segNivel button[aria-pressed="true"] { background: var(--ev-ink); color: var(--ev-bg); }
+:global(:root[data-theme="dark"]) .segNivel button[aria-pressed="true"] { background: var(--ev-orange); color: var(--ev-on-orange); }
+.segAsis button { padding: 0 16px; }
+
+/* Cierre */
+.cierre { gap: 12px; }
+.cierreDos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo > span { font-weight: 600; font-size: 13px; }
+.texto { min-height: 84px; resize: vertical; background: var(--ev-surface); border: 1px solid var(--ev-line); border-radius: 9px; padding: 10px 12px; width: 100%; color: var(--ev-ink); font: inherit; box-sizing: border-box; scroll-margin-bottom: 140px; }
+.textoCorto { min-height: 72px; }
+.texto:disabled { opacity: .85; }
+
+/* ---- Columna derecha fija ---- */
+.lado { position: sticky; display: flex; flex-direction: column; gap: 14px; }
+.resultado { display: flex; flex-direction: column; gap: 10px; }
+.big { font-family: var(--ev-font-titulo); font-size: 28px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+.r_Excelente { color: var(--ev-ok); }
+.r_Aprobado { color: var(--ev-info); }
+.r_Incompleto { color: var(--ev-mid); }
+.r_NoSePresento { color: var(--ev-bad); }
+.r_Pendiente { color: var(--ev-muted); }
+.medidor { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+.faltan { font-size: 13px; color: var(--ev-mid); font-weight: 600; margin: 0; }
+.asistencia { display: flex; flex-direction: column; gap: 10px; }
+.asisFila { display: flex; flex-direction: column; gap: 4px; }
+.asisLinea { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.asisLinea > span { min-width: 0; overflow-wrap: anywhere; }
+.destacado { display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 60px; padding: 12px 18px; }
+.destacado input { width: 22px; height: 22px; accent-color: var(--ev-orange); flex: none; }
+.guardarWeb { display: flex; flex-direction: column; gap: 8px; }
+.guardar { width: 100%; }
+.guardar:disabled, .guardarMovil:disabled { opacity: .6; cursor: progress; }
+.estado { font-size: 12.5px; color: var(--ev-muted); text-align: center; margin: 0; }
+
+/* ---- Plegable «Proyecto · nombre» (móvil) ---- */
+.plegable { padding: 2px 14px; }
+.plegable > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; font-weight: 600; font-size: 14px; }
+.plegable > summary::-webkit-details-marker { display: none; }
+.rot { transition: transform .2s; flex: none; display: inline-flex; }
+.plegable[open] .rot { transform: rotate(180deg); }
+.plegableCuerpo { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+
+/* ---- Barra inferior (móvil) ---- */
+.barraAbajo { position: fixed; left: 0; right: 0; z-index: 6; background: var(--ev-surface); border-top: 1px solid var(--ev-line); box-shadow: 0 -8px 20px -16px rgba(0, 0, 0, .5); padding: 8px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+.barraAbajoIn { display: flex; align-items: center; gap: 12px; }
+.barraRes { flex: 1; min-width: 0; line-height: 1.25; }
+.resUno { font-family: var(--ev-font-titulo); font-weight: 600; font-size: 18px; margin: 0; }
+.resPareja { font-family: var(--ev-font-titulo); font-weight: 600; font-size: 14px; margin: 0; display: flex; flex-wrap: wrap; gap: 0 10px; }
+.resLinea { font-size: 12px; color: var(--ev-muted); margin: 2px 0 0; }
+.estadoMovil { font-size: 12px; color: var(--ev-muted); margin: 0 0 6px; }
+.guardarMovil { flex: none; }
+
+/* ---- Confirmación y aviso ---- */
+.confirmar { position: fixed; inset: 0; z-index: 50; background: var(--ev-overlay); display: grid; place-items: center; padding: 20px; }
+.confirmarBox { background: var(--ev-surface); color: var(--ev-ink); border: 1px solid var(--ev-line); border-radius: 14px; padding: 20px; max-width: 420px; width: 100%; box-shadow: 0 12px 32px rgba(0, 0, 0, .3); }
+.confirmarBox p { margin: 0 0 16px; font-weight: 500; white-space: pre-line; }
+.confirmarActs { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 40; background: var(--ev-ink); color: var(--ev-bg); border-radius: 14px; padding: 12px 18px; font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .4); max-width: calc(100% - 32px); }
+
+/* ---- Pantallas medianas ---- */
+@media (max-width: 1180px) and (min-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 1fr) 300px; }
+  .dos { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Móvil (< 900 px), prototipo 05 ---- */
+@media (max-width: 899px) {
+  .pantalla { padding-bottom: 96px; }
+  .barra { margin: 0; }
+  .barraIn { padding: 10px 16px; gap: 8px 10px; }
+  .volver { width: 44px; padding: 0; border-radius: 999px; flex: none; }
+  .volverTxt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .quien { flex: 1 1 0; }
+  .quien h1 { font-size: 16px; }
+  .meta { font-size: 13px; }
+  .horaBarra { font-size: 13px; }
+  .reloj { width: 100%; gap: 10px; }
+  .fase { flex: 1; min-width: 0; line-height: 1.25; }
+  .fase b { font-size: 13.5px; }
+  .fase span { font-size: 12px; }
+  .reiniciar { width: 44px; padding: 0; }
+  .reiniciarTxt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .cuerpo { padding: 12px 16px 16px; }
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .col { gap: 12px; }
+  .dos { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dl { grid-template-columns: 82px minmax(0, 1fr); font-size: 13.5px; }
+  .tarjeta { padding: 14px; gap: 10px; }
+  .parte { padding: 14px; }
+  .tParte { font-size: 16px; }
+  .item { grid-template-columns: minmax(0, 1fr); padding: 10px 0; gap: 8px; }
+  .item .seg { display: flex; }
+  .item .seg button { flex: 1; padding: 0 6px; }
+  .porPersona { align-items: stretch; }
+  .persona2 { justify-content: space-between; }
+  .persona2 .seg { flex: 1; }
+  .cierreDos { grid-template-columns: minmax(0, 1fr); }
+  .texto { min-height: 70px; }
+  .lado { position: static; gap: 12px; }
+  .resultado { padding: 14px; }
+  .big { font-size: 22px; }
+  .destacado { min-height: 56px; padding: 12px 14px; }
+  .toast { bottom: 96px; }
+}
+
+/* ---- Paso 4 · Ayudas «?»: título con el botón, aviso de la ruta y nota de la Parte B (ruta básica) ---- */
+.titulo { display: flex; align-items: center; gap: 4px; min-height: 22px; }
+.avisoRuta { font-size: 12.5px; color: var(--ev-muted); margin: 4px 0 0; max-width: 720px; }
+.avisoRutaMovil { display: none; flex-direction: column; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--ev-muted); padding: 10px 12px; border-radius: 9px; background: var(--ev-surface-2); }
+.avisoRutaMovil p { margin: 0; }
+.notaB { font-size: 13px; font-weight: 600; color: var(--ev-ink); margin: -4px 0 8px; }
+@media (max-width: 899px) { .avisoRutaMovil { display: flex; } }

@@ -25,3 +25,6 @@ export const IcoReloj = ({ size = 20 }: P) => svg(size, <><circle cx="12" cy="12
 export const IcoDescargar = ({ size = 18 }: P) => svg(size, <path d="M12 3v12M7 10l5 5 5-5M4 20h16" />);
 export const IcoCamara = ({ size = 18 }: P) => svg(size, <><rect x="2.5" y="6" width="13" height="12" rx="2" /><path d="M15.5 10.5l6-3.5v10l-6-3.5" /></>);
 export const IcoVacio = ({ size = 26 }: P) => svg(size, <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>);
+export const IcoCheck = ({ size = 16 }: P) => svg(size, <><path d="M9 11l3 3 8-8" /><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>);
+export const IcoVolver = ({ size = 18 }: P) => svg(size, <path d="M15 18l-6-6 6-6" />);
+export const IcoReiniciar = ({ size = 18 }: P) => svg(size, <><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></>);

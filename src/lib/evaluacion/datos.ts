@@ -77,6 +77,33 @@ export async function salasDe(asientos: { inicio: Date; mentorId: string }[]): P
   };
 }
 
+/** Monitor a cargo de un bloque: solo nombre y celular (nunca usuario, correo ni otros datos). */
+export type MonitorBloque = { nombre: string; celular: string | null };
+
+/**
+ * Vistas del mentor (solo lectura): monitor de la sala del mentor en la hora de cada asiento, del plan de salas
+ * (día + hora + mentor, la misma clave de `salasDe`, Mi ciudad y las citaciones). Sin monitor en el plan, usuario
+ * inexistente o desactivado → null («Sin monitor»). Solo lee el plan de esos días y mentores.
+ */
+export async function monitoresDe(asientos: { inicio: Date; mentorId: string }[]): Promise<(a: { inicio: Date; mentorId: string }) => MonitorBloque | null> {
+  if (!asientos.length) return () => null;
+  const { planSalas, users } = await collections();
+  const clave = (dia: string, hora: number, mentorId: string) => `${dia}|${hora}|${mentorId}`;
+  const claves = new Set(asientos.map((a) => clave(diaCOL(a.inicio), horaCOL(a.inicio), a.mentorId)));
+  const plan = await planSalas.find(
+    { dia: { $in: [...new Set(asientos.map((a) => diaCOL(a.inicio)))] }, mentorId: { $in: [...new Set(asientos.map((a) => a.mentorId))] } },
+    { projection: { dia: 1, hora: 1, mentorId: 1, monitor: 1 } },
+  ).toArray();
+  const usuarioDe = new Map(plan.filter((x) => x.monitor && claves.has(clave(x.dia, x.hora, x.mentorId))).map((x) => [clave(x.dia, x.hora, x.mentorId), x.monitor!]));
+  const datos = new Map((await users.find({ usuario: { $in: [...new Set(usuarioDe.values())] }, activo: true }, { projection: { usuario: 1, nombre: 1, celular: 1 } }).toArray())
+    .map((u) => [u.usuario, { nombre: u.nombre, celular: u.celular?.trim() || null }]));
+  return (a) => {
+    const u = usuarioDe.get(clave(diaCOL(a.inicio), horaCOL(a.inicio), a.mentorId));
+    const m = u ? datos.get(u) : undefined;
+    return m ? { nombre: m.nombre, celular: m.celular } : null;
+  };
+}
+
 /** Mentores con proyectos (para que coordinación y admin elijan a quién ver). */
 export async function mentoresConProyectos(): Promise<{ id: string; nombre: string }[]> {
   const { asientos, mentores } = await collections();
@@ -90,6 +117,8 @@ export type ResultadoIntegrante = { i: number; nombre: string; res: Resultado; a
 export type FilaEvaluacion = {
   id: string; codigo: string; proyecto: string; ciudad: string; ruta?: Ruta;
   dia: string; inicio: string; mentorId: string; pareja: boolean; sala?: number; enlace?: string;
+  /** Monitor a cargo del bloque (plan de salas); null = «Sin monitor». */
+  monitor: MonitorBloque | null;
   integrantes: ResultadoIntegrante[]; destacado: boolean; borrador: boolean;
 };
 
@@ -115,13 +144,13 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
   const asis = await asientos.find({ proyectoId: { $type: "objectId" }, ...(mentorId ? { mentorId } : {}), ...(filtro.dia ? { dia: filtro.dia } : {}) })
     .sort({ inicio: 1 }).toArray();
   const ids = asis.map((a) => a.proyectoId!);
-  const [lista, evals, notas, borradores, crit, salaDe] = await Promise.all([
+  const [lista, evals, notas, borradores, crit, salaDe, monitorDe] = await Promise.all([
     proyectos.find({ _id: { $in: ids } }).toArray(),
     evalResultados.find({ proyectoId: { $in: ids } }).toArray(),
     evalMonitor.find({ proyectoId: { $in: ids } }).toArray(),
     // El mentor solo ve la marca de SUS borradores (no la de un mentor anterior del proyecto).
     evalBorradores.find({ _id: { $in: ids.map((x) => x.toHexString()) }, ...(!puede(user, "ver_evaluaciones") ? { usuario: user.usuario } : {}) }, { projection: { _id: 1 } }).toArray(),
-    criterios(), salasDe(asis),
+    criterios(), salasDe(asis), monitoresDe(asis),
   ]);
   const porId = new Map(lista.map((p) => [String(p._id), p]));
   const ev = new Map(evals.map((e) => [e._id, e]));
@@ -134,6 +163,7 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
     filas.push({
       id: String(p._id), codigo: p.codigo, proyecto: p.nombre, ciudad: p.ciudad, ...(p.ruta ? { ruta: p.ruta } : {}),
       dia: diaCOL(a.inicio), inicio: a.inicio.toISOString(), mentorId: a.mentorId, pareja: p.integrantes.length > 1, ...salaDe(a),
+      monitor: monitorDe(a),
       integrantes: resultados(p, ev, p._id, crit, nota),
       destacado: p.integrantes.some((x) => ev.get(idEval(p._id, x.documento))?.destacado),
       borrador: conBorrador.has(String(p._id)),
@@ -145,6 +175,8 @@ export async function listaEvaluaciones(user: SessionUser, filtro: { dia?: strin
 export type DetalleEvaluacion = {
   id: string; codigo: string; proyecto: string; descripcion?: string; ciudad: string; ruta?: Ruta;
   dia: string; inicio: string; mentorId: string; editable: boolean; sala?: number; enlace?: string;
+  /** Monitor a cargo del bloque (plan de salas): nombre y celular; null = «Sin monitor». */
+  monitorBloque: MonitorBloque | null;
   /** `monitor`: lo que anotó el monitor de la sala (motivo de inasistencia y observación). */
   integrantes: (ResultadoIntegrante & { documento: string; noPresento: boolean; monitor?: { motivo?: MotivoInasistencia; observacion?: string } })[];
   /** Lo guardado, armado como formulario (A y cierre de quien ya los tenga, como el prototipo). */
@@ -177,11 +209,11 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
   if ("error" in r) return r;
   const { p, asiento, editable } = r;
   const { evalResultados, evalBorradores, evalMonitor } = await collections();
-  const [evals, notas, borrador, crit, salaDe] = await Promise.all([
+  const [evals, notas, borrador, crit, salaDe, monitorDe] = await Promise.all([
     evalResultados.find({ proyectoId: p._id }).toArray(),
     evalMonitor.find({ proyectoId: p._id }).toArray(),
     editable ? evalBorradores.findOne({ _id: String(p._id) }) : null,
-    criterios(), salasDe([asiento]),
+    criterios(), salasDe([asiento]), monitoresDe([asiento]),
   ]);
   const ev = new Map(evals.map((e) => [e._id, e]));
   const nota = new Map(notas.map((n) => [n._id, n]));
@@ -197,6 +229,7 @@ export async function detalleEvaluacion(user: SessionUser, proyectoId: string): 
     id: String(p._id), codigo: p.codigo, proyecto: p.nombre, ...(p.descripcion ? { descripcion: p.descripcion } : {}),
     ciudad: p.ciudad, ...(p.ruta ? { ruta: p.ruta } : {}),
     dia: diaCOL(asiento.inicio), inicio: asiento.inicio.toISOString(), mentorId: asiento.mentorId, editable, ...salaDe(asiento),
+    monitorBloque: monitorDe(asiento),
     integrantes: resultados(p, ev, p._id, crit, nota).map((x, i) => {
       const n = nota.get(idEval(p._id, p.integrantes[i]!.documento));
       const monitor = n && (n.motivo || n.observacion) ? { ...(n.motivo ? { motivo: n.motivo } : {}), ...(n.observacion ? { observacion: n.observacion } : {}) } : undefined;

@@ -417,3 +417,28 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Verificar: `npx vitest run tests/contactoCelular.test.ts tests/contactoMensajes.test.ts tests/contactoBotones.test.ts tests/vistasFormato.test.ts`; npm test 543/543; test:db: 400 pasan, solo las 13 fallas ya anotadas de la fecha fija; typecheck y build. revisor-seguridad: sin altos ni medios; 2 bajos corregidos (emoji partido y fecha inválida) y proyecto recortado a 120. Local: 4 proyectos de la demo cambiados por un rato (Guayaquil 0963976623, Colonia en pareja con proyecto marcador, Panamá 6123-4567, Paysandú +598167992) y devueltos.
 - Pendiente: push y Preview (los hace el usuario).
 
+
+## Vistas del mentor · Paso 1 · Prototipos, inventario y plan (rama feature/vistas-mentores)
+- Commit: `docs: diseño e inventario de las vistas del mentor`. Prototipos copiados a `docs/diseno/vistas-mentores/` («Claude outputs/» en .gitignore); resumen en DISENO-VISTAS-MENTORES.md; inventario de lo que hoy se ve de una evaluación y plan en INVENTARIO-EVALUACION.md; 3 líneas en DECISIONES. Verificado: ni la agenda ni la ficha traen el monitor del bloque → se ampliará la lectura de evaluaciones (solo lectura).
+- Verificar: leer los dos documentos; ningún dato del inventario queda sin lugar.
+- Pendiente: Pasos 2–5.
+
+## Vistas del mentor · Paso 2 · Listas «Mis evaluaciones» y «Evaluaciones»
+- Commit: `feat: listas del mentor y de coordinación con el diseño nuevo`. /mentor con ShellVistas; resumen con barra y «% listo»; filtros Fecha, Estado (+ «Inasistencias sin motivo registrado»), [Ciudad, Mentor], Monitor y buscador en la URL; por día (chip «Hoy») y bloque de sala con «Monitor a cargo» (Llamar/WhatsApp sin texto) y «Abrir sala»; Evaluar/Revisar/Ver; chips por integrante, motivo, destacado y borrador; fondo con estadoFila; sin reloj. Lectura: `monitoresDe` en datos.ts agrega `monitor` a la lista y `monitorBloque` a la ficha (plan de salas; desactivado o sin monitor = null).
+- Verificar: `npx vitest run tests/vistasEvaluaciones.test.ts` (15/15); `npx vitest run --config vitest.db.config.mts tests/monitorBloque.db.test.ts tests/evaluacion.db.test.ts` (23/23); módulo 156/156; typecheck. Local (dev-pruebas, demo): mentor.demo y coordinacion.demo a 1440 y 375.
+- Pendiente: Pasos 3–5 (la pantalla de evaluar sigue con el diseño anterior).
+
+## Vistas del mentor · Paso 3 · Pantalla de evaluar (web y móvil)
+- Commit: `feat: pantalla de evaluar con el diseño nuevo`. EvaluarHoja pasa de ventana a pantalla dentro de /mentor (tope 1440 px): barra fija con Volver, hora COL · UY, ruta y cronómetro (anillo, fase, Iniciar/Pausar/Reanudar, Reiniciar); tarjetas Proyecto y Monitor a cargo (Llamar/WhatsApp, enlace, Abrir sala); «Lo que anotó el monitor»; Partes A y B y Cierre; columna fija con resultado por integrante, «¿Se presentó?» Sí/No (= No se presentó / Deshacer), destacado, Guardar y «Guardada el …». Móvil: proyecto plegable, barra inferior con resumen y «Guardar» que sube con el teclado. Lógica, llamadas, borrador, aviso al salir y cronómetro iguales (diff revisado).
+- Verificar: `npx vitest run tests/vistasEvaluar.test.ts` (11/11); typecheck. Local: guardada en pareja (todo visible), pendiente: borrador a los 2 s, «Faltan N de 7», Volver y Escape piden confirmar; 375 px sin scroll horizontal.
+- Pendiente: Pasos 4 y 5.
+
+## Vistas del mentor · Paso 4 · Ayudas «?» en cada criterio
+- Commit: `feat: ayudas por criterio según la ruta del proyecto`. `AYUDAS` en src/lib/evaluacion/ayudas.ts; `AyudaCriterio` (Ayuda.tsx): botón de 44 px con aria-label «Qué se evalúa en «…»» y aria-expanded, una sola abierta, «Para este proyecto · Ruta …» y «Ver la otra ruta» (sin ruta: las dos); cierra con X, Escape o clic fuera y devuelve el foco. Chip de ruta + aviso en el encabezado; nota de la Parte B en ruta básica.
+- Verificar: `npx vitest run tests/ayudas.test.ts` (10/10). Local: abrir la ayuda no hace peticiones, no marca «Cambios sin guardar» ni toca el cronómetro; Escape cierra solo la ayuda; foco de vuelta al «?»; hoja inferior a 375 px.
+- Pendiente: Paso 5 (cierre).
+
+## Vistas del mentor · Paso 5 · Cierre
+- Commit: `test: paridad, como producción y cierre de las vistas del mentor`. Paridad con la demo (pareja e individual, retroalimentación, destacado, notas del monitor): la pantalla muestra lo guardado y calc() coincide; «como producción»: listas y fichas como mentor, coordinación y admin (con refresco) dejan la base idéntica. Márgenes de párrafos como el prototipo. revisor-seguridad: sin altos ni medios (3 bajos a PENDIENTES). Diff contra main: sin rutas de API, permisos.ts, auth.ts, scripts, db.ts ni types.ts; única lectura nueva `monitoresDe` (datos.ts).
+- Verificar: npm test 579/579; test:db una vez: 407 pasan, 13 fallan (las 7 de la fecha fija del 12-nov, ninguna tocada), evaluacion.db (7 mentores a la vez) completa; typecheck y build bien. Capturas mentores-* en C:\ROFÉ\capturas-vistas.
+- Pendiente: push y Preview (usuario); actualización de seguridad de Next.js que pide el build (decisión del usuario).

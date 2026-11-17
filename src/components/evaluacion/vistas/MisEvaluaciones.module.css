@@ -1,0 +1,41 @@
+/* Vistas del mentor · «Mis evaluaciones» y «Evaluaciones» (prototipos 01, 02 y 04; docs/DISENO-VISTAS-MENTORES.md).
+   Solo variables --ev-*; se apoya en Lista.module.css (grupo, filas, fondos por estado) y Vistas.module.css. */
+
+.filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; padding: 14px 16px; margin-bottom: 18px; }
+.buscarAncho { grid-column: span 2; display: flex; }
+.buscarAncho > div { flex: 1; }
+
+.dia { margin-bottom: 8px; }
+.diaTitulo { font-size: 17px; margin: 6px 0 12px; display: flex; align-items: center; gap: 10px; }
+.diaTituloMovil { font-size: 16px; margin: 14px 0 4px; display: flex; align-items: center; gap: 10px; }
+
+/* Cabecera del bloque: título · monitor a cargo · Abrir sala */
+.ghead { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr) auto; gap: 16px; align-items: center; padding: 14px 16px; background: var(--ev-surface-2); border-bottom: 1px solid var(--ev-line); border-radius: 14px 14px 0 0; }
+.gtitulo { font-size: 17px; }
+.tinta { color: var(--ev-ink); }
+.monitor { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; }
+.monitorTxt { min-width: 0; display: flex; flex-direction: column; font-size: 13.5px; overflow-wrap: anywhere; }
+.monitorTxt b, .monitorCorto b { color: var(--ev-ink); }
+.monitorCorto { min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+
+/* Tabla: acción · hora · participantes y proyecto · resultado */
+.cols { grid-template-columns: 136px minmax(100px, 130px) minmax(0, 2fr) minmax(240px, 1fr); }
+@media (min-width: 2200px) { .cols { grid-template-columns: 136px 140px minmax(0, 900px) minmax(240px, 1fr); } }
+.accion { white-space: nowrap; min-height: 44px; padding: 0 14px; font-size: 13.5px; }
+.celda { min-width: 0; }
+.nombres { font-weight: 600; overflow-wrap: anywhere; }
+.chips { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+
+/* Móvil */
+.gheadMovil { position: sticky; top: 64px; z-index: 3; background: var(--ev-surface-2); border: 1px solid var(--ev-line); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.gheadMovilFila { display: flex; align-items: center; gap: 8px; }
+.gheadMovilFila > .celda { flex: 1; }
+.gtituloMovil { font-size: 15.5px; line-height: 1.25; }
+.btnChico { min-height: 44px; padding: 0 12px; font-size: 13.5px; }
+.tarjeta { gap: 8px; align-items: stretch; }
+.tarjeta .chips { flex-direction: row; flex-wrap: wrap; }
+.nombresMovil { font-weight: 600; font-size: 15.5px; overflow-wrap: anywhere; }
+.accionMovil { width: 100%; }
+
+/* Párrafos sin margen del navegador (como el prototipo). */
+.ghead p, .gheadMovil p, .celda p, .tarjeta p, .monitor p { margin: 0; }
