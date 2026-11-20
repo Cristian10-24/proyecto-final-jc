@@ -11,6 +11,7 @@ import {
   type Borrador, type Criterios, type Formulario, type MotivoInasistencia, type PartesA, type PartesB, type Resultado,
 } from "./criterios";
 import type { EvalMonitor } from "./monitor";
+import { excepcionesDe, monitorEfectivo } from "./monitorEfectivo";
 
 // Evaluación en la base. Una evaluación por integrante (como el prototipo): en pareja la Parte A, el cierre
 // y el destacado se copian a los dos; la Parte B y "No se presentó" son de cada uno.
@@ -85,7 +86,8 @@ export type MonitorBloque = { nombre: string; celular: string | null };
  * (día + hora + mentor, la misma clave de `salasDe`, Mi ciudad y las citaciones). Sin monitor en el plan, usuario
  * inexistente o desactivado → null («Sin monitor»). Solo lee el plan de esos días y mentores.
  */
-export async function monitoresDe(asientos: { inicio: Date; mentorId: string }[]): Promise<(a: { inicio: Date; mentorId: string }) => MonitorBloque | null> {
+type AsientoMonitor = { inicio: Date; mentorId: string; proyectoId?: ObjectId | null };
+export async function monitoresDe(asientos: AsientoMonitor[]): Promise<(a: AsientoMonitor) => MonitorBloque | null> {
   if (!asientos.length) return () => null;
   const { planSalas, users } = await collections();
   const clave = (dia: string, hora: number, mentorId: string) => `${dia}|${hora}|${mentorId}`;
@@ -95,10 +97,12 @@ export async function monitoresDe(asientos: { inicio: Date; mentorId: string }[]
     { projection: { dia: 1, hora: 1, mentorId: 1, monitor: 1 } },
   ).toArray();
   const usuarioDe = new Map(plan.filter((x) => x.monitor && claves.has(clave(x.dia, x.hora, x.mentorId))).map((x) => [clave(x.dia, x.hora, x.mentorId), x.monitor!]));
-  const datos = new Map((await users.find({ usuario: { $in: [...new Set(usuarioDe.values())] }, activo: true }, { projection: { usuario: 1, nombre: 1, celular: 1 } }).toArray())
+  // Monitor efectivo: la excepción del admin para ese proyecto (si sigue vigente) o el del bloque.
+  const excs = await excepcionesDe(asientos);
+  const datos = new Map((await users.find({ usuario: { $in: [...new Set([...usuarioDe.values(), ...[...excs.values()].map((e) => e.monitorId)])] }, activo: true }, { projection: { usuario: 1, nombre: 1, celular: 1 } }).toArray())
     .map((u) => [u.usuario, { nombre: u.nombre, celular: u.celular?.trim() || null }]));
   return (a) => {
-    const u = usuarioDe.get(clave(diaCOL(a.inicio), horaCOL(a.inicio), a.mentorId));
+    const u = monitorEfectivo(a, usuarioDe.get(clave(diaCOL(a.inicio), horaCOL(a.inicio), a.mentorId)) ?? null, a.proyectoId ? excs.get(String(a.proyectoId)) : null).monitor;
     const m = u ? datos.get(u) : undefined;
     return m ? { nombre: m.nombre, celular: m.celular } : null;
   };

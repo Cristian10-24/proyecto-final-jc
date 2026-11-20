@@ -1,4 +1,4 @@
-import { MongoServerError, ObjectId, type Filter } from "mongodb";
+import { MongoServerError, ObjectId, type ClientSession, type Filter } from "mongodb";
 import { ciudadesExplicitas, diasPorCiudad, puedeElegir } from "../agenda";
 import type { SessionUser } from "../auth";
 import { horaCO } from "../ciudades";
@@ -11,6 +11,7 @@ import { puede } from "../permisos";
 import type { Actor, Asiento, Ruta } from "../types";
 import { primerNombre, type MotivoInasistencia } from "./criterios";
 import { criterios, idEval, resultados, salasDe, type ResultadoIntegrante } from "./datos";
+import { excepcionesDe, excepcionesDelMonitor, monitorEfectivo } from "./monitorEfectivo";
 
 // Vista del monitor en las presentaciones (Paso 12). El monitor ve SOLO los proyectos de sus salas asignadas
 // (plan de salas: día, hora y mentor), de cualquier ciudad. Ahí ve el contacto, marca si cada integrante se
@@ -56,11 +57,16 @@ export async function salasDelMonitor(user: SessionUser) {
   return planSalas.find({ monitor: user.usuario }).sort({ dia: 1, hora: 1, sala: 1 }).toArray();
 }
 
-/** ¿El asiento cae en una sala de este monitor? (mismo día, hora y mentor). */
-async function esDeSuSala(user: SessionUser, a: Pick<Asiento, "inicio" | "mentorId">): Promise<boolean> {
+/**
+ * ¿Este monitor es el monitor efectivo del proyecto de este asiento? Con una excepción vigente del admin
+ * (monitorEfectivo), solo el monitor asignado a mano; si no, el de la sala (mismo día, hora y mentor).
+ */
+async function esDeSuSala(user: SessionUser, a: Pick<Asiento, "inicio" | "mentorId" | "proyectoId">, session?: ClientSession): Promise<boolean> {
   if (!puede(user, "monitorear_salas")) return false;
+  const exc = (await excepcionesDe([a], session)).get(String(a.proyectoId));
+  if (exc) return monitorEfectivo(a, null, exc).monitor === user.usuario;
   const { planSalas } = await collections();
-  return !!(await planSalas.findOne({ dia: diaCOL(a.inicio), hora: horaCOL(a.inicio), mentorId: a.mentorId, monitor: user.usuario }, { projection: { _id: 1 } }));
+  return !!(await planSalas.findOne({ dia: diaCOL(a.inicio), hora: horaCOL(a.inicio), mentorId: a.mentorId, monitor: user.usuario }, { projection: { _id: 1 }, ...(session ? { session } : {}) }));
 }
 
 export type IntegranteSala = ResultadoIntegrante & { asistencia: Asistencia | null };
@@ -68,6 +74,8 @@ export type FilaSala = {
   id: string; codigo: string; proyecto: string; ciudad: string; ruta?: Ruta;
   dia: string; inicio: string; mentorId: string; pareja: boolean;
   integrantes: IntegranteSala[]; destacado: boolean; sugerencia: boolean;
+  /** Solo si el admin le asignó este proyecto a mano (excepción vigente): chip «Asignado a mano». */
+  manual?: true;
 };
 export type SalaMonitor = { dia: string; hora: number; inicio: string; sala: number; mentorId: string; mentor: string; enlace?: string };
 
@@ -84,15 +92,29 @@ async function misSugerencias(user: SessionUser): Promise<MiSugerencia[]> {
 }
 
 export async function listaSalas(user: SessionUser): Promise<{ salas: SalaMonitor[]; filas: FilaSala[]; sugerencias: MiSugerencia[] }> {
-  const plan = await salasDelMonitor(user);
+  const suyas = await salasDelMonitor(user);
   const sugerencias = await misSugerencias(user);
-  if (!plan.length) return { salas: [], filas: [], sugerencias };
+  // Proyectos que el admin le asignó a mano (excepción vigente), en el bloque que sea.
+  const mias = puede(user, "monitorear_salas") ? await excepcionesDelMonitor(user.usuario) : [];
+  if (!suyas.length && !mias.length) return { salas: [], filas: [], sugerencias };
   const c = await collections();
   // Asientos ocupados en la hora de cada sala, con el mentor de esa sala.
-  const asis = await c.asientos.find({
+  const deSalas = !suyas.length ? [] : await c.asientos.find({
     proyectoId: { $type: "objectId" },
-    $or: plan.map((p) => ({ mentorId: p.mentorId, inicio: { $gte: inicioUTC(p.dia, p.hora), $lt: inicioUTC(p.dia, p.hora + 1) } })),
+    $or: suyas.map((p) => ({ mentorId: p.mentorId, inicio: { $gte: inicioUTC(p.dia, p.hora), $lt: inicioUTC(p.dia, p.hora + 1) } })),
   }).sort({ inicio: 1 }).toArray();
+  // De sus salas salen los proyectos que el admin asignó a otro monitor; entran los asignados a él.
+  const excs = await excepcionesDe(deSalas);
+  const propios = deSalas.filter((a) => (excs.get(String(a.proyectoId))?.monitorId ?? user.usuario) === user.usuario);
+  const ya = new Set(propios.map((a) => String(a.proyectoId)));
+  const asis = [...propios, ...mias.map((x) => x.asiento).filter((a) => !ya.has(String(a.proyectoId)))].sort((x, y) => x.inicio.getTime() - y.inicio.getTime());
+  const manual = new Set(mias.map((x) => String(x.excepcion.proyectoId)));
+  // La sala real (plan) de cada proyecto asignado a mano, aunque esa sala sea de otro monitor.
+  const clavePlan = (dia: string, hora: number, mentorId: string) => `${dia}|${hora}|${mentorId}`;
+  const enSuyas = new Set(suyas.map((p) => clavePlan(p.dia, p.hora, p.mentorId)));
+  const ajenas = !mias.length ? [] : await c.planSalas.find({ $or: mias.map((x) => ({ dia: diaCOL(x.asiento.inicio), hora: horaCOL(x.asiento.inicio), mentorId: x.asiento.mentorId })) }).toArray();
+  const plan = [...suyas, ...ajenas.filter((p) => !enSuyas.has(clavePlan(p.dia, p.hora, p.mentorId)))]
+    .sort((x, y) => x.dia.localeCompare(y.dia) || x.hora - y.hora || x.sala - y.sala);
   const ids = asis.map((a) => a.proyectoId!);
   const [lista, evals, notas, sugeridos, mentores, crit, salaDe] = await Promise.all([
     c.proyectos.find({ _id: { $in: ids } }).toArray(),
@@ -121,6 +143,7 @@ export async function listaSalas(user: SessionUser): Promise<{ salas: SalaMonito
       integrantes: resultados(p, ev, p._id, crit, nota).map((x, i) => ({ ...x, asistencia: nota.get(idEval(p._id, p.integrantes[i]!.documento))?.asistencia ?? null })),
       destacado: p.integrantes.some((x) => ev.get(idEval(p._id, x.documento))?.destacado),
       sugerencia: conSugerencia.has(String(p._id)),
+      ...(manual.has(String(p._id)) ? { manual: true as const } : {}),
     });
   }
   filas.sort((x, y) => x.inicio.localeCompare(y.inicio) || x.integrantes[0]!.nombre.localeCompare(y.integrantes[0]!.nombre, "es"));
@@ -212,6 +235,8 @@ export async function anotar(user: SessionUser, proyectoId: string, i: number, n
     await transaccion(async (s) => {
       // Sigue en el mismo asiento (y por tanto en su sala); escribir en él choca con una reprogramación simultánea.
       if (!(await c.asientos.findOneAndUpdate({ _id: r.asiento._id, proyectoId: r.p._id }, { $inc: { rev: 1 } }, { session: s, projection: { _id: 1 } }))) throw new FueraDeSala();
+      // Sigue siendo su monitor efectivo: asignar o quitar una excepción también escribe en el asiento, así que choca.
+      if (!(await esDeSuSala(user, r.asiento, s))) throw new FueraDeSala();
       await c.evalMonitor.updateOne({ _id: idEval(r.p._id, x.documento) }, {
         $set: { asistencia: nota.asistencia, motivo, observacion: nota.observacion, actualizadoEn: ahora, actualizadoPor: user.usuario },
         $setOnInsert: { proyectoId: r.p._id, documento: x.documento },
@@ -279,6 +304,8 @@ export async function reprogramar(user: SessionUser, proyectoId: string, asiento
   try {
     // El tope se vuelve a revisar dentro de la transacción (moverProyecto, "respetar"): el monitor no lo pasa.
     await conCandado(async (s) => {
+      // Sigue siendo su monitor efectivo (una excepción del admin escribe en este mismo asiento: choca y se reintenta).
+      if (!(await esDeSuSala(user, viejo, s))) throw new FueraDeSala();
       nuevo = await moverProyecto(s, p._id, viejo._id, [{ _id: new ObjectId(asientoId), ...filtroLibre(p.ciudad, dias, ahora, orden) }], user.usuario, ahora, { tope: "respetar" });
       await c.changeLog.insertOne({
         proyectoId: p._id, accion: "cambiar_hora", anterior: `${etiqueta(viejo.inicio)} · ${viejo.mentorId}`,
@@ -286,6 +313,7 @@ export async function reprogramar(user: SessionUser, proyectoId: string, asiento
       }, { session: s });
     });
   } catch (e) {
+    if (e instanceof FueraDeSala) return { error: "otra_sala" };
     // El proyecto ya tenía hora: "sin_hora" o "sin_proyecto" (Paso 21) solo pasan si alguien lo cambió mientras tanto.
     if (e instanceof Falla) return { error: e.codigo === "sin_cupo" || e.codigo === "ya_evaluado" || e.codigo === "tope" ? e.codigo : "cambio" };
     // Un estudiante reservó ese mismo asiento en el mismo instante.
@@ -305,12 +333,15 @@ export async function sugerirCambio(user: SessionUser, proyectoId: string, detal
   const c = await collections(), ahora = new Date();
   try {
     await transaccion(async (s) => {
+      // Sigue siendo su monitor efectivo (no escribe en el asiento: no se cambia su `rev`).
+      if (!(await esDeSuSala(user, r.asiento, s))) throw new FueraDeSala();
       await c.cambiosSugeridos.insertOne({
         proyectoId: r.p._id, anterior: etiqueta(r.asiento.inicio), detalle, motivo, estado: "pendiente", creadoPor: user.usuario, creadoEn: ahora,
       }, { session: s });
       await c.changeLog.insertOne({ proyectoId: r.p._id, accion: "sugerir_cambio", anterior: etiqueta(r.asiento.inicio), nuevo: detalle, motivo, actor: actorDe(user), fecha: ahora }, { session: s });
     });
   } catch (e) {
+    if (e instanceof FueraDeSala) return { error: "otra_sala" };
     if (e instanceof MongoServerError && e.code === 11000) return { error: "ya_sugerido" };
     throw e;
   }

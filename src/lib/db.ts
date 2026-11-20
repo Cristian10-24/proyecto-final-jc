@@ -1,6 +1,7 @@
 import { MongoClient, type ClientSession, type Db } from "mongodb";
 import type { EvalAnulada, EvalBorrador, EvalConfig, EvalResultado } from "./evaluacion/datos";
 import type { CambioSugerido, EvalMonitor } from "./evaluacion/monitor";
+import type { ExcepcionMonitor } from "./evaluacion/monitorEfectivo";
 import type { FranjaEditada } from "./franjas";
 import type { PlanSala } from "./salas";
 import type { Comentario } from "./comentarios";
@@ -141,6 +142,8 @@ export async function collections() {
     // Fase 5 (colecciones nuevas): citaciones del calendario (índice único propio) y su configuración.
     citaciones: db.collection<RegistroCitacion>("citaciones"),
     citacionesConfig: db.collection<ConfigCitaciones>("citaciones_config"),
+    // Monitor por proyecto (colección nueva y opcional): monitor asignado a mano por el admin para una reserva.
+    monitorExcepciones: db.collection<ExcepcionMonitor>("monitorExcepciones"),
   };
 }
 
@@ -170,6 +173,9 @@ async function ensureIndexes(db: Db) {
     db.collection("comentarios").createIndex({ proyectoId: 1, creadoEn: 1 }),
     // Fase 5: una sola citación por tipo, persona o proyecto y día (colección nueva): nunca se cita dos veces.
     db.collection("citaciones").createIndex({ tipo: 1, clave: 1, dia: 1 }, { unique: true }),
+    // Monitor por proyecto (colección nueva): una sola excepción por proyecto; búsqueda por monitor.
+    db.collection("monitorExcepciones").createIndex({ proyectoId: 1 }, { unique: true }),
+    db.collection("monitorExcepciones").createIndex({ monitorId: 1 }),
     // TTL: Mongo borra cada contador cuando termina su ventana.
     db.collection("rateLimits").createIndex({ expiraEn: 1 }, { expireAfterSeconds: 0 }),
   ]);

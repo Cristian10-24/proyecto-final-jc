@@ -2,12 +2,13 @@
 // navegador; se prueban en tests/vistasBloques.test.ts. Horas en hora Colombia (entero 0–23, como planSalas.hora).
 
 /** Una hora de una sala con al menos un proyecto: quién la cubre y qué proyectos tiene (minuto 0, 15, 30 o 45). */
-export type Celda = { hora: number; sala: number; mentorId: string; monitor: string | null; proyectos: { minuto: number; nombre: string }[] };
+/** `monitor` en un proyecto: solo si el admin le asignó a mano otro monitor (excepción vigente; usuario del monitor). */
+export type Celda = { hora: number; sala: number; mentorId: string; monitor: string | null; proyectos: { minuto: number; nombre: string; monitor?: string }[] };
 
 /** Horas seguidas de la misma sala y mentor (y del mismo monitor). `hasta` es la hora en que termina (exclusiva). */
 export type Bloque = {
   monitor: string | null; sala: number; mentorId: string; desde: number; hasta: number;
-  proyectos: { hora: number; minuto: number; nombre: string }[];
+  proyectos: { hora: number; minuto: number; nombre: string; monitor?: string }[];
 };
 
 /** Une las horas seguidas de la misma sala, mentor y monitor en un bloque, ordenado por hora. */
@@ -16,7 +17,7 @@ export function unirBloques(celdas: readonly Celda[]): Bloque[] {
   const out: Bloque[] = [];
   for (const c of orden) {
     const ult = out.at(-1);
-    const proyectos = [...c.proyectos].sort((x, y) => x.minuto - y.minuto).map((p) => ({ hora: c.hora, minuto: p.minuto, nombre: p.nombre }));
+    const proyectos = [...c.proyectos].sort((x, y) => x.minuto - y.minuto).map((p) => ({ hora: c.hora, minuto: p.minuto, nombre: p.nombre, ...(p.monitor ? { monitor: p.monitor } : {}) }));
     if (ult && ult.monitor === c.monitor && ult.sala === c.sala && ult.mentorId === c.mentorId && ult.hasta === c.hora) {
       ult.hasta = c.hora + 1;
       ult.proyectos.push(...proyectos);
@@ -115,11 +116,12 @@ export function ariaBloque(b: Bloque, mentor: string, sinMargen: boolean): strin
 type PersonaPanel = { nombre: string; celular: string | null };
 export type ContenidoPanel = {
   titulo: string; rango: string; enlace: string | null; enlaceTxt: string | null; sinMargen: boolean;
-  mentor: PersonaPanel; monitor: PersonaPanel | null; proyectos: { hora: string; nombre: string }[];
+  /** `monitor` (nombre) solo en un proyecto con monitor asignado a mano por el admin. */
+  mentor: PersonaPanel; monitor: PersonaPanel | null; proyectos: { hora: string; nombre: string; monitor?: string }[];
 };
 /** Lo que muestra el panel de un bloque. Sin integrantes ni contacto de estudiantes: solo hora y nombre del proyecto. */
 export function contenidoPanel(b: Bloque, ctx: {
-  enlace?: string | null; mentor?: PersonaPanel; monitor?: PersonaPanel | null; sinMargen: boolean;
+  enlace?: string | null; mentor?: PersonaPanel; monitor?: PersonaPanel | null; sinMargen: boolean; nombreMonitor?: (usuario: string) => string;
 }): ContenidoPanel {
   return {
     titulo: `Sala ${b.sala}`, rango: rangoHoras(b.desde, b.hasta),
@@ -127,6 +129,6 @@ export function contenidoPanel(b: Bloque, ctx: {
     sinMargen: ctx.sinMargen,
     mentor: { nombre: ctx.mentor?.nombre ?? b.mentorId, celular: ctx.mentor?.celular ?? null },
     monitor: b.monitor === null ? null : { nombre: ctx.monitor?.nombre ?? b.monitor, celular: ctx.monitor?.celular ?? null },
-    proyectos: b.proyectos.map((p) => ({ hora: horaLarga(p.hora, p.minuto), nombre: p.nombre })),
+    proyectos: b.proyectos.map((p) => ({ hora: horaLarga(p.hora, p.minuto), nombre: p.nombre, ...(p.monitor ? { monitor: ctx.nombreMonitor?.(p.monitor) ?? p.monitor } : {}) })),
   };
 }

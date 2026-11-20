@@ -248,6 +248,7 @@ function Chips({ x }: { x: FilaLista }) {
       ))}
       {x.destacado && <Chip tono="naranja">Destacado</Chip>}
       {x.sugerencia && <Chip tono="mid">Cambio sugerido</Chip>}
+      {x.manual && <Chip tono="borde">Asignado a mano</Chip>}
     </div>
   );
 }

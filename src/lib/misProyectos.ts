@@ -4,7 +4,9 @@ import { datosDelDia } from "./citaciones/registro";
 import { horaCO, horaUY } from "./ciudades";
 import { collections } from "./db";
 import { diaCOL, horaCOL } from "./edicion";
+import { ObjectId } from "mongodb";
 import { salasDelMonitor } from "./evaluacion/monitor";
+import { excepcionesDe, excepcionesDelMonitor, monitorEfectivo } from "./evaluacion/monitorEfectivo";
 import { puede } from "./permisos";
 
 // «Mis proyectos»: lista detallada de los proyectos con hora, de solo lectura.
@@ -21,6 +23,8 @@ export type MiProyecto = {
   sala: number | null; enlace: string | null;
   ciudad: string; proyecto: string;
   integrantes: Contacto[]; mentor: Contacto; monitor: MonitorRef | null;
+  /** Solo si el monitor lo asignó el admin a mano para este proyecto (excepción vigente). */
+  manual?: true;
 };
 export type FiltroMisProyectos = { dia?: string; ciudad?: string; sala?: number; monitor?: string; q?: string };
 export type VistaMisProyectos = {
@@ -48,15 +52,24 @@ export async function proyectosVisibles(user: SessionUser, soloDia?: string): Pr
   } else {
     const plan = await salasDelMonitor(user);
     suyas = new Set(plan.map((p) => `${p.dia}|${p.hora}|${p.mentorId}`));
-    dias = [...new Set(plan.map((p) => p.dia))].sort();
+    // También los días de los proyectos que el admin le asignó a mano.
+    const mias = await excepcionesDelMonitor(user.usuario);
+    dias = [...new Set([...plan.map((p) => p.dia), ...mias.map((x) => diaCOL(x.asiento.inicio))])].sort();
   }
   const lista: MiProyecto[] = [];
   const cargar = soloDia ? dias.filter((d) => d === soloDia) : dias;
   for (const d of await Promise.all(cargar.map((dia) => datosDelDia(dia)))) {
+    // Monitor efectivo: la excepción del admin (si la hay y sigue vigente) o el del bloque.
+    const ref = (b: (typeof d.bloques)[number]) => ({ inicio: b.inicio, mentorId: b.mentorId, proyectoId: new ObjectId(b.proyecto.id) });
+    const excs = await excepcionesDe(d.bloques.map(ref));
+    const faltan = [...new Set([...excs.values()].map((e) => e.monitorId))].filter((u) => !d.monitores[u]);
+    const nombreExtra = !faltan.length ? new Map<string, string>()
+      : new Map((await (await collections()).users.find({ usuario: { $in: faltan } }, { projection: { usuario: 1, nombre: 1 } }).toArray()).map((u) => [u.usuario, u.nombre]));
     for (const b of d.bloques) {
       const hora = horaCOL(b.inicio);
-      if (suyas && !suyas.has(`${d.dia}|${hora}|${b.mentorId}`)) continue;
       const pe = d.plan.find((p) => p.hora === hora && p.mentorId === b.mentorId);
+      const ef = monitorEfectivo(ref(b), pe?.monitor ?? null, excs.get(b.proyecto.id));
+      if (suyas && (ef.manual ? ef.monitor !== user.usuario : !suyas.has(`${d.dia}|${hora}|${b.mentorId}`))) continue;
       const sala = pe?.sala ?? null;
       const m = d.mentores[b.mentorId];
       const p = b.proyecto;
@@ -68,7 +81,8 @@ export async function proyectosVisibles(user: SessionUser, soloDia?: string): Pr
         // Solo nombre y celular: ni documento ni correo.
         integrantes: p.integrantes.map((i) => contacto(i.nombre, i.celular)),
         mentor: contacto(m?.nombre ?? b.mentorId, m?.celular),
-        monitor: pe?.monitor ? { usuario: pe.monitor, nombre: d.monitores[pe.monitor]?.nombre ?? pe.monitor } : null,
+        monitor: ef.monitor ? { usuario: ef.monitor, nombre: d.monitores[ef.monitor]?.nombre ?? nombreExtra.get(ef.monitor) ?? ef.monitor } : null,
+        ...(ef.manual ? { manual: true as const } : {}),
       });
     }
   }

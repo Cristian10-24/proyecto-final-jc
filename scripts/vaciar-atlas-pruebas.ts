@@ -39,6 +39,7 @@ async function main() {
     rateLimits: "Límites de intentos", users: "Usuarios",
     ajustes: "Ajustes (modo orden de llegada)", candadosCupo: "Candados de cupo por ciudad y día", sinProyecto: "Participantes sin proyecto", comentarios: "Comentarios de seguimiento",
     citaciones: "Citaciones del calendario", citacionesConfig: "Configuración de citaciones",
+    monitorExcepciones: "Monitores asignados a mano por proyecto",
   };
   const resumen: { coleccion: string; borrados: number }[] = [];
   for (const k of Object.keys(nombres) as (keyof typeof c)[]) {

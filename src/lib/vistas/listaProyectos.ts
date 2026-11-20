@@ -19,6 +19,8 @@ export type FilaLista = {
   ciudad: string; ruta?: string; proyecto: string; sala: number | null; enlace: string | null;
   mentorId: string; mentor: { nombre: string; celular: string | null }; monitor: MonitorRef | null;
   integrantes: IntegranteLista[]; destacado: boolean; sugerencia: boolean;
+  /** Solo si el admin asignó a mano el monitor de este proyecto (chip «Asignado a mano»). */
+  manual?: true;
 };
 
 const horaTxtDe = (iso: string) => {
@@ -32,6 +34,7 @@ export function desdeMisProyectos(mis: readonly MiProyecto[]): FilaLista[] {
     id: p.id, codigo: p.codigo, dia: p.dia, inicio: p.inicio, hora: horaCOL(new Date(p.inicio)), horaTxt: p.horaCOL, horaUY: p.horaUY,
     ciudad: p.ciudad, proyecto: p.proyecto, sala: p.sala, enlace: p.enlace, mentorId: "", mentor: p.mentor, monitor: p.monitor,
     integrantes: p.integrantes.map((i) => ({ nombre: i.nombre, celular: i.celular })), destacado: false, sugerencia: false,
+    ...(p.manual ? { manual: true as const } : {}),
   }));
 }
 
@@ -55,6 +58,7 @@ export function unirLecturas(filas: readonly FilaSala[], salas: readonly SalaMon
         nombre: x.nombre, celular: m?.integrantes[k]?.celular ?? null, res: x.res, asistencia: x.asistencia, ...(x.motivo ? { motivo: x.motivo } : {}),
       })),
       destacado: f.destacado, sugerencia: f.sugerencia,
+      ...(f.manual ? { manual: true as const } : {}),
     };
   }).sort((a, b) => a.inicio.localeCompare(b.inicio) || a.proyecto.localeCompare(b.proyecto, "es"));
 }

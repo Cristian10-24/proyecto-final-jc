@@ -3,6 +3,7 @@ import { diaCOL, horaCOL } from "../edicion";
 import { diaPorDefecto } from "../misProyectos";
 import { FILTRO_MONITOR } from "../permisos";
 import { esHttps } from "../planSalas";
+import { excepcionesDe } from "../evaluacion/monitorEfectivo";
 import type { Celda } from "./bloques";
 
 // Fase 6 · «Monitores» (coordinación y admin, solo lectura): el plan de salas de un día con sus proyectos actuales.
@@ -33,10 +34,13 @@ export async function asignacionesMonitores(pedido?: string, hoy = diaCOL(new Da
   ]);
   const nombres = new Map((await c.proyectos.find({ _id: { $in: asis.map((a) => a.proyectoId!) } }, { projection: { nombre: 1 } }).toArray())
     .map((p) => [String(p._id), p.nombre]));
-  const porHora = new Map<string, { minuto: number; nombre: string }[]>();
+  // Monitor por proyecto: el proyecto con una excepción vigente del admin lleva `monitor` (su usuario); los demás no.
+  const excs = await excepcionesDe(asis);
+  const porHora = new Map<string, { minuto: number; nombre: string; monitor?: string }[]>();
   for (const a of asis) {
     const k = `${horaCOL(a.inicio)}|${a.mentorId}`;
-    porHora.set(k, [...(porHora.get(k) ?? []), { minuto: a.inicio.getUTCMinutes(), nombre: nombres.get(String(a.proyectoId)) ?? "Proyecto" }]);
+    const e = excs.get(String(a.proyectoId));
+    porHora.set(k, [...(porHora.get(k) ?? []), { minuto: a.inicio.getUTCMinutes(), nombre: nombres.get(String(a.proyectoId)) ?? "Proyecto", ...(e ? { monitor: e.monitorId } : {}) }]);
   }
   const celdas: Celda[] = [];
   for (const p of plan) {
@@ -44,12 +48,12 @@ export async function asignacionesMonitores(pedido?: string, hoy = diaCOL(new Da
     if (!proyectos?.length) continue;
     celdas.push({
       hora: p.hora, sala: p.sala, mentorId: p.mentorId, monitor: p.monitor ?? null,
-      proyectos: proyectos.sort((x, y) => x.minuto - y.minuto).map((x) => ({ minuto: x.minuto, nombre: x.nombre })),
+      proyectos: proyectos.sort((x, y) => x.minuto - y.minuto).map((x) => ({ minuto: x.minuto, nombre: x.nombre, ...(x.monitor ? { monitor: x.monitor } : {}) })),
     });
   }
   celdas.sort((x, y) => x.hora - y.hora || x.sala - y.sala);
 
-  const usuarios = [...new Set(celdas.flatMap((x) => (x.monitor ? [x.monitor] : [])))];
+  const usuarios = [...new Set(celdas.flatMap((x) => [...(x.monitor ? [x.monitor] : []), ...x.proyectos.flatMap((p) => (p.monitor ? [p.monitor] : []))]))];
   const mentorIds = [...new Set(celdas.map((x) => x.mentorId))];
   const [mons, ments] = await Promise.all([
     c.users.find({ $and: [FILTRO_MONITOR, { usuario: { $in: usuarios } }] }, { projection: { usuario: 1, nombre: 1, celular: 1 } }).toArray(),
