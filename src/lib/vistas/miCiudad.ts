@@ -4,6 +4,7 @@ import { collections } from "../db";
 import { diaCOL, horaCOL } from "../edicion";
 import { calc } from "../evaluacion/criterios";
 import { criterios, idEval, salasDe } from "../evaluacion/datos";
+import { excepcionesDe, monitorEfectivo } from "../evaluacion/monitorEfectivo";
 
 // Fase 6 · «Mi ciudad» (monitor, solo lectura): los proyectos de SUS ciudades que ya tienen día y hora (los que no
 // tienen hora no aparecen; tampoco los «Sin proyecto»), de todos los días, con SOLO el estado de cada integrante.
@@ -63,8 +64,11 @@ export async function miCiudad(user: Pick<SessionUser, "ciudades">, pedida?: str
   // Monitor de la sala a esa hora: el del plan de salas (día + hora + mentor), con su nombre.
   const claves = new Set(asis.map((a) => `${diaCOL(a.inicio)}|${horaCOL(a.inicio)}|${a.mentorId}`));
   const monitorDe = new Map(plan.filter((x) => x.monitor && claves.has(`${x.dia}|${x.hora}|${x.mentorId}`)).map((x) => [`${x.dia}|${x.hora}|${x.mentorId}`, x.monitor!]));
+  // Monitor efectivo: la excepción del admin para ese proyecto (si sigue vigente) o el del bloque.
+  const excs = await excepcionesDe(asis);
+  const efectivo = (a: (typeof asis)[number]) => monitorEfectivo(a, monitorDe.get(`${diaCOL(a.inicio)}|${horaCOL(a.inicio)}|${a.mentorId}`) ?? null, excs.get(String(a.proyectoId))).monitor;
   // Solo el nombre; un monitor desactivado o sin usuario sale como «Sin monitor».
-  const nombres = new Map((await users.find({ usuario: { $in: [...new Set(monitorDe.values())] }, activo: true }, { projection: { usuario: 1, nombre: 1 } }).toArray())
+  const nombres = new Map((await users.find({ usuario: { $in: [...new Set([...monitorDe.values(), ...[...excs.values()].map((e) => e.monitorId)])] }, activo: true }, { projection: { usuario: 1, nombre: 1 } }).toArray())
     .map((u) => [u.usuario, u.nombre]));
   const porId = new Map(lista.map((p) => [String(p._id), p]));
   const ev = new Map(evals.map((e) => [e._id, e]));
@@ -89,7 +93,7 @@ export async function miCiudad(user: Pick<SessionUser, "ciudades">, pedida?: str
       inicio: a.inicio.toISOString(),
       hora: horaCO(a.inicio),
       sala: salaDe(a).sala ?? null,
-      monitor: (() => { const u = monitorDe.get(`${diaCOL(a.inicio)}|${horaCOL(a.inicio)}|${a.mentorId}`); return u ? nombres.get(u) ?? null : null; })(),
+      monitor: (() => { const u = efectivo(a); return u ? nombres.get(u) ?? null : null; })(),
       estado: estadoProyecto(integrantes.map((x) => x.estado)),
       integrantes,
     });

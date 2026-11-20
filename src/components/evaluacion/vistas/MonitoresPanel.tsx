@@ -13,6 +13,7 @@ import { Acordeon, Avatar, BotonesLlamar, Buscador, Chip, Segmentado, Selector, 
 import { BarraMovil, HojaFiltros, PanelLateral, type CampoFiltro } from "./Dialogos";
 import { Cargando, ErrorCarga, Vacio } from "./Estados";
 import { IcoAlerta, IcoDescargar, IcoReloj } from "./Iconos";
+import { MonitorDeProyecto, useMonitorProyecto } from "./MonitorProyecto";
 import ShellVistas from "./ShellVistas";
 import m from "./Monitores.module.css";
 import v from "./Vistas.module.css";
@@ -20,7 +21,8 @@ import v from "./Vistas.module.css";
 // Fase 6 · «Monitores» (coordinación y admin, solo lectura; prototipos 05/06): en qué sala está cada monitor, con qué
 // mentor y a qué hora. Alertas de salas sin monitor y de cambios de sala sin margen; «Ver como» Cuadrícula, Por monitor
 // o Por sala (se recuerda en el navegador); panel lateral al tocar un bloque de la cuadrícula. «Descargar plan de
-// salas», «Cambiar en Salas» e «Ir a Salas» solo para el admin (es quien tiene Salas). Nada escribe.
+// salas», «Cambiar en Salas» e «Ir a Salas» solo para el admin (es quien tiene Salas). Lo único que escribe: el admin
+// puede asignar a mano el monitor de un proyecto desde el panel del bloque (MonitorProyecto.tsx).
 
 type Ver = "cuadricula" | "monitor" | "sala";
 const CLAVE_VER = "pfjc-monitores-ver";
@@ -239,8 +241,8 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
           onAplicar={({ dia: d, ...resto }) => { setF({ ...POR_DEFECTO, ...resto }); if (d && d !== diaSel) cambiarDia(d); }} />
       )}
       {bloqueAbierto && diaSel && (
-        <PanelBloque dia={diaSel} admin={admin} onCerrar={() => setAbierto(null)}
-          c={contenidoPanel(bloqueAbierto, { enlace: enlace.get(bloqueAbierto.sala), mentor: men.get(bloqueAbierto.mentorId), monitor: bloqueAbierto.monitor ? mon.get(bloqueAbierto.monitor) : null, sinMargen: esSinMargen(bloqueAbierto) })} />
+        <PanelBloque dia={diaSel} admin={admin} onCerrar={() => setAbierto(null)} b={bloqueAbierto} onCambio={() => void cargar(dia)}
+          c={contenidoPanel(bloqueAbierto, { enlace: enlace.get(bloqueAbierto.sala), mentor: men.get(bloqueAbierto.mentorId), monitor: bloqueAbierto.monitor ? mon.get(bloqueAbierto.monitor) : null, sinMargen: esSinMargen(bloqueAbierto), nombreMonitor: (u) => mon.get(u)?.nombre ?? u })} />
       )}
     </ShellVistas>
   );
@@ -327,7 +329,13 @@ function PorSala({ bloques, nombreMon, nombreMen, esSinMargen, onAbrir }: { bloq
 
 /** Ajuste 4 · Panel único del bloque (diseño 3a): el mismo desde Cuadrícula, Por monitor y Por sala. En el celular es
  *  una hoja inferior (prototipo 06). Cierra con la X, Escape o el fondo; el foco vuelve al botón que lo abrió. */
-function PanelBloque({ c, dia, admin, onCerrar }: { c: ContenidoPanel; dia: string; admin: boolean; onCerrar: () => void }) {
+function PanelBloque({ c, b, dia, admin, onCerrar, onCambio }: { c: ContenidoPanel; b: Bloque; dia: string; admin: boolean; onCerrar: () => void; onCambio: () => void }) {
+  // Monitor por proyecto: solo el admin ve «Cambiar» (datos de su propia ruta); sin excepción, los demás ven lo de siempre.
+  const { datos: adm, recargar } = useMonitorProyecto(dia, admin);
+  const delAdmin = (i: number) => {
+    const p = b.proyectos[i];
+    return p ? adm?.proyectos.find((x) => x.mentorId === b.mentorId && x.hora === p.hora && x.minuto === p.minuto) : undefined;
+  };
   return (
     <PanelLateral subtitulo={fechaLarga(dia)} titulo={c.titulo} onCerrar={onCerrar}>
       <p className={m.rangoPanel}>{c.rango}</p>
@@ -359,7 +367,18 @@ function PanelBloque({ c, dia, admin, onCerrar }: { c: ContenidoPanel; dia: stri
         <div>
           <span className={v.lbl}>{plural(c.proyectos.length, "proyecto del bloque", "proyectos del bloque")}</span>
           <ul className={m.listaProy}>
-            {c.proyectos.map((p, i) => <li key={i}><b>{p.hora}</b><span>{p.nombre}</span></li>)}
+            {c.proyectos.map((p, i) => {
+              const pa = admin ? delAdmin(i) : undefined;
+              if (!p.monitor && !pa) return <li key={i}><b>{p.hora}</b><span>{p.nombre}</span></li>;
+              return (
+                <li key={i}><b>{p.hora}</b>
+                  <div><span>{p.nombre}</span>
+                    <MonitorDeProyecto nombre={p.monitor ?? c.monitor?.nombre ?? null} manual={!!p.monitor}
+                      admin={pa && adm ? { p: pa, monitores: adm.monitores, onCambio: () => { void recargar(); onCambio(); } } : undefined} />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

@@ -37,6 +37,8 @@ export type ChangeLog = {
     | "modo_cupos" | "sin_proyecto" | "quitar_sin_proyecto"
     /** Paso 26 · El admin agregó o quitó roles adicionales a un usuario. */
     | "roles_usuario"
+    /** Monitor por proyecto: el admin asignó o quitó a mano el monitor de un proyecto (colección monitorExcepciones). */
+    | "monitor_proyecto"
     /** Fase 5 · Citaciones del calendario (solo documentos nuevos). */
     | "citar" | "actualizar_citacion" | "cancelar_citacion" | "marcar_citado" | "texto_citacion";
   anterior?: string;

@@ -100,3 +100,11 @@
 .panel .listaProy li + li { border-top: 1px solid var(--ev-line); }
 .panel .listaProy li span { font-weight: 600; }
 .panel .listaProy b { font-size: 14px; }
+
+/* Monitor por proyecto (panel del bloque): «Monitor: [nombre] · Cambiar» y el formulario del admin. */
+.panel .listaProy li .monProy, .panel .listaProy li .monProy span { font-weight: 400; }
+.monProy { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.monProy b { font-family: inherit; font-size: inherit; color: var(--ev-ink); font-weight: 600; }
+.enlaceBtn { appearance: none; border: 0; background: none; padding: 0; min-height: 24px; color: var(--ev-orange-ink); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.monProyForm { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--ev-line); border-radius: 12px; background: var(--ev-surface-2); }
+.monProyAcc { display: flex; flex-wrap: wrap; gap: 8px; }

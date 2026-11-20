@@ -7,6 +7,7 @@ import { diaCOL, horaCOL } from "./edicion";
 import { enmascararNumero } from "./estudiante";
 import { conteoComentarios } from "./comentarios";
 import { sinFormula } from "./evaluacion/resultados";
+import { excepcionesDe, monitorEfectivo } from "./evaluacion/monitorEfectivo";
 import { modoOrdenLlegada, resumenModo } from "./modoCupos";
 import type { Integrante, Proyecto } from "./types";
 import { FILTRO_MONITOR } from "./permisos";
@@ -121,6 +122,8 @@ export async function cronogramaExcel({ datosPersonales = false }: { datosPerson
   // Sala por día + hora (Colombia) + mentor, como en el plan de salas; enlace solo si es https (como en la pantalla de salas).
   const salaDe = new Map((await planSalas.find({}).toArray()).map((s) => [`${s.dia}|${s.hora}|${s.mentorId}`, s.sala]));
   const enlaceDe = new Map(((await salasConfig.findOne({ _id: "actual" }))?.salas ?? []).filter((s) => esHttps(s.enlace)).map((s) => [s.sala, s.enlace]));
+  // Monitor por proyecto: si el admin asignó uno a mano para la reserva actual, la columna Monitor muestra ese.
+  const excs = await excepcionesDe(ocupados);
   const avisos: (string | number)[][] = [];
 
   const wb = new ExcelJS.Workbook();
@@ -147,9 +150,10 @@ export async function cronogramaExcel({ datosPersonales = false }: { datosPerson
       if (sala === undefined || !enlace)
         avisos.push([diaLargo(dia), horaCO(a.inicio), mentor, sala ?? "", sinFormula(p?.nombre ?? ""), sinFormula(p?.codigo ?? ""), p?.ciudad ?? "",
           sala === undefined ? "Sin sala en el plan de salas" : "Sin enlace de sala"]);
+      const mon = monitorEfectivo(a, p?.monitor ?? null, excs.get(String(a.proyectoId))).monitor;
       ws.addRow([
         diaLargo(dia), horaCO(a.inicio), p && uruguay.has(p.ciudad) ? horaUY(a.inicio) : "", mentor, sala ?? "", sinFormula(enlace),
-        p?.monitor ? sinFormula(nombresMonitor.get(p.monitor) ?? p.monitor) : "Por asignar", p?.ciudad ?? "", sinFormula(p?.nombre ?? ""), sinFormula(p?.codigo ?? ""),
+        mon ? sinFormula(nombresMonitor.get(mon) ?? mon) : "Por asignar", p?.ciudad ?? "", sinFormula(p?.nombre ?? ""), sinFormula(p?.codigo ?? ""),
         ...datos(i1), ...datos(i2),
       ]);
     }

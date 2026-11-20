@@ -7,6 +7,7 @@ import { sinProyectoPorCiudad, type SinProyectoCiudad } from "../sinProyecto";
 import type { Actor, Asiento, Proyecto } from "../types";
 import { calc, CRITERIOS_DEFECTO, ITEMS_A, TEMAS_B, type Criterios } from "./criterios";
 import { criterios, idEval } from "./datos";
+import { excepcionesDe, monitorEfectivo } from "./monitorEfectivo";
 import { mensajeEstudiante, SIN_MENTOR, SIN_MONITOR, tablero, type FilaEstudiante, type Tablero } from "./tablero";
 
 // Seguimiento general (Paso 15) en la base: coordinación y admin. Una fila por estudiante de todos los proyectos
@@ -31,7 +32,9 @@ export async function filasEstudiantes(filtro: FiltroSeguimiento = {}): Promise<
     c.planSalas.find(filtro.dia ? { dia: filtro.dia } : {}).toArray(),
     c.mentores.find({}, { projection: { nombre: 1 } }).toArray(),
   ]);
-  const usuarios = await c.users.find({ usuario: { $in: [...new Set(plan.map((p) => p.monitor).filter((m): m is string => !!m))] } }, { projection: { usuario: 1, nombre: 1 } }).toArray();
+  // Monitor efectivo: la excepción del admin para ese proyecto (si sigue vigente) o el de la sala.
+  const excs = await excepcionesDe(asientos);
+  const usuarios = await c.users.find({ usuario: { $in: [...new Set([...plan.map((p) => p.monitor), ...[...excs.values()].map((e) => e.monitorId)].filter((m): m is string => !!m))] } }, { projection: { usuario: 1, nombre: 1 } }).toArray();
   const ev = new Map(evals.map((e) => [e._id, e])), nota = new Map(notas.map((n) => [n._id, n]));
   const sala = new Map(plan.map((p) => [`${p.dia}|${p.hora}|${p.mentorId}`, p]));
   const nombreMentor = new Map(mentores.map((m) => [m._id, m.nombre])), nombreUsuario = new Map(usuarios.map((u) => [u.usuario, u.nombre]));
@@ -39,6 +42,7 @@ export async function filasEstudiantes(filtro: FiltroSeguimiento = {}): Promise<
   for (const p of proyectos) {
     const a = porProyecto.get(String(p._id));
     const s = a ? sala.get(`${diaCOL(a.inicio)}|${horaCOL(a.inicio)}|${a.mentorId}`) : undefined;
+    const mon = a ? monitorEfectivo(a, s?.monitor ?? null, excs.get(String(p._id))).monitor : null;
     p.integrantes.forEach((x, i) => {
       const k = idEval(p._id, x.documento), e = ev.get(k), n = nota.get(k), otro = p.integrantes[1 - i];
       filas.push({
@@ -47,7 +51,7 @@ export async function filasEstudiantes(filtro: FiltroSeguimiento = {}): Promise<
         proyecto: p.nombre, descripcion: p.descripcion ?? "",
         dia: a ? diaCOL(a.inicio) : null, hora: a ? horaCO(a.inicio) : "", sala: s?.sala ?? null,
         mentor: a ? nombreMentor.get(a.mentorId) ?? a.mentorId : SIN_MENTOR,
-        monitor: s?.monitor ? nombreUsuario.get(s.monitor) ?? s.monitor : SIN_MONITOR,
+        monitor: mon ? nombreUsuario.get(mon) ?? mon : SIN_MONITOR,
         ev: e ? { a: e.a, b: e.b, noPresento: e.noPresento, destacado: e.destacado, fortaleza: e.fortaleza, mejora: e.mejora, percepcion: e.percepcion } : null,
         motivo: n?.motivo ?? null, observacion: n?.observacion ?? "",
       });
