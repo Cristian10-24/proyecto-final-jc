@@ -472,3 +472,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: resultados, inasistencias, mentores y criterios del Seguimiento v2`. Resultados: radar + barras ordenadas (rojo y ⚠ bajo 60 %), balas por tema (meta 2), Ciudad × Tema (▼ bajo la meta), burbujas + tabla con mini barras, dumbbell Ruta y Modalidad (círculo/cuadrado), parejas al 100 %, listas Destacados y Excelentes (buscador, orden, «Ver más»). Inasistencias: aviso, motivos (+ «Sin motivo todavía»), por ciudad como hoy, por monitor con/sin motivo, lista y «Sin agendar» (sin día ni hora + «Sin proyecto»). Mentores: dispersión con medianas y ⚠ atípico + aviso de hoy, listas por mentor y por monitor. Criterios: igual que hoy + vista previa y «Deshacer cambios».
 - Verificar: local (demo, coordinacion.demo) las tres secciones sin errores de consola; typecheck; npm test 608/608.
 - Pendiente: Pasos 6 y 7.
+
+## Seguimiento v2 · Paso 6 · Celular
+- Commit: `feat: Seguimiento v2 en el celular`. Bajo 900 px (corte de las vistas nuevas): ☰ de ShellVistas, barra fija con «Filtros (n)» (hoja inferior con Día, Ciudad, Ruta, Modalidad y Buscar; «Limpiar» y «Aplicar (n)»), «Contar por» y chips deslizables; radar → barras, dispersión → lista ordenada, Ciudad × Tema como tabla con colores, listas y ciudades en tarjetas; reporte apilado con la vista previa de la imagen. Gutter de 16 px en el contenido; enlace «Sin agendar» con área táctil ampliada.
+- Verificar: local a 375 × 812: las seis sub-secciones sin scroll horizontal, sin radar y con tarjetas; botones ≥ 44 px; aplicar Medellín en la hoja deja `?ciudad=Medellín` y «8 estudiantes agendados (6 proyectos)».
+- Pendiente: Paso 7 (cierre).
