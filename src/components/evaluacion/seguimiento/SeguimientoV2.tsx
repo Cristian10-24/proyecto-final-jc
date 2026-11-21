@@ -70,6 +70,12 @@ export default function SeguimientoV2({ user }: { user: SessionUser }) {
     return () => o.disconnect();
   }, []);
 
+  // Celular: el chip de la sección activa siempre a la vista.
+  useEffect(() => {
+    const ch = raiz.current?.querySelector<HTMLElement>(`.${s.chips} [aria-current="page"]`), c = ch?.parentElement;
+    if (ch && c && (ch.offsetLeft < c.scrollLeft || ch.offsetLeft + ch.offsetWidth > c.scrollLeft + c.clientWidth)) c.scrollLeft = ch.offsetLeft - 16;
+  }, [e.seccion, movil]);
+
   const set = (p: Partial<EstadoUrl>) => setE((x) => ({ ...x, ...p }));
   const irSinAgendar = () => { set({ seccion: "inasistencias" }); setTimeout(() => document.getElementById("sin-agendar")?.scrollIntoView({ block: "start" }), 60); };
   const rep = e.seccion === "reporte", nf = nFiltros(e);

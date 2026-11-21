@@ -100,6 +100,8 @@ const comentar: [string, () => Promise<Response>][] = [
 const soloCoordinacion: [string, () => Promise<Response>][] = [
   ["ver el seguimiento general", async () => (await import("@/app/api/evaluacion/seguimiento/route")).GET(new Request("http://localhost/x"))],
   ["descargar el Excel de resultados", async () => (await import("@/app/api/evaluacion/seguimiento/excel/route")).GET(new Request("http://localhost/x"))],
+  // Seguimiento v2: reporte del día (solo lectura).
+  ["ver el reporte del día", async () => (await import("@/app/api/evaluacion/seguimiento/reporte/route")).GET(new Request("http://localhost/x"))],
   ["guardar los criterios", async () => (await import("@/app/api/evaluacion/criterios/route")).POST(json("POST", { exA: 0.9, exB: 3 }))],
   // Paso 24: carga de los mentores (solo lectura) y su Excel.
   ["ver la carga de los mentores", async () => (await import("@/app/api/admin/carga-mentores/route")).GET(new Request("http://localhost/x"))],
@@ -231,8 +233,15 @@ describe("Criterios: POST desde otro origen y validación", () => {
       expect((await POST(json("POST", body))).status).toBe(400);
     expect((await POST(new Request("http://localhost/x", { method: "POST", body: "no es json" }))).status).toBe(400);
     const { GET } = await import("@/app/api/evaluacion/seguimiento/route");
-    for (const q of ["dia=12-11-2026", "ciudad=Narnia", "dia=2026-11-12&otro=1"])
+    for (const q of ["dia=12-11-2026", "ciudad=Narnia", "dia=2026-11-12&otro=1", "ruta=Media", "modalidad=trio", "modo=todos", `q=${"x".repeat(61)}`])
       expect((await GET(new Request(`http://localhost/x?${q}`))).status).toBe(400);
+    // Seguimiento v2 · el reporte del día es oficial: solo acepta el día (ni ciudad, ni ruta, ni «Contar por»).
+    const rep = (await import("@/app/api/evaluacion/seguimiento/reporte/route")).GET;
+    for (const q of ["dia=21-11-2026", "ciudad=Cali", "ruta=Básica", "modalidad=pareja", "modo=proy", "q=ana"])
+      expect((await rep(new Request(`http://localhost/x?${q}`))).status).toBe(400);
+    // El Excel sigue aceptando solo día y ciudad, como antes.
+    const xl = (await import("@/app/api/evaluacion/seguimiento/excel/route")).GET;
+    for (const q of ["ruta=Básica", "modo=proy", "q=ana"]) expect((await xl(new Request(`http://localhost/x?${q}`))).status).toBe(400);
   });
 });
 

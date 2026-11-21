@@ -43,7 +43,7 @@ export default function Reporte({ repDia, onDia, movil }: { repDia: string; onDi
 
   const cargar = useCallback(async () => {
     try {
-      const res = await fetch(`/api/evaluacion/seguimiento/reporte${dia ? `?dia=${dia}` : ""}`, { cache: "no-store" });
+      const res = await fetch(`/api/evaluacion/seguimiento/reporte${dia ? `?dia=${encodeURIComponent(dia)}` : ""}`, { cache: "no-store" });
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
       const x: R = await res.json();

@@ -75,3 +75,27 @@ describe("reporte del día (escena 16:9)", () => {
     expect(textoNoPresentados({ ...R, p: { ...R.p, nsp: 0, nspIndividual: 0 } })).toBe("No presentados: 0");
   });
 });
+
+describe("dibujar() y render del reporte", () => {
+  it("el canvas de la imagen queda en 3840 × 2160 y dibuja toda la escena", async () => {
+    const { dibujar } = await import("@/components/evaluacion/seguimiento/escenaReporte");
+    let llamadas = 0;
+    const ctx = new Proxy({ measureText: () => ({ width: 10 }) } as Record<string, unknown>, { get: (o, k) => (k in o ? o[k as string] : () => { llamadas++; }), set: () => true });
+    const cv = { width: 0, height: 0, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    (globalThis as Record<string, unknown>).Path2D ??= class {};
+    dibujar(escena(R, "2026-11-21"), cv);
+    expect([cv.width, cv.height]).toEqual([3840, 2160]);
+    expect(llamadas).toBeGreaterThan(30);
+  });
+  it("Reporte.tsx se renderiza con el selector de día y «Descargar imagen» (escritorio y celular)", async () => {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const Reporte = (await import("@/components/evaluacion/seguimiento/Reporte")).default;
+    for (const movil of [false, true]) {
+      const h = renderToStaticMarkup(createElement(Reporte, { repDia: "2026-11-20", onDia: () => {}, movil }));
+      expect(h).toContain("Día del reporte");
+      expect(h).toContain("Descargar imagen");
+      expect(h).toContain("3840 × 2160 px");
+    }
+  });
+});
