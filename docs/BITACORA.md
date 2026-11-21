@@ -452,3 +452,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `docs: diseño, inventario y plan del Seguimiento general v2`. Prototipos (estaban en Descargas) copiados a «Claude outputs/seguimiento-html/» y versionados en `docs/diseno/seguimiento/`; DISENO-SEGUIMIENTO.md (seis sub-secciones, textos, celular); INVENTARIO-SEGUIMIENTO.md (todo lo de hoy tiene lugar; plan, lecturas ampliadas, riesgos); 5 líneas en DECISIONES (regla de conteo «solo agendados», reglas por proyecto, reporte del día). Sin librería de gráficos hoy: SVG propio, cero dependencias.
 - Verificar: leer los tres documentos; ninguna fila del inventario queda sin destino. Sin cambios de código.
 - Pendiente: los pasos siguientes (el mensaje del usuario llegó cortado después del Paso 1).
+
+## Seguimiento v2 · Paso 2 · Cálculos (funciones puras con pruebas)
+- Commit: `feat: cálculos del Seguimiento v2 con la regla de conteo y Contar por`. `src/lib/evaluacion/seguimientoV2.ts` (unidades por estudiante y por proyecto, cuentas, por día con acumulado, Ciudad × Tema, grupos, monitores, mentores con atípico robusto, sin agendar, reporte del día); en resultados.ts `seguimientoV2`, `cuposHoy` y `reporteDia` (solo lectura). Listas solo del modo pedido.
+- Verificar: `npx vitest run tests/seguimientoV2.test.ts` (18/18: paridad con tablero() menos Sin agendar, sumas, pareja una vez, reglas por proyecto, 111,7 KB con 688 estudiantes); `npx vitest run --config vitest.db.config.mts tests/seguimientoV2.db.test.ts` (7/7 con la demo: paridad con v1, reporte = lógica del enviado, 20,6 KB). npm test 599/599, typecheck.
+- Pendiente: Pasos 3–7 (aún sin pantalla ni ruta nueva).
