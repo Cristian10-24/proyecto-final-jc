@@ -227,3 +227,13 @@ describe("tamaño con volumen de producción", () => {
     expect(kb).toBeLessThan(150);
   });
 });
+
+describe("vista previa de criterios", () => {
+  it("con los mínimos actuales da los excelentes de hoy; con otros, los que daría calc()", async () => {
+    const { paresAB, excelentesCon } = await import("@/lib/evaluacion/seguimientoV2");
+    const p = paresAB(AG, CR);
+    expect(excelentesCon(p, CR.exA, CR.exB)).toBe(cuenta(unidades(AG, CR, "est")).exc);
+    const otros = { exA: 0.5, exB: 2 };
+    expect(excelentesCon(p, otros.exA, otros.exB)).toBe(cuenta(unidades(AG, otros, "est")).exc);
+  });
+});

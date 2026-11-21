@@ -9,7 +9,7 @@ import { calc, CRITERIOS_DEFECTO, ITEMS_A, TEMAS_B, type Criterios } from "./cri
 import { criterios, idEval } from "./datos";
 import { excepcionesDe, monitorEfectivo } from "./monitorEfectivo";
 import { mensajeEstudiante, SIN_MENTOR, SIN_MONITOR, tablero, type FilaEstudiante, type Tablero } from "./tablero";
-import { agendadas, filtrarBase, parejas, reporte, sinAgendar, sinAgendarFilas, vistaModo, type FiltroV2, type Modo, type Reporte, type SinAgendar, type VistaModo } from "./seguimientoV2";
+import { agendadas, filtrarBase, parejas, paresAB, reporte, sinAgendar, sinAgendarFilas, vistaModo, type FiltroV2, type Modo, type Reporte, type SinAgendar, type VistaModo } from "./seguimientoV2";
 
 // Seguimiento general (Paso 15) en la base: coordinación y admin. Una fila por estudiante de todos los proyectos
 // (también los que aún no tienen hora), filtrable por día y ciudad, y el Excel de resultados (solo exportar).
@@ -132,6 +132,8 @@ export type SeguimientoV2 = {
   hoy: string; dias: string[]; ciudades: string[]; criterios: Criterios;
   est: VistaModo; proy: VistaModo; parejas: ReturnType<typeof parejas>;
   cupos: Cupos; cuposHoy: CuposHoy; sinAgendar: SinAgendar; sinProyecto: SinProyectoCiudad[];
+  /** Vista previa de Criterios: pares (A, B, cuántos) de las evaluaciones completas, con los mismos filtros. */
+  paresAB: [number, number, number][];
 };
 
 /** Monitor asignado (proyecto.monitor) de los proyectos sin agendar, por id: nombre o null. */
@@ -158,7 +160,7 @@ export async function seguimientoV2(filtro: FiltroV2 = {}, ahora = new Date(), m
     hoy: diaCOL(ahora), dias: dias.sort(), ciudades: ciudades.sort((a, b) => a.localeCompare(b, "es")), criterios: crit,
     // Las listas largas solo del modo pedido; las cifras de los dos (la tarjeta muestra también el otro modo).
     est: vistaModo(delDia, conDia, crit, "est", no, modo === "est"), proy: vistaModo(delDia, conDia, crit, "proy", no, modo === "proy"), parejas: parejas(delDia, crit),
-    cupos, cuposHoy: hoyCupos, sinAgendar: sinAgendar(sa, await monitoresSinAgendar([...new Set(sa.map((f) => f.proyectoId))])), sinProyecto,
+    cupos, cuposHoy: hoyCupos, paresAB: paresAB(delDia, crit), sinAgendar: sinAgendar(sa, await monitoresSinAgendar([...new Set(sa.map((f) => f.proyectoId))])), sinProyecto,
   };
 }
 

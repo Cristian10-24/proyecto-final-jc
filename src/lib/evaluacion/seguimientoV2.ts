@@ -232,6 +232,24 @@ export function parejas(filas: FilaEstudiante[], crit: Criterios) {
   return out;
 }
 
+// ---------- criterios: vista previa ----------
+
+/** Pares (Parte A, Parte B, cuántos) de las evaluaciones completas (Aprobado o Excelente) por estudiante: con ellos la
+ *  pantalla calcula cuántos quedarían excelentes con otros mínimos, sin volver a leer nada. Sin nombres. */
+export function paresAB(filas: FilaEstudiante[], crit: Criterios): [number, number, number][] {
+  const m = new Map<string, [number, number, number]>();
+  for (const f of filas) {
+    const c = calc(f.ev, crit);
+    if ((c.res !== "Aprobado" && c.res !== "Excelente") || c.a === null || c.b === null) continue;
+    const a = Math.round(c.a * 1e6) / 1e6, b = Math.round(c.b * 1e6) / 1e6, k = `${a}|${b}`;
+    const x = m.get(k) ?? [a, b, 0]; x[2]++; m.set(k, x);
+  }
+  return [...m.values()];
+}
+/** Cuántos estudiantes quedarían excelentes con esos mínimos (misma regla que calc()). */
+export const excelentesCon = (pares: [number, number, number][], exA: number, exB: number) =>
+  pares.reduce((s, [a, b, n]) => s + (a >= exA - 1e-9 && b >= exB - 1e-9 ? n : 0), 0);
+
 // ---------- sin agendar ----------
 
 export type SinAgendar = {
