@@ -165,10 +165,10 @@ export async function seguimientoV2(filtro: FiltroV2 = {}, ahora = new Date(), m
 }
 
 /** Reporte del día (oficial): todas las ciudades, por estudiantes y proyectos; dia null = todos los días. */
-export async function reporteDia(dia: string | null): Promise<Reporte & { dias: string[] }> {
+export async function reporteDia(dia: string | null, ahora = new Date()): Promise<Reporte & { dias: string[]; hoy: string }> {
   const c = await collections();
   const [filas, crit, dias] = await Promise.all([filasEstudiantes(dia ? { dia } : {}), criterios(), c.asientos.distinct("dia", { proyectoId: { $type: "objectId" } })]);
-  return { ...reporte(filas, crit, dia), dias: dias.sort() };
+  return { ...reporte(filas, crit, dia), dias: dias.sort(), hoy: diaCOL(ahora) };
 }
 
 /** Guarda los criterios de Excelente (Parte A mínima y Parte B mínima) con changeLog. */
