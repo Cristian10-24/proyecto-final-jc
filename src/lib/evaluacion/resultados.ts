@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import type { Filter } from "mongodb";
+import { ObjectId, type Filter } from "mongodb";
 import { horaCO } from "../ciudades";
 import { collections, transaccion } from "../db";
 import { diaCOL, horaCOL } from "../edicion";
@@ -9,6 +9,7 @@ import { calc, CRITERIOS_DEFECTO, ITEMS_A, TEMAS_B, type Criterios } from "./cri
 import { criterios, idEval } from "./datos";
 import { excepcionesDe, monitorEfectivo } from "./monitorEfectivo";
 import { mensajeEstudiante, SIN_MENTOR, SIN_MONITOR, tablero, type FilaEstudiante, type Tablero } from "./tablero";
+import { agendadas, filtrarBase, parejas, paresAB, reporte, sinAgendar, sinAgendarFilas, vistaModo, type FiltroV2, type Modo, type Reporte, type SinAgendar, type VistaModo } from "./seguimientoV2";
 
 // Seguimiento general (Paso 15) en la base: coordinación y admin. Una fila por estudiante de todos los proyectos
 // (también los que aún no tienen hora), filtrable por día y ciudad, y el Excel de resultados (solo exportar).
@@ -95,6 +96,7 @@ export function noSePresentaronPorCiudad(filas: FilaEstudiante[], asistenciaNo: 
 
 export type Seguimiento = Tablero & { cupos: Cupos; criterios: Criterios; dias: string[]; ciudades: string[]; sinProyecto: SinProyectoCiudad[]; noSePresentaronCiudad: NoSePresentaronCiudad[] };
 
+/** Seguimiento de antes (v1): se conserva para comparar en las pruebas de paridad. La pantalla usa seguimientoV2. */
 export async function seguimiento(filtro: FiltroSeguimiento = {}): Promise<Seguimiento> {
   const c = await collections();
   const [filas, crit, cupos, dias, ciudades, sinProyecto, asistenciaNo] = await Promise.all([
@@ -106,6 +108,67 @@ export async function seguimiento(filtro: FiltroSeguimiento = {}): Promise<Segui
     ...tablero(filas, crit), cupos, criterios: crit, dias: dias.sort(), ciudades: ciudades.sort((a, b) => a.localeCompare(b, "es")),
     sinProyecto, noSePresentaronCiudad: noSePresentaronPorCiudad(filas, new Set(asistenciaNo.map((n) => n._id))),
   };
+}
+
+// ---- Seguimiento v2 (solo lectura; reglas en DECISIONES y src/lib/evaluacion/seguimientoV2.ts) ----
+
+export type CuposHoy = { desde: string; porHora: { hora: string; ocupados: number; libres: number }[]; ocupados: number; libres: number };
+
+/** Cupos de hoy desde ahora, por hora de inicio (Hora COL). Con ciudad: los de esa ciudad (como cuposDesdeHoy). */
+export async function cuposHoy(ciudad?: string, ahora = new Date()): Promise<CuposHoy> {
+  const c = await collections();
+  const lista = await c.asientos.find({ dia: diaCOL(ahora), inicio: { $gte: ahora }, ...(ciudad ? { ciudades: ciudad } : {}) }, { projection: { inicio: 1, proyectoId: 1 } }).sort({ inicio: 1 }).toArray();
+  const horas = new Map<number, { hora: string; ocupados: number; libres: number }>();
+  for (const a of lista) {
+    const h = horaCOL(a.inicio), x = horas.get(h) ?? { hora: horaCO(new Date(Date.UTC(2000, 0, 1, h + 5))), ocupados: 0, libres: 0 };
+    if (a.proyectoId) x.ocupados++; else x.libres++;
+    horas.set(h, x);
+  }
+  const porHora = [...horas].sort(([a], [b]) => a - b).map(([, v]) => v);
+  return { desde: horaCO(ahora), porHora, ocupados: porHora.reduce((s, x) => s + x.ocupados, 0), libres: porHora.reduce((s, x) => s + x.libres, 0) };
+}
+
+export type SeguimientoV2 = {
+  hoy: string; dias: string[]; ciudades: string[]; criterios: Criterios;
+  est: VistaModo; proy: VistaModo; parejas: ReturnType<typeof parejas>;
+  cupos: Cupos; cuposHoy: CuposHoy; sinAgendar: SinAgendar; sinProyecto: SinProyectoCiudad[];
+  /** Vista previa de Criterios: pares (A, B, cuántos) de las evaluaciones completas, con los mismos filtros. */
+  paresAB: [number, number, number][];
+};
+
+/** Monitor asignado (proyecto.monitor) de los proyectos sin agendar, por id: nombre o null. */
+async function monitoresSinAgendar(ids: string[]): Promise<Map<string, string | null>> {
+  if (!ids.length) return new Map();
+  const c = await collections();
+  const ps = await c.proyectos.find({ _id: { $in: ids.map((i) => new ObjectId(i)) } }, { projection: { monitor: 1 } }).toArray();
+  const us = await c.users.find({ usuario: { $in: ps.map((p) => p.monitor).filter((m): m is string => !!m) } }, { projection: { usuario: 1, nombre: 1, activo: 1 } }).toArray();
+  const nombre = new Map(us.map((u) => [u.usuario, u.nombre]));
+  return new Map(ps.map((p) => [String(p._id), (p.monitor && nombre.get(p.monitor)) || null]));
+}
+
+/** Seguimiento v2: los dos modos ya calculados (estudiantes y proyectos) con los filtros; listas solo con nombres. */
+export async function seguimientoV2(filtro: FiltroV2 = {}, ahora = new Date(), modo: Modo = "est"): Promise<SeguimientoV2> {
+  const c = await collections();
+  const [todas, crit, cupos, hoyCupos, dias, ciudades, sinProyecto, asistenciaNo] = await Promise.all([
+    filasEstudiantes(filtro.ciudad ? { ciudad: filtro.ciudad } : {}), criterios(), cuposDesdeHoy({ dia: filtro.dia, ciudad: filtro.ciudad }, ahora), cuposHoy(filtro.ciudad, ahora),
+    c.asientos.distinct("dia", { proyectoId: { $type: "objectId" } }), c.proyectos.distinct("ciudad"), sinProyectoPorCiudad(filtro.ciudad),
+    c.evalMonitor.find({ asistencia: "no" }, { projection: { _id: 1 } }).toArray(),
+  ]);
+  const base = filtrarBase(todas, filtro), conDia = agendadas(base), delDia = filtro.dia ? conDia.filter((f) => f.dia === filtro.dia) : conDia;
+  const no = new Set(asistenciaNo.map((n) => n._id)), sa = sinAgendarFilas(base);
+  return {
+    hoy: diaCOL(ahora), dias: dias.sort(), ciudades: ciudades.sort((a, b) => a.localeCompare(b, "es")), criterios: crit,
+    // Las listas largas solo del modo pedido; las cifras de los dos (la tarjeta muestra también el otro modo).
+    est: vistaModo(delDia, conDia, crit, "est", no, modo === "est"), proy: vistaModo(delDia, conDia, crit, "proy", no, modo === "proy"), parejas: parejas(delDia, crit),
+    cupos, cuposHoy: hoyCupos, paresAB: paresAB(delDia, crit), sinAgendar: sinAgendar(sa, await monitoresSinAgendar([...new Set(sa.map((f) => f.proyectoId))])), sinProyecto,
+  };
+}
+
+/** Reporte del día (oficial): todas las ciudades, por estudiantes y proyectos; dia null = todos los días. */
+export async function reporteDia(dia: string | null, ahora = new Date()): Promise<Reporte & { dias: string[]; hoy: string }> {
+  const c = await collections();
+  const [filas, crit, dias] = await Promise.all([filasEstudiantes(dia ? { dia } : {}), criterios(), c.asientos.distinct("dia", { proyectoId: { $type: "objectId" } })]);
+  return { ...reporte(filas, crit, dia), dias: dias.sort(), hoy: diaCOL(ahora) };
 }
 
 /** Guarda los criterios de Excelente (Parte A mínima y Parte B mínima) con changeLog. */
