@@ -467,3 +467,8 @@ Una entrada por paso, máximo 4 líneas: paso, commit, cómo verificarlo y pendi
 - Commit: `feat: reporte del día oficial con imagen PNG 16:9`. `escenaReporte.ts` (escena 2000 × 1125 = réplica del reporte enviado: 4 tarjetas, barras por ciudad presentados/no/pendientes en gris, dona de asistencia) dibujada en SVG y en canvas; `Reporte.tsx` con «Día del reporte» (hoy en curso, días anteriores, «Todos los días (acumulado)») y «Descargar imagen» tras `document.fonts`. Filtros fijos y «Contar por» deshabilitados con la nota del prototipo.
 - Verificar: `npx vitest run tests/seguimientoVistas.test.ts` (8/8: 3840 × 2160, textos del reporte del 20-nov, pendientes en gris). Local (demo): la descarga da un PNG de 3840 × 2160 (543 KB) que, puesto encima de la pantalla, se ve igual y en claro. npm test 608/608, typecheck.
 - Pendiente: Pasos 5–7.
+
+## Seguimiento v2 · Paso 5 · Resultados, Inasistencias, Mentores y monitores, Criterios
+- Commit: `feat: resultados, inasistencias, mentores y criterios del Seguimiento v2`. Resultados: radar + barras ordenadas (rojo y ⚠ bajo 60 %), balas por tema (meta 2), Ciudad × Tema (▼ bajo la meta), burbujas + tabla con mini barras, dumbbell Ruta y Modalidad (círculo/cuadrado), parejas al 100 %, listas Destacados y Excelentes (buscador, orden, «Ver más»). Inasistencias: aviso, motivos (+ «Sin motivo todavía»), por ciudad como hoy, por monitor con/sin motivo, lista y «Sin agendar» (sin día ni hora + «Sin proyecto»). Mentores: dispersión con medianas y ⚠ atípico + aviso de hoy, listas por mentor y por monitor. Criterios: igual que hoy + vista previa y «Deshacer cambios».
+- Verificar: local (demo, coordinacion.demo) las tres secciones sin errores de consola; typecheck; npm test 608/608.
+- Pendiente: Pasos 6 y 7.
