@@ -4,6 +4,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { aplicarPropuesta, cargaMentores } from "@/lib/cargaMentores";
 import { esDia } from "@/lib/edicion";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Filtro = z.object({ dia: z.string().refine(esDia).optional() }).strict();
 const Id = z.string().regex(/^[a-f0-9]{24}$/).transform((s) => new ObjectId(s));
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
 }
 
 /** Aplica una propuesta: mismo bloque, otro mentor (solo admin; misma transacción de «Cambiar mentor»). */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -35,3 +36,6 @@ export async function POST(req: Request) {
   const r = await aplicarPropuesta(p.data.proyecto, p.data.desde, p.data.hacia, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json(r, { status: r.ok ? 200 : ESTADO[r.error] ?? 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

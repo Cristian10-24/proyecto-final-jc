@@ -53,6 +53,40 @@
         "SESSION_SECRET": "solo-para-ver-en-local-0123456789"
       },
       "port": 3002
+    },
+    {
+      "name": "dev-pruebas-cerrado",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "-p",
+        "3003"
+      ],
+      "env": {
+        "MONGODB_URI": "mongodb://127.0.0.1:27018/?replicaSet=rs0",
+        "MONGODB_DB": "proyecto_final_jc_pruebas",
+        "SESSION_SECRET": "solo-para-ver-en-local-0123456789",
+        "EVENTO_CERRADO": "1"
+      },
+      "port": 3003
+    },
+    {
+      "name": "start-pruebas-cerrado",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "start",
+        "-p",
+        "3004"
+      ],
+      "env": {
+        "MONGODB_URI": "mongodb://127.0.0.1:27018/?replicaSet=rs0",
+        "MONGODB_DB": "proyecto_final_jc_pruebas",
+        "SESSION_SECRET": "solo-para-ver-en-local-0123456789",
+        "EVENTO_CERRADO": "1"
+      },
+      "port": 3004
     }
   ]
 }

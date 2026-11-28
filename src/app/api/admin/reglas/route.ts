@@ -6,6 +6,7 @@ import { CIUDADES, NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
 import { esDia } from "@/lib/edicion";
 import { aplicarReglas, cierres, previaReglas } from "@/lib/reglasCupos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Reglas de cupos por día (Paso 17, solo admin): ver, vista previa y aplicar (solo reetiqueta asientos libres).
 
@@ -45,7 +46,7 @@ export async function GET() {
   });
 }
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -56,3 +57,6 @@ export async function POST(req: Request) {
   const r = await aplicarReglas(p.data.dia, cupos, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json(r, { status: r.ok ? 200 : 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

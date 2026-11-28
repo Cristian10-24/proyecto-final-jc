@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { exigir } from "@/lib/auth";
+import { jsonLectura, leer } from "@/lib/postEvento";
 import { reporteDia } from "@/lib/evaluacion/resultados";
 import { FiltroReporteSchema } from "../filtro";
 
@@ -12,5 +13,6 @@ export async function GET(req: Request) {
   if (t.error) return t.error;
   const f = FiltroReporteSchema.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!f.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  return NextResponse.json(await reporteDia(f.data.dia ?? null), { headers: { "Cache-Control": "no-store" } });
+  const dia = f.data.dia ?? null;
+  return jsonLectura(await leer("reporteDia", [dia], () => reporteDia(dia)), { "Cache-Control": "no-store" });
 }

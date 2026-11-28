@@ -7,6 +7,7 @@ import { convertirEnProyecto } from "@/lib/gestionProyectos";
 import { agregarParticipante, listarSinProyecto, quitarParticipante } from "@/lib/sinProyecto";
 import { IdParams } from "@/lib/validation/id";
 import { FILTRO_MONITOR } from "@/lib/permisos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Paso 21 · «Sin proyecto» (solo admin): lista, agregar uno, quitar uno cargado por error y convertir en proyecto.
 
@@ -44,7 +45,7 @@ export async function GET() {
   });
 }
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -57,3 +58,6 @@ export async function POST(req: Request) {
     : await convertirEnProyecto(a.id, { nombre: a.nombre, descripcion: a.descripcion, ruta: a.ruta }, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : ESTADO[r.error] ?? 400 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

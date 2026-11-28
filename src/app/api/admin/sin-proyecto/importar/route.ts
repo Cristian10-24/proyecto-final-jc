@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { leerLibro } from "@/lib/importar/excel";
 import { aplicarSinProyecto, leerSinProyecto, previaSinProyecto } from "@/lib/sinProyecto";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const Campos = z.object({ modo: z.enum(["previa", "confirmar"]) }).strict();
@@ -11,7 +12,7 @@ const Campos = z.object({ modo: z.enum(["previa", "confirmar"]) }).strict();
  * Paso 21 · Cargar participantes «Sin proyecto» desde Excel (solo admin). Se envía dos veces el mismo archivo:
  * "previa" no escribe (nuevos, ya registrados, en un proyecto y errores por fila); "confirmar" guarda solo los nuevos.
  */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -33,3 +34,6 @@ export async function POST(req: Request) {
   const r = await aplicarSinProyecto(validos, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json({ previa, aplicado: true, ...r });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

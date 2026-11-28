@@ -2,6 +2,7 @@
 
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BarraDatos, esEventoCerrado, horaDatos } from "./postEvento";
 import type { SessionUser } from "@/lib/auth";
 import { horaCO } from "@/lib/ciudades";
 import { puede } from "@/lib/permisos";
@@ -51,6 +52,7 @@ async function post(id: string, body: unknown): Promise<{ ok: boolean; status: n
 export default function TableroPanel({ user, diaInicial = "" }: { user: SessionUser; diaInicial?: string }) {
   const mueve = puede(user, "cambiar_horario");
   const [d, setD] = useState<DatosTablero | null>(null);
+  const [al, setAl] = useState<number | null>(null); // modo post-evento: «Datos al …»
   const [error, setError] = useState(false);
   const [dia, setDia] = useState(diaInicial);
   const [fCiudad, setFCiudad] = useState("");
@@ -79,6 +81,7 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
       const data = (await res.json()) as DatosTablero;
       if (pedido.current !== dia) return;
       setD(data);
+      setAl(horaDatos(res));
       setError(false);
       if (!dia && data.dia) setDia(data.dia);
     } catch { setError(true); }
@@ -87,7 +90,7 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
   // Refresco periódico, salvo mientras se arrastra o hay un diálogo abierto (no mueve nada bajo el cursor).
   const quieto = !arrastrando && !confirmar && !abierta && !ocupado;
   useEffect(() => {
-    if (!quieto) return;
+    if (!quieto || esEventoCerrado()) return; // modo post-evento: sin refresco automático
     const t = setInterval(() => void cargar(), 30_000);
     return () => clearInterval(t);
   }, [cargar, quieto]);
@@ -170,6 +173,7 @@ export default function TableroPanel({ user, diaInicial = "" }: { user: SessionU
 
   return (
     <AppShell user={user} active="tablero">
+      <BarraDatos al={al} cargar={cargar} />
       <div className={s.head}>
         <div>
           <div className={s.kicker}>Tablero · hora COL</div>

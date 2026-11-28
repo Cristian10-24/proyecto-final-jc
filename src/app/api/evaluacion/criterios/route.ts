@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { CriteriosSchema } from "@/lib/evaluacion/criterios";
 import { guardarCriterios } from "@/lib/evaluacion/resultados";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 /** Guardar los criterios de Excelente (coordinación y admin). Cambian el resultado mostrado de todos; deja changeLog. */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("editar_criterios");
   if (g.error) return g.error;
@@ -13,3 +14,6 @@ export async function POST(req: Request) {
   await guardarCriterios(parsed.data, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json({ ok: true, criterios: parsed.data });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

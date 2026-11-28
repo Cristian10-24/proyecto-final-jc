@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { cookieOptions, createToken, exigir, SESSION_COOKIE, sameOrigin } from "@/lib/auth";
 import { claveSchema, mensajeZod, restablecerClave } from "@/lib/usuarios";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Body = z.object({ clave: claveSchema.optional() }).strict();
 
@@ -11,7 +12,7 @@ const Body = z.object({ clave: claveSchema.optional() }).strict();
  * La clave se devuelve UNA sola vez; en la base queda solo el hash bcrypt. Cierra las sesiones abiertas de ese
  * usuario y deja changeLog (sin la clave).
  */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
@@ -29,3 +30,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (id === g.user.id) res.cookies.set(SESSION_COOKIE, createToken(id, r.usuario.tokenVersion ?? 0), cookieOptions);
   return res;
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { cambiarModo, estadoModo } from "@/lib/modoCupos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Fase 4 · Modo orden de llegada (solo admin): ver el interruptor con el tope, lo que lleva y lo que puede tomar cada
 // ciudad por día, y encenderlo o apagarlo. No cambia asientos ni reservas: solo el documento `ajustes/modoCupos`.
@@ -14,7 +15,7 @@ export async function GET() {
   return NextResponse.json(await estadoModo());
 }
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -23,3 +24,6 @@ export async function POST(req: Request) {
   await cambiarModo(p.data.ordenLlegada, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json({ ok: true, ...(await estadoModo()) });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

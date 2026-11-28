@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { esDia } from "@/lib/edicion";
 import { agregarMentor, datosFranjas, quitarMentor } from "@/lib/franjas";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Franjas y mentores (Paso 17b): admin y coordinación ven; solo admin agrega o quita mentores de una hora.
 
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
   return NextResponse.json(await datosFranjas(p.data.dia));
 }
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -33,3 +34,6 @@ export async function POST(req: Request) {
   const r = accion === "agregar" ? await agregarMentor(dia, hora, mentorId, actor) : await quitarMentor(dia, hora, mentorId, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

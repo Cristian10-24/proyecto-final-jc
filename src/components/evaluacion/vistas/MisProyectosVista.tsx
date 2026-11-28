@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BarraDatos, esEventoCerrado, horaDatos } from "../../postEvento";
 import type { SessionUser } from "@/lib/auth";
 import { CIUDADES } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
@@ -44,6 +45,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
   const [listoUrl, setListoUrl] = useState(false);
   const [datos, setDatos] = useState<Datos | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
+  const [al, setAl] = useState<number | null>(null); // modo post-evento: «Datos al …»
   const [hoja, setHoja] = useState(false);
   // Monitor: sus salas con «Gestionar»; coordinación y admin: todos sin él; monitor que además ve todas las ciudades
   // (p. ej. con coordinación como rol adicional): selector «Mis salas» / «Todos los proyectos» (?vista=todos).
@@ -64,6 +66,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
     try {
       const pedir = async (u: string) => {
         const r = await fetch(u, { cache: "no-store" });
+        if (r.ok) setAl(horaDatos(r));
         if (r.status === 401) { window.location.assign("/login"); throw new Error("sesion"); }
         if (!r.ok) throw new Error();
         return r.json();
@@ -87,7 +90,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
   const diaPedido = todosRol ? f.dia : "";
   useEffect(() => { if (listoUrl) void cargar(diaPedido); }, [cargar, diaPedido, listoUrl]);
   useEffect(() => {
-    if (!listoUrl || hoja) return;
+    if (!listoUrl || hoja || esEventoCerrado()) return; // modo post-evento: sin refresco automático
     const t = setInterval(() => void cargar(diaPedido), 60_000);
     return () => clearInterval(t);
   }, [cargar, diaPedido, listoUrl, hoja]);
@@ -142,6 +145,7 @@ export default function MisProyectosVista({ user }: { user: SessionUser }) {
 
   return (
     <ShellVistas user={user} active="proyectos">
+      <BarraDatos al={al} cargar={() => cargar(diaPedido)} />
       {!especial && <div className={v.soloMovil}><BarraMovil buscar={f.q} onBuscar={poner("q")} placeholder="Proyecto o integrante" onFiltros={() => setHoja(true)} activos={activos} /></div>}
       {especial ?? (
         <>

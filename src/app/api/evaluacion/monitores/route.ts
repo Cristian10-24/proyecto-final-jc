@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir } from "@/lib/auth";
+import { jsonLectura, leer } from "@/lib/postEvento";
 import { asignacionesMonitores } from "@/lib/vistas/monitores";
 
 // Fase 6 · «Monitores» (solo lectura): coordinación y admin (ver_todas_las_ciudades). Monitor y mentor: 403; sin
@@ -12,5 +13,6 @@ export async function GET(req: Request) {
   if (g.error) return g.error;
   const f = Filtro.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!f.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  return NextResponse.json(await asignacionesMonitores(f.data.dia), { headers: { "Cache-Control": "no-store" } });
+  const dia = f.data.dia;
+  return jsonLectura(await leer("asignacionesMonitores", [dia ?? null], () => asignacionesMonitores(dia)), { "Cache-Control": "no-store" });
 }

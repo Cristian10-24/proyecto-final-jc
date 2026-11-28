@@ -5,6 +5,7 @@ import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { collections } from "@/lib/db";
 import { revisionNombres } from "@/lib/usuariosExcel";
 import { celularUsuario, generarClave, hashClave, errorMentor, mensajeZod, mentorIdDe, NuevoUsuario, vistaUsuario } from "@/lib/usuarios";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 /** Lista de usuarios, ciudades disponibles y revisión de nombres (solo administración). */
 export async function GET() {
@@ -16,7 +17,7 @@ export async function GET() {
 }
 
 /** Crear usuario. Si no se da clave, se genera una. La clave se devuelve una sola vez. */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
@@ -47,3 +48,6 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({ usuario: vistaUsuario(doc), clave }, { status: 201 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

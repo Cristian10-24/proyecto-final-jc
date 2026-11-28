@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { MOTIVOS_INASISTENCIA } from "@/lib/evaluacion/criterios";
 import { anotar, detalleSala, reprogramar, sugerirCambio } from "@/lib/evaluacion/monitor";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 type Ctx = { params: Promise<{ id: string }> };
 const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
@@ -32,7 +33,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 /** Anotar asistencia y observación, reprogramar a un cupo libre de su ciudad o sugerir un cambio especial. Deja changeLog. */
-export async function POST(req: Request, { params }: Ctx) {
+async function postSinCache(req: Request, { params }: Ctx) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("monitorear_salas");
   if (g.error) return g.error;
@@ -44,3 +45,6 @@ export async function POST(req: Request, { params }: Ctx) {
     : await sugerirCambio(g.user, id, a.detalle, a.motivo);
   return NextResponse.json(r, { status: "error" in r ? ESTADO[r.error] ?? 400 : 200 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

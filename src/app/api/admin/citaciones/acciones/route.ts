@@ -5,6 +5,7 @@ import { TIPOS_CITACION } from "@/lib/citaciones/contenido";
 import { entornoCitaciones } from "@/lib/citaciones/google";
 import { cancelar, citarVarias, marcarCitado, type Resultado } from "@/lib/citaciones/registro";
 import { esDia } from "@/lib/edicion";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Fase 5 · Paso 29 · Acciones de citación (solo admin, mismo origen): citar o actualizar, cancelar, marcar como citado
 // (sin evento) una lista de hasta 10 filas, o marcar todas las del día y pestaña. «Citar todos los pendientes» lo arma el
@@ -23,7 +24,7 @@ const Cuerpo = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("marcar_todos"), ...Base }).strict(),
 ]);
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("citar");
   if (g.error) return g.error;
@@ -53,3 +54,6 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({ resultados });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

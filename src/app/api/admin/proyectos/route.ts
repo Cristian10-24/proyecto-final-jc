@@ -7,6 +7,7 @@ import { collections } from "@/lib/db";
 import { crearProyecto } from "@/lib/gestionProyectos";
 import { ProyectoEntrada } from "@/lib/validation/proyectoEntrada";
 import { FILTRO_MONITOR } from "@/lib/permisos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Query = z
   .object({
@@ -38,7 +39,7 @@ export async function GET(req: Request) {
 }
 
 /** Nuevo proyecto (solo admin): queda sin hora; el estudiante entra al portal y elige. */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -47,3 +48,6 @@ export async function POST(req: Request) {
   const r = await crearProyecto(parsed.data, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json(r, { status: r.ok ? 201 : r.error === "datos" ? 400 : 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

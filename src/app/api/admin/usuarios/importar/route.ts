@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { leerLibro } from "@/lib/importar/excel";
 import { aplicarUsuarios, CambioUsuarios, leerUsuarios, previaUsuarios } from "@/lib/usuariosExcel";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const Campos = z.object({ modo: z.enum(["previa", "confirmar"]) }).strict();
@@ -12,7 +13,7 @@ const Campos = z.object({ modo: z.enum(["previa", "confirmar"]) }).strict();
  * crea, qué se actualiza y los errores por fila sin escribir; "confirmar" aplica solo si no hay errores y devuelve las
  * claves temporales de los nuevos (una sola vez).
  */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
@@ -41,3 +42,6 @@ export async function POST(req: Request) {
     throw e;
   }
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

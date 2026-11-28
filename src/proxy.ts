@@ -17,8 +17,9 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      // Páginas: no la API (responde JSON o archivos) ni los archivos estáticos.
-      source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
+      // Páginas: no la API (responde JSON o archivos) ni los archivos estáticos (_next, imágenes, robots.txt y
+      // cualquier archivo de public/ con extensión): así el proxy no gasta CPU en lo que no es una página.
+      source: "/((?!api|_next/static|_next/image|favicon\\.ico|robots\\.txt|.*\\.(?:png|jpe?g|gif|webp|avif|svg|ico|txt|xml|json|webmanifest|css|js|map|woff2?)$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

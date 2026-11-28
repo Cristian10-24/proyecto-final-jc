@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { aprobar, rechazar } from "@/lib/sugerencias";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
 const Accion = z.discriminatedUnion("accion", [
@@ -11,7 +12,7 @@ const Accion = z.discriminatedUnion("accion", [
 const ESTADO: Record<string, number> = { no_existe: 404, sin_hora: 409, ya_resuelta: 409, sin_cupo: 409, ya_evaluado: 409, cambio: 409, misma_hora: 409, tope: 409 };
 
 /** Aprobar (eligiendo el bloque nuevo) o rechazar (con motivo) una sugerencia. Todo deja changeLog. */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -21,3 +22,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const r = a.data.accion === "aprobar" ? await aprobar(p.data.id, new Date(a.data.inicio), a.data.otraCiudad, actor, a.data.confirmarTope) : await rechazar(p.data.id, a.data.motivo, actor);
   return NextResponse.json(r, { status: "error" in r ? ESTADO[r.error] ?? 400 : 200 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

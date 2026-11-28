@@ -6,6 +6,7 @@ import { exigir, sameOrigin } from "@/lib/auth";
 import { revertirEdicion } from "@/lib/edicionEstudiante";
 import { marcarSinProyecto, quitarMarca } from "@/lib/sinProyecto";
 import { IdParams } from "@/lib/validation/id";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const motivo = z.string().trim().max(300).default("");
 const Accion = z.discriminatedUnion("accion", [
@@ -41,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 /** Liberar o cambiar la hora de un proyecto, o asignarle monitor. Todo queda en changeLog. */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -59,3 +60,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     : await asignarMonitor(pid, a.monitor || null, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === "sin_proyecto" || r.error === "no_existe" ? 404 : 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

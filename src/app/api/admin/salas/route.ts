@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { cambiarMonitorSala, recalcularPlan, verPlan } from "@/lib/planSalas";
 import { volverAutomatico } from "@/lib/planSalasFijo";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("monitor"), id: z.string().regex(/^\d{4}-\d{2}-\d{2}\|\d{1,2}\|\d{1,2}$/), monitor: z.string().trim().min(1).max(40).nullable() }).strict(),
@@ -18,7 +19,7 @@ export async function GET() {
 }
 
 /** Cambiar el monitor de una sala, recalcular el plan o volver a automático las salas fijas de un día. Todo queda en changeLog. */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -31,3 +32,6 @@ export async function POST(req: Request) {
     : await recalcularPlan(actor);
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === "no_existe" || r.error === "sin_salas" || r.error === "sin_fijos" ? 404 : 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BarraDatos, esEventoCerrado, horaDatos } from "../../postEvento";
 import type { SessionUser } from "@/lib/auth";
 import {
   ariaBloque, bloquesVisibles, buscarBloque, cambiosSinMargen, claveBloque, contenidoPanel, horaCorta, horaLarga, porMonitor, rangoHoras,
@@ -32,6 +33,7 @@ const dosNombres = (n: string) => n.trim().split(/\s+/).slice(0, 2).join(" ");
 export default function MonitoresPanel({ user, admin }: { user: SessionUser; admin: boolean }) {
   const [datos, setDatos] = useState<VistaMonitores | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
+  const [al, setAl] = useState<number | null>(null); // modo post-evento: «Datos al …»
   const [dia, setDia] = useState<string | null>(null);
   const [f, setF] = useState<Record<string, string>>(POR_DEFECTO);
   const [q, setQ] = useState("");
@@ -51,6 +53,7 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
       setDatos(await res.json());
+      setAl(horaDatos(res));
       setCarga("listo");
     } catch {
       setCarga((x) => (x === "listo" ? x : "error"));
@@ -59,7 +62,7 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
   useEffect(() => { void cargar(dia); }, [cargar, dia]);
   useEffect(() => {
     // El refresco no cierra el panel: el bloque se vuelve a buscar por su clave en los datos nuevos.
-    if (hoja) return;
+    if (hoja || esEventoCerrado()) return; // modo post-evento: sin refresco automático
     const t = setInterval(() => void cargar(dia), 60_000);
     return () => clearInterval(t);
   }, [cargar, dia, hoja]);
@@ -140,6 +143,7 @@ export default function MonitoresPanel({ user, admin }: { user: SessionUser; adm
 
   return (
     <ShellVistas user={user} active="monitores">
+      <BarraDatos al={al} cargar={() => cargar(dia)} />
       {!especial && <div className={v.soloMovil}><BarraMovil buscar={q} onBuscar={setQ} placeholder="Monitor, mentor o sala" onFiltros={() => setHoja(true)} activos={activos} /></div>}
       {especial ?? (
         <div className={m.envoltura}>
