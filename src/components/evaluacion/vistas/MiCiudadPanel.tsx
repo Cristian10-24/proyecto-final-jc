@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BarraDatos, esEventoCerrado, horaDatos } from "../../postEvento";
 import type { SessionUser } from "@/lib/auth";
 import { coincide, plural, porcentaje } from "@/lib/vistas/formato";
 import { chipsExtra, contarEstudiantes, filtrarPorEstado, ordenar, type FiltroEstado } from "@/lib/vistas/conteoCiudad";
@@ -30,6 +31,7 @@ const salaTxt = (s: number | null) => (s === null ? "Sala por asignar" : `Sala $
 export default function MiCiudadPanel({ user }: { user: SessionUser }) {
   const [datos, setDatos] = useState<VistaMiCiudad | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
+  const [al, setAl] = useState<number | null>(null); // modo post-evento: «Datos al …»
   const [ciudad, setCiudad] = useState<string | null>(null);
   const [f, setF] = useState<Record<string, string>>(POR_DEFECTO);
   const [q, setQ] = useState("");
@@ -41,6 +43,7 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
       setDatos(await res.json());
+      setAl(horaDatos(res));
       setCarga("listo");
     } catch {
       setCarga((x) => (x === "listo" ? x : "error"));
@@ -48,7 +51,7 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
   }, []);
   useEffect(() => { void cargar(ciudad); }, [cargar, ciudad]);
   useEffect(() => {
-    if (hoja) return;
+    if (hoja || esEventoCerrado()) return; // modo post-evento: sin refresco automático
     const t = setInterval(() => void cargar(ciudad), 60_000);
     return () => clearInterval(t);
   }, [cargar, ciudad, hoja]);
@@ -93,6 +96,7 @@ export default function MiCiudadPanel({ user }: { user: SessionUser }) {
 
   return (
     <ShellVistas user={user} active="ciudad">
+      <BarraDatos al={al} cargar={() => cargar(ciudad)} />
       {datos?.ciudad && carga === "listo" && (
         <div className={v.soloMovil}><BarraMovil buscar={q} onBuscar={setQ} placeholder="Proyecto o integrante" onFiltros={() => setHoja(true)} activos={activos} /></div>
       )}

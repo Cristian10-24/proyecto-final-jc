@@ -3,6 +3,7 @@ import { z } from "zod";
 import { editarDesdePortal } from "@/lib/edicionEstudiante";
 import { intentar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
 import { cuerpoInvalido, documentoSchema, guardia, noEncontrado } from "@/lib/rutaEstudiante";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // El largo real se revisa después de limpiar el texto; aquí se corta lo absurdo.
 const Body = z.object({
@@ -18,7 +19,7 @@ const ESTADO: Record<string, number> = { datos: 400, evaluado: 409, cambio: 409,
  * Paso 23 · El estudiante cambia el nombre y la descripción de su proyecto. Sin sesión: el documento identifica al
  * proyecto. Límites: por documento (cuentan todos los intentos) y por IP (fallos). Se guarda en el historial.
  */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   const g = await guardia(req);
   if (g.error) return g.error;
   const parsed = Body.safeParse(await req.json().catch(() => null));
@@ -30,3 +31,6 @@ export async function POST(req: Request) {
   if (r.error === "sin_proyecto") return noEncontrado(g.ip);
   return NextResponse.json(r, { status: ESTADO[r.error] ?? 400 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

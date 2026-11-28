@@ -4,6 +4,7 @@ import { exigir, sameOrigin } from "@/lib/auth";
 import { agregarIntegrante, buscarDocumento, datosProyecto, editarProyecto, separarPareja } from "@/lib/gestionProyectos";
 import { IdParams } from "@/lib/validation/id";
 import { IntegranteEntrada, ProyectoEntrada, Version } from "@/lib/validation/proyectoEntrada";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Gestión manual de un proyecto (solo admin): datos completos para editar, editar, separar pareja y agregar integrante.
 
@@ -34,7 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return d ? NextResponse.json(d) : NextResponse.json({ error: "no_existe" }, { status: 404 });
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -48,3 +49,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     : await agregarIntegrante(pid, a.integrante, { version: a.version, unir: a.unir, conservar: a.conservar }, actor);
   return NextResponse.json(r, { status: r.ok ? 200 : ESTADO[r.error] ?? 400 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

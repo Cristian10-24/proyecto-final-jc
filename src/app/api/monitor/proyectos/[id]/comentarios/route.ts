@@ -4,6 +4,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { borrarComentario, crearComentario, editarComentario, listarComentarios, MAX_COMENTARIO } from "@/lib/comentarios";
 import { IdParams } from "@/lib/validation/id";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Paso 22 · Comentarios de seguimiento de un proyecto. Leer y escribir: monitor (sus ciudades), coordinación y admin
 // (todos). Editar y borrar: cada uno solo los suyos.
@@ -29,7 +30,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return NextResponse.json(r, { status: r.ok ? 200 : ESTADO[r.error] ?? 400 });
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("comentar_proyectos");
   if (g.error) return g.error;
@@ -42,3 +43,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     : await borrarComentario(g.user, pid, a.comentario);
   return NextResponse.json(r, { status: r.ok ? 200 : ESTADO[r.error] ?? 400 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

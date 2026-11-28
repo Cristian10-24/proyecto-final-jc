@@ -5,11 +5,12 @@ import { exigir, sameOrigin } from "@/lib/auth";
 import { collections } from "@/lib/db";
 import { tieneRol } from "@/lib/permisos";
 import { celularUsuario, EdicionUsuario, errorMentor, mensajeZod, mentorIdDe, vistaUsuario } from "@/lib/usuarios";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
 
 /** Editar nombre, rol, ciudades o activo (solo administración). */
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function patchSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
@@ -63,3 +64,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const u = await users.findOne({ _id: actual._id });
   return NextResponse.json({ usuario: vistaUsuario(u!) });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const PATCH = invalidaAlGuardar(patchSinCache);

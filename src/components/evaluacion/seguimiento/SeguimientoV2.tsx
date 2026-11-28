@@ -5,6 +5,7 @@ import type { SessionUser } from "@/lib/auth";
 import type { SeguimientoV2 as Datos } from "@/lib/evaluacion/resultados";
 import type { Modo } from "@/lib/evaluacion/seguimientoV2";
 import { puede } from "@/lib/permisos";
+import { BarraDatos, horaDatos, useEventoCerrado, useRefresco } from "../../postEvento";
 import { useDialogo } from "../vistas/Dialogos";
 import { IcoCerrar } from "../vistas/Iconos";
 import ShellVistas from "../vistas/ShellVistas";
@@ -54,11 +55,13 @@ export default function SeguimientoV2({ user }: { user: SessionUser }) {
       if (!res.ok) throw new Error();
       const data = await res.json();
       if (pedido.current !== q) return; // solo vale la respuesta del último filtro
-      setD(data); setCarga("listo"); setCuando(Date.now());
+      setD(data); setCarga("listo"); setCuando(horaDatos(res));
     } catch { setCarga((c) => (c === "listo" ? c : "error")); }
   }, [q]);
   useEffect(() => { if (listo) void cargar(); }, [cargar, listo]);
-  useEffect(() => { const t = setInterval(() => void cargar(), 60_000); return () => clearInterval(t); }, [cargar]);
+  // Modo post-evento: sin refresco automático (useRefresco no arranca) y con «Actualizar».
+  const cerrado = useEventoCerrado();
+  useRefresco(() => void cargar(), 60_000);
   useEffect(() => { setAhora(Date.now()); const t = setInterval(() => setAhora(Date.now()), 20_000); return () => clearInterval(t); }, []);
 
   // La barra de filtros queda fija justo debajo de la cabecera (que en web es fija).
@@ -121,7 +124,8 @@ export default function SeguimientoV2({ user }: { user: SessionUser }) {
         <div className={s.hello}>
           <div>
             <h1>Seguimiento general</h1>
-            <p><span className={s.vivo} aria-hidden="true" />Se actualiza cada minuto{cuando && ahora ? ` · ${haceTxt(Math.max(0, ahora - cuando))}` : ""} · Hora COL</p>
+            {cerrado ? (rep ? null : <BarraDatos al={cuando || null} cargar={cargar} />)
+              : <p><span className={s.vivo} aria-hidden="true" />Se actualiza cada minuto{cuando && ahora ? ` · ${haceTxt(Math.max(0, ahora - cuando))}` : ""} · Hora COL</p>}
           </div>
           {puede(user, "descargar_excel") && <a className={s.btn} href={`/api/evaluacion/seguimiento/excel${excel ? `?${excel}` : ""}`}><IcoDesc />Descargar resultados (Excel)</a>}
         </div>

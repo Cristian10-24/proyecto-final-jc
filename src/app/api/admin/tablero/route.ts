@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir } from "@/lib/auth";
+import { jsonLectura, leer } from "@/lib/postEvento";
 import { esDia } from "@/lib/edicion";
 import { datosTablero } from "@/lib/tableroHorarios";
 
@@ -12,5 +13,6 @@ export async function GET(req: Request) {
   if (g.error) return g.error;
   const f = Filtro.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!f.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  return NextResponse.json(await datosTablero(f.data.dia));
+  const dia = f.data.dia;
+  return jsonLectura(await leer("datosTablero", [dia ?? null], () => datosTablero(dia)));
 }

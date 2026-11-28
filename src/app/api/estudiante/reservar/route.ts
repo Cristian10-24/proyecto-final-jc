@@ -3,6 +3,7 @@ import { z } from "zod";
 import { contar, intentar, MENSAJE_BLOQUEO } from "@/lib/rateLimit";
 import { MENSAJES_RESERVA, reservar } from "@/lib/reservas";
 import { cuerpoInvalido, documentoSchema, guardia } from "@/lib/rutaEstudiante";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const Body = z
   .object({
@@ -18,7 +19,7 @@ const ESTADO: Record<string, number> = { sin_proyecto: 404, ya_tiene_hora: 409, 
  * proyecto. Límites: por documento (cuentan todos los intentos, de forma atómica) y por IP (solo fallos:
  * cuerpo inválido o documento inexistente). Solo responde lo mínimo: no da datos de otros proyectos.
  */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   const g = await guardia(req);
   if (g.error) return g.error;
   const { ip } = g;
@@ -37,3 +38,6 @@ export async function POST(req: Request) {
     { status: ESTADO[r.error] ?? 400 },
   );
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

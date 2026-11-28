@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { cambiarRolesExtra, mensajeZod, RolesExtraEntrada, vistaUsuario } from "@/lib/usuarios";
 import { IdParams } from "@/lib/validation/id";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 /**
  * Paso 26 · Roles adicionales de un usuario (solo administración). Reemplaza la lista completa: lo que no venga se
  * quita. Nunca «Administración», nunca a uno mismo. Deja changeLog con antes y después; aplica en la siguiente petición.
  */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function postSinCache(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("gestionar_usuarios");
   if (g.error) return g.error;
@@ -18,3 +19,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!r.ok) return NextResponse.json(r, { status: r.error === "no_existe" ? 404 : 409 });
   return NextResponse.json({ usuario: vistaUsuario(r.usuario) });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { esEventoCerrado } from "../../postEvento";
 import type { SessionUser } from "@/lib/auth";
 import { CIUDADES, horaCO, horaUY } from "@/lib/ciudades";
 import { diaCOL, horaCOL } from "@/lib/edicion";
@@ -125,7 +126,7 @@ export default function DetalleProyecto({ user, id }: { user: SessionUser; id: s
   const sucio = notas.some((x, i) => guardadas[i] && !mismaNota(x, guardadas[i]!)) || !!motivoCambio.trim() || !!detalle.trim() || !!motivoSug.trim();
   // Refresco cada minuto solo si no hay nada escrito sin guardar (no pisa lo que se está escribiendo).
   useEffect(() => {
-    if (sucio || estado !== "listo") return;
+    if (sucio || estado !== "listo" || esEventoCerrado()) return; // modo post-evento: sin refresco automático
     const t = setInterval(() => void cargar(true), 60_000);
     return () => clearInterval(t);
   }, [sucio, estado, cargar]);

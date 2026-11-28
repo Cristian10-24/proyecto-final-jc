@@ -8,6 +8,7 @@ import { leerLibroSalas } from "@/lib/importar/salas";
 import { aplicarSalas, previaSalas } from "@/lib/planSalas";
 import { aplicarPlanFijo, FallaPlanFijo, previaPlanFijo } from "@/lib/planSalasFijo";
 import { CAMPOS, leerLibroProyectos, type Campo } from "@/lib/importar/proyectos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const MAX_BYTES = 4 * 1024 * 1024; // Vercel corta los cuerpos de más de 4,5 MB
 
@@ -32,7 +33,7 @@ const Campos = z
  * modo "previa" devuelve totales y errores por fila sin escribir; modo "confirmar" aplica,
  * y solo si no hay errores.
  */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("importar");
   if (g.error) return g.error;
@@ -107,3 +108,6 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({ tipo, previa, aplicado: true });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

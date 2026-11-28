@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir } from "@/lib/auth";
+import { jsonLectura, leer } from "@/lib/postEvento";
 import { misProyectos } from "@/lib/misProyectos";
 
 // Solo lectura. Monitor: el permiso de «Mis salas» (monitorear_salas) y solo sus salas; coordinación y admin
@@ -18,5 +19,6 @@ export async function GET(req: Request) {
   if (g.error) return g.error;
   const f = Filtro.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!f.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
-  return NextResponse.json(await misProyectos(g.user, f.data), { headers: { "Cache-Control": "no-store" } });
+  const user = g.user, filtro = f.data;
+  return jsonLectura(await leer("misProyectos", [user, filtro], () => misProyectos(user, filtro)), { "Cache-Control": "no-store" });
 }

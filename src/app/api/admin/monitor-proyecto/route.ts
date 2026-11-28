@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { asignarMonitorProyecto, monitoresPorProyecto, quitarMonitorProyecto } from "@/lib/monitorProyecto";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Monitor por proyecto (solo administración: cambiar_horario). GET: proyectos de un día con su monitor del bloque y su
 // excepción, y los monitores activos. POST: asignar a mano el monitor de un proyecto o quitar la excepción. changeLog.
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
   return NextResponse.json(await monitoresPorProyecto(f.data.dia), { headers: { "Cache-Control": "no-store" } });
 }
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -38,3 +39,6 @@ export async function POST(req: Request) {
     : await quitarMonitorProyecto(g.user, a.proyectoId);
   return NextResponse.json(r, { status: "error" in r ? ESTADO[r.error] ?? 400 : 200 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

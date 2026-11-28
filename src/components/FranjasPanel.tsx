@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BarraDatos, esEventoCerrado } from "./postEvento";
 import type { SessionUser } from "@/lib/auth";
 import type { DatosFranjas, HoraFranja } from "@/lib/franjas";
 import AppShell from "./AppShell";
@@ -24,6 +25,7 @@ async function api<T>(url: string, body?: unknown): Promise<{ ok: boolean; data:
 
 export default function FranjasPanel({ user, puedeEditar }: { user: SessionUser; puedeEditar: boolean }) {
   const [d, setD] = useState<DatosFranjas | null>(null);
+  const [al, setAl] = useState<number | null>(null); // modo post-evento: «Datos al …»
   const [dia, setDia] = useState("");
   const [error, setError] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -37,10 +39,12 @@ export default function FranjasPanel({ user, puedeEditar }: { user: SessionUser;
     if (pedido.current !== dd) return;
     if (!r?.ok || !r.data) return setError(true);
     setD(r.data);
+    setAl(Date.now());
     setError(false);
   }, []);
   useEffect(() => {
     void cargar(dia);
+    if (esEventoCerrado()) return; // modo post-evento: sin refresco automático
     const t = setInterval(() => { if (document.visibilityState === "visible") void cargar(dia); }, 30_000);
     return () => clearInterval(t);
   }, [cargar, dia]);
@@ -60,6 +64,7 @@ export default function FranjasPanel({ user, puedeEditar }: { user: SessionUser;
 
   return (
     <AppShell user={user} active="franjas">
+      <BarraDatos al={al} cargar={() => cargar(dia)} />
       <div className={s.kicker}>Franjas y mentores · hora COL</div>
       <h1 className={s.title}>Quién atiende cada hora</h1>
       <p className={s.lead}>Cada mentor atiende 4 presentaciones por hora; una hora sin mentores no se ofrece. {puedeEditar

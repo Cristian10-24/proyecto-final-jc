@@ -5,6 +5,7 @@ import type { Reporte as Datos } from "@/lib/evaluacion/seguimientoV2";
 import { ALTO, ANCHO, arcoPath, dibujar, encabezado, ESCALA, escena, FUENTE, RC, textoNoPresentados, type Elemento, type Medir } from "./escenaReporte";
 import { diaLargo, N } from "./formato";
 import { IcoDesc } from "./Piezas";
+import { BarraDatos, horaDatos, useRefresco } from "../../postEvento";
 import s from "./Seguimiento.module.css";
 
 // Seguimiento v2 · Reporte del día (oficial): todas las ciudades, por estudiantes y proyectos; solo cambia con su día
@@ -37,6 +38,7 @@ export default function Reporte({ repDia, onDia, movil }: { repDia: string; onDi
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
   const [fuentes, setFuentes] = useState(false);
   const [msg, setMsg] = useState("");
+  const [al, setAl] = useState<number | null>(null);
   const dia = repDia === "todos" ? "" : repDia;
   const elegir = useRef(onDia);
   useEffect(() => { elegir.current = onDia; }, [onDia]);
@@ -49,11 +51,11 @@ export default function Reporte({ repDia, onDia, movil }: { repDia: string; onDi
       const x: R = await res.json();
       // Sin día elegido: hoy si hay presentaciones; si no, el último día anterior; si no, el acumulado.
       if (!repDia) { const d = x.dias.includes(x.hoy) ? x.hoy : x.dias.filter((y) => y <= x.hoy).at(-1); if (d) return elegir.current(d); }
-      setR(x); setCarga("listo");
+      setR(x); setCarga("listo"); setAl(horaDatos(res));
     } catch { setCarga((c) => (c === "listo" ? c : "error")); }
   }, [dia, repDia]);
   useEffect(() => { void cargar(); }, [cargar]);
-  useEffect(() => { const t = setInterval(() => void cargar(), 60_000); return () => clearInterval(t); }, [cargar]);
+  useRefresco(() => void cargar(), 60_000); // modo post-evento: no arranca
   useEffect(() => { void fuentesListas().then(() => setFuentes(true)); }, []);
 
   // La escena se mide con canvas cuando las fuentes ya cargaron (así pantalla e imagen parten igual las líneas).
@@ -72,6 +74,8 @@ export default function Reporte({ repDia, onDia, movil }: { repDia: string; onDi
   }
 
   const ctrl = (
+    <>
+    <BarraDatos al={al} cargar={cargar} />
     <div className={s.rctrl}>
       {/* Inter 400 y 700: las que usa la imagen (la cabecera solo carga hasta 600). */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" precedence="default" />
@@ -84,6 +88,7 @@ export default function Reporte({ repDia, onDia, movil }: { repDia: string; onDi
       <button type="button" className={`${s.btn} ${s.btnPri}`} disabled={!E} onClick={() => void descargar()}><IcoDesc />Descargar imagen</button>
       <p className={`${s.muted} ${s.small}`}>Imagen 16:9 ({Math.round(ANCHO * ESCALA)} × {Math.round(ALTO * ESCALA)} px) · siempre con todas las ciudades y contando estudiantes</p>
     </div>
+    </>
   );
   if (carga === "error") return <>{ctrl}<div className={s.error} role="alert"><h2>No se pudo cargar el reporte</h2><button type="button" className={s.btn} onClick={() => { setCarga("cargando"); void cargar(); }}>Reintentar</button></div></>;
   if (!r || !E) return <>{ctrl}<div className={s.skel} aria-busy="true"><i /><i /><i /><i /></div></>;

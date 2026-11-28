@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { BorradorSchema, FormularioSchema } from "@/lib/evaluacion/criterios";
 import { detalleEvaluacion, guardarBorrador, guardarEvaluacion, marcarAsistencia } from "@/lib/evaluacion/datos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 type Ctx = { params: Promise<{ id: string }> };
 const Params = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/) }).strict();
@@ -28,7 +29,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 }
 
 /** Guardar evaluación, borrador automático, "No se presentó" y "Deshacer". Solo el mentor del proyecto; deja changeLog. */
-export async function POST(req: Request, { params }: Ctx) {
+async function postSinCache(req: Request, { params }: Ctx) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("evaluar");
   if (g.error) return g.error;
@@ -40,3 +41,6 @@ export async function POST(req: Request, { params }: Ctx) {
     : await marcarAsistencia(g.user, id, a.i, a.accion === "no_presento");
   return NextResponse.json(r, { status: "error" in r ? ESTADO[r.error] ?? 400 : 200 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { exigir } from "@/lib/auth";
+import { jsonLectura, leer } from "@/lib/postEvento";
 import { seguimientoV2 } from "@/lib/evaluacion/resultados";
 import { FiltroSeguimientoV2Schema } from "./filtro";
 
@@ -11,5 +12,6 @@ export async function GET(req: Request) {
   const f = FiltroSeguimientoV2Schema.safeParse(Object.fromEntries(new URL(req.url).searchParams));
   if (!f.success) return NextResponse.json({ error: "datos_invalidos" }, { status: 400 });
   const { modo, q, ...resto } = f.data;
-  return NextResponse.json(await seguimientoV2({ ...resto, ...(q ? { q } : {}) }, new Date(), modo ?? "est"), { headers: { "Cache-Control": "no-store" } });
+  const filtro = { ...resto, ...(q ? { q } : {}) }, m = modo ?? "est";
+  return jsonLectura(await leer("seguimientoV2", [filtro, m], () => seguimientoV2(filtro, new Date(), m)), { "Cache-Control": "no-store" });
 }

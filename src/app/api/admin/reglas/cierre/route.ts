@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { guardarCierre } from "@/lib/reglasCupos";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 // Cierre de inscripciones por ciudad (solo admin): horas antes del primer bloque y, si hace falta, una fecha a mano.
 const Cuerpo = z.object({
@@ -10,7 +11,7 @@ const Cuerpo = z.object({
   porCiudad: z.record(z.string().refine((c) => NOMBRES_CIUDADES.includes(c)), z.iso.datetime().nullable()),
 }).strict();
 
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -19,3 +20,6 @@ export async function POST(req: Request) {
   await guardarCierre(p.data.horasAntes, Object.fromEntries(Object.entries(p.data.porCiudad).map(([k, v]) => [k, v ? new Date(v) : null])), { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json({ ok: true });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

@@ -4,6 +4,7 @@ import "./tokens.css";
 import "./globals.css";
 import ScriptEnLinea from "@/components/ScriptEnLinea";
 import { SCRIPT_TEMA } from "@/lib/tema";
+import { eventoCerrado } from "@/lib/postEvento";
 
 export const metadata: Metadata = {
   title: "Proyecto final · Jóvenes creaTIvos",
@@ -22,7 +23,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nonce = x && h.get("content-security-policy")?.includes(`'nonce-${x}'`) ? x : undefined;
   return (
     // data-theme lo pone el script antes de pintar (modo oscuro): por eso React no debe quejarse de la diferencia.
-    <html lang="es" suppressHydrationWarning>
+    // data-evento="cerrado" (EVENTO_CERRADO=1): las pantallas no se actualizan solas (src/components/postEvento.tsx).
+    <html lang="es" suppressHydrationWarning data-evento={eventoCerrado() ? "cerrado" : undefined}>
       <head>
         <ScriptEnLinea html={SCRIPT_TEMA} nonce={nonce} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

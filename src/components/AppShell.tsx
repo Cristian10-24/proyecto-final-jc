@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { esEventoCerrado } from "./postEvento";
 import type { SessionUser } from "@/lib/auth";
 import { etiquetaRoles, puede, type Permiso } from "@/lib/permisos";
 import BotonTema from "./BotonTema";
@@ -42,7 +43,7 @@ export default function AppShell({ user, active, children }: { user: SessionUser
     if (!puede(user, "cambiar_horario")) return;
     const leer = () => fetch("/api/admin/sugerencias/conteo", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setPendientes(d.pendientes)).catch(() => null);
     void leer();
-    const t = setInterval(leer, 60_000);
+    const t = esEventoCerrado() ? undefined : setInterval(leer, 60_000); // modo post-evento: solo al abrir
     const alCambiar = (e: Event) => { const n = (e as CustomEvent<unknown>).detail; if (Number.isInteger(n)) setPendientes(n as number); };
     window.addEventListener("pfjc-pendientes", alCambiar);
     return () => { clearInterval(t); window.removeEventListener("pfjc-pendientes", alCambiar); };

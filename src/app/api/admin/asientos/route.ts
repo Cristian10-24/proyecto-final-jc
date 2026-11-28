@@ -4,6 +4,7 @@ import { reetiquetar, resumenAsientos } from "@/lib/admin";
 import { exigir, sameOrigin } from "@/lib/auth";
 import { NOMBRES_CIUDADES } from "@/lib/ciudades";
 import { esDia } from "@/lib/edicion";
+import { invalidaAlGuardar } from "@/lib/postEvento";
 
 const dia = z.string().refine(esDia);
 const Query = z.object({ dia }).strict();
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
 }
 
 /** Reetiquetar asientos libres de un día: pasar `cantidad` del grupo `desde` a las ciudades `hacia`. */
-export async function POST(req: Request) {
+async function postSinCache(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "origen" }, { status: 403 });
   const g = await exigir("cambiar_horario");
   if (g.error) return g.error;
@@ -36,3 +37,6 @@ export async function POST(req: Request) {
   const r = await reetiquetar(d, desde, [...new Set(hacia)], cantidad, { rol: g.user.rol, usuario: g.user.usuario });
   return NextResponse.json(r, { status: r.ok ? 200 : 409 });
 }
+
+// Modo post-evento: si guardó bien, la próxima lectura recalcula (src/lib/postEvento.ts).
+export const POST = invalidaAlGuardar(postSinCache);

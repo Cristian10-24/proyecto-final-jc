@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BarraDatos, esEventoCerrado, horaDatos } from "../postEvento";
 import type { SessionUser } from "@/lib/auth";
 import { CIUDADES, horaCO, horaUY } from "@/lib/ciudades";
 import { diaCOL } from "@/lib/edicion";
@@ -42,6 +43,7 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
   const verTodos = puede(user, "ver_evaluaciones");
   const [datos, setDatos] = useState<Datos | null>(null);
   const [carga, setCarga] = useState<"cargando" | "error" | "listo">("cargando");
+  const [al, setAl] = useState<number | null>(null); // modo post-evento: «Datos al …»
   const [f, setF] = useState<FiltrosEval>(FILTROS_EVAL_VACIOS);
   const [listoUrl, setListoUrl] = useState(false);
   const [hoja, setHoja] = useState(false);
@@ -60,6 +62,7 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
       if (res.status === 401) return window.location.assign("/login");
       if (!res.ok) throw new Error();
       setDatos(await res.json());
+      setAl(horaDatos(res));
       setCarga("listo");
     } catch {
       setCarga((c) => (c === "listo" ? c : "error"));
@@ -67,7 +70,7 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
   }, []);
   useEffect(() => { void cargar(); }, [cargar]);
   useEffect(() => {
-    if (abierto) return; // el refresco nunca toca una evaluación abierta
+    if (abierto || esEventoCerrado()) return; // el refresco nunca toca una evaluación abierta; modo post-evento: sin refresco
     const t = setInterval(() => void cargar(), 60_000);
     return () => clearInterval(t);
   }, [cargar, abierto]);
@@ -126,6 +129,7 @@ export default function MentorPanel({ user }: { user: SessionUser }) {
 
   return (
     <ShellVistas user={user} active="evaluaciones">
+      {!abierto && <BarraDatos al={al} cargar={cargar} />}
       {abierto ? null : (
         <>
           {!especial && <div className={v.soloMovil}><BarraMovil buscar={f.q} onBuscar={poner("q")} placeholder="Participante o emprendimiento" onFiltros={() => setHoja(true)} activos={activos} /></div>}
